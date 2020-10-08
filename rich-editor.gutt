@@ -1,0 +1,1 @@
+<div class="content-edit__content content-view rich-editor"><if test={$selector?}><attribute name={$selector} value="" /></if>{$children}</div>

@@ -1,0 +1,17 @@
+{
+  "name": "wysiwygraph",
+  "version": "0.1.0",
+  "description": "Editor for web",
+  "main": "src/index.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/makingoff/wysiwygraph.git"
+  },
+  "author": "Aleksey Chikin <mail@makingoff.name>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/makingoff/wysiwygraph/issues"
+  },
+  "homepage": "https://github.com/makingoff/wysiwygraph#readme"
+}
