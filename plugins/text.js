@@ -1,10 +1,10 @@
-import Node from '../nodes/node'
-import PluginPlugin from './plugin'
-import ControlButton from '../controls/button'
+const Node = require('../nodes/node')
+const PluginPlugin = require('./plugin')
+const ControlButton = require('../controls/button')
 
 const nbsCode = '\u00A0'
 
-export class Text extends Node {
+class Text extends Node {
 	constructor(content, params) {
 		super('text')
 
@@ -107,8 +107,15 @@ export class Text extends Node {
 	}
 }
 
-export default class TextPlugin extends PluginPlugin {
-	fields = [ 'content', 'weight', 'style' ]
+class TextPlugin extends PluginPlugin {
+	constructor() {
+		super()
+
+		this.unsetBold = this.unsetBold.bind(this)
+		this.setBold = this.setBold.bind(this)
+		this.unsetItalic = this.unsetItalic.bind(this)
+		this.setItalic = this.setItalic.bind(this)
+	}
 
 	parse(element, parse, context) {
 		if (element.nodeType !== 3 && (element.nodeType === 1 && ![ 'em', 'strong', 'span' ].includes(element.nodeName.toLowerCase()))) {
@@ -163,7 +170,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	unsetBold = (event, selection) => {
+	unsetBold(event, selection) {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.weight === 'bold') {
 				const { style } = item
@@ -174,7 +181,7 @@ export default class TextPlugin extends PluginPlugin {
 		})
 	}
 
-	setBold = (event, selection) => {
+	setBold(event, selection) {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text') {
 				const { style } = item
@@ -185,7 +192,7 @@ export default class TextPlugin extends PluginPlugin {
 		})
 	}
 
-	unsetItalic = (event, selection) => {
+	unsetItalic(event, selection) {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.style === 'italic') {
 				const { weight } = item
@@ -196,7 +203,7 @@ export default class TextPlugin extends PluginPlugin {
 		})
 	}
 
-	setItalic = (event, selection) => {
+	setItalic(event, selection) {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text') {
 				const { weight } = item
@@ -255,3 +262,6 @@ export default class TextPlugin extends PluginPlugin {
 		return controls
 	}
 }
+
+module.exports.TextPlugin = TextPlugin
+module.exports.Text = Text

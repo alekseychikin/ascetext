@@ -1,10 +1,10 @@
-import { debounce } from '../../libs/helpers'
-import { getNodeByElement } from './nodes/node'
-import Section from './nodes/section'
-import Selection from './selection'
-import Navigation from './navigation'
-import Editing from './editing'
-import Toolbar from './toolbar'
+// import { debounce } from '../../libs/helpers'
+const getNodeByElement = require('./nodes/node').getNodeByElement
+const Section = require('./nodes/section')
+const Selection = require('./selection')
+const Navigation = require('./navigation')
+const Editing = require('./editing')
+const Toolbar = require('./toolbar')
 
 class Root extends Section {
 	constructor(element, onUpdate) {
@@ -15,18 +15,18 @@ class Root extends Section {
 	}
 }
 
-export default class RichEditor {
-	onKeyDown = (event) => {
+class RichEditor {
+	onKeyDown(event) {
 		if (this.selection.focused) {
 			this.editing.onKeyDown(event)
 		}
 	}
 
-	onInput = () => {
+	onInput() {
 		this.updateSelection()
 	}
 
-	onMouseDown = (event) => {
+	onMouseDown(event) {
 		if (this.model.element.contains(event.target)) {
 			const anchorNode = getNodeByElement(event.target)
 
@@ -38,24 +38,24 @@ export default class RichEditor {
 		}
 	}
 
-	onSelectionChange = () => {
+	onSelectionChange() {
 		this.updateSelection()
 	}
 
-	updateSelection = () => {
+	updateSelection() {
 		this.selection.update()
 		// this.toolbar.update()
 		this.editing.onSelectionChange()
 	}
 
-	onBlur = () => {
+	onBlur() {
 		// console.log('onBlur')
 		this.selection.blur()
 		// this.toolbar.update()
 		this.editing.onSelectionChange()
 	}
 
-	parse = (firstElement, lastElement, context = { selection: this.selection }) => {
+	parse(firstElement, lastElement, context = { selection: this.selection }) {
 		let currentElement = firstElement
 		let result
 		let current
@@ -134,7 +134,7 @@ export default class RichEditor {
 		return { result, current }
 	}
 
-	stringify = (first) => {
+	stringify(first) {
 		let current = first
 		let content = ''
 		let children = ''
@@ -151,16 +151,34 @@ export default class RichEditor {
 		return content
 	}
 
-	onUpdate = debounce(() => {
+	// onUpdate = debounce(() => {
+	// 	if (process.env.ENV === 'develop') {
+	// 		if (this.devTool) {
+	// 			this.devTool.renderModel()
+	// 		}
+	// 	}
+	// }, 50)
+
+	onUpdate() {
 		if (process.env.ENV === 'develop') {
 			if (this.devTool) {
 				this.devTool.renderModel()
 			}
 		}
-	}, 50)
+	}
 
 	constructor(node, plugins) {
 		let children
+
+		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onInput = this.onInput.bind(this)
+		this.onMouseDown = this.onMouseDown.bind(this)
+		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.updateSelection = this.updateSelection.bind(this)
+		this.onBlur = this.onBlur.bind(this)
+		this.parse = this.parse.bind(this)
+		this.stringify = this.stringify.bind(this)
+		this.onUpdate = this.onUpdate.bind(this)
 
 		this.node = node
 		this.plugins = plugins
@@ -168,7 +186,7 @@ export default class RichEditor {
 		// this.navigation = new Navigation(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
-		this.toolbar = new Toolbar(this)
+		// this.toolbar = new Toolbar(this)
 
 		const container = document.createElement('div')
 
@@ -186,77 +204,11 @@ export default class RichEditor {
 			console.log('empty holder container')
 		}
 
-		this.initDevtool()
-
 		this.node.setAttribute('contenteditable', true)
 		document.addEventListener('selectionchange', this.onSelectionChange)
 		document.addEventListener('mousedown', this.onMouseDown)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('input', this.onInput)
-	}
-
-	async initDevtool() {
-		if (process.env.ENV === 'develop') {
-			const rempl = await import('rempl')
-			const { default: remplTool } = await import('./remplTool')
-
-			this.remplTool = rempl.createPublisher('richEditorTool', function(settings, callback) {
-				callback(null, 'script', '(' + remplTool.toString() + ')()')
-			})
-			this.devTool = {
-				renderModel: () => {
-					const model = this.devTool.getModel(this.model)
-
-					this.remplTool.ns('model').publish(model)
-				},
-				getModel: (model) => {
-					let current = model
-					let item, type
-					const result = []
-
-					while (current) {
-						if (current.type === 'text') {
-							item = {
-								type: 'text',
-								content: current.content
-							}
-						} else {
-							type = 'node'
-
-							if (current.isSection) {
-								type = 'section'
-							} else if (current.isInlineWidget) {
-								type = 'inlineWidget'
-							} else if (current.isWidget) {
-								type = 'widget'
-							} else if (current.isContainer) {
-								type = 'container'
-							}
-
-							item = {
-								name: current.type,
-								type,
-								children: this.devTool.getModel(current.first)
-							}
-
-							if (current.isContainer) {
-								item.isChanged = current.isChanged
-							}
-						}
-
-						result.push(item)
-						current = current.next
-					}
-
-					return result
-				},
-				renderSelection: (selection) => {
-					this.remplTool.ns('selection').publish(selection)
-				}
-			}
-
-			this.devTool.renderModel()
-		}
 	}
 
 	getContent() {
@@ -271,3 +223,5 @@ export default class RichEditor {
 		this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
 }
+
+module.exports = RichEditor

@@ -1,0 +1,148 @@
+.rich-editor__toolbar {
+	position: absolute;
+	z-index: 1;
+	margin: -7px 0 0 -50px;
+	display: flex;
+	transform: translateX(0);
+	opacity: 1;
+	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.rich-editor__toolbar.hidden {
+	transform: translateX(-10px);
+	opacity: 0;
+}
+
+.rich-editor__toolbar .rich-editor__controls {
+	top: 0;
+	left: 50px;
+	white-space: nowrap;
+	transform: translateX(0);
+	transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out, left 0s step-start;
+}
+
+.rich-editor__toolbar .rich-editor__controls.hidden {
+	left: -999%;
+	pointer-events: none;
+	transform: translateX(-10px);
+	transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out, left 0.15s step-end;
+}
+
+.rich-editor__toolbar-toggler {
+	display: block;
+	border: 0;
+	padding: 0;
+	width: 40px;
+	height: 40px;
+	background: url('./icons/plus.svg');
+	cursor: pointer;
+	outline: none;
+}
+
+.show-controls .rich-editor__toolbar-toggler {
+	background: url('./icons/close.svg');
+}
+
+.rich-editor__controls {
+	position: absolute;
+	margin-top: -50px;
+	padding: 0 5px;
+	background: #2c276a;
+	opacity: 1;
+	transform: translateY(0);
+	transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.rich-editor__controls.right {
+	margin-top: 0;
+}
+
+.rich-editor__controls::before {
+	top: 13px;
+	bottom: auto;
+	left: 0;
+	margin-left: -5px;
+	border-width: 5px 5px 5px 0;
+	border-color: transparent #2c276a transparent transparent;
+}
+
+.rich-editor__controls.hidden {
+	opacity: 0;
+	transform: translateY(-10px);
+	pointer-events: none;
+}
+
+.rich-editor__controls&::before {
+	content: '';
+	position: absolute;
+	bottom: -5px;
+	left: 50%;
+	margin-left: -2.5px;
+	border-style: solid;
+	border-width: 5px 5px 0 5px;
+	border-color: #2c276a transparent transparent transparent;
+	width: 0;
+	height: 0;
+}
+
+.rich-editor__controls.right {
+	margin-top: 0;
+}
+
+.rich-editor__controls.right::before {
+	top: 13px;
+	bottom: auto;
+	left: 0;
+	margin-left: -5px;
+	border-width: 5px 5px 5px 0;
+	border-color: transparent #2c276a transparent transparent;
+}
+
+.rich-editor__control {
+	display: inline-block;
+	vertical-align: top;
+	box-sizing: border-box;
+	border: 0;
+	padding: 8px;
+	min-width: 40px;
+	height: 40px;
+	background: #2c276a;
+	cursor: pointer;
+	outline: none;
+	color: white;
+	font: 16px/26px 'PT Sans', sans-serif;
+
+}
+
+.rich-editor__control.selected {
+	color: #8d68db;
+}
+
+.rich-editor__control:hover,
+.rich-editor__control.rich-editor__control--selected {
+	background: #554f9e;
+}
+
+.rich-editor__control-input {
+	display: inline-block;
+	vertical-align: top;
+	box-sizing: border-box;
+	border: 0;
+	padding: 8px;
+	min-width: 40px;
+	height: 40px;
+	background: #2c276a;
+	outline: none;
+	color: white;
+	font: 16px/26px 'PT Sans', sans-serif;
+}
+
+.rich-editor__control-input-file {
+	position: absolute;
+	opacity: 0;
+	left: -999%;
+}
+
+[data-widget][data-selected] {
+	box-shadow: 0 0 0 2px #2C276A;
+}

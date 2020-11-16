@@ -1,10 +1,16 @@
-import Node, { getNodeByElement } from './node'
-import { Paragraph } from '../plugins/paragraph'
-import { BreakLine } from '../plugins/break-line'
+const Node = require('./node')
+const getNodeByElement = require('./node')
+const paragraphPackage = require('../plugins/paragraph')
+const BreakLine = require('../plugins/break-line').BreakLine
 
-export default class Container extends Node {
+class Container extends Node {
 	constructor(type) {
 		super(type)
+
+		this.toggleControls = this.toggleControls.bind(this)
+		this.hideToolbar = this.hideToolbar.bind(this)
+		this.showToolbar = this.showToolbar.bind(this)
+		this.controlHandler = this.controlHandler.bind(this)
 
 		this.isContainer = true
 		this.isChanged = false
@@ -46,13 +52,13 @@ export default class Container extends Node {
 			event.preventDefault()
 
 			if (core.selection.focusAtLastPositionInContainer) {
-				const emptyParagraph = new Paragraph()
+				const emptyParagraph = new paragraphPackage.Paragraph()
 
 				this.connect(emptyParagraph)
 
 				core.selection.setSelection(emptyParagraph.element, 0)
 			} else if (core.selection.anchorAtFirstPositionInContainer) {
-				const emptyParagraph = new Paragraph()
+				const emptyParagraph = new paragraphPackage.Paragraph()
 
 				this.preconnect(emptyParagraph)
 
@@ -188,7 +194,13 @@ export default class Container extends Node {
 		this.hideToolbar()
 	}
 
-	toggleControls = () => {
+	onDelete() {
+		if (this.toolbar) {
+			this.toolbar.parentNode.removeChild(this.toolbar)
+		}
+	}
+
+	toggleControls() {
 		if (this.isShowControls) {
 			this.toolbar.classList.remove('show-controls')
 			this.controls.classList.add('hidden')
@@ -200,7 +212,7 @@ export default class Container extends Node {
 		this.isShowControls = !this.isShowControls
 	}
 
-	hideToolbar = () => {
+	hideToolbar() {
 		if (this.isShowToolbar) {
 			this.toolbar.classList.remove('show-controls')
 			this.toolbar.classList.add('hidden')
@@ -210,7 +222,7 @@ export default class Container extends Node {
 		}
 	}
 
-	showToolbar = () => {
+	showToolbar() {
 		const container = this.selection.anchorContainer
 		const containerBoundingClientRect = container.element.getBoundingClientRect()
 		let controls = []
@@ -237,36 +249,42 @@ export default class Container extends Node {
 			this.controls.appendChild(control.getElement())
 		})
 
+		document.body.appendChild(this.toolbar)
+
 		if (controls.length) {
 			this.toolbar.classList.remove('hidden')
 			this.isShowToolbar = true
-			this.toolbar.style.top = containerBoundingClientRect.top + scrollTop + 'px'
-			this.toolbar.style.left = containerBoundingClientRect.left + 'px'
+			this.toolbar.style.top = this.element.offsetTop + 'px'
+			this.toolbar.style.left = this.element.offsetLeft + 'px'
 		} else {
 			this.toolbar.classList.add('hidden')
 			this.isShowToolbar = false
 		}
 	}
 
-	controlHandler = (action, event) => {
+	controlHandler(action, event) {
 		Promise.resolve()
 			.then(() => action(event, this.selection))
 			.then(() => {
+				this.selection.restoreSelection()
 				this.hideToolbar()
 			})
 	}
 
-	createControls() {
+	createControls(...params) {
 		this.toolbar = document.createElement('div')
+		this.toolbar.contentEditable = false
 		this.toolbar.className = 'rich-editor__toolbar hidden'
 		this.controls = document.createElement('div')
 		this.controls.className = 'rich-editor__controls right hidden'
 		this.controlsToggler = document.createElement('button')
+		this.controlsToggler.type = 'button'
 		this.controlsToggler.className = 'rich-editor__toolbar-toggler'
 
 		this.toolbar.appendChild(this.controlsToggler)
 		this.toolbar.appendChild(this.controls)
-		document.body.appendChild(this.toolbar)
 		this.controlsToggler.addEventListener('click', this.toggleControls)
 	}
 }
+
+module.exports = Container

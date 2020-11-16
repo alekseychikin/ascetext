@@ -1,14 +1,12 @@
-import PluginPlugin from './plugin'
-import InlineWidget from '../nodes/inline-widget'
-import ControlButton from '../controls/button'
-import ControlInput from '../controls/input'
-import ControlLink from '../controls/link'
-import createElement from '../create-element'
+const PluginPlugin = require('./plugin')
+const InlineWidget = require('../nodes/inline-widget')
+const ControlButton = require('../controls/button')
+const ControlInput = require('../controls/input')
+const ControlLink = require('../controls/link')
+const createElement = require('../create-element')
 
 class Link extends InlineWidget {
-	fields = [ 'url' ]
-
-	removeLink = (event, selection) => {
+	removeLink(event, selection) {
 		this.connect(this.first)
 		this.delete()
 		selection.restoreSelection()
@@ -17,6 +15,9 @@ class Link extends InlineWidget {
 	constructor(url) {
 		super('link')
 
+		this.removeLink = this.removeLink.bind(this)
+
+		this.fields = [ 'url' ]
 		this.url = url
 		this.isDeleteEmpty = true
 
@@ -94,7 +95,15 @@ class Link extends InlineWidget {
 	}
 }
 
-export default class LinkPlugin extends PluginPlugin {
+class LinkPlugin extends PluginPlugin {
+	constructor() {
+		super()
+
+		this.openLinkControls = this.openLinkControls.bind(this)
+		this.removeLinks = this.removeLinks.bind(this)
+		this.setLink = this.setLink.bind(this)
+	}
+
 	parse(element, parse, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'a') {
 			const url = element.getAttribute('href')
@@ -141,7 +150,7 @@ export default class LinkPlugin extends PluginPlugin {
 		]
 	}
 
-	openLinkControls = (event, selection) => {
+	openLinkControls(event, selection) {
 		selection.renderControls([
 			new ControlInput({
 				placeholder: 'Введите адрес ссылки',
@@ -157,7 +166,7 @@ export default class LinkPlugin extends PluginPlugin {
 		])
 	}
 
-	removeLinks = (event, selection) => {
+	removeLinks(event, selection) {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'link') {
 				item.connect(item.first)
@@ -166,7 +175,7 @@ export default class LinkPlugin extends PluginPlugin {
 		})
 	}
 
-	setLink = (event, selection) => {
+	setLink(event, selection) {
 		const url = event.target.value
 		let link
 
@@ -181,3 +190,5 @@ export default class LinkPlugin extends PluginPlugin {
 		selection.restoreSelection()
 	}
 }
+
+module.exports.LinkPlugin = LinkPlugin

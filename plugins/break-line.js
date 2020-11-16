@@ -1,8 +1,8 @@
-import InlineWidget from '../nodes/inline-widget'
-import PluginPlugin from './plugin'
-import createElement from '../create-element'
+const InlineWidget = require('../nodes/inline-widget')
+const PluginPlugin = require('./plugin')
+const createElement = require('../create-element')
 
-export class BreakLine extends InlineWidget {
+class BreakLine extends InlineWidget {
 	constructor() {
 		super('breakLine')
 
@@ -14,7 +14,7 @@ export class BreakLine extends InlineWidget {
 	}
 }
 
-export default class BreakLinePlugin extends PluginPlugin {
+class BreakLinePlugin extends PluginPlugin {
 	parse(element, parse, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'br') {
 			return new BreakLine()
@@ -23,3 +23,6 @@ export default class BreakLinePlugin extends PluginPlugin {
 		return false
 	}
 }
+
+module.exports.BreakLinePlugin = BreakLinePlugin
+module.exports.BreakLine = BreakLine

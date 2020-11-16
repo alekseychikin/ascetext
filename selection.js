@@ -1,8 +1,14 @@
-import { getStyle } from '../../libs/helpers'
-import { getNodeByElement } from './nodes/node'
+const getStyle = require('./utils/getStyle')
+const getNodeByElement = require('./nodes/node').getNodeByElement
 
-export default class Selection {
+class Selection {
 	constructor(core) {
+		this.onAnchorContainerReplace = this.onAnchorContainerReplace.bind(this)
+		this.onFocusContainerReplace = this.onFocusContainerReplace.bind(this)
+		this.controlHandler = this.controlHandler.bind(this)
+		this.showControls = this.showControls.bind(this)
+		this.hideControls = this.hideControls.bind(this)
+
 		this.core = core
 		this.controls = document.createElement('div')
 		this.controls.className = 'rich-editor__controls hidden'
@@ -152,7 +158,7 @@ export default class Selection {
 		this.updateToolbar()
 	}
 
-	onAnchorContainerReplace = (replacement) => {
+	onAnchorContainerReplace(replacement) {
 		if (this.anchorContainer === this.focusContainer) {
 			this.focusContainer = replacement
 		}
@@ -161,7 +167,7 @@ export default class Selection {
 		this.forceUpdate = true
 	}
 
-	onFocusContainerReplace = (replacement) => {
+	onFocusContainerReplace(replacement) {
 		this.focusContainer = replacement
 		this.forceUpdate = true
 	}
@@ -551,7 +557,7 @@ export default class Selection {
 		this.focusedNodes = focusedNodes
 	}
 
-	controlHandler = (action, event) => {
+	controlHandler(action, event) {
 		action(event, this)
 
 		if (!this.renderedCustomControls) {
@@ -563,7 +569,7 @@ export default class Selection {
 		this.controls.innerHTML = ''
 	}
 
-	showControls = () => {
+	showControls() {
 		const container = this.anchorContainer
 
 		if (!this.isShowControls) {
@@ -606,7 +612,7 @@ export default class Selection {
 		this.controls.classList.remove('hidden')
 	}
 
-	hideControls = () => {
+	hideControls() {
 		if (this.isShowControls) {
 			this.controls.classList.add('hidden')
 			this.containerAvatar && this.containerAvatar.parentNode.removeChild(this.containerAvatar)
@@ -623,3 +629,5 @@ export default class Selection {
 	// 	this.pluginControls.splice(this.pluginControls.indexOf(control), 1)
 	// }
 }
+
+module.exports = Selection

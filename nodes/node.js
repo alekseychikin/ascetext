@@ -1,6 +1,6 @@
-export const mapElementToNode = []
+const mapElementToNode = []
 
-export function getNodeByElement(element) {
+function getNodeByElement(element) {
 	let currentElement = element
 	let i
 
@@ -15,10 +15,9 @@ export function getNodeByElement(element) {
 	}
 }
 
-export default class Node {
-	fields = []
-
+class Node {
 	constructor(type) {
+		this.fields = []
 		this.type = type
 		this.isContainer = false
 		this.isWidget = false
@@ -584,3 +583,6 @@ export default class Node {
 		}
 	}
 }
+
+module.exports = Node
+module.exports.getNodeByElement = getNodeByElement

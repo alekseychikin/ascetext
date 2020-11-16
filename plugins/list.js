@@ -1,18 +1,17 @@
-import PluginPlugin from './plugin'
-import { getNodeByElement } from '../nodes/node'
-import Container from '../nodes/container'
-import Group from '../nodes/group'
-import ControlButton from '../controls/button'
-import { Paragraph } from './paragraph'
-import { BreakLine } from './break-line'
-import createElement from '../create-element'
+const PluginPlugin = require('./plugin')
+const getNodeByElement = require('../nodes/node').getNodeByElement
+const Container = require('../nodes/container')
+const Group = require('../nodes/group')
+const ControlButton = require('../controls/button')
+const Paragraph = require('./paragraph').Paragraph
+const BreakLine = require('./break-line').BreakLine
+const createElement = require('../create-element')
 
-export class List extends Group {
-	fields = [ 'decor' ]
-
+class List extends Group {
 	constructor(decor = 'marker') {
 		super('list')
 
+		this.fields = [ 'decor' ]
 		this.decor = decor
 		this.isDeleteEmpty = true
 		this.setElement(createElement(this.decor === 'number' ? 'ol' : 'ul'))
@@ -42,7 +41,7 @@ export class List extends Group {
 	}
 }
 
-export class ListItem extends Container {
+class ListItem extends Container {
 	constructor() {
 		super('list-item')
 
@@ -172,7 +171,7 @@ export class ListItem extends Container {
 	}
 }
 
-export default class ListPlugin extends PluginPlugin {
+class ListPlugin extends PluginPlugin {
 	getInsertControls(container) {
 		if (container.parent.isSection) {
 			return [ new ControlButton({
@@ -241,3 +240,7 @@ export default class ListPlugin extends PluginPlugin {
 		selection.restoreSelection()
 	}
 }
+
+module.exports.ListPlugin = ListPlugin
+module.exports.List = List
+module.exports.ListItem = ListItem

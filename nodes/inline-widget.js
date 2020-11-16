@@ -1,9 +1,11 @@
-import WithControls from './with-controls'
+const WithControls = require('./with-controls')
 
-export default class InlineWidget extends WithControls {
+class InlineWidget extends WithControls {
 	constructor(type) {
 		super(type)
 
 		this.isInlineWidget = true
 	}
 }
+
+module.exports = InlineWidget

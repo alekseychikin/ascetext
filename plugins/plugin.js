@@ -1,6 +1,6 @@
 const containerTags = [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div' ]
 
-export default class PluginPlugin {
+class PluginPlugin {
 	getClosestContainer(element) {
 		let container = element
 
@@ -33,3 +33,5 @@ export default class PluginPlugin {
 		return current
 	}
 }
+
+module.exports = PluginPlugin

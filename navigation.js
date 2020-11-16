@@ -1,81 +1,78 @@
-import Component from '../../libs/component'
-import layout from './layout'
-
 const arrowLeftKey = 37
 const arrowUpKey = 38
 const arrowRightKey = 39
 const arrowDownKey = 40
-export const arrowKeyCodes = [ arrowLeftKey, arrowUpKey, arrowRightKey, arrowDownKey ]
+const arrowKeyCodes = [ arrowLeftKey, arrowUpKey, arrowRightKey, arrowDownKey ]
 
-export default class Navigation extends Component {
-	handleArrowLeftKeyDown = (event) => {
-		const anchorAtFirstPositionInContainer = this.core.selection.anchorAtFirstPositionInContainer
-		const anchoredSelectable = this.core.selection.anchorNode.isWidget
+class Navigation {
+	handleArrowLeftKeyDown(event) {
+		// const anchorAtFirstPositionInContainer = this.core.selection.anchorAtFirstPositionInContainer
+		// const anchoredSelectable = this.core.selection.anchorNode.isWidget
 
-		if (anchorAtFirstPositionInContainer || anchoredSelectable) {
-			const container = this.core.selection.anchorContainer
-			const index = layout.getIndexByNode(anchoredSelectable ? this.core.selection.anchorNode : container)
-			let i = 1
-			let previousNode
+		// if (anchorAtFirstPositionInContainer || anchoredSelectable) {
+		// 	const container = this.core.selection.anchorContainer
+		// 	const index = layout.getIndexByNode(anchoredSelectable ? this.core.selection.anchorNode : container)
+		// 	let i = 1
+		// 	let previousNode
 
-			while (previousNode = layout.getNodeByIndex(index - i)) {
-				if (previousNode.isContainer) {
-					const lastTextElement = previousNode.findLastTextElement()
+		// 	while (previousNode = layout.getNodeByIndex(index - i)) {
+		// 		if (previousNode.isContainer) {
+		// 			const lastTextElement = previousNode.findLastTextElement()
 
-					if (lastTextElement) {
-						this.core.setPosition(lastTextElement, lastTextElement.length)
-					} else {
-						this.core.setPosition(previousNode.element, 0)
-					}
+		// 			if (lastTextElement) {
+		// 				this.core.setPosition(lastTextElement, lastTextElement.length)
+		// 			} else {
+		// 				this.core.setPosition(previousNode.element, 0)
+		// 			}
 
-					previousNode.element.focus({ preventScroll: true })
+		// 			previousNode.element.focus({ preventScroll: true })
 
-					break
-				}
+		// 			break
+		// 		}
 
-				if (previousNode.isWidget) {
-					previousNode.element.focus({ preventScroll: true })
-					this.core.setPosition(previousNode.element, 0)
-					break
-				}
+		// 		if (previousNode.isWidget) {
+		// 			previousNode.element.focus({ preventScroll: true })
+		// 			this.core.setPosition(previousNode.element, 0)
+		// 			break
+		// 		}
 
-				i++
-			}
+		// 		i++
+		// 	}
 
-			event.preventDefault()
-		}
+		// 	event.preventDefault()
+		// }
 	}
 
-	handleArrowRightKeyDown = (event) => {
-		const focusAtLastPositionInContainer = this.core.selection.focusAtLastPositionInContainer
-		const focusedSelectable = this.core.selection.focusNode.isWidget
+	handleArrowRightKeyDown(event) {
+		// const focusAtLastPositionInContainer = this.core.selection.focusAtLastPositionInContainer
+		// const focusedSelectable = this.core.selection.focusNode.isWidget
 
-		if (focusAtLastPositionInContainer || focusedSelectable) {
-			const index = layout.getIndexByNode(this.core.selection.focusNode)
-			let i = 1
-			let nextNode
+		// if (focusAtLastPositionInContainer || focusedSelectable) {
+		// 	const index = layout.getIndexByNode(this.core.selection.focusNode)
+		// 	let i = 1
+		// 	let nextNode
 
-			while (nextNode = layout.getNodeByIndex(index + i)) {
-				if (nextNode.isContainer) {
-					nextNode.element.focus({ preventScroll: true })
-					this.core.setPosition(nextNode.findFirstTextElement() || nextNode.element, 0)
-					break
-				}
+		// 	while (nextNode = layout.getNodeByIndex(index + i)) {
+		// 		if (nextNode.isContainer) {
+		// 			nextNode.element.focus({ preventScroll: true })
+		// 			this.core.setPosition(nextNode.findFirstTextElement() || nextNode.element, 0)
+		// 			break
+		// 		}
 
-				if (nextNode.isWidget) {
-					nextNode.element.focus({ preventScroll: true })
-					this.core.setPosition(nextNode.element, 0)
-					break
-				}
+		// 		if (nextNode.isWidget) {
+		// 			nextNode.element.focus({ preventScroll: true })
+		// 			this.core.setPosition(nextNode.element, 0)
+		// 			break
+		// 		}
 
-				i++
-			}
+		// 		i++
+		// 	}
 
-			event.preventDefault()
-		}
+		// 	event.preventDefault()
+		// }
 	}
 
-	handleArrowKeyDown = (event) => {
+	handleArrowKeyDown(event) {
 		switch (event.keyCode) {
 			case arrowLeftKey:
 				this.handleArrowLeftKeyDown(event)
@@ -86,19 +83,24 @@ export default class Navigation extends Component {
 		}
 	}
 
-	onContentKeyDown = (event) => {
+	onContentKeyDown(event) {
 		if (arrowKeyCodes.includes(event.keyCode)) {
 			this.core.updateSelection()
 			this.handleArrowKeyDown(event)
 		}
 	}
 
-	events = {
-		'keydown': this.onContentKeyDown
-	}
-
 	constructor(core) {
-		super(core.node)
+		this.handleArrowLeftKeyDown = this.handleArrowLeftKeyDown.bind(this)
+		this.handleArrowRightKeyDown = this.handleArrowRightKeyDown.bind(this)
+		this.handleArrowKeyDown = this.handleArrowKeyDown.bind(this)
+		this.onContentKeyDown = this.onContentKeyDown.bind(this)
+
+		this.core.node.addEventListener('keydown', this.onContentKeyDown)
+
 		this.core = core
 	}
 }
+
+module.exports = Navigation
+module.exports.arrowKeyCodes = arrowKeyCodes

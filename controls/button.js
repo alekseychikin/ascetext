@@ -1,22 +1,20 @@
-import ControlControl from './control'
+const ControlControl = require('./control')
 
-export default class ControlButton extends ControlControl {
-	handleAction = (event) => {
+class ControlButton extends ControlControl {
+	handleAction(event) {
 		this.handler(this.params.action, event)
 	}
 
 	constructor(params) {
 		super(params)
 
+		this.handleAction = this.handleAction.bind(this)
 		this.element = document.createElement('button')
 		this.element.addEventListener('click', this.handleAction)
 		this.element.title = params.label
 
 		if (params.icon) {
-			const icon = document.createElement('img')
-
-			icon.src = `/static/dist/components/rich-editor/icons/${params.icon}.svg`
-			this.element.appendChild(icon)
+			this.element.appendChild(this.getIcon(params.icon))
 		} else {
 			this.element.appendChild(document.createTextNode(params.label))
 		}
@@ -44,3 +42,5 @@ export default class ControlButton extends ControlControl {
 		return this.element
 	}
 }
+
+module.exports = ControlButton

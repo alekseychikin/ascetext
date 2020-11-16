@@ -1,4 +1,4 @@
-export default function () {
+module.exports = function () {
 	var modelElement = document.createElement('div')
 	var selectionElement = document.createElement('div')
 

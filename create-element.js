@@ -1,4 +1,4 @@
-export default function createElement(tagname, attributes = {}, children = []) {
+function createElement(tagname, attributes = {}, children = []) {
 	let field, dataField
 	const element = document.createElement(tagname)
 
@@ -18,3 +18,5 @@ export default function createElement(tagname, attributes = {}, children = []) {
 
 	return element
 }
+
+module.exports = createElement

@@ -1,17 +1,17 @@
-import ControlControl from './control'
+const ControlControl = require('./control')
 
-export default class ControlInput extends ControlControl {
-	handleAction = (event) => {
+class ControlInput extends ControlControl {
+	handleAction(event) {
 		this.handlers.action(this.params.action, event)
 	}
 
-	handleCancel = (event) => {
+	handleCancel(event) {
 		if (this.handlers.cancel) {
 			this.handlers.cancel(this.params.cancel, event)
 		}
 	}
 
-	handleKeydown = (event) => {
+	handleKeydown(event) {
 		if (event.keyCode === 13) {
 			event.preventDefault()
 			this.handleAction(event)
@@ -24,6 +24,9 @@ export default class ControlInput extends ControlControl {
 	constructor(params) {
 		super(params)
 
+		this.handleAction = this.handleAction.bind(this)
+		this.handleCancel = this.handleCancel.bind(this)
+		this.handleKeydown = this.handleKeydown.bind(this)
 		this.handlers = {}
 		this.element = document.createElement('input')
 		this.element.addEventListener('keydown', this.handleKeydown)
@@ -41,3 +44,5 @@ export default class ControlInput extends ControlControl {
 		return this.element
 	}
 }
+
+module.exports = ControlInput

@@ -1,12 +1,17 @@
-export default class Toolbar {
+class Toolbar {
 	constructor(core) {
+		this.toggleControls = this.toggleControls.bind(this)
+		this.hideToolbar = this.hideToolbar.bind(this)
+		this.showToolbar = this.showToolbar.bind(this)
+		this.controlHandler = this.controlHandler.bind(this)
+
 		this.core = core
 		this.isShowToolbar = false
 		this.isShowControls = false
 		this.createControls()
 	}
 
-	toggleControls = () => {
+	toggleControls() {
 		if (this.isShowControls) {
 			this.toolbar.classList.remove('show-controls')
 			this.controls.classList.add('hidden')
@@ -18,7 +23,7 @@ export default class Toolbar {
 		this.isShowControls = !this.isShowControls
 	}
 
-	hideToolbar = () => {
+	hideToolbar() {
 		if (this.isShowToolbar) {
 			this.toolbar.classList.remove('show-controls')
 			this.toolbar.classList.add('hidden')
@@ -28,7 +33,7 @@ export default class Toolbar {
 		}
 	}
 
-	showToolbar = () => {
+	showToolbar() {
 		const container = this.core.selection.selectedContainers[0]
 		const containerBoundingClientRect = container.element.getBoundingClientRect()
 		let controls = []
@@ -58,7 +63,7 @@ export default class Toolbar {
 		}
 	}
 
-	controlHandler = (action, event) => {
+	controlHandler(action, event) {
 		const container = this.core.selection.selectedContainers[0]
 
 		Promise.resolve()
@@ -104,6 +109,7 @@ export default class Toolbar {
 		this.controls = document.createElement('div')
 		this.controls.className = 'rich-editor__controls right hidden'
 		this.controlsToggler = document.createElement('button')
+		this.controlsToggler.type = 'button'
 		this.controlsToggler.className = 'rich-editor__toolbar-toggler'
 
 		this.toolbar.appendChild(this.controlsToggler)
@@ -112,3 +118,5 @@ export default class Toolbar {
 		this.controlsToggler.addEventListener('click', this.toggleControls)
 	}
 }
+
+module.exports = Toolbar

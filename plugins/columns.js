@@ -1,12 +1,12 @@
-import PluginPlugin from './plugin'
-import Section from '../nodes/section'
-import Widget from '../nodes/widget'
-import ControlButton from '../controls/button'
-import { Paragraph } from './paragraph'
-import createElement from '../create-element'
+const PluginPlugin = require('./plugin')
+const Section = require('../nodes/section')
+const Widget = require('../nodes/widget')
+const ControlButton = require('../controls/button')
+const Paragraph = require('./paragraph').Paragraph
+const createElement = require('../create-element')
 
 class Columns extends Widget {
-	setSecondColumnData = () => {
+	setSecondColumnData() {
 		if (this.types[1] !== 'data') {
 			const columnData = new ColumnData()
 
@@ -16,7 +16,7 @@ class Columns extends Widget {
 		}
 	}
 
-	setSecondColumnImage = () => {
+	setSecondColumnImage() {
 		if (this.types[1] !== 'image') {
 			const columnImage = new ColumnImage('', this.params)
 
@@ -27,6 +27,9 @@ class Columns extends Widget {
 
 	constructor(types, params) {
 		super('columns')
+
+		this.setSecondColumnData = this.setSecondColumnData.bind(this)
+		this.setSecondColumnImage = this.setSecondColumnImage.bind(this)
 
 		this.types = types
 		this.params = params
@@ -75,6 +78,9 @@ class ColumnImage extends Widget {
 	constructor(src, params) {
 		super('column-image')
 
+		this.onInputFileChange = this.onInputFileChange.bind(this)
+		this.updateControlPosition = this.updateControlPosition.bind(this)
+
 		this.src = src
 		this.params = params
 		this.setElement(createElement('img', {
@@ -102,7 +108,7 @@ class ColumnImage extends Widget {
 		this.removeControl()
 	}
 
-	onInputFileChange = async (event) => {
+	async onInputFileChange(event) {
 		const { files } = event.target
 
 		if (files.length) {
@@ -149,7 +155,7 @@ class ColumnImage extends Widget {
 		this.removeResizeEventListener(this.updateControlPosition)
 	}
 
-	updateControlPosition = () => {
+	updateControlPosition() {
 		setTimeout(() => {
 			if (this.control) {
 				const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
@@ -168,9 +174,11 @@ class ColumnImage extends Widget {
 	}
 }
 
-export default class ColumnsPlugin extends PluginPlugin {
+class ColumnsPlugin extends PluginPlugin {
 	constructor(params) {
 		super()
+
+		this.setColumns = this.setColumns.bind(this)
 
 		this.params = params
 	}
@@ -226,7 +234,7 @@ export default class ColumnsPlugin extends PluginPlugin {
 		return []
 	}
 
-	setColumns = (event, selection) => {
+	setColumns(event, selection) {
 		const columns = new Columns([ 'image', 'data' ], this.params)
 		const columnImage = new ColumnImage('', this.params)
 		const columnData = new ColumnData()
@@ -238,3 +246,5 @@ export default class ColumnsPlugin extends PluginPlugin {
 		selection.restoreSelection()
 	}
 }
+
+module.exports.ColumnsPlugin = ColumnsPlugin

@@ -1,36 +1,34 @@
-import Widget from '../nodes/widget'
-import Container from '../nodes/container'
-import { Paragraph } from '../plugins/paragraph'
-import PluginPlugin from './plugin'
-import ControlButton from '../controls/button'
-import ControlFile from '../controls/file'
-import createElement from '../create-element'
+const Widget = require('../nodes/widget')
+const Container = require('../nodes/container')
+const Paragraph = require('../plugins/paragraph').Paragraph
+const PluginPlugin = require('./plugin')
+const ControlButton = require('../controls/button')
+const ControlFile = require('../controls/file')
+const createElement = require('../create-element')
 
-export class Image extends Widget {
-	fields = [ 'size', 'float' ]
-
-	toggleFloatLeft = () => {
+class Image extends Widget {
+	toggleFloatLeft() {
 		this.size = ''
 		this.float = this.float === 'left' ? 'none' : 'left'
 		this.element.className = this.getClassName()
 		this.updateControlPosition()
 	}
 
-	toggleFloatRight = () => {
+	toggleFloatRight() {
 		this.size = ''
 		this.float = this.float === 'right' ? 'none' : 'right'
 		this.element.className = this.getClassName()
 		this.updateControlPosition()
 	}
 
-	toggleSizeWide = () => {
+	toggleSizeWide() {
 		this.float = 'none'
 		this.size = this.size === 'wide' ? '' : 'wide'
 		this.element.className = this.getClassName()
 		this.updateControlPosition()
 	}
 
-	toggleSizeBanner = () => {
+	toggleSizeBanner() {
 		this.float = 'none'
 		this.size = this.size === 'banner' ? '' : 'banner'
 		this.element.className = this.getClassName()
@@ -40,6 +38,14 @@ export class Image extends Widget {
 	constructor(src, size, float, params) {
 		super('image')
 
+		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
+		this.toggleFloatRight = this.toggleFloatRight.bind(this)
+		this.toggleSizeWide = this.toggleSizeWide.bind(this)
+		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
+		this.onInputFileChange = this.onInputFileChange.bind(this)
+		this.updateControlPosition = this.updateControlPosition.bind(this)
+
+		this.fields = [ 'size', 'float' ]
 		this.src = src
 		this.size = size || ''
 		this.float = float || 'none'
@@ -117,7 +123,7 @@ export class Image extends Widget {
 		this.removeControl()
 	}
 
-	onInputFileChange = async (event) => {
+	async onInputFileChange(event) {
 		const { files } = event.target
 
 		if (files.length) {
@@ -164,7 +170,7 @@ export class Image extends Widget {
 		this.removeResizeEventListener(this.updateControlPosition)
 	}
 
-	updateControlPosition = () => {
+	updateControlPosition() {
 		setTimeout(() => {
 			if (this.control) {
 				console.log(this.image)
@@ -223,9 +229,11 @@ class ImageCaption extends Container {
 	}
 }
 
-export default class ImagePlugin extends PluginPlugin {
+class ImagePlugin extends PluginPlugin {
 	constructor(params) {
 		super()
+
+		this.insertImage = this.insertImage.bind(this)
 
 		this.params = params
 	}
@@ -291,7 +299,7 @@ export default class ImagePlugin extends PluginPlugin {
 		return []
 	}
 
-	insertImage = async (event, selection) => {
+	async insertImage(event, selection) {
 		const { files } = event.target
 
 		if (files.length) {
@@ -305,3 +313,6 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 	}
 }
+
+module.exports.ImagePlugin = ImagePlugin
+module.exports.Image = Image

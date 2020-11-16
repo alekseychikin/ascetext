@@ -1,5 +1,5 @@
-import { Paragraph } from '../plugins/paragraph'
-import WithControls from './with-controls'
+const Paragraph = require('../plugins/paragraph').Paragraph
+const WithControls = require('./with-controls')
 
 const listeners = []
 let isSetAnimationRequest = false
@@ -16,7 +16,7 @@ function windowResizeHandler() {
 	}
 }
 
-export default class Widget extends WithControls {
+class Widget extends WithControls {
 	constructor(type) {
 		super(type)
 
@@ -118,3 +118,5 @@ export default class Widget extends WithControls {
 		}
 	}
 }
+
+module.exports = Widget

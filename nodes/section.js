@@ -1,9 +1,11 @@
-import Node from './node'
+const Node = require('./node')
 
-export default class Section extends Node {
+class Section extends Node {
 	constructor(type) {
 		super(type)
 
 		this.isSection = true
 	}
 }
+
+module.exports = Section

@@ -1,7 +1,6 @@
-import Component from '../../libs/component'
-import { Paragraph } from './plugins/paragraph'
-import { getNodeByElement } from './nodes/node'
-import { BreakLine } from './plugins/break-line'
+const Paragraph = require('./plugins/paragraph').Paragraph
+const getNodeByElement = require('./nodes/node').getNodeByElement
+const BreakLine = require('./plugins/break-line').BreakLine
 
 const backspaceKey = 8
 const deletekey = 46
@@ -17,8 +16,8 @@ const apple = 91
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple ]
 
-export default class Editing extends Component {
-	handleRemoveRange = () => {
+class Editing {
+	handleRemoveRange() {
 		const selection = this.core.selection
 		let item
 
@@ -44,7 +43,7 @@ export default class Editing extends Component {
 		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
 	}
 
-	updateContainer = (container) => {
+	updateContainer(container) {
 		if (container.isContainer && container.isChanged && !container.isDeleted) {
 			const anchorOffset = this.core.selection.anchorOffset
 			const focusOffset = this.core.selection.focusOffset
@@ -62,6 +61,7 @@ export default class Editing extends Component {
 
 			container.isChanged = false
 
+			console.log('updateContainer')
 			if (this.core.selection.focused) {
 				if (this.core.selection.isRange) {
 					this.core.selection.setSelection(
@@ -77,7 +77,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleBackspace = (event) => {
+	handleBackspace(event) {
 		if (this.core.selection.anchorContainer.backspaceHandler) {
 			this.core.selection.anchorContainer.backspaceHandler(event, this.core)
 		} else {
@@ -86,7 +86,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleBackspaceKeyDown = (event) => {
+	handleBackspaceKeyDown(event) {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
@@ -95,7 +95,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleDelete = (event) => {
+	handleDelete(event) {
 		if (this.previousContainer.deleteHandler) {
 			this.previousContainer.deleteHandler(event, this.core)
 		} else {
@@ -104,7 +104,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleDeleteKeyDown = (event) => {
+	handleDeleteKeyDown(event) {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
@@ -113,7 +113,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleEnterKeyDownRange = (event) => {
+	handleEnterKeyDownRange(event) {
 		event.preventDefault()
 		this.handleRemoveRange()
 
@@ -122,7 +122,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleEnterKeyDownSingle = (event) => {
+	handleEnterKeyDownSingle(event) {
 		event.preventDefault()
 
 		if (this.previousContainer.enterHandler) {
@@ -133,7 +133,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleEnterKeyDown = (event) => {
+	handleEnterKeyDown(event) {
 		if (this.core.selection.isRange) {
 			this.handleEnterKeyDownRange(event)
 		} else {
@@ -141,7 +141,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	handleModifyKeyDown = (event) => {
+	handleModifyKeyDown(event) {
 		const container = this.core.selection.anchorContainer
 
 		switch (event.keyCode) {
@@ -189,7 +189,7 @@ export default class Editing extends Component {
 		this.core.onUpdate()
 	}
 
-	onKeyDown = (event) => {
+	onKeyDown(event) {
 		if (
 			!metaKeyCodes.includes(event.keyCode) &&
 			!this.core.selection.focusedControl &&
@@ -207,7 +207,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	onSelectionChange = () => {
+	onSelectionChange() {
 		if (this.core.selection.focused) {
 			const container = this.core.selection.anchorContainer
 
@@ -227,7 +227,7 @@ export default class Editing extends Component {
 		}
 	}
 
-	wrapWithContainer = (node) => {
+	wrapWithContainer(node) {
 		let current = node
 		let next
 		let result
@@ -256,7 +256,7 @@ export default class Editing extends Component {
 		return result
 	}
 
-	onPaste = (event) => {
+	onPaste(event) {
 		const paste = (event.clipboardData || window.clipboardData).getData('text/html')
 		const doc = document.createElement('div')
 
@@ -276,7 +276,7 @@ export default class Editing extends Component {
 				this.core.update(result, anchorContainer)
 				this.core.setPosition(anchorContainer.findFirstTextElement() || anchorContainer.element, 0)
 			} else if (this.core.selection.anchorAtLastPositionInContainer) {
-				const nextContainer = layout.getNextSelectableNode(anchorContainer)
+				const nextContainer = anchorContainer.getNextSelectableNode()
 
 				anchorContainer.connect(result)
 				this.core.update(result, nextContainer)
@@ -319,10 +319,27 @@ export default class Editing extends Component {
 	}
 
 	constructor(core) {
-		super(core.node)
+		this.handleRemoveRange = this.handleRemoveRange.bind(this)
+		this.updateContainer = this.updateContainer.bind(this)
+		this.handleBackspace = this.handleBackspace.bind(this)
+		this.handleBackspaceKeyDown = this.handleBackspaceKeyDown.bind(this)
+		this.handleDelete = this.handleDelete.bind(this)
+		this.handleDeleteKeyDown = this.handleDeleteKeyDown.bind(this)
+		this.handleEnterKeyDownRange = this.handleEnterKeyDownRange.bind(this)
+		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
+		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
+		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
+		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.wrapWithContainer = this.wrapWithContainer.bind(this)
+		this.onPaste = this.onPaste.bind(this)
+
+		this.node = core.node
 		this.core = core
 		this.previousContainer = null
 
-		this.core.node.addEventListener('paste', this.onPaste)
+		this.node.addEventListener('paste', this.onPaste)
 	}
 }
+
+module.exports = Editing

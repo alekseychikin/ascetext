@@ -1,6 +1,6 @@
-import ControlControl from './control'
+const ControlControl = require('./control')
 
-export default class ControlLink extends ControlControl {
+class ControlLink extends ControlControl {
 	constructor(params) {
 		super(params)
 
@@ -12,3 +12,5 @@ export default class ControlLink extends ControlControl {
 		this.element.appendChild(document.createTextNode(params.url))
 	}
 }
+
+module.exports = ControlLink

@@ -1,13 +1,15 @@
-import Node from './node'
+const Node = require('./node')
 
-export default class WithControls extends Node {
+class WithControls extends Node {
 	constructor(type) {
 		super(type)
 
+		this.controlHandler = this.controlHandler.bind(this)
+		this.setPosition = this.setPosition.bind(this)
 		this.controls = []
 	}
 
-	setPosition = () => {
+	setPosition() {
 		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
 		const containerBoundingClientRect = this.element.getBoundingClientRect()
 		const left =
@@ -17,7 +19,7 @@ export default class WithControls extends Node {
 		this.controlsElement.style.left = left + 'px'
 	}
 
-	controlHandler = (action, event) => {
+	controlHandler(action, event) {
 		action(event, this.selection)
 
 		if (this.element) {
@@ -69,3 +71,5 @@ export default class WithControls extends Node {
 		this.removeControls()
 	}
 }
+
+module.exports = WithControls
