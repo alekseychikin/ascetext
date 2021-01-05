@@ -1,8 +1,15 @@
 const getStyle = require('./utils/getStyle')
 const getNodeByElement = require('./nodes/node').getNodeByElement
+const anyToolbarContains = require('./toolbar').anyToolbarContains
+const Toolbar = require('./toolbar')
+const createElement = require('./create-element')
+
+let counter = 0
 
 class Selection {
 	constructor(core) {
+		this.onMouseDown = this.onMouseDown.bind(this)
+		this.update = this.update.bind(this)
 		this.onAnchorContainerReplace = this.onAnchorContainerReplace.bind(this)
 		this.onFocusContainerReplace = this.onFocusContainerReplace.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
@@ -10,31 +17,53 @@ class Selection {
 		this.hideControls = this.hideControls.bind(this)
 
 		this.core = core
-		this.controls = document.createElement('div')
-		this.controls.className = 'rich-editor__controls hidden'
+		this.controls = createElement('div', {
+			'class': 'rich-editor__controls hidden'
+		})
 		this.selection = {}
 		this.focusedNodes = []
 		this.pluginControls = []
 		this.focused = false
-		this.focusedControl = false
 		this.skipUpdate = false
 		this.forceUpdate = false
 		this.renderedCustomControls = false
+		this.toolbar = new Toolbar(this.controls)
+		this.onUpdate = function () {}
+		this.anchorIndex = []
+		this.focusIndex = []
+
+		document.addEventListener('selectionchange', this.update)
+		document.addEventListener('mousedown', this.onMouseDown)
+		document.addEventListener('input', this.update)
 	}
 
-	update() {
-		// const { anchorNode: anchorElement } = document.getSelection()
-		// const pluginsContainControls = this.pluginControls.filter((control) =>
-		// 	control === anchorElement || control.contains(anchorElement)
-		// )
+	onMouseDown(event) {
+		if (this.core.node.contains(event.target)) {
+			// console.log('onMouseDown contains')
+			const anchorNode = getNodeByElement(event.target)
 
-		// if (this.controls !== anchorElement && !this.controls.contains(anchorElement) && !pluginsContainControls.length) {
-		this.updateSelection()
-		// }
+			if (anchorNode && anchorNode.isWidget) {
+				this.setSelection(anchorNode.element, 0)
+			}
+		} else {
+			// console.log('onMouseDown not contains')
+			this.update()
+		}
 	}
 
 	blur() {
+		console.log('blur')
+
 		this.focused = false
+		this.anchorContainer = null
+		this.focusContainer = null
+		this.anchorOffset = null
+		this.focusOffset = null
+		this.anchorIndex = []
+		this.focusIndex = []
+
+		this.hideControls()
+		this.blurFocusedNodes()
 
 		if (process.env.ENV === 'develop') {
 			this.core.devTool.renderSelection({
@@ -44,30 +73,35 @@ class Selection {
 		}
 	}
 
-	updateSelection() {
+	update() {
+		// console.error('updateSelection')
+
+		if (counter++ > 100) {
+			console.warn('run out')
+			return false
+		}
+
 		const selection = document.getSelection()
 		const { anchorNode: anchorElement, focusNode: focusElement, isCollapsed } = selection
 
-		if (this.controls === anchorElement || this.controls.contains(anchorElement)) {
-			this.focusedControl = true
+		// console.log('anchorElement', anchorElement, 'focusElement', focusElement)
+		// console.log(this.anchorContainer)
 
+		if (anyToolbarContains(anchorElement)) {
 			console.log('focused control')
 
 			return false
 		}
 
 		if (this.skipUpdate) {
-			this.skipUpdate = false
-
 			console.log('skip')
 
 			return false
 		}
 
-		if (!this.core.model.element.contains(anchorElement) || !this.core.model.element.contains(focusElement)) {
+		if (!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) {
+			console.log('updateSelection blur')
 			this.blur()
-
-			console.log('blur')
 
 			return false
 		}
@@ -77,6 +111,7 @@ class Selection {
 
 		anchorIndex.push(selection.anchorOffset)
 		focusIndex.push(selection.focusOffset)
+
 		this.isForwardDirection = this.getDirection(anchorIndex, focusIndex) === 'forward'
 		this.focused = true
 		this.isRange = !isCollapsed
@@ -114,14 +149,8 @@ class Selection {
 			})
 		}
 
-		if (
-			!this.forceUpdate &&
-			this.anchorContainer === anchorContainer &&
-			this.focusContainer === focusContainer &&
-			this.anchorOffset === anchorOffset &&
-			this.focusOffset === focusOffset
-		) {
-			console.log('same selection')
+		if (!this.forceUpdate && !this.isSelectionChanged(anchorIndex, focusIndex)) {
+			// console.log('same selection')
 			return false
 		}
 
@@ -139,23 +168,56 @@ class Selection {
 		this.focusContainer = focusContainer
 		this.anchorOffset = anchorOffset
 		this.focusOffset = focusOffset
+		this.anchorIndex = anchorIndex
+		this.focusIndex = focusIndex
 		this.selectedItems = []
 
 		anchorContainer.onReplace = this.onFocusContainerReplace
 		anchorContainer.onReplace = this.onAnchorContainerReplace
 
 		if (this.isRange) {
-			if (this.anchorContainer.isChanged || this.focusContainer.isChanged) {
+			if (this.anchorContainer.isChanged) {
+				// this.skipUpdate = true
+				console.log('update anchor in range')
 				this.core.editing.updateContainer(this.anchorContainer)
-				this.core.editing.updateContainer(this.focusContainer)
+				// this.skipUpdate = false
 			}
 
-			this.setSelectedRange()
+			if (this.focusContainer.isChanged) {
+				this.skipUpdate = true
+				this.core.editing.updateContainer(this.focusContainer)
+				// this.skipUpdate = false
+			}
+
+			this.setSelectedItems()
 		} else {
 			this.handleFocusedElement()
 		}
 
 		this.updateToolbar()
+		this.onUpdate()
+	}
+
+	isSelectionChanged(anchorIndex, focusIndex) {
+		let i
+
+		if (anchorIndex.length !== this.anchorIndex.length || focusIndex.length !== this.focusIndex.length) {
+			return true
+		}
+
+		for (i = 0; i < anchorIndex.length; i++) {
+			if (anchorIndex[i] !== this.anchorIndex[i]) {
+				return true
+			}
+		}
+
+		for (i = 0; i < focusIndex.length; i++) {
+			if (focusIndex[i] !== this.focusIndex[i]) {
+				return true
+			}
+		}
+
+		return false
 	}
 
 	onAnchorContainerReplace(replacement) {
@@ -191,8 +253,10 @@ class Selection {
 		}
 	}
 
-	restoreSelection() {
-		this.forceUpdate = true
+	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
+	restoreSelection(forceUpdate = true) {
+		console.log('restoreSelection')
+		this.forceUpdate = forceUpdate
 		this.setSelection(
 			this.anchorContainer.element,
 			this.anchorOffset,
@@ -357,7 +421,8 @@ class Selection {
 		return indexes
 	}
 
-	setSelectedRange() {
+	setSelectedItems() {
+		console.log('setSelectedItems')
 		const { anchorTail, focusTail, anchorFirstLevelNode, focusFirstLevelNode } = this.cutRange()
 		const anchorContainer = this.isForwardDirection ? this.anchorContainer : this.focusContainer
 		const focusContainer = this.isForwardDirection ? this.focusContainer : this.anchorContainer
@@ -409,12 +474,16 @@ class Selection {
 		} while (current && current !== finish)
 
 		this.selectedItems = selectedItems
+		this.blurFocusedNodes()
+	}
 
+	blurFocusedNodes() {
 		this.focusedNodes.forEach((node) => {
 			if (typeof node.onBlur === 'function') {
 				node.onBlur()
 			}
 		})
+
 		this.focusedNodes = []
 	}
 
@@ -571,6 +640,10 @@ class Selection {
 
 	showControls() {
 		const container = this.anchorContainer
+		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
+		const containerBoundingClientRect = container.element.getBoundingClientRect()
+		const offsetTop = containerBoundingClientRect.top + scrollTop
+		const offsetLeft = containerBoundingClientRect.left
 
 		if (!this.isShowControls) {
 			const styles = getStyle(container.element)
@@ -606,9 +679,12 @@ class Selection {
 
 		const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
 
-		this.core.node.appendChild(this.controls)
-		this.controls.style.top = selectedText.offsetTop + container.element.offsetTop - 10 + 'px'
-		this.controls.style.left = selectedText.offsetLeft + container.element.offsetLeft + selectedText.offsetWidth / 2 - this.controls.offsetWidth / 2 + 'px'
+		document.body.appendChild(this.controls)
+		this.controls.style.top = offsetTop + selectedText.offsetTop - 10 + 'px'
+		this.controls.style.left = offsetLeft +
+			selectedText.offsetLeft +
+			selectedText.offsetWidth / 2 -
+			this.controls.offsetWidth / 2 + 'px'
 		this.controls.classList.remove('hidden')
 	}
 
@@ -617,7 +693,7 @@ class Selection {
 			this.controls.classList.add('hidden')
 			this.containerAvatar && this.containerAvatar.parentNode.removeChild(this.containerAvatar)
 			this.isShowControls = false
-			this.core.node.removeChild(this.controls)
+			document.body.removeChild(this.controls)
 		}
 	}
 

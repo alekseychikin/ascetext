@@ -4,7 +4,6 @@ const Section = require('./nodes/section')
 const Selection = require('./selection')
 const Navigation = require('./navigation')
 const Editing = require('./editing')
-const Toolbar = require('./toolbar')
 
 class Root extends Section {
 	constructor(element, onUpdate) {
@@ -16,43 +15,38 @@ class Root extends Section {
 }
 
 class RichEditor {
-	onKeyDown(event) {
-		if (this.selection.focused) {
-			this.editing.onKeyDown(event)
+	constructor(node, plugins) {
+		let children
+
+		this.parse = this.parse.bind(this)
+		this.stringify = this.stringify.bind(this)
+		this.onUpdate = this.onUpdate.bind(this)
+
+		this.node = node
+		this.plugins = plugins
+		this.model = new Root(node, this.onUpdate)
+		// this.navigation = new Navigation(this)
+		this.editing = new Editing(this)
+		this.selection = new Selection(this)
+		this.selection.onUpdate = this.editing.onSelectionChange
+
+		const container = document.createElement('div')
+
+		while (node.childNodes.length) {
+			container.appendChild(node.childNodes[0])
 		}
-	}
 
-	onInput() {
-		this.updateSelection()
-	}
-
-	onMouseDown(event) {
-		if (this.model.element.contains(event.target)) {
-			const anchorNode = getNodeByElement(event.target)
-
-			if (anchorNode && anchorNode.isWidget) {
-				this.selection.setSelection(anchorNode.element, 0)
-			}
+		if (children = this.parse(
+			container.firstChild,
+			container.lastChild
+		)) {
+			console.log('children', children)
+			this.model.append(children)
 		} else {
-			this.onBlur()
+			console.log('empty holder container')
 		}
-	}
 
-	onSelectionChange() {
-		this.updateSelection()
-	}
-
-	updateSelection() {
-		this.selection.update()
-		// this.toolbar.update()
-		this.editing.onSelectionChange()
-	}
-
-	onBlur() {
-		// console.log('onBlur')
-		this.selection.blur()
-		// this.toolbar.update()
-		this.editing.onSelectionChange()
+		this.node.setAttribute('contenteditable', true)
 	}
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {
@@ -167,50 +161,6 @@ class RichEditor {
 		}
 	}
 
-	constructor(node, plugins) {
-		let children
-
-		this.onKeyDown = this.onKeyDown.bind(this)
-		this.onInput = this.onInput.bind(this)
-		this.onMouseDown = this.onMouseDown.bind(this)
-		this.onSelectionChange = this.onSelectionChange.bind(this)
-		this.updateSelection = this.updateSelection.bind(this)
-		this.onBlur = this.onBlur.bind(this)
-		this.parse = this.parse.bind(this)
-		this.stringify = this.stringify.bind(this)
-		this.onUpdate = this.onUpdate.bind(this)
-
-		this.node = node
-		this.plugins = plugins
-		this.model = new Root(node, this.onUpdate)
-		// this.navigation = new Navigation(this)
-		this.editing = new Editing(this)
-		this.selection = new Selection(this)
-		// this.toolbar = new Toolbar(this)
-
-		const container = document.createElement('div')
-
-		while (node.childNodes.length) {
-			container.appendChild(node.childNodes[0])
-		}
-
-		if (children = this.parse(
-			container.firstChild,
-			container.lastChild
-		)) {
-			console.log('children', children)
-			this.model.append(children)
-		} else {
-			console.log('empty holder container')
-		}
-
-		this.node.setAttribute('contenteditable', true)
-		document.addEventListener('selectionchange', this.onSelectionChange)
-		document.addEventListener('mousedown', this.onMouseDown)
-		document.addEventListener('keydown', this.onKeyDown)
-		document.addEventListener('input', this.onInput)
-	}
-
 	getContent() {
 		this.editing.saveChanges()
 
@@ -219,8 +169,8 @@ class RichEditor {
 
 	destroy() {
 		this.node.setAttribute('contenteditable', false)
-		this.node.removeEventListener('keydown', this.onKeyDown)
-		this.node.removeEventListener('mouseup', this.onMouseUp)
+		// this.node.removeEventListener('keydown', this.onKeyDown)
+		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
 }
 
