@@ -1,12 +1,33 @@
 const Node = require('./node')
 
+const listeners = []
+let isSetAnimationRequest = false
+
+function animationFrameHandler() {
+	isSetAnimationRequest = false
+	listeners.forEach((listener) => listener())
+}
+
+function windowResizeHandler() {
+	if (!isSetAnimationRequest) {
+		isSetAnimationRequest = true
+		requestAnimationFrame(animationFrameHandler)
+	}
+}
+
 class WithControls extends Node {
 	constructor(type) {
 		super(type)
 
 		this.controlHandler = this.controlHandler.bind(this)
 		this.setPosition = this.setPosition.bind(this)
+		this.onMouseDown = this.onMouseDown.bind(this)
+
 		this.controls = []
+	}
+
+	onMouseDown() {
+		this.selection.focusedControl = true
 	}
 
 	setPosition() {
@@ -39,6 +60,7 @@ class WithControls extends Node {
 		if (!this.controlsElement) {
 			this.controlsElement = document.createElement('div')
 			this.controlsElement.className = 'rich-editor__controls'
+			this.controlsElement.addEventListener('mousedown', this.onMouseDown)
 		}
 
 		controls.forEach((control) => {
@@ -69,6 +91,24 @@ class WithControls extends Node {
 
 	onDelete() {
 		this.removeControls()
+	}
+
+	addResizeEventListener(listener) {
+		if (!listeners.length) {
+			document.body.addEventListener('keydown', windowResizeHandler)
+			window.addEventListener('resize', windowResizeHandler)
+		}
+
+		listeners.push(listener)
+	}
+
+	removeResizeEventListener(listener) {
+		listeners.splice(listeners.indexOf(listener), 1)
+
+		if (!listeners.length) {
+			window.removeEventListener('resize', windowResizeHandler)
+			document.body.removeEventListener('keydown', windowResizeHandler)
+		}
 	}
 }
 
