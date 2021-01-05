@@ -13,10 +13,35 @@ const shiftKey = 16
 const ctrlKey = 17
 const optionKey = 18
 const apple = 91
+const esc = 27
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
-const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple ]
+const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
 
 class Editing {
+	constructor(core) {
+		this.handleRemoveRange = this.handleRemoveRange.bind(this)
+		this.updateContainer = this.updateContainer.bind(this)
+		this.handleBackspace = this.handleBackspace.bind(this)
+		this.handleBackspaceKeyDown = this.handleBackspaceKeyDown.bind(this)
+		this.handleDelete = this.handleDelete.bind(this)
+		this.handleDeleteKeyDown = this.handleDeleteKeyDown.bind(this)
+		this.handleEnterKeyDownRange = this.handleEnterKeyDownRange.bind(this)
+		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
+		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
+		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
+		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.wrapWithContainer = this.wrapWithContainer.bind(this)
+		this.onPaste = this.onPaste.bind(this)
+
+		this.node = core.node
+		this.core = core
+		this.previousContainer = null
+
+		this.node.addEventListener('paste', this.onPaste)
+		document.addEventListener('keydown', this.onKeyDown)
+	}
+
 	handleRemoveRange() {
 		const selection = this.core.selection
 		let item
@@ -45,10 +70,6 @@ class Editing {
 
 	updateContainer(container) {
 		if (container.isContainer && container.isChanged && !container.isDeleted) {
-			const anchorOffset = this.core.selection.anchorOffset
-			const focusOffset = this.core.selection.focusOffset
-			const anchorContainer = this.core.selection.anchorContainer
-			const focusContainer = this.core.selection.focusContainer
 			const content = this.core.parse(container.firstChild, container.lastChild, {
 				parsingContainer: true
 			})
@@ -60,19 +81,10 @@ class Editing {
 			}
 
 			container.isChanged = false
-
 			console.log('updateContainer')
+
 			if (this.core.selection.focused) {
-				if (this.core.selection.isRange) {
-					this.core.selection.setSelection(
-						anchorContainer.element,
-						anchorOffset,
-						focusContainer.element,
-						focusOffset
-					)
-				} else {
-					this.core.selection.setSelection(anchorContainer.element, anchorOffset)
-				}
+				this.core.selection.restoreSelection(false)
 			}
 		}
 	}
@@ -157,7 +169,7 @@ class Editing {
 				}
 
 				this.handleBackspaceKeyDown(event)
-				this.core.updateSelection()
+				this.core.selection.update()
 				break
 			case deletekey:
 				if (
@@ -171,7 +183,7 @@ class Editing {
 				}
 
 				this.handleDeleteKeyDown(event)
-				this.core.updateSelection()
+				this.core.selection.update()
 				break
 			case enterKey:
 				if (
@@ -191,8 +203,9 @@ class Editing {
 
 	onKeyDown(event) {
 		if (
+			this.core.selection.focused &&
 			!metaKeyCodes.includes(event.keyCode) &&
-			!this.core.selection.focusedControl &&
+			this.core.node.contains(event.target) &&
 			!event.metaKey && !event.altKey
 		) {
 			if (modifyKeyCodes.includes(event.keyCode)) {
@@ -316,29 +329,6 @@ class Editing {
 			this.updateContainer(this.previousContainer)
 			this.previousContainer = null
 		}
-	}
-
-	constructor(core) {
-		this.handleRemoveRange = this.handleRemoveRange.bind(this)
-		this.updateContainer = this.updateContainer.bind(this)
-		this.handleBackspace = this.handleBackspace.bind(this)
-		this.handleBackspaceKeyDown = this.handleBackspaceKeyDown.bind(this)
-		this.handleDelete = this.handleDelete.bind(this)
-		this.handleDeleteKeyDown = this.handleDeleteKeyDown.bind(this)
-		this.handleEnterKeyDownRange = this.handleEnterKeyDownRange.bind(this)
-		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
-		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
-		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
-		this.onKeyDown = this.onKeyDown.bind(this)
-		this.onSelectionChange = this.onSelectionChange.bind(this)
-		this.wrapWithContainer = this.wrapWithContainer.bind(this)
-		this.onPaste = this.onPaste.bind(this)
-
-		this.node = core.node
-		this.core = core
-		this.previousContainer = null
-
-		this.node.addEventListener('paste', this.onPaste)
 	}
 }
 
