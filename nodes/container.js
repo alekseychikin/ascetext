@@ -2,6 +2,7 @@ const Node = require('./node')
 const getNodeByElement = require('./node')
 const paragraphPackage = require('../plugins/paragraph')
 const BreakLine = require('../plugins/break-line').BreakLine
+const Toolbar = require('../toolbar')
 
 class Container extends Node {
 	constructor(type) {
@@ -11,6 +12,7 @@ class Container extends Node {
 		this.hideToolbar = this.hideToolbar.bind(this)
 		this.showToolbar = this.showToolbar.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
+		this.onMouseDown = this.onMouseDown.bind(this)
 
 		this.isContainer = true
 		this.isChanged = false
@@ -23,6 +25,10 @@ class Container extends Node {
 		this.element = element
 
 		this.append(new BreakLine())
+	}
+
+	onMouseDown() {
+		this.selection.focusedControl = true
 	}
 
 	enterHandler(event, core) {
@@ -196,7 +202,11 @@ class Container extends Node {
 
 	onDelete() {
 		if (this.toolbar) {
-			this.toolbar.parentNode.removeChild(this.toolbar)
+			if (this.toolbar.parentNode) {
+				this.toolbar.parentNode.removeChild(this.toolbar)
+			}
+
+			this.toolbarInstance.destroy()
 		}
 	}
 
@@ -224,10 +234,17 @@ class Container extends Node {
 
 	showToolbar() {
 		const container = this.selection.anchorContainer
+
+		if (!container.parent.isSection) {
+			return false
+		}
+
 		const containerBoundingClientRect = container.element.getBoundingClientRect()
 		let controls = []
 		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
 		const { plugins } = this.selection.core
+		const offsetTop = containerBoundingClientRect.top + scrollTop
+		const offsetLeft = containerBoundingClientRect.left
 
 		this.controls.innerHTML = ''
 
@@ -254,8 +271,8 @@ class Container extends Node {
 		if (controls.length) {
 			this.toolbar.classList.remove('hidden')
 			this.isShowToolbar = true
-			this.toolbar.style.top = this.element.offsetTop + 'px'
-			this.toolbar.style.left = this.element.offsetLeft + 'px'
+			this.toolbar.style.top = offsetTop + 'px'
+			this.toolbar.style.left = offsetLeft + 'px'
 		} else {
 			this.toolbar.classList.add('hidden')
 			this.isShowToolbar = false
@@ -271,7 +288,7 @@ class Container extends Node {
 			})
 	}
 
-	createControls(...params) {
+	createControls() {
 		this.toolbar = document.createElement('div')
 		this.toolbar.contentEditable = false
 		this.toolbar.className = 'rich-editor__toolbar hidden'
@@ -283,7 +300,9 @@ class Container extends Node {
 
 		this.toolbar.appendChild(this.controlsToggler)
 		this.toolbar.appendChild(this.controls)
+		this.toolbar.addEventListener('mousedown', this.onMouseDown)
 		this.controlsToggler.addEventListener('click', this.toggleControls)
+		this.toolbarInstance = new Toolbar(this.toolbar)
 	}
 }
 
