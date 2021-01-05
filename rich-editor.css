@@ -146,3 +146,19 @@
 [data-widget][data-selected] {
 	box-shadow: 0 0 0 2px #2C276A;
 }
+
+.rich-editor__image-control {
+	position: absolute;
+	border: 1px dashed #000;
+	font-size: 0;
+}
+
+.rich-editor__image-control-input {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	opacity: 0;
+	cursor: pointer;
+}

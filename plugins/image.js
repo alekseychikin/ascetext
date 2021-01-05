@@ -5,6 +5,7 @@ const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
 const ControlFile = require('../controls/file')
 const createElement = require('../create-element')
+const Toolbar = require('../toolbar')
 
 class Image extends Widget {
 	toggleFloatLeft() {
@@ -54,25 +55,41 @@ class Image extends Widget {
 		this.controls = [
 			new ControlButton({
 				label: 'Обтекание справа',
-				icon: 'image-left',
+				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M11 4H15V5H11V4ZM8 5H2V11H8V5ZM2 4H1V5V11V12H2H8H9V11V5V4H8H2ZM13 6H11V7H13V6Z" fill="white"/>\
+<path d="M13 11H11V12H13V11Z" fill="white"/>\
+<path d="M15 9H11V10H15V9Z" fill="white"/>\
+<path d="M5 1H13V2H5V1Z" fill="white"/>\
+<path d="M5 14H13V15H5V14Z" fill="white"/>\
+</svg>',
 				selected: (image) => image.float === 'left',
 				action: this.toggleFloatLeft
 			}),
 			new ControlButton({
 				label: 'Обтекание слева',
-				icon: 'image-right',
+				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M1 4H5V5H1V4ZM14 5H8V11H14V5ZM8 4H7V5V11V12H8H14H15V11V5V4H14H8ZM3 6H1V7H3V6Z" fill="white"/>\
+<path d="M3 11H1V12H3V11Z" fill="white"/>\
+<path d="M5 9H1V10H5V9Z" fill="white"/>\
+<path d="M3 1H11V2H3V1Z" fill="white"/>\
+<path d="M3 14H11V15H3V14Z" fill="white"/>\
+</svg>',
 				selected: (image) => image.float === 'right',
 				action: this.toggleFloatRight
 			}),
 			new ControlButton({
 				label: 'Широкая картинка',
-				icon: 'image-wide',
+				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
+</svg>',
 				selected: (image) => image.size === 'wide',
 				action: this.toggleSizeWide
 			}),
 			new ControlButton({
 				label: 'Банер',
-				icon: 'image-banner',
+				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
+</svg>',
 				selected: (image) => image.size === 'banner',
 				action: this.toggleSizeBanner
 			})
@@ -145,23 +162,23 @@ class Image extends Widget {
 		this.selection = selection
 		this.input = document.createElement('input')
 		this.control = document.createElement('label')
-		this.control.className = 'content-columns__image-control'
+		this.control.className = 'rich-editor__image-control'
 		this.input.type = 'file'
-		this.input.className = 'content-columns__image-control-input'
+		this.input.className = 'rich-editor__image-control-input'
 		content.appendChild(document.createTextNode('Загрузить фотографию'))
 		this.control.appendChild(content)
 		this.control.appendChild(this.input)
 		document.body.appendChild(this.control)
 		this.input.addEventListener('change', this.onInputFileChange)
 		this.addResizeEventListener(this.updateControlPosition)
-		// this.selection.addPluginControl(this.control)
+		this.toolbar = new Toolbar(this.control)
 	}
 
 	removeControl() {
 		if (this.control) {
 			this.input.removeEventListener('change', this.onInputFileChange)
 			this.control.parentNode.removeChild(this.control)
-			// this.selection.removePluginControl(this.control)
+			this.toolbar.destroy()
 
 			delete this.input
 			delete this.control
@@ -173,14 +190,13 @@ class Image extends Widget {
 	updateControlPosition() {
 		setTimeout(() => {
 			if (this.control) {
-				console.log(this.image)
-				// const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
-				// const imageBoundingClientRect = this.image.getBoundingClientRect()
+				const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
+				const imageBoundingClientRect = this.element.getBoundingClientRect()
 
-				// this.control.style.top = imageBoundingClientRect.top + scrollTop + 'px'
-				// this.control.style.left = imageBoundingClientRect.left + 'px'
-				// this.control.style.width = this.image.offsetWidth + 'px'
-				// this.control.style.height = this.image.offsetHeight + 'px'
+				this.control.style.top = imageBoundingClientRect.top + scrollTop + 'px'
+				this.control.style.left = imageBoundingClientRect.left + 'px'
+				this.control.style.width = this.element.offsetWidth + 'px'
+				this.control.style.height = this.element.offsetHeight + 'px'
 			}
 		}, 1)
 	}
@@ -290,7 +306,9 @@ class ImagePlugin extends PluginPlugin {
 			return [
 				new ControlFile({
 					label: 'Вставить картинку',
-					icon: 'image',
+					icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M22.5 4.5H1.5V19.5H22.5V4.5ZM21 6H3V18H21V6ZM14.25 10.1893L14.7803 10.7197L19.2803 15.2197L18.2197 16.2803L14.25 12.3107L11.7803 14.7803L11.25 15.3107L10.7197 14.7803L9 13.0607L5.78033 16.2803L4.71967 15.2197L8.46967 11.4697L9 10.9393L9.53033 11.4697L11.25 13.1893L13.7197 10.7197L14.25 10.1893ZM10.5 10.5C11.3284 10.5 12 9.82843 12 9C12 8.17157 11.3284 7.5 10.5 7.5C9.67157 7.5 9 8.17157 9 9C9 9.82843 9.67157 10.5 10.5 10.5Z" fill="#fff"/>\
+</svg>',
 					action: this.insertImage
 				})
 			]
