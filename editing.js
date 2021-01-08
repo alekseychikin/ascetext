@@ -57,7 +57,7 @@ class Editing {
 				item.isContainer && item.parent.isSection ||
 				item.isWidget && item.parent.isSection
 			) {
-				item.delete()
+				item.cut()
 			}
 		}
 
@@ -70,15 +70,15 @@ class Editing {
 
 	updateContainer(container) {
 		if (container.isContainer && container.isChanged && !container.isDeleted) {
-			const content = this.core.parse(container.firstChild, container.lastChild, {
+			let content = this.core.parse(container.firstChild, container.lastChild, {
 				parsingContainer: true
 			})
 
-			container.clearChildren(container.first)
-
-			if (content) {
-				container.append(content)
+			if (!content) {
+				content = new BreakLine()
 			}
+
+			container.first.replaceUntil(content)
 
 			container.isChanged = false
 			console.log('updateContainer')
@@ -225,18 +225,14 @@ class Editing {
 			const container = this.core.selection.anchorContainer
 
 			if (!this.core.selection.isRange && container !== this.previousContainer) {
-				if (this.previousContainer) {
-					this.updateContainer(this.previousContainer)
-				}
+				this.saveChanges()
 
 				this.previousContainer = container
 			}
 		} else {
-			if (this.previousContainer) {
-				this.updateContainer(this.previousContainer)
+			this.saveChanges()
 
-				this.previousContainer = null
-			}
+			this.previousContainer = null
 		}
 	}
 
@@ -282,7 +278,7 @@ class Editing {
 			const anchorContainer = this.core.selection.anchorContainer
 
 			if (this.core.selection.anchorAtFirstPositionInContainer && this.core.selection.anchorAtLastPositionInContainer) {
-				anchorContainer.replaceWith(result, anchorContainer.next)
+				anchorContainer.replaceWith(result, anchorContainer)
 				this.core.update(result, anchorContainer.next)
 			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
 				anchorContainer.preconnect(result)
@@ -327,7 +323,6 @@ class Editing {
 	saveChanges() {
 		if (this.previousContainer) {
 			this.updateContainer(this.previousContainer)
-			this.previousContainer = null
 		}
 	}
 }

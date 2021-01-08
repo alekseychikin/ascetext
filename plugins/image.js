@@ -326,7 +326,7 @@ class ImagePlugin extends PluginPlugin {
 			const caption = new ImageCaption()
 
 			image.append(caption)
-			selection.anchorContainer.replaceWith(image, selection.anchorContainer.next)
+			selection.anchorContainer.replaceUntil(image, selection.anchorContainer)
 			selection.restoreSelection()
 		}
 	}

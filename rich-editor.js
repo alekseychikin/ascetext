@@ -11,6 +11,7 @@ class Root extends Section {
 
 		this.element = element
 		this.onUpdate = onUpdate
+		this.isMount = true
 	}
 }
 
@@ -92,7 +93,7 @@ class RichEditor {
 			next = result.getLastNode()
 
 			if (next.type === 'breakLine' && next.previous && next.previous.type !== 'breakLine' && result !== next) {
-				next.delete()
+				next.cut()
 			}
 		}
 
@@ -111,7 +112,7 @@ class RichEditor {
 				current.type === next.type && current.normalize &&
 				(normalized = current.normalize(next))
 			) {
-				current.replaceWith(normalized)
+				current.replaceUntil(normalized)
 
 				if (result === current) {
 					result = normalized

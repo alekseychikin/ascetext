@@ -73,7 +73,7 @@ class HeaderPlugin extends PluginPlugin {
 					const header = new Header(level)
 
 					header.append(container.first)
-					container.replaceWith(header, container.next)
+					container.replaceUntil(header, container)
 				}
 			})
 		}

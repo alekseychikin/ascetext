@@ -227,7 +227,7 @@ class ListPlugin extends PluginPlugin {
 		const listItem = new ListItem()
 
 		list.append(listItem)
-		selection.anchorContainer.replaceWith(list, selection.anchorContainer.next)
+		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)
 		selection.restoreSelection()
 	}
 
@@ -236,7 +236,7 @@ class ListPlugin extends PluginPlugin {
 		const listItem = new ListItem()
 
 		list.append(listItem)
-		selection.anchorContainer.replaceWith(list, selection.anchorContainer.next)
+		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)
 		selection.restoreSelection()
 	}
 }

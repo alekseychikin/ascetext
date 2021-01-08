@@ -24,6 +24,7 @@ class Node {
 		this.isSection = false
 		this.isGroup = false
 		this.isDeleteEmpty = false
+		this.isMount = false
 
 		mapElementToNode.push(this)
 	}
@@ -62,7 +63,7 @@ class Node {
 			this.first === this.last &&
 			this.first.type === 'breakLine'
 		) {
-			this.first.delete()
+			this.first.cut()
 		}
 
 		while (current) {
@@ -70,6 +71,16 @@ class Node {
 			this.last = current
 
 			this.element.appendChild(current.element)
+
+			if (this.isMount) {
+				if (current.onMount) {
+					current.onMount()
+				}
+
+				current.isMount = true
+				this.childrenOmitOnMount(current.first)
+			}
+
 			current = current.next
 		}
 
@@ -117,10 +128,20 @@ class Node {
 			this.first === this.last &&
 			this.first.type === 'breakLine'
 		) {
-			this.first.delete()
+			this.first.cut()
 		}
 
 		this.element.appendChild(node.element)
+
+		if (this.isMount) {
+			if (node.onMount) {
+				node.onMount()
+			}
+
+			node.isMount = true
+			this.childrenOmitOnMount(node.first)
+		}
+
 		this.emitOnUpdate()
 	}
 
@@ -142,6 +163,15 @@ class Node {
 			if (this.parent) {
 				last.parent = this.parent
 				this.parent.element.insertBefore(last.element, this.element)
+
+				if (this.parent.isMount) {
+					if (last.onMount) {
+						last.onMount()
+					}
+
+					last.isMount = true
+					this.childrenOmitOnMount(last.first)
+				}
 			}
 
 			if (!last.next) {
@@ -177,10 +207,6 @@ class Node {
 			delete node.parent.last
 		}
 
-		if (this.parent) {
-			node.parent = this.parent
-		}
-
 		do {
 			if (this.parent) {
 				last.parent = this.parent
@@ -189,6 +215,15 @@ class Node {
 					this.parent.element.insertBefore(last.element, this.next.element)
 				} else {
 					this.parent.element.appendChild(last.element)
+				}
+
+				if (this.parent.isMount) {
+					if (last.onMount) {
+						last.onMount()
+					}
+
+					last.isMount = true
+					this.childrenOmitOnMount(last.first)
 				}
 			}
 
@@ -211,62 +246,58 @@ class Node {
 		this.emitOnUpdate()
 	}
 
-	delete() {
-		const parent = this.parent
-		let current = this.first
-		let next
+	cut() {
+		this.cutUntil(this)
+	}
 
-		if (this.isDeleted) {
-			return
+	cutUntil(nodeUntil) {
+		const last = this.getNodeUntil(nodeUntil)
+		const parent = this.parent
+		let current = this
+
+		if (current.previous) {
+			if (current.parent && current.parent.last === last) {
+				current.parent.last = current.previous
+			}
+
+			if (last.next) {
+				current.previous.next = last.next
+				last.next.previous = current.previous
+			} else {
+				delete current.previous.next
+			}
+		} else if (last.next) {
+			if (current.parent) {
+				current.parent.first = last.next
+			}
+
+			delete last.next.previous
+		} else if (current.parent) {
+			delete current.parent.first
+			delete current.parent.last
 		}
 
-		this.isDeleted = true
+		delete current.previous
+		delete last.next
 
 		while (current) {
-			next = current.next
-			current.delete()
-			current = next
-		}
-
-		if (this.previous) {
-			if (this.next) {
-				this.previous.next = this.next
-				this.next.previous = this.previous
-			} else {
-				delete this.previous.next
-
-				if (this.parent) {
-					this.parent.last = this.previous
-				}
+			if (current.element.parentNode) {
+				current.element.parentNode.removeChild(current.element)
 			}
-		} else if (this.next) {
-			delete this.next.previous
 
-			if (this.parent) {
-				this.parent.first = this.next
+			if (current.onUnmount) {
+				current.onUnmount()
 			}
-		} else if (this.parent) {
-			delete this.parent.first
-			delete this.parent.last
-		}
 
-		if (this.element && this.element.parentNode) {
-			this.element.parentNode.removeChild(this.element)
-		}
+			current.isMount = false
+			this.childrenOmitOnUnmount(current.first)
+			delete current.parent
 
-		mapElementToNode.splice(mapElementToNode.indexOf(this), 1)
+			if (current === last) {
+				break
+			}
 
-		if (this.parent && this.parent.isDeleteEmpty && !this.parent.first) {
-			this.parent.delete()
-		}
-
-		delete this.element
-		delete this.parent
-		delete this.previous
-		delete this.next
-
-		if (this.onDelete) {
-			this.onDelete()
+			current = current.next
 		}
 
 		if (parent) {
@@ -274,7 +305,57 @@ class Node {
 		}
 	}
 
-	replaceWith(newNode, replaceUntil) {
+	childrenOmitOnMount(node) {
+		let current = node
+
+		while (current) {
+			if (!current.isMount) {
+				if (current.onMount) {
+					current.onMount()
+				}
+
+				current.isMount = true
+				this.childrenOmitOnMount(current.first)
+			}
+
+			current = current.next
+		}
+	}
+
+	childrenOmitOnUnmount(node) {
+		let current = node
+
+		while (current) {
+			if (current.onUnmount) {
+				current.onUnmount()
+			}
+
+			current.isMount = false
+			this.childrenOmitOnUnmount(current.first)
+
+			current = current.next
+		}
+	}
+
+	getNodeUntil(nodeUntil) {
+		let current = this
+
+		while (current.next) {
+			if (current === nodeUntil) {
+				return current
+			}
+
+			current = current.next
+		}
+
+		return current
+	}
+
+	replace(newNode) {
+		this.replaceUntil(newNode, this)
+	}
+
+	replaceUntil(newNode, replaceUntil) {
 		let node = this
 		let next
 
@@ -284,43 +365,15 @@ class Node {
 			this.preconnect(newNode)
 		}
 
-		while (node) {
-			if (node === replaceUntil) {
-				break
-			}
-
-			next = node.next
-			node.delete()
-			node = next
-		}
+		node.cutUntil(replaceUntil)
 
 		if (this.onReplace) {
 			this.onReplace(newNode)
 		}
 	}
 
-	clearChildren(first) {
-		let current = first
-		let next
-
-		while (current) {
-			next = current.next
-			current.delete()
-			current = next
-		}
-
-		if (
-			!this.isContainer || !(
-				this.element.firstChild &&
-				this.element.firstChild === this.element.lastChild &&
-				this.element.firstChild.nodeType === 1 &&
-				this.element.firstChild.tagName.toLowerCase() === 'br'
-			)
-		) {
-			while (this.element.childNodes.length) {
-				this.element.removeChild(this.element.childNodes[0])
-			}
-		}
+	get isEmpty() {
+		return !this.first || this.isContainer && this.first === this.last && this.first.type === 'br'
 	}
 
 	getClosestContainer() {

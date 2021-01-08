@@ -84,7 +84,7 @@ class Container extends Node {
 	// 		element.next && element.type === element.next.type && element.normalize &&
 	// 		(normalized = element.normalize(element.next))
 	// 	) {
-	// 		element.replaceWith(normalized, element.next.next)
+	// 		element.replaceUntil(normalized, element.next)
 
 	// 		return normalized
 	// 	}
@@ -107,7 +107,7 @@ class Container extends Node {
 			}
 
 			if (core.selection.anchorAtLastPositionInContainer) {
-				container.delete()
+				container.cut()
 
 				if (previousSelectableNode.isContainer) {
 					const offset = previousSelectableNode.getOffset()
@@ -121,7 +121,7 @@ class Container extends Node {
 					const offset = previousSelectableNode.getOffset()
 
 					if (!offset) {
-						previousSelectableNode.delete()
+						previousSelectableNode.cut()
 						core.selection.setSelection(container.element, 0)
 					} else {
 						if (container.first) {
@@ -129,7 +129,7 @@ class Container extends Node {
 							previousSelectableNode.append(container.first)
 						}
 
-						container.delete()
+						container.cut()
 
 						core.selection.setSelection(previousSelectableNode.element, offset)
 					}
@@ -157,7 +157,7 @@ class Container extends Node {
 			}
 
 			if (core.selection.anchorAtFirstPositionInContainer) {
-				container.delete()
+				container.cut()
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
 					core.selection.setSelection(nextSelectableNode.element, 0)
@@ -177,7 +177,7 @@ class Container extends Node {
 						container.append(nextSelectableNode.first)
 					}
 
-					nextSelectableNode.delete()
+					nextSelectableNode.cut()
 
 					core.selection.setSelection(container.element, offset)
 				} else if (nextSelectableNode.isWidget) {

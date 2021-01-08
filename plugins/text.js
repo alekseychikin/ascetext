@@ -176,7 +176,7 @@ class TextPlugin extends PluginPlugin {
 				const { style } = item
 				const replacementItem = new Text(item.content, { style })
 
-				item.replaceWith(replacementItem, item.next)
+				item.replaceUntil(replacementItem, item)
 			}
 		})
 	}
@@ -187,7 +187,7 @@ class TextPlugin extends PluginPlugin {
 				const { style } = item
 				const replacementItem = new Text(item.content, { style, weight: 'bold' })
 
-				item.replaceWith(replacementItem, item.next)
+				item.replaceUntil(replacementItem, item)
 			}
 		})
 	}
@@ -198,7 +198,7 @@ class TextPlugin extends PluginPlugin {
 				const { weight } = item
 				const replacementItem = new Text(item.content, { weight })
 
-				item.replaceWith(replacementItem, item.next)
+				item.replaceUntil(replacementItem, item)
 			}
 		})
 	}
@@ -209,7 +209,7 @@ class TextPlugin extends PluginPlugin {
 				const { weight } = item
 				const replacementItem = new Text(item.content, { weight, style: 'italic' })
 
-				item.replaceWith(replacementItem, item.next)
+				item.replaceUntil(replacementItem, item)
 			}
 		})
 	}

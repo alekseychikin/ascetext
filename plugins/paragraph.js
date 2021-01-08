@@ -63,7 +63,7 @@ class ParagraphPlugin extends PluginPlugin {
 				const paragraph = new Paragraph()
 
 				paragraph.append(container.first)
-				container.replaceWith(paragraph, container.next)
+				container.replaceUntil(paragraph, container)
 			}
 		})
 	}

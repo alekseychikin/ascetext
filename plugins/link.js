@@ -66,7 +66,7 @@ class Link extends InlineWidget {
 					last && element.first && last.type === element.first.type && last.normalize &&
 					(normalized = last.normalize(element.first))
 				) {
-					last.replaceWith(normalized, element.first.next)
+					last.replaceUntil(normalized, element.first)
 
 					if (element.first.next) {
 						normalized.connect(element.first.next)

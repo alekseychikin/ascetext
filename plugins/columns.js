@@ -12,7 +12,7 @@ class Columns extends Widget {
 
 			this.types[1] = 'data'
 			columnData.append(new Paragraph())
-			this.last.replaceWith(columnData)
+			this.last.replace(columnData)
 		}
 	}
 
@@ -21,7 +21,7 @@ class Columns extends Widget {
 			const columnImage = new ColumnImage('', this.params)
 
 			this.types[1] = 'image'
-			this.last.replaceWith(columnImage)
+			this.last.replace(columnImage)
 		}
 	}
 
@@ -242,7 +242,7 @@ class ColumnsPlugin extends PluginPlugin {
 		columnData.append(new Paragraph())
 		columns.append(columnImage)
 		columns.append(columnData)
-		selection.anchorContainer.replaceWith(columns, selection.anchorContainer.next)
+		selection.anchorContainer.replaceUntil(columns, selection.anchorContainer)
 		selection.restoreSelection()
 	}
 }
