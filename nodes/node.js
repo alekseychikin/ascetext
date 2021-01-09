@@ -73,12 +73,7 @@ class Node {
 			this.element.appendChild(current.element)
 
 			if (this.isMount) {
-				if (current.onMount) {
-					current.onMount()
-				}
-
-				current.isMount = true
-				this.childrenOmitOnMount(current.first)
+				this.setMount(current)
 			}
 
 			current = current.next
@@ -134,12 +129,7 @@ class Node {
 		this.element.appendChild(node.element)
 
 		if (this.isMount) {
-			if (node.onMount) {
-				node.onMount()
-			}
-
-			node.isMount = true
-			this.childrenOmitOnMount(node.first)
+			this.setMount(node)
 		}
 
 		this.emitOnUpdate()
@@ -165,12 +155,7 @@ class Node {
 				this.parent.element.insertBefore(last.element, this.element)
 
 				if (this.parent.isMount) {
-					if (last.onMount) {
-						last.onMount()
-					}
-
-					last.isMount = true
-					this.childrenOmitOnMount(last.first)
+					this.last(last)
 				}
 			}
 
@@ -218,12 +203,7 @@ class Node {
 				}
 
 				if (this.parent.isMount) {
-					if (last.onMount) {
-						last.onMount()
-					}
-
-					last.isMount = true
-					this.childrenOmitOnMount(last.first)
+					this.setMount(last)
 				}
 			}
 
@@ -303,6 +283,15 @@ class Node {
 		if (parent) {
 			parent.emitOnUpdate()
 		}
+	}
+
+	setMount(node) {
+		if (node.onMount) {
+			node.onMount()
+		}
+
+		node.isMount = true
+		this.childrenOmitOnMount(node.first)
 	}
 
 	childrenOmitOnMount(node) {
