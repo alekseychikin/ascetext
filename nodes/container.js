@@ -1,5 +1,5 @@
 const Node = require('./node')
-const getNodeByElement = require('./node')
+const getNodeByElement = require('./node').getNodeByElement
 const paragraphPackage = require('../plugins/paragraph')
 const BreakLine = require('../plugins/break-line').BreakLine
 const Toolbar = require('../toolbar')
