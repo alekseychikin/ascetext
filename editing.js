@@ -61,27 +61,28 @@ class Editing {
 			}
 		}
 
-		if (!selection.anchorContainer.first) {
-			selection.anchorContainer.append(new BreakLine())
-		}
-
 		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
 	}
 
 	updateContainer(container) {
-		if (container.isContainer && container.isChanged && !container.isDeleted) {
+		if (container.isContainer && container.isChanged) {
 			let content = this.core.parse(container.firstChild, container.lastChild, {
 				parsingContainer: true
 			})
 
-			if (!content) {
-				content = new BreakLine()
+			if (container.first) {
+				container.first.cutUntil()
 			}
 
-			container.first.replaceUntil(content)
+			if (content) {
+				if (container.first) {
+					container.first.replaceUntil(content)
+				} else {
+					container.append(content)
+				}
+			}
 
 			container.isChanged = false
-			console.log('updateContainer')
 
 			if (this.core.selection.focused) {
 				this.core.selection.restoreSelection(false)

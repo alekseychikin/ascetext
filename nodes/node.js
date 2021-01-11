@@ -36,14 +36,8 @@ class Node {
 	append(node) {
 		let current = node
 
-		if (node.previous) {
-			if (node.parent) {
-				node.parent.last = node.previous
-			}
-
-			delete node.previous.next
-			delete node.previous
-		}
+		node.handleEmptyContainer()
+		node.cutUntil()
 
 		if (!this.first) {
 			this.first = node
@@ -52,24 +46,13 @@ class Node {
 			node.previous = this.last
 		}
 
-		if (node.parent && node.parent.first === node) {
-			delete node.parent.first
-			delete node.parent.last
-		}
-
-		if (
-			this.isContainer &&
-			this.first &&
-			this.first === this.last &&
-			this.first.type === 'breakLine'
-		) {
-			this.first.cut()
+		if (this.isContainer && this.hasOnlyBr) {
+			this.element.removeChild(this.element.firstChild)
 		}
 
 		while (current) {
 			current.parent = this
 			this.last = current
-
 			this.element.appendChild(current.element)
 
 			if (this.isMount) {
@@ -83,47 +66,21 @@ class Node {
 	}
 
 	push(node) {
-		if (node.previous) {
-			if (node.next) {
-				node.previous.next = node.next
-				node.next.previous = node.previous
-			} else {
-				if (node.parent) {
-					node.parent.last = node.previous
-				}
-
-				delete node.previous.next
-			}
-		} else if (node.next) {
-			delete node.next.previous
-
-			if (node.parent) {
-				node.parent.first = node.next
-			}
-		} else if (node.parent) {
-			delete node.parent.first
-			delete node.parent.last
-		}
+		node.handleEmptyContainer()
+		node.cut()
 
 		if (this.last) {
 			this.last.next = node
 			node.previous = this.last
 		} else {
-			delete node.previous
 			this.first = node
 		}
 
-		delete node.next
 		this.last = node
 		node.parent = this
 
-		if (
-			this.isContainer &&
-			this.first &&
-			this.first === this.last &&
-			this.first.type === 'breakLine'
-		) {
-			this.first.cut()
+		if (this.isContainer && this.hasOnlyBr) {
+			this.element.removeChild(this.element.firstChild)
 		}
 
 		this.element.appendChild(node.element)
@@ -136,35 +93,29 @@ class Node {
 	}
 
 	preconnect(node) {
-		let last = node
+		let last = node.getNodeUntil()
+		let current = node
 
-		if (node.previous) {
-			if (node.parent) {
-				node.parent.last = node.previous
-			}
+		this.handleEmptyContainer()
+		node.handleEmptyContainer()
+		node.cutUntil()
 
-			delete node.previous.next
-		} else if (node.parent) {
-			delete node.parent.first
-			delete node.parent.last
-		}
-
-		do {
-			if (this.parent) {
-				last.parent = this.parent
-				this.parent.element.insertBefore(last.element, this.element)
+		if (this.parent) {
+			do {
+				current.parent = this.parent
+				this.parent.element.insertBefore(current.element, this.element)
 
 				if (this.parent.isMount) {
-					this.last(last)
+					this.setMount(current)
 				}
-			}
 
-			if (!last.next) {
-				break
-			}
+				if (!current.next) {
+					break
+				}
 
-			last = last.next
-		} while (true) // eslint-disable-line no-constant-condition
+				current = current.next
+			} while (true) // eslint-disable-line no-constant-condition
+		}
 
 		if (this.previous) {
 			this.previous.next = node
@@ -179,40 +130,34 @@ class Node {
 	}
 
 	connect(node) {
-		let last = node
+		const last = node.getNodeUntil()
+		let current = node
 
-		if (node.previous) {
-			if (node.parent) {
-				node.parent.last = node.previous
-			}
+		this.handleEmptyContainer()
+		node.handleEmptyContainer()
+		node.cutUntil()
 
-			delete node.previous.next
-		} else if (node.parent) {
-			delete node.parent.first
-			delete node.parent.last
-		}
-
-		do {
-			if (this.parent) {
-				last.parent = this.parent
+		if (this.parent) {
+			do {
+				current.parent = this.parent
 
 				if (this.next) {
-					this.parent.element.insertBefore(last.element, this.next.element)
+					this.parent.element.insertBefore(current.element, this.next.element)
 				} else {
-					this.parent.element.appendChild(last.element)
+					this.parent.element.appendChild(current.element)
 				}
 
 				if (this.parent.isMount) {
-					this.setMount(last)
+					this.setMount(current)
 				}
-			}
 
-			if (!last.next) {
-				break
-			}
+				if (!current.next) {
+					break
+				}
 
-			last = last.next
-		} while (true) // eslint-disable-line no-constant-condition
+				current = current.next
+			} while (true) // eslint-disable-line no-constant-condition
+		}
 
 		if (this.next) {
 			this.next.previous = last
@@ -265,12 +210,15 @@ class Node {
 				current.element.parentNode.removeChild(current.element)
 			}
 
-			if (current.onUnmount) {
-				current.onUnmount()
+			if (current.isMount) {
+				if (current.onUnmount) {
+					current.onUnmount()
+				}
+
+				current.isMount = false
+				this.childrenOmitOnUnmount(current.first)
 			}
 
-			current.isMount = false
-			this.childrenOmitOnUnmount(current.first)
 			delete current.parent
 
 			if (current === last) {
@@ -281,6 +229,7 @@ class Node {
 		}
 
 		if (parent) {
+			parent.handleEmptyContainer()
 			parent.emitOnUpdate()
 		}
 	}
@@ -326,6 +275,12 @@ class Node {
 		}
 	}
 
+	handleEmptyContainer() {
+		if (this.isContainer && !this.element.firstChild) {
+			this.element.appendChild(document.createElement('br'))
+		}
+	}
+
 	getNodeUntil(nodeUntil) {
 		let current = this
 
@@ -361,8 +316,11 @@ class Node {
 		}
 	}
 
-	get isEmpty() {
-		return !this.first || this.isContainer && this.first === this.last && this.first.type === 'br'
+	get hasOnlyBr() {
+		return this.element.firstChild &&
+			this.element.firstChild === this.element.lastChild &&
+			this.element.firstChild.nodeType === 1 &&
+			this.element.firstChild.tagName.toLowerCase() === 'br'
 	}
 
 	getClosestContainer() {

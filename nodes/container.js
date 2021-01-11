@@ -23,8 +23,6 @@ class Container extends Node {
 
 	setElement(element) {
 		this.element = element
-
-		this.append(new BreakLine())
 	}
 
 	onMouseDown() {
@@ -166,14 +164,7 @@ class Container extends Node {
 				if (nextSelectableNode.isContainer) {
 					const offset = container.getOffset()
 
-					if (
-						nextSelectableNode.first &&
-						(
-							nextSelectableNode.first !== nextSelectableNode.last ||
-							nextSelectableNode.first.type !== 'breakLine'
-						)
-					) {
-						container.isChanged = true
+					if (!nextSelectableNode.hasOnlyBr) {
 						container.append(nextSelectableNode.first)
 					}
 
