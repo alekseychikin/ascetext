@@ -29,8 +29,6 @@ class Selection {
 		this.renderedCustomControls = false
 		this.toolbar = new Toolbar(this.controls)
 		this.onUpdate = function () {}
-		this.anchorIndex = []
-		this.focusIndex = []
 
 		document.addEventListener('selectionchange', this.update)
 		document.addEventListener('mousedown', this.onMouseDown)
@@ -59,8 +57,6 @@ class Selection {
 		this.focusContainer = null
 		this.anchorOffset = null
 		this.focusOffset = null
-		this.anchorIndex = []
-		this.focusIndex = []
 
 		this.hideControls()
 		this.blurFocusedNodes()
@@ -149,7 +145,13 @@ class Selection {
 			})
 		}
 
-		if (!this.forceUpdate && !this.isSelectionChanged(anchorIndex, focusIndex)) {
+		if (
+			!this.forceUpdate &&
+			this.anchorContainer === anchorContainer &&
+			this.focusContainer === focusContainer &&
+			this.anchorOffset === anchorOffset &&
+			this.focusOffset === focusOffset
+		) {
 			// console.log('same selection')
 			return false
 		}
@@ -168,8 +170,6 @@ class Selection {
 		this.focusContainer = focusContainer
 		this.anchorOffset = anchorOffset
 		this.focusOffset = focusOffset
-		this.anchorIndex = anchorIndex
-		this.focusIndex = focusIndex
 		this.selectedItems = []
 
 		anchorContainer.onReplace = this.onFocusContainerReplace
@@ -196,28 +196,6 @@ class Selection {
 
 		this.updateToolbar()
 		this.onUpdate()
-	}
-
-	isSelectionChanged(anchorIndex, focusIndex) {
-		let i
-
-		if (anchorIndex.length !== this.anchorIndex.length || focusIndex.length !== this.focusIndex.length) {
-			return true
-		}
-
-		for (i = 0; i < anchorIndex.length; i++) {
-			if (anchorIndex[i] !== this.anchorIndex[i]) {
-				return true
-			}
-		}
-
-		for (i = 0; i < focusIndex.length; i++) {
-			if (focusIndex[i] !== this.focusIndex[i]) {
-				return true
-			}
-		}
-
-		return false
 	}
 
 	onAnchorContainerReplace(replacement) {
