@@ -33,13 +33,54 @@ class Editing {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.wrapWithContainer = this.wrapWithContainer.bind(this)
 		this.onPaste = this.onPaste.bind(this)
+		this.saveChanges = this.saveChanges.bind(this)
 
 		this.node = core.node
 		this.core = core
 		this.previousContainer = null
+		this.updateTimer = null
 
 		this.node.addEventListener('paste', this.onPaste)
 		document.addEventListener('keydown', this.onKeyDown)
+	}
+
+	updateContainer(container) {
+		if (container.isContainer && container.isChanged) {
+			console.log('updateContainer')
+			let content = this.core.parse(container.firstChild, container.lastChild, {
+				parsingContainer: true
+			})
+
+			if (container.first) {
+				container.first.cutUntil()
+			}
+
+			while (container.element.firstChild !== null) {
+				container.element.removeChild(container.element.firstChild)
+			}
+
+			if (content) {
+				if (container.first) {
+					container.first.replaceUntil(content)
+				} else {
+					container.append(content)
+				}
+			}
+
+			container.isChanged = false
+
+			if (this.core.selection.focused) {
+				this.core.selection.restoreSelection(false)
+			}
+		}
+	}
+
+	scheduleUpdate() {
+		if (this.updateTimer !== null) {
+			clearTimeout(this.updateTimer)
+		}
+
+		this.updateTimer = setTimeout(this.saveChanges, 500)
 	}
 
 	handleRemoveRange() {
@@ -62,32 +103,6 @@ class Editing {
 		}
 
 		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
-	}
-
-	updateContainer(container) {
-		if (container.isContainer && container.isChanged) {
-			let content = this.core.parse(container.firstChild, container.lastChild, {
-				parsingContainer: true
-			})
-
-			if (container.first) {
-				container.first.cutUntil()
-			}
-
-			if (content) {
-				if (container.first) {
-					container.first.replaceUntil(content)
-				} else {
-					container.append(content)
-				}
-			}
-
-			container.isChanged = false
-
-			if (this.core.selection.focused) {
-				this.core.selection.restoreSelection(false)
-			}
-		}
 	}
 
 	handleBackspace(event) {
@@ -171,6 +186,7 @@ class Editing {
 
 				this.handleBackspaceKeyDown(event)
 				this.core.selection.update()
+				this.saveChanges()
 				break
 			case deletekey:
 				if (
@@ -185,6 +201,7 @@ class Editing {
 
 				this.handleDeleteKeyDown(event)
 				this.core.selection.update()
+				this.saveChanges()
 				break
 			case enterKey:
 				if (
@@ -217,6 +234,12 @@ class Editing {
 				}
 
 				this.core.selection.anchorContainer.isChanged = true
+
+				if (event.keyCode === 32) {
+					this.saveChanges()
+				} else {
+					this.scheduleUpdate()
+				}
 			}
 		}
 	}

@@ -165,6 +165,7 @@ class Container extends Node {
 					const offset = container.getOffset()
 
 					if (!nextSelectableNode.hasOnlyBr) {
+						container.isChanged = true
 						container.append(nextSelectableNode.first)
 					}
 
@@ -184,7 +185,7 @@ class Container extends Node {
 		// вроде переключения между заголовками и параграфом
 		// console.log('container focus', selection)
 		this.selection = selection
-		this.showToolbar()
+		// this.showToolbar()
 	}
 
 	onBlur() {

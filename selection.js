@@ -4,8 +4,6 @@ const anyToolbarContains = require('./toolbar').anyToolbarContains
 const Toolbar = require('./toolbar')
 const createElement = require('./create-element')
 
-let counter = 0
-
 class Selection {
 	constructor(core) {
 		this.onMouseDown = this.onMouseDown.bind(this)
@@ -71,11 +69,6 @@ class Selection {
 
 	update() {
 		// console.error('updateSelection')
-
-		if (counter++ > 100) {
-			console.warn('run out')
-			return false
-		}
 
 		const selection = document.getSelection()
 		const { anchorNode: anchorElement, focusNode: focusElement, isCollapsed } = selection
@@ -177,16 +170,11 @@ class Selection {
 
 		if (this.isRange) {
 			if (this.anchorContainer.isChanged) {
-				// this.skipUpdate = true
-				console.log('update anchor in range')
 				this.core.editing.updateContainer(this.anchorContainer)
-				// this.skipUpdate = false
 			}
 
 			if (this.focusContainer.isChanged) {
-				this.skipUpdate = true
 				this.core.editing.updateContainer(this.focusContainer)
-				// this.skipUpdate = false
 			}
 
 			this.setSelectedItems()
