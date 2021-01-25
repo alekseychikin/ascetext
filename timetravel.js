@@ -78,7 +78,34 @@ function goBack() {
 }
 
 function goForward() {
-	console.log('goForward')
+	if (timeindex < timeline.length - 1) {
+		const previousBunch = timeline[timeindex + 1]
+		let nextEvent = null
+
+		isLockPushChange = true
+
+		for (i = 0; i < previousBunch.length; i++) {
+			nextEvent = previousBunch[i]
+
+			switch (nextEvent.type) {
+				case operationTypes.CUT:
+					nextEvent.target.cutUntil(nextEvent.next)
+					break
+				case operationTypes.APPEND:
+					nextEvent.container.append(nextEvent.target)
+					break
+				case operationTypes.PRECONNECT:
+					nextEvent.next.preconnect(nextEvent.target)
+					break
+				case operationTypes.CONNECT:
+					nextEvent.previous.connect(nextEvent.target)
+					break
+			}
+		}
+
+		isLockPushChange = false
+		timeindex++
+	}
 }
 
 module.exports = {

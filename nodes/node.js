@@ -46,6 +46,7 @@ class Node {
 		if (this.isMount) {
 			pushChange({
 				type: operationTypes.APPEND,
+				container: this,
 				target: node,
 				last
 			})
@@ -171,6 +172,7 @@ class Node {
 			if (this.parent.isMount) {
 				pushChange({
 					type: operationTypes.CONNECT,
+					previous: this,
 					target: node,
 					last
 				})
