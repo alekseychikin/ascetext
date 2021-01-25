@@ -1,3 +1,6 @@
+const pushChange = require('../timetravel').pushChange
+const operationTypes = require('../timetravel').operationTypes
+
 const mapElementToNode = []
 
 function getNodeByElement(element) {
@@ -35,9 +38,18 @@ class Node {
 
 	append(node) {
 		let current = node
+		const last = node.getNodeUntil()
 
 		node.handleEmptyContainer()
 		node.cutUntil()
+
+		if (this.isMount) {
+			pushChange({
+				type: operationTypes.APPEND,
+				target: node,
+				last
+			})
+		}
 
 		if (!this.first) {
 			this.first = node
@@ -52,7 +64,6 @@ class Node {
 
 		while (current) {
 			current.parent = this
-			this.last = current
 			this.element.appendChild(current.element)
 
 			if (this.isMount) {
@@ -62,12 +73,22 @@ class Node {
 			current = current.next
 		}
 
+		this.last = last
 		this.emitOnUpdate()
 	}
 
+	// TODO: объединить с append
 	push(node) {
 		node.handleEmptyContainer()
 		node.cut()
+
+		if (this.isMount) {
+			pushChange({
+				type: operationTypes.APPEND,
+				target: node,
+				last: node
+			})
+		}
 
 		if (this.last) {
 			this.last.next = node
@@ -101,6 +122,15 @@ class Node {
 		node.cutUntil()
 
 		if (this.parent) {
+			if (this.parent.isMount) {
+				pushChange({
+					type: operationTypes.PRECONNECT,
+					next: this,
+					target: node,
+					last
+				})
+			}
+
 			do {
 				current.parent = this.parent
 				this.parent.element.insertBefore(current.element, this.element)
@@ -138,6 +168,14 @@ class Node {
 		node.cutUntil()
 
 		if (this.parent) {
+			if (this.parent.isMount) {
+				pushChange({
+					type: operationTypes.CONNECT,
+					target: node,
+					last
+				})
+			}
+
 			do {
 				current.parent = this.parent
 
@@ -179,6 +217,15 @@ class Node {
 		const last = this.getNodeUntil(nodeUntil)
 		const parent = this.parent
 		let current = this
+
+		if (this.parent && this.parent.isMount) {
+			pushChange({
+				type: operationTypes.CUT,
+				container: this.parent,
+				next: last.next,
+				target: this
+			})
+		}
 
 		if (current.previous) {
 			if (current.parent && current.parent.last === last) {
@@ -276,7 +323,7 @@ class Node {
 	}
 
 	handleEmptyContainer() {
-		if (this.isContainer && !this.element.firstChild) {
+		if (this.isContainer && this.element.firstChild === null) {
 			this.element.appendChild(document.createElement('br'))
 		}
 	}
@@ -528,25 +575,42 @@ class Node {
 		}
 
 		const nodeChildPosition = position - this.getOffset(nodeChild.element)
-		const tail = nodeChild.split(nodeChildPosition)
+		const { head, tail } = nodeChild.split(nodeChildPosition)
 
-		if (tail) {
-			const duplicate = this.duplicate()
+		if (tail !== null) {
+			if (head !== null || tail.previous) {
+				const duplicate = this.duplicate()
 
-			duplicate.append(tail)
-			container.isChanged = true
+				duplicate.append(tail)
+				container.isChanged = true
 
-			return duplicate
-		} else if (nodeChildPosition > 0 && nodeChild.next) {
-			const duplicate = this.duplicate()
+				return {
+					head: this,
+					tail: duplicate
+				}
+			}
 
-			duplicate.append(nodeChild.next)
-			container.isChanged = true
-
-			return duplicate
+			return {
+				head: null,
+				tail: this
+			}
 		}
 
-		return false
+		if (head.next) {
+			const duplicate = this.duplicate()
+
+			duplicate.append(head.next)
+
+			return {
+				head: this,
+				tail: duplicate
+			}
+		}
+
+		return {
+			head: this,
+			tail: null
+		}
 	}
 
 	contains(childNode) {

@@ -35,12 +35,12 @@ class Container extends Node {
 
 			const [ childByOffset, restOffset ] = this.getChildByOffset(core.selection.anchorOffset)
 			const childNode = getNodeByElement(childByOffset)
-			const tail = childNode.split(restOffset)
+			const { head, tail } = childNode.split(restOffset)
 
-			if (tail || restOffset) {
-				childNode.connect(new BreakLine())
+			if (head !== null) {
+				head.connect(new BreakLine())
 			} else {
-				childNode.preconnect(new BreakLine())
+				tail.preconnect(new BreakLine())
 			}
 
 			if (core.selection.anchorAtLastPositionInContainer && childNode.type !== 'breakLine') {
@@ -68,9 +68,11 @@ class Container extends Node {
 
 				core.selection.setSelection(this.element, 0)
 			} else {
-				const tail = this.split(core.selection.anchorOffset)
+				const { tail } = this.split(core.selection.anchorOffset)
 
-				core.selection.setSelection(tail.element, 0)
+				if (tail !== null) {
+					core.selection.setSelection(tail.element, 0)
+				}
 			}
 		}
 	}

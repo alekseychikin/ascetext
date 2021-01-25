@@ -177,7 +177,7 @@ class Selection {
 				this.core.editing.updateContainer(this.focusContainer)
 			}
 
-			this.setSelectedItems()
+			// this.setSelectedItems()
 		} else {
 			this.handleFocusedElement()
 		}

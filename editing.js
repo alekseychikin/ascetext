@@ -1,6 +1,8 @@
 const Paragraph = require('./plugins/paragraph').Paragraph
 const getNodeByElement = require('./nodes/node').getNodeByElement
 const BreakLine = require('./plugins/break-line').BreakLine
+const goBack = require('./timetravel').goBack
+const goForward = require('./timetravel').goForward
 
 const backspaceKey = 8
 const deletekey = 46
@@ -14,6 +16,7 @@ const ctrlKey = 17
 const optionKey = 18
 const apple = 91
 const esc = 27
+const zKey = 90
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
 
@@ -52,6 +55,7 @@ class Editing {
 			})
 
 			if (container.first) {
+				this.handleTextInRemoveNodes(container.first)
 				container.first.cutUntil()
 			}
 
@@ -72,6 +76,22 @@ class Editing {
 			if (this.core.selection.focused) {
 				this.core.selection.restoreSelection(false)
 			}
+		}
+	}
+
+	handleTextInRemoveNodes(node) {
+		let current = node
+
+		while (current) {
+			if (current.type === 'text') {
+				if (current.content !== current.element.nodeValue) {
+					current.element.nodeValue = current.content
+				}
+			} else if (current.first) {
+				this.handleTextInRemoveNodes(current.first)
+			}
+
+			current = current.next
 		}
 	}
 
@@ -222,23 +242,34 @@ class Editing {
 	onKeyDown(event) {
 		if (
 			this.core.selection.focused &&
-			!metaKeyCodes.includes(event.keyCode) &&
-			this.core.node.contains(event.target) &&
-			!event.metaKey && !event.altKey
+			this.core.node.contains(event.target)
 		) {
-			if (modifyKeyCodes.includes(event.keyCode)) {
-				this.handleModifyKeyDown(event)
-			} else {
-				if (this.core.selection.isRange) {
-					this.handleRemoveRange()
-				}
+			if (event.keyCode === zKey && event.metaKey) {
+				event.preventDefault()
 
-				this.core.selection.anchorContainer.isChanged = true
-
-				if (event.keyCode === 32) {
-					this.saveChanges()
+				if (event.shiftKey) {
+					goForward()
 				} else {
-					this.scheduleUpdate()
+					goBack()
+				}
+			} else if (
+				!metaKeyCodes.includes(event.keyCode) &&
+				!event.metaKey && !event.altKey
+			) {
+				if (modifyKeyCodes.includes(event.keyCode)) {
+					this.handleModifyKeyDown(event)
+				} else {
+					if (this.core.selection.isRange) {
+						this.handleRemoveRange()
+					}
+
+					this.core.selection.anchorContainer.isChanged = true
+
+					if (event.keyCode === 32) {
+						this.saveChanges()
+					} else {
+						this.scheduleUpdate()
+					}
 				}
 			}
 		}
@@ -346,6 +377,10 @@ class Editing {
 
 	saveChanges() {
 		if (this.previousContainer) {
+			if (this.updateTimer !== null) {
+				clearTimeout(this.updateTimer)
+			}
+
 			this.updateContainer(this.previousContainer)
 		}
 	}

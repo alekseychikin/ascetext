@@ -60,26 +60,35 @@ class Text extends Node {
 	}
 
 	split(position) {
-		if (position === 0 || position === this.content.length) {
-			return false
+		const { weight, style } = this
+
+		if (position === 0) {
+			return {
+				head: null,
+				tail: this
+			}
+		}
+
+		if (position === this.content.length) {
+			return {
+				head: this,
+				tail: null
+			}
 		}
 
 		const container = this.getClosestContainer()
-		const { weight, style } = this
+		const head = new Text(this.content.substr(0, position), { weight, style })
 		const tail = new Text(this.content.substr(position), { weight, style })
-		let element = this.element
 
-		while (element.nodeType !== 3) {
-			element = element.firstChild
-		}
-
-		this.connect(tail)
-		this.content = this.content.substr(0, position)
-		element.nodeValue = this.content
+		head.connect(tail)
+		this.replace(head)
 		container.isChanged = true
 		this.emitOnUpdate()
 
-		return tail
+		return {
+			head,
+			tail
+		}
 	}
 
 	stringify() {
