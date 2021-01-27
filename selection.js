@@ -21,6 +21,8 @@ class Selection {
 		this.selection = {}
 		this.focusedNodes = []
 		this.pluginControls = []
+		this.anchorIndex = null
+		this.focusIndex = null
 		this.focused = false
 		this.skipUpdate = false
 		this.forceUpdate = false
@@ -95,13 +97,12 @@ class Selection {
 			return false
 		}
 
-		const anchorIndex = this.findIndex(anchorElement)
-		const focusIndex = this.findIndex(focusElement)
+		this.anchorIndex = this.findIndex(anchorElement)
+		this.focusIndex = this.findIndex(focusElement)
+		this.anchorIndex.push(selection.anchorOffset)
+		this.focusIndex.push(selection.focusOffset)
 
-		anchorIndex.push(selection.anchorOffset)
-		focusIndex.push(selection.focusOffset)
-
-		this.isForwardDirection = this.getDirection(anchorIndex, focusIndex) === 'forward'
+		this.isForwardDirection = this.getDirection(this.anchorIndex, this.focusIndex) === 'forward'
 		this.focused = true
 		this.isRange = !isCollapsed
 
@@ -128,8 +129,8 @@ class Selection {
 
 		if (process.env.ENV === 'develop') {
 			this.core.devTool.renderSelection({
-				anchorIndex: anchorIndex,
-				focusIndex: focusIndex,
+				anchorIndex: this.anchorIndex,
+				focusIndex: this.focusIndex,
 				aafp: this.anchorAtFirstPositionInContainer,
 				aalp: this.anchorAtLastPositionInContainer,
 				fafp: this.focusAtFirstPositionInContainer,
@@ -228,6 +229,30 @@ class Selection {
 			this.anchorOffset,
 			this.focusContainer.element,
 			this.focusOffset
+		)
+	}
+
+	getSelectionInIndexes() {
+		return {
+			anchorIndex: this.anchorIndex,
+			focusIndex: this.focusIndex
+		}
+	}
+
+	setSelectionByIndexes(indexes) {
+		const anchorElement = this.findElement(indexes.anchorIndex)
+		const focusElement = this.findElement(indexes.focusIndex)
+
+		console.log(			anchorElement,
+			indexes.anchorIndex[indexes.anchorIndex.length - 1],
+			focusElement,
+			indexes.focusIndex[indexes.focusIndex.length - 1]
+)
+		this.setSelection(
+			anchorElement,
+			indexes.anchorIndex[indexes.anchorIndex.length - 1],
+			focusElement,
+			indexes.focusIndex[indexes.focusIndex.length - 1]
 		)
 	}
 
@@ -385,6 +410,17 @@ class Selection {
 		}
 
 		return indexes
+	}
+
+	findElement(indexes) {
+		let current = this.core.model.element
+		let i
+
+		for (i = 0; i < indexes.length - 2; i++) {
+			current = current.childNodes[indexes[i]]
+		}
+
+		return current
 	}
 
 	setSelectedItems() {

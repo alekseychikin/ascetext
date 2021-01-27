@@ -1,3 +1,6 @@
+// TODO: это должен быть компонент, потому, что редакторов на странице может быть сколько угодно
+// и каждый редактор должен иметь свою цепочку изменений
+
 const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
@@ -10,11 +13,17 @@ let timeindex = -1
 let isLockPushChange = false
 let currentBunch = []
 let timer = null
+let currentSelection = null
+let selection = null
 
 function pushChange(event) {
 	if (!isLockPushChange) {
 		if (timer !== null) {
 			clearTimeout(timer)
+		}
+
+		if (selection === null) {
+			selection = currentSelection.getSelectionInIndexes()
 		}
 
 		currentBunch.push(event)
@@ -25,8 +34,12 @@ function pushChange(event) {
 				timeline.splice(timeindex + 1)
 			}
 
-			timeline.push(currentBunch)
+			timeline.push({
+				bunch: currentBunch,
+				selection
+			})
 			currentBunch = []
+			selection = null
 			timeindex++
 
 			console.log('pushChange', timeline)
@@ -36,14 +49,14 @@ function pushChange(event) {
 
 function goBack() {
 	if (timeindex > -1) {
-		const previousBunch = timeline[timeindex]
-		let i = previousBunch.length - 1
+		const { bunch: previousEvents, selection } = timeline[timeindex]
+		let i = previousEvents.length - 1
 		let previousEvent = null
 
 		isLockPushChange = true
 
 		for (; i >= 0; i--) {
-			previousEvent = previousBunch[i]
+			previousEvent = previousEvents[i]
 
 			switch (previousEvent.type) {
 				case operationTypes.CUT:
@@ -69,6 +82,7 @@ function goBack() {
 			}
 		}
 
+		currentSelection.setSelectionByIndexes(selection)
 		isLockPushChange = false
 		timeindex--
 
@@ -79,13 +93,13 @@ function goBack() {
 
 function goForward() {
 	if (timeindex < timeline.length - 1) {
-		const previousBunch = timeline[timeindex + 1]
+		const { bunch: nextEvents, selection } = timeline[timeindex + 1]
 		let nextEvent = null
 
 		isLockPushChange = true
 
-		for (i = 0; i < previousBunch.length; i++) {
-			nextEvent = previousBunch[i]
+		for (i = 0; i < nextEvents.length; i++) {
+			nextEvent = nextEvents[i]
 
 			switch (nextEvent.type) {
 				case operationTypes.CUT:
@@ -104,13 +118,19 @@ function goForward() {
 		}
 
 		isLockPushChange = false
+		currentSelection.setSelectionByIndexes(selection)
 		timeindex++
 	}
+}
+
+function setSelection(selection) {
+	currentSelection = selection
 }
 
 module.exports = {
 	pushChange,
 	goBack,
 	goForward,
+	setSelection,
 	operationTypes
 }

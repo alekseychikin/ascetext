@@ -4,6 +4,7 @@ const Section = require('./nodes/section')
 const Selection = require('./selection')
 const Navigation = require('./navigation')
 const Editing = require('./editing')
+const setSelection = require('./timetravel').setSelection
 
 class Root extends Section {
 	constructor(element, onUpdate) {
@@ -30,6 +31,8 @@ class RichEditor {
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.selection.onUpdate = this.editing.onSelectionChange
+
+		setSelection(this.selection)
 
 		const container = document.createElement('div')
 
