@@ -13,6 +13,7 @@ class Selection {
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showControls = this.showControls.bind(this)
 		this.hideControls = this.hideControls.bind(this)
+		this.onUpdate = this.onUpdate.bind(this)
 
 		this.core = core
 		this.controls = createElement('div', {
@@ -28,7 +29,7 @@ class Selection {
 		this.forceUpdate = false
 		this.renderedCustomControls = false
 		this.toolbar = new Toolbar(this.controls)
-		this.onUpdate = function () {}
+		this.onUpdateHandlers = []
 
 		document.addEventListener('selectionchange', this.update)
 		document.addEventListener('mousedown', this.onMouseDown)
@@ -184,7 +185,11 @@ class Selection {
 		}
 
 		this.updateToolbar()
-		this.onUpdate()
+		this.onUpdateHandlers.forEach((handler) => handler(this))
+	}
+
+	onUpdate(handler) {
+		this.onUpdateHandlers.push(handler)
 	}
 
 	onAnchorContainerReplace(replacement) {
@@ -222,7 +227,6 @@ class Selection {
 
 	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
 	restoreSelection(forceUpdate = true) {
-		console.log('restoreSelection')
 		this.forceUpdate = forceUpdate
 		this.setSelection(
 			this.anchorContainer.element,
@@ -243,11 +247,6 @@ class Selection {
 		const anchorElement = this.findElement(indexes.anchorIndex)
 		const focusElement = this.findElement(indexes.focusIndex)
 
-		console.log(			anchorElement,
-			indexes.anchorIndex[indexes.anchorIndex.length - 1],
-			focusElement,
-			indexes.focusIndex[indexes.focusIndex.length - 1]
-)
 		this.setSelection(
 			anchorElement,
 			indexes.anchorIndex[indexes.anchorIndex.length - 1],

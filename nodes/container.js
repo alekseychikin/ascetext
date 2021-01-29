@@ -5,8 +5,8 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const Toolbar = require('../toolbar')
 
 class Container extends Node {
-	constructor(type) {
-		super(type)
+	constructor(core, type) {
+		super(core, type)
 
 		this.toggleControls = this.toggleControls.bind(this)
 		this.hideToolbar = this.hideToolbar.bind(this)
@@ -29,25 +29,29 @@ class Container extends Node {
 		this.selection.focusedControl = true
 	}
 
-	enterHandler(event, core) {
+	enterHandler(event) {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			const [ childByOffset, restOffset ] = this.getChildByOffset(core.selection.anchorOffset)
+			const [ childByOffset, restOffset ] = this.getChildByOffset(this.core.selection.anchorOffset)
 			const childNode = getNodeByElement(childByOffset)
 			const { head, tail } = childNode.split(restOffset)
 
 			if (head !== null) {
-				head.connect(new BreakLine())
+				head.connect(new BreakLine(this.core))
 			} else {
-				tail.preconnect(new BreakLine())
+				tail.preconnect(new BreakLine(this.core))
 			}
 
-			if (core.selection.anchorAtLastPositionInContainer && childNode.type !== 'breakLine') {
-				childNode.connect(new BreakLine())
+			if (this.core.selection.anchorAtLastPositionInContainer && childNode.type !== 'breakLine') {
+				childNode.connect(new BreakLine(this.core))
 			}
 
-			core.selection.setSelection(core.selection.anchorContainer.element, core.selection.anchorOffset + 1)
+			this.core.selection.setSelection(
+				this.core.selection.anchorContainer.element,
+				this.core.selection.anchorOffset + 1
+			)
+			this.core.selection.update()
 		} else {
 			if (!this.parent.isSection && !this.parent.isGroup) {
 				return false
@@ -55,23 +59,23 @@ class Container extends Node {
 
 			event.preventDefault()
 
-			if (core.selection.focusAtLastPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph()
+			if (this.core.selection.focusAtLastPositionInContainer) {
+				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
 
 				this.connect(emptyParagraph)
 
-				core.selection.setSelection(emptyParagraph.element, 0)
-			} else if (core.selection.anchorAtFirstPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph()
+				this.core.selection.setSelection(emptyParagraph.element, 0)
+			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
+				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
 
 				this.preconnect(emptyParagraph)
 
-				core.selection.setSelection(this.element, 0)
+				this.core.selection.setSelection(this.element, 0)
 			} else {
-				const { tail } = this.split(core.selection.anchorOffset)
+				const { tail } = this.split(this.core.selection.anchorOffset)
 
 				if (tail !== null) {
-					core.selection.setSelection(tail.element, 0)
+					this.core.selection.setSelection(tail.element, 0)
 				}
 			}
 		}
@@ -90,11 +94,11 @@ class Container extends Node {
 	// 	}
 	// }
 
-	backspaceHandler(event, core) {
-		if (core.selection.anchorAtFirstPositionInContainer) {
+	backspaceHandler(event) {
+		if (this.core.selection.anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			const container = core.selection.anchorContainer
+			const container = this.core.selection.anchorContainer
 
 			if (!container.parent.isSection && !container.parent.isGroup) {
 				return false
@@ -106,15 +110,15 @@ class Container extends Node {
 				return false
 			}
 
-			if (core.selection.anchorAtLastPositionInContainer) {
+			if (this.core.selection.anchorAtLastPositionInContainer) {
 				container.cut()
 
 				if (previousSelectableNode.isContainer) {
 					const offset = previousSelectableNode.getOffset()
 
-					core.selection.setSelection(previousSelectableNode.element, offset)
+					this.core.selection.setSelection(previousSelectableNode.element, offset)
 				} else if (previousSelectableNode.isWidget) {
-					core.selection.setSelection(previousSelectableNode.element, 0)
+					this.core.selection.setSelection(previousSelectableNode.element, 0)
 				}
 			} else {
 				if (previousSelectableNode.isContainer) {
@@ -122,7 +126,7 @@ class Container extends Node {
 
 					if (!offset) {
 						previousSelectableNode.cut()
-						core.selection.setSelection(container.element, 0)
+						this.core.selection.setSelection(container.element, 0)
 					} else {
 						if (container.first) {
 							previousSelectableNode.isChanged = true
@@ -131,20 +135,20 @@ class Container extends Node {
 
 						container.cut()
 
-						core.selection.setSelection(previousSelectableNode.element, offset)
+						this.core.selection.setSelection(previousSelectableNode.element, offset)
 					}
 				} else if (previousSelectableNode.isWidget) {
-					core.selection.setSelection(previousSelectableNode.element, 0)
+					this.core.selection.setSelection(previousSelectableNode.element, 0)
 				}
 			}
 		}
 	}
 
-	deleteHandler(event, core) {
-		if (core.selection.anchorAtLastPositionInContainer) {
+	deleteHandler(event) {
+		if (this.core.selection.anchorAtLastPositionInContainer) {
 			event.preventDefault()
 
-			const container = core.selection.anchorContainer
+			const container = this.core.selection.anchorContainer
 
 			if (!container.parent.isSection && !container.parent.isGroup) {
 				return false
@@ -156,11 +160,11 @@ class Container extends Node {
 				return false
 			}
 
-			if (core.selection.anchorAtFirstPositionInContainer) {
+			if (this.core.selection.anchorAtFirstPositionInContainer) {
 				container.cut()
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					core.selection.setSelection(nextSelectableNode.element, 0)
+					this.core.selection.setSelection(nextSelectableNode.element, 0)
 				}
 			} else {
 				if (nextSelectableNode.isContainer) {
@@ -173,9 +177,9 @@ class Container extends Node {
 
 					nextSelectableNode.cut()
 
-					core.selection.setSelection(container.element, offset)
+					this.core.selection.setSelection(container.element, offset)
 				} else if (nextSelectableNode.isWidget) {
-					core.selection.setSelection(nextSelectableNode.element, 0)
+					this.core.selection.setSelection(nextSelectableNode.element, 0)
 				}
 			}
 		}
@@ -236,7 +240,7 @@ class Container extends Node {
 		const containerBoundingClientRect = container.element.getBoundingClientRect()
 		let controls = []
 		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
-		const { plugins } = this.selection.core
+		const { plugins } = this.core
 		const offsetTop = containerBoundingClientRect.top + scrollTop
 		const offsetLeft = containerBoundingClientRect.left
 

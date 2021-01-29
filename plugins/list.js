@@ -8,8 +8,8 @@ const BreakLine = require('./break-line').BreakLine
 const createElement = require('../create-element')
 
 class List extends Group {
-	constructor(decor = 'marker') {
-		super('list')
+	constructor(core, decor = 'marker') {
+		super(core, 'list')
 
 		this.fields = [ 'decor' ]
 		this.decor = decor
@@ -19,7 +19,7 @@ class List extends Group {
 
 	normalize(element) {
 		if (this.decor === element.decor) {
-			const list = new List(this.decor)
+			const list = new List(this.core, this.decor)
 
 			list.append(this.first)
 			list.append(element.first)
@@ -42,15 +42,15 @@ class List extends Group {
 }
 
 class ListItem extends Container {
-	constructor() {
-		super('list-item')
+	constructor(core) {
+		super(core, 'list-item')
 
 		this.setElement(createElement('li'))
 	}
 
-	backspaceHandler(event, core) {
-		// const isEmptyItem = core.selection.focusAtLastPositionInContainer && core.selection.anchorAtFirstPositionInContainer
-		const isAtFirstPosition = core.selection.anchorAtFirstPositionInContainer
+	backspaceHandler(event) {
+		// const isEmptyItem = this.core.selection.focusAtLastPositionInContainer && core.selection.anchorAtFirstPositionInContainer
+		const isAtFirstPosition = this.core.selection.anchorAtFirstPositionInContainer
 		const parent = this.parent
 		const isLastItem = parent.last === this
 
@@ -69,7 +69,7 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph()
+				const paragraph = new Paragraph(this.core)
 
 				parent.connect(paragraph)
 
@@ -84,15 +84,16 @@ class ListItem extends Container {
 					paragraph.connect(ul)
 				}
 
-				core.selection.setSelection(paragraph.element, 0)
+				this.core.selection.setSelection(paragraph.element, 0)
 			}
 		}
 	}
 
-	enterHandler(event, core) {
+	enterHandler(event) {
 		event.preventDefault()
 
-		const isEmptyItem = core.selection.focusAtLastPositionInContainer && core.selection.anchorAtFirstPositionInContainer
+		const isEmptyItem = this.core.selection.focusAtLastPositionInContainer &&
+			this.core.selection.anchorAtFirstPositionInContainer
 		const parent = this.parent
 		// const isFirstItem = parent.first === this
 		const isLastItem = parent.last === this
@@ -101,7 +102,7 @@ class ListItem extends Container {
 			let ul
 
 			if (!isLastItem) {
-				ul = new List(parent.decor)
+				ul = new List(this.core, parent.decor)
 				ul.append(this.next)
 			}
 
@@ -110,7 +111,7 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph()
+				const paragraph = new Paragraph(this.core)
 
 				parent.connect(paragraph)
 				this.delete()
@@ -118,20 +119,22 @@ class ListItem extends Container {
 				if (ul) {
 					// debugger
 					paragraph.connect(ul)
-					core.selection.setSelection(paragraph.element, 0)
+					this.core.selection.setSelection(paragraph.element, 0)
 				}
 
-				core.selection.setSelection(paragraph.element, 0)
+				this.core.selection.setSelection(paragraph.element, 0)
 			}
 		} else {
-			const nextItem = new ListItem()
+			const nextItem = new ListItem(this.core)
 
 			this.connect(nextItem)
 
-			if (core.selection.focusAtLastPositionInContainer) {
-				core.selection.setSelection(nextItem.element, 0)
+			if (this.core.selection.focusAtLastPositionInContainer) {
+				this.core.selection.setSelection(nextItem.element, 0)
 			} else {
-				const [ selectedAnchorChild, anchorOffset ] = this.getChildByOffset(core.selection.anchorOffset)
+				const [ selectedAnchorChild, anchorOffset ] = this.getChildByOffset(
+					this.core.selection.anchorOffset
+				)
 
 				if (selectedAnchorChild && selectedAnchorChild.nodeType === 3) {
 					const selectedAnchorNode = getNodeByElement(selectedAnchorChild)
@@ -145,11 +148,11 @@ class ListItem extends Container {
 
 					if (anchorTail) {
 						nextItem.append(anchorTail)
-						core.selection.setSelection(anchorTail.element, 0)
+						this.core.selection.setSelection(anchorTail.element, 0)
 					} else {
 						nextItem.append(selectedAnchorNode)
 						this.append(new BreakLine())
-						core.selection.setSelection(nextItem.element, 0)
+						this.core.selection.setSelection(nextItem.element, 0)
 					}
 				} else {
 					console.error('enter under not text focus')
@@ -159,7 +162,7 @@ class ListItem extends Container {
 	}
 
 	duplicate() {
-		const duplicate = new ListItem()
+		const duplicate = new ListItem(this.core)
 
 		this.connect(duplicate)
 
@@ -223,8 +226,8 @@ class ListPlugin extends PluginPlugin {
 	}
 
 	setNumberList(event, selection) {
-		const list = new List('number')
-		const listItem = new ListItem()
+		const list = new List(this.core, 'number')
+		const listItem = new ListItem(this.core)
 
 		list.append(listItem)
 		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)
@@ -232,8 +235,8 @@ class ListPlugin extends PluginPlugin {
 	}
 
 	setMarkerList(event, selection) {
-		const list = new List('marker')
-		const listItem = new ListItem()
+		const list = new List(this.core, 'marker')
+		const listItem = new ListItem(this.core)
 
 		list.append(listItem)
 		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)

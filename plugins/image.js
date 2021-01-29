@@ -221,19 +221,19 @@ class Image extends Widget {
 }
 
 class ImageCaption extends Container {
-	constructor() {
-		super('image-caption')
+	constructor(core) {
+		super(core, 'image-caption')
 
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
 	}
 
-	enterHandler(event, core) {
-		const emptyParagraph = new Paragraph()
+	enterHandler(event) {
+		const emptyParagraph = new Paragraph(this.core)
 
 		this.parent.connect(emptyParagraph)
-		core.selection.setSelection(emptyParagraph.element, 0)
+		this.core.selection.setSelection(emptyParagraph.element, 0)
 	}
 
 	stringify(children) {
@@ -250,7 +250,6 @@ class ImagePlugin extends PluginPlugin {
 		super()
 
 		this.insertImage = this.insertImage.bind(this)
-
 		this.params = params
 	}
 
@@ -286,8 +285,8 @@ class ImagePlugin extends PluginPlugin {
 			const captionChildren = captionElement
 				? parse(captionElement.firstChild, captionElement.lastChild, context)
 				: null
-			const image = new Image(imgElement.src, size, float, this.params)
-			const caption = new ImageCaption()
+			const image = new Image(this.core, imgElement.src, size, float, this.params)
+			const caption = new ImageCaption(this.core)
 
 			if (captionChildren) {
 				caption.append(captionChildren)
@@ -322,8 +321,8 @@ class ImagePlugin extends PluginPlugin {
 
 		if (files.length) {
 			const src = await this.params.onSelectFile(files[0])
-			const image = new Image((this.params.dir || '') + src, '', 'none', this.params)
-			const caption = new ImageCaption()
+			const image = new Image(this.core, (this.params.dir || '') + src, '', 'none', this.params)
+			const caption = new ImageCaption(this.core)
 
 			image.append(caption)
 			selection.anchorContainer.replaceUntil(image, selection.anchorContainer)

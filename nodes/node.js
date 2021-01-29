@@ -19,7 +19,8 @@ function getNodeByElement(element) {
 }
 
 class Node {
-	constructor(type) {
+	constructor(core, type) {
+		this.core = core
 		this.fields = []
 		this.type = type
 		this.isContainer = false
@@ -44,7 +45,7 @@ class Node {
 		node.cutUntil()
 
 		if (this.isMount) {
-			pushChange({
+			this.core.timeTravel.pushChange({
 				type: operationTypes.APPEND,
 				container: this,
 				target: node,
@@ -75,7 +76,7 @@ class Node {
 		}
 
 		this.last = last
-		this.emitOnUpdate()
+		this.core.onUpdate()
 	}
 
 	// TODO: объединить с append
@@ -84,7 +85,7 @@ class Node {
 		node.cut()
 
 		if (this.isMount) {
-			pushChange({
+			this.core.timeTravel.pushChange({
 				type: operationTypes.APPEND,
 				target: node,
 				last: node
@@ -111,7 +112,7 @@ class Node {
 			this.setMount(node)
 		}
 
-		this.emitOnUpdate()
+		this.core.onUpdate()
 	}
 
 	preconnect(node) {
@@ -124,7 +125,7 @@ class Node {
 
 		if (this.parent) {
 			if (this.parent.isMount) {
-				pushChange({
+				this.core.timeTravel.pushChange({
 					type: operationTypes.PRECONNECT,
 					next: this,
 					target: node,
@@ -157,7 +158,7 @@ class Node {
 
 		last.next = this
 		this.previous = last
-		this.emitOnUpdate()
+		this.core.onUpdate()
 	}
 
 	connect(node) {
@@ -170,7 +171,7 @@ class Node {
 
 		if (this.parent) {
 			if (this.parent.isMount) {
-				pushChange({
+				this.core.timeTravel.pushChange({
 					type: operationTypes.CONNECT,
 					previous: this,
 					target: node,
@@ -208,7 +209,7 @@ class Node {
 
 		this.next = node
 		node.previous = this
-		this.emitOnUpdate()
+		this.core.onUpdate()
 	}
 
 	cut() {
@@ -221,7 +222,7 @@ class Node {
 		let current = this
 
 		if (this.parent && this.parent.isMount) {
-			pushChange({
+			this.core.timeTravel.pushChange({
 				type: operationTypes.CUT,
 				container: this.parent,
 				next: last.next,
@@ -279,8 +280,9 @@ class Node {
 
 		if (parent) {
 			parent.handleEmptyContainer()
-			parent.emitOnUpdate()
 		}
+
+		this.core.onUpdate()
 	}
 
 	setMount(node) {
@@ -635,18 +637,6 @@ class Node {
 
 	stringify() {
 		return ''
-	}
-
-	emitOnUpdate() {
-		let current = this
-
-		while (current.parent) {
-			current = current.parent
-		}
-
-		if (current.onUpdate) {
-			current.onUpdate()
-		}
 	}
 }
 

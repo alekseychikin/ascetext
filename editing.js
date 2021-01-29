@@ -1,8 +1,6 @@
 const Paragraph = require('./plugins/paragraph').Paragraph
 const getNodeByElement = require('./nodes/node').getNodeByElement
 const BreakLine = require('./plugins/break-line').BreakLine
-const goBack = require('./timetravel').goBack
-const goForward = require('./timetravel').goForward
 
 const backspaceKey = 8
 const deletekey = 46
@@ -103,89 +101,43 @@ class Editing {
 		this.updateTimer = setTimeout(this.saveChanges, 500)
 	}
 
-	handleRemoveRange() {
-		const selection = this.core.selection
-		let item
+	onKeyDown(event) {
+		if (
+			this.core.selection.focused &&
+			this.core.node.contains(event.target)
+		) {
+			if (event.keyCode === zKey && event.metaKey) {
+				event.preventDefault()
 
-		while (item = selection.selectedItems.pop()) {
-			if (item === selection.focusContainer && selection.focusContainer.first) {
-				selection.selectedItems[0].preconnect(selection.focusContainer.first)
-			}
+				this.saveChanges()
 
-			if (
-				item.type === 'text' ||
-				item.isInlineWidget ||
-				item.isContainer && item.parent.isSection ||
-				item.isWidget && item.parent.isSection
+				if (event.shiftKey) {
+					this.core.timeTravel.goForward()
+				} else {
+					this.core.timeTravel.goBack()
+				}
+			} else if (
+				!metaKeyCodes.includes(event.keyCode) &&
+				!event.metaKey && !event.altKey
 			) {
-				item.cut()
+				this.core.timeTravel.preservePreviousSelection()
+
+				if (modifyKeyCodes.includes(event.keyCode)) {
+					this.handleModifyKeyDown(event)
+				} else {
+					if (this.core.selection.isRange) {
+						this.handleRemoveRange()
+					}
+
+					this.core.selection.anchorContainer.isChanged = true
+
+					if (event.keyCode === 32) {
+						this.saveChanges()
+					} else {
+						this.scheduleUpdate()
+					}
+				}
 			}
-		}
-
-		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
-	}
-
-	handleBackspace(event) {
-		if (this.core.selection.anchorContainer.backspaceHandler) {
-			this.core.selection.anchorContainer.backspaceHandler(event, this.core)
-		} else {
-			event.preventDefault()
-			console.warn('must be backspaceHandler on ', this.previousContainer)
-		}
-	}
-
-	handleBackspaceKeyDown(event) {
-		if (this.core.selection.isRange) {
-			event.preventDefault()
-			this.handleRemoveRange()
-		} else {
-			this.handleBackspace(event)
-		}
-	}
-
-	handleDelete(event) {
-		if (this.previousContainer.deleteHandler) {
-			this.previousContainer.deleteHandler(event, this.core)
-		} else {
-			event.preventDefault()
-			console.warn('must be deleteHandler on ', this.previousContainer)
-		}
-	}
-
-	handleDeleteKeyDown(event) {
-		if (this.core.selection.isRange) {
-			event.preventDefault()
-			this.handleRemoveRange()
-		} else {
-			this.handleDelete(event)
-		}
-	}
-
-	handleEnterKeyDownRange(event) {
-		event.preventDefault()
-		this.handleRemoveRange()
-
-		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.enterHandler) {
-			this.core.selection.anchorContainer.enterHandler(event, this.core)
-		}
-	}
-
-	handleEnterKeyDownSingle(event) {
-		event.preventDefault()
-
-		if (this.previousContainer.enterHandler) {
-			this.previousContainer.enterHandler(event, this.core)
-		} else {
-			console.info('must be enterHandler on ', this.previousContainer)
-			event.preventDefault()
-		}
-	}
-
-	handleEnterKeyDown(event) {
-		if (this.core.selection.isRange) {
-			this.handleEnterKeyDownRange(event)
-		} else {
-			this.handleEnterKeyDownSingle(event)
 		}
 	}
 
@@ -239,39 +191,89 @@ class Editing {
 		this.core.onUpdate()
 	}
 
-	onKeyDown(event) {
-		if (
-			this.core.selection.focused &&
-			this.core.node.contains(event.target)
-		) {
-			if (event.keyCode === zKey && event.metaKey) {
-				event.preventDefault()
+	handleRemoveRange() {
+		const selection = this.core.selection
+		let item
 
-				if (event.shiftKey) {
-					goForward()
-				} else {
-					goBack()
-				}
-			} else if (
-				!metaKeyCodes.includes(event.keyCode) &&
-				!event.metaKey && !event.altKey
-			) {
-				if (modifyKeyCodes.includes(event.keyCode)) {
-					this.handleModifyKeyDown(event)
-				} else {
-					if (this.core.selection.isRange) {
-						this.handleRemoveRange()
-					}
-
-					this.core.selection.anchorContainer.isChanged = true
-
-					if (event.keyCode === 32) {
-						this.saveChanges()
-					} else {
-						this.scheduleUpdate()
-					}
-				}
+		while (item = selection.selectedItems.pop()) {
+			if (item === selection.focusContainer && selection.focusContainer.first) {
+				selection.selectedItems[0].preconnect(selection.focusContainer.first)
 			}
+
+			if (
+				item.type === 'text' ||
+				item.isInlineWidget ||
+				item.isContainer && item.parent.isSection ||
+				item.isWidget && item.parent.isSection
+			) {
+				item.cut()
+			}
+		}
+
+		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
+	}
+
+	handleBackspaceKeyDown(event) {
+		if (this.core.selection.isRange) {
+			event.preventDefault()
+			this.handleRemoveRange()
+		} else {
+			this.handleBackspace(event)
+		}
+	}
+
+	handleBackspace(event) {
+		if (this.core.selection.anchorContainer.backspaceHandler) {
+			this.core.selection.anchorContainer.backspaceHandler(event)
+		} else {
+			event.preventDefault()
+			console.warn('must be backspaceHandler on ', this.previousContainer)
+		}
+	}
+
+	handleDeleteKeyDown(event) {
+		if (this.core.selection.isRange) {
+			event.preventDefault()
+			this.handleRemoveRange()
+		} else {
+			this.handleDelete(event)
+		}
+	}
+
+	handleDelete(event) {
+		if (this.previousContainer.deleteHandler) {
+			this.previousContainer.deleteHandler(event)
+		} else {
+			event.preventDefault()
+			console.warn('must be deleteHandler on ', this.previousContainer)
+		}
+	}
+
+	handleEnterKeyDown(event) {
+		if (this.core.selection.isRange) {
+			this.handleEnterKeyDownRange(event)
+		} else {
+			this.handleEnterKeyDownSingle(event)
+		}
+	}
+
+	handleEnterKeyDownRange(event) {
+		event.preventDefault()
+		this.handleRemoveRange()
+
+		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.enterHandler) {
+			this.core.selection.anchorContainer.enterHandler(event)
+		}
+	}
+
+	handleEnterKeyDownSingle(event) {
+		event.preventDefault()
+
+		if (this.previousContainer.enterHandler) {
+			this.previousContainer.enterHandler(event)
+		} else {
+			console.info('must be enterHandler on ', this.previousContainer)
+			event.preventDefault()
 		}
 	}
 
@@ -304,7 +306,7 @@ class Editing {
 					result = current
 				}
 			} else {
-				const container = new Paragraph()
+				const container = new Paragraph(this.core)
 
 				current.preconnect(container)
 				container.push(current)
@@ -376,12 +378,14 @@ class Editing {
 	}
 
 	saveChanges() {
-		if (this.previousContainer) {
+		if (this.previousContainer && this.previousContainer.isChanged) {
 			if (this.updateTimer !== null) {
 				clearTimeout(this.updateTimer)
+				this.updateTimer = null
 			}
 
 			this.updateContainer(this.previousContainer)
+			this.core.timeTravel.commit()
 		}
 	}
 }

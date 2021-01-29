@@ -1,8 +1,8 @@
 const WithControls = require('./with-controls')
 
 class InlineWidget extends WithControls {
-	constructor(type) {
-		super(type)
+	constructor(core, type) {
+		super(core, type)
 
 		this.isInlineWidget = true
 	}

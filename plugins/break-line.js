@@ -3,8 +3,8 @@ const PluginPlugin = require('./plugin')
 const createElement = require('../create-element')
 
 class BreakLine extends InlineWidget {
-	constructor() {
-		super('breakLine')
+	constructor(core) {
+		super(core, 'breakLine')
 
 		this.setElement(createElement('br'))
 	}
@@ -17,7 +17,7 @@ class BreakLine extends InlineWidget {
 class BreakLinePlugin extends PluginPlugin {
 	parse(element, parse, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'br') {
-			return new BreakLine()
+			return new BreakLine(this.core)
 		}
 
 		return false

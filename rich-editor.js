@@ -4,14 +4,13 @@ const Section = require('./nodes/section')
 const Selection = require('./selection')
 const Navigation = require('./navigation')
 const Editing = require('./editing')
-const setSelection = require('./timetravel').setSelection
+const TimeTravel = require('./timetravel').TimeTravel
 
 class Root extends Section {
-	constructor(element, onUpdate) {
-		super('root')
+	constructor(core, element, onUpdate) {
+		super(core, 'root')
 
 		this.element = element
-		this.onUpdate = onUpdate
 		this.isMount = true
 	}
 }
@@ -26,13 +25,15 @@ class RichEditor {
 
 		this.node = node
 		this.plugins = plugins
-		this.model = new Root(node, this.onUpdate)
+		this.model = new Root(this, node, this.onUpdate)
 		// this.navigation = new Navigation(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
-		this.selection.onUpdate = this.editing.onSelectionChange
+		this.timeTravel = new TimeTravel(this.selection)
+		this.selection.onUpdate(this.editing.onSelectionChange)
+		this.selection.onUpdate(this.timeTravel.onSelectionChange)
 
-		setSelection(this.selection)
+		Object.keys(this.plugins).forEach((pluginName) => this.plugins[pluginName].setCore(this))
 
 		const container = document.createElement('div')
 

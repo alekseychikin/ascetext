@@ -1,6 +1,3 @@
-// TODO: это должен быть компонент, потому, что редакторов на странице может быть сколько угодно
-// и каждый редактор должен иметь свою цепочку изменений
-
 const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
@@ -8,129 +5,145 @@ const operationTypes = {
 	CONNECT: 'connect'
 }
 
-const timeline = []
-let timeindex = -1
-let isLockPushChange = false
-let currentBunch = []
-let timer = null
-let currentSelection = null
-let selection = null
+class TimeTravel {
+	constructor(selection) {
+		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.commit = this.commit.bind(this)
 
-function pushChange(event) {
-	if (!isLockPushChange) {
-		if (timer !== null) {
-			clearTimeout(timer)
+		this.timeline = []
+		this.timeindex = -1
+		this.isLockPushChange = false
+		this.currentBunch = []
+		this.timer = null
+		this.selection = selection
+		this.previousSelection = null
+		this.preservedPreviousSelection = false
+	}
+
+	onSelectionChange(selection) {
+		if (!this.preservedPreviousSelection) {
+			this.previousSelection = selection.getSelectionInIndexes()
 		}
+	}
 
-		if (selection === null) {
-			selection = currentSelection.getSelectionInIndexes()
-		}
-
-		currentBunch.push(event)
-
-		timer = setTimeout(() => {
-			console.log(timeindex, timeline.length)
-			if (timeindex < timeline.length - 1) {
-				timeline.splice(timeindex + 1)
+	pushChange(event) {
+		if (!this.isLockPushChange) {
+			if (this.timer !== null) {
+				clearTimeout(this.timer)
 			}
 
-			timeline.push({
-				bunch: currentBunch,
-				selection
-			})
-			currentBunch = []
-			selection = null
-			timeindex++
-
-			console.log('pushChange', timeline)
-		}, 100)
+			this.currentBunch.push(event)
+			this.timer = setTimeout(this.commit, 100)
+		}
 	}
-}
 
-function goBack() {
-	if (timeindex > -1) {
-		const { bunch: previousEvents, selection } = timeline[timeindex]
-		let i = previousEvents.length - 1
-		let previousEvent = null
-
-		isLockPushChange = true
-
-		for (; i >= 0; i--) {
-			previousEvent = previousEvents[i]
-
-			switch (previousEvent.type) {
-				case operationTypes.CUT:
-					if (previousEvent.next) {
-						previousEvent.next.preconnect(previousEvent.target)
-					} else {
-						previousEvent.container.append(previousEvent.target)
-					}
-
-					break
-				case operationTypes.APPEND:
-					previousEvent.target.cutUntil(previousEvent.last)
-
-					break
-				case operationTypes.PRECONNECT:
-					previousEvent.target.cutUntil(previousEvent.last)
-
-					break
-				case operationTypes.CONNECT:
-					previousEvent.target.cutUntil(previousEvent.last)
-
-					break
-			}
+	commit() {
+		if (this.timer !== null) {
+			clearTimeout(this.timer)
 		}
 
-		currentSelection.setSelectionByIndexes(selection)
-		isLockPushChange = false
-		timeindex--
-
-		console.log(timeindex, timeline.length)
-		console.log('goBack', timeline)
-	}
-}
-
-function goForward() {
-	if (timeindex < timeline.length - 1) {
-		const { bunch: nextEvents, selection } = timeline[timeindex + 1]
-		let nextEvent = null
-
-		isLockPushChange = true
-
-		for (i = 0; i < nextEvents.length; i++) {
-			nextEvent = nextEvents[i]
-
-			switch (nextEvent.type) {
-				case operationTypes.CUT:
-					nextEvent.target.cutUntil(nextEvent.next)
-					break
-				case operationTypes.APPEND:
-					nextEvent.container.append(nextEvent.target)
-					break
-				case operationTypes.PRECONNECT:
-					nextEvent.next.preconnect(nextEvent.target)
-					break
-				case operationTypes.CONNECT:
-					nextEvent.previous.connect(nextEvent.target)
-					break
-			}
+		if (this.timeindex < this.timeline.length - 1) {
+			this.timeline.splice(this.timeindex + 1)
 		}
 
-		isLockPushChange = false
-		currentSelection.setSelectionByIndexes(selection)
-		timeindex++
+		this.timeline.push({
+			bunch: this.currentBunch,
+			previousSelection: this.previousSelection,
+			nextSelection: this.selection.getSelectionInIndexes()
+		})
+		this.currentBunch = []
+		this.preservedPreviousSelection = false
+		this.previousSelection = null
+		this.timeindex++
+		this.timer = null
 	}
-}
 
-function setSelection(selection) {
-	currentSelection = selection
+	goBack() {
+		if (this.timeindex > -1) {
+			const {
+				bunch: previousEvents,
+				previousSelection: selectionIndexes
+			} = this.timeline[this.timeindex]
+			let i = previousEvents.length - 1
+			let previousEvent = null
+
+			this.isLockPushChange = true
+
+			for (; i >= 0; i--) {
+				previousEvent = previousEvents[i]
+
+				switch (previousEvent.type) {
+					case operationTypes.CUT:
+						if (previousEvent.next) {
+							previousEvent.next.preconnect(previousEvent.target)
+						} else {
+							previousEvent.container.append(previousEvent.target)
+						}
+
+						break
+					case operationTypes.APPEND:
+						previousEvent.target.cutUntil(previousEvent.last)
+
+						break
+					case operationTypes.PRECONNECT:
+						previousEvent.target.cutUntil(previousEvent.last)
+
+						break
+					case operationTypes.CONNECT:
+						previousEvent.target.cutUntil(previousEvent.last)
+
+						break
+				}
+			}
+
+			this.selection.setSelectionByIndexes(selectionIndexes)
+			this.isLockPushChange = false
+			this.timeindex--
+		}
+	}
+
+	goForward() {
+		if (this.timeindex < this.timeline.length - 1) {
+			const {
+				bunch: nextEvents,
+				nextSelection: selectionIndexes
+			} = this.timeline[this.timeindex + 1]
+			let nextEvent = null
+			let i = 0
+
+			this.isLockPushChange = true
+
+			for (; i < nextEvents.length; i++) {
+				nextEvent = nextEvents[i]
+
+				switch (nextEvent.type) {
+					case operationTypes.CUT:
+						nextEvent.target.cutUntil(nextEvent.next)
+						break
+					case operationTypes.APPEND:
+						nextEvent.container.append(nextEvent.target)
+						break
+					case operationTypes.PRECONNECT:
+						nextEvent.next.preconnect(nextEvent.target)
+						break
+					case operationTypes.CONNECT:
+						nextEvent.previous.connect(nextEvent.target)
+						break
+				}
+			}
+
+			this.selection.setSelectionByIndexes(selectionIndexes)
+			this.isLockPushChange = false
+			this.timeindex++
+		}
+	}
+
+	preservePreviousSelection() {
+		this.preservedPreviousSelection = true
+	}
 }
 
 module.exports = {
-	pushChange,
-	goBack,
-	goForward,
-	setSelection,
+	TimeTravel,
 	operationTypes
 }

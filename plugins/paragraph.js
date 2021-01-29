@@ -4,14 +4,14 @@ const Container = require('../nodes/container')
 const createElement = require('../create-element')
 
 class Paragraph extends Container {
-	constructor(type = 'paragraph') {
-		super(type)
+	constructor(core, type = 'paragraph') {
+		super(core, type)
 
 		this.setElement(createElement('p'))
 	}
 
 	duplicate() {
-		const duplicate = new Paragraph()
+		const duplicate = new Paragraph(this.core)
 
 		this.connect(duplicate)
 
@@ -26,7 +26,7 @@ class Paragraph extends Container {
 class ParagraphPlugin extends PluginPlugin {
 	parse(element, parse, context) {
 		if (element.nodeType === 1 && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
-			const node = new Paragraph()
+			const node = new Paragraph(this.core)
 			let children
 
 			context.parsingContainer = true
@@ -60,7 +60,7 @@ class ParagraphPlugin extends PluginPlugin {
 
 		containers.forEach((container) => {
 			if (container.type !== 'paragraph') {
-				const paragraph = new Paragraph()
+				const paragraph = new Paragraph(this.core)
 
 				paragraph.append(container.first)
 				container.replaceUntil(paragraph, container)

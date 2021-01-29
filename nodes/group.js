@@ -1,8 +1,8 @@
 const Node = require('./node')
 
 class Group extends Node {
-	constructor(type) {
-		super(type)
+	constructor(core, type) {
+		super(core, type)
 
 		this.isGroup = true
 	}

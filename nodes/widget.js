@@ -2,8 +2,8 @@ const Paragraph = require('../plugins/paragraph').Paragraph
 const WithControls = require('./with-controls')
 
 class Widget extends WithControls {
-	constructor(type) {
-		super(type)
+	constructor(core, type) {
+		super(core, type)
 
 		this.isWidget = true
 	}
@@ -14,69 +14,69 @@ class Widget extends WithControls {
 		this.element.setAttribute('data-widget', '')
 	}
 
-	backspaceHandler(event, core) {
+	backspaceHandler(event) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = core.selection.anchorContainer
+		const container = this.core.selection.anchorContainer
 		const previousNode = container.previous
 
 		if (!previousNode) {
-			const paragraph = new Paragraph()
+			const paragraph = new Paragraph(this.core)
 
 			container.preconnect(paragraph)
-			core.selection.setSelection(paragraph.element, 0)
+			this.core.selection.setSelection(paragraph.element, 0)
 		}
 
 		container.delete()
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
-				core.selection.setSelection(previousNode.element, 0)
+				this.core.selection.setSelection(previousNode.element, 0)
 			} else {
 				const offset = previousNode.getOffset()
 
-				core.selection.setSelection(previousNode.element, offset)
+				this.core.selection.setSelection(previousNode.element, offset)
 			}
 		}
 	}
 
-	deleteHandler(event, core) {
+	deleteHandler(event) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = core.selection.anchorContainer
+		const container = this.core.selection.anchorContainer
 		const nextNode = container.next
 
 		if (!nextNode) {
-			const paragraph = new Paragraph()
+			const paragraph = new Paragraph(this.core)
 
 			container.preconnect(paragraph)
-			core.selection.setSelection(paragraph.element, 0)
+			this.core.selection.setSelection(paragraph.element, 0)
 		}
 
 		container.delete()
 
 		if (nextNode) {
-			core.selection.setSelection(nextNode.element, 0)
+			this.core.selection.setSelection(nextNode.element, 0)
 		}
 	}
 
-	enterHandler(event, core) {
+	enterHandler(event) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = core.selection.anchorContainer
-		const paragraph = new Paragraph()
+		const container = this.core.selection.anchorContainer
+		const paragraph = new Paragraph(this.core)
 
 		if (event.shiftKey) {
 			container.preconnect(paragraph)
@@ -84,7 +84,7 @@ class Widget extends WithControls {
 			container.connect(paragraph)
 		}
 
-		core.selection.setSelection(paragraph.element, 0)
+		this.core.selection.setSelection(paragraph.element, 0)
 	}
 }
 
