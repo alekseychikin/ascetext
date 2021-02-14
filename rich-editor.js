@@ -30,7 +30,6 @@ class RichEditor {
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection)
-		this.selection.onUpdate(this.editing.onSelectionChange)
 		this.selection.onUpdate(this.timeTravel.onSelectionChange)
 
 		Object.keys(this.plugins).forEach((pluginName) => this.plugins[pluginName].setCore(this))

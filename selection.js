@@ -31,28 +31,22 @@ class Selection {
 		this.toolbar = new Toolbar(this.controls)
 		this.onUpdateHandlers = []
 
-		document.addEventListener('selectionchange', this.update)
 		document.addEventListener('mousedown', this.onMouseDown)
-		document.addEventListener('input', this.update)
+		document.addEventListener('mouseup', this.update)
+		document.addEventListener('keyup', this.update)
 	}
 
 	onMouseDown(event) {
 		if (this.core.node.contains(event.target)) {
-			// console.log('onMouseDown contains')
 			const anchorNode = getNodeByElement(event.target)
 
 			if (anchorNode && anchorNode.isWidget) {
 				this.setSelection(anchorNode.element, 0)
 			}
-		} else {
-			// console.log('onMouseDown not contains')
-			this.update()
 		}
 	}
 
 	blur() {
-		console.log('blur')
-
 		this.focused = false
 		this.anchorContainer = null
 		this.focusContainer = null
@@ -71,13 +65,8 @@ class Selection {
 	}
 
 	update() {
-		// console.error('updateSelection')
-
 		const selection = document.getSelection()
 		const { anchorNode: anchorElement, focusNode: focusElement, isCollapsed } = selection
-
-		// console.log('anchorElement', anchorElement, 'focusElement', focusElement)
-		// console.log(this.anchorContainer)
 
 		if (anyToolbarContains(anchorElement)) {
 			console.log('focused control')
@@ -92,7 +81,6 @@ class Selection {
 		}
 
 		if (!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) {
-			console.log('updateSelection blur')
 			this.blur()
 
 			return false
@@ -147,7 +135,8 @@ class Selection {
 			this.anchorOffset === anchorOffset &&
 			this.focusOffset === focusOffset
 		) {
-			// console.log('same selection')
+			console.log('same selection')
+
 			return false
 		}
 
@@ -170,21 +159,15 @@ class Selection {
 		anchorContainer.onReplace = this.onFocusContainerReplace
 		anchorContainer.onReplace = this.onAnchorContainerReplace
 
+		console.log('selection update')
 		if (this.isRange) {
-			if (this.anchorContainer.isChanged) {
-				this.core.editing.updateContainer(this.anchorContainer)
-			}
-
-			if (this.focusContainer.isChanged) {
-				this.core.editing.updateContainer(this.focusContainer)
-			}
-
-			// this.setSelectedItems()
+			// this.blurFocusedNodes()
+			// this.cutRange()
 		} else {
-			this.handleFocusedElement()
+			// this.handleFocusedElement()
 		}
 
-		this.updateToolbar()
+		// this.updateToolbar()
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
 
@@ -207,11 +190,14 @@ class Selection {
 	}
 
 	setSelection(anchorElement, anchorOffset, focusElement, focusOffset) {
+		// debugger
 		const [ anchorRestOffset, anchorChildByOffset ] = this.getChildByOffset(
 			anchorElement,
 			Math.min(this.getOffset(anchorElement), anchorOffset)
 		)
 		const sel = window.getSelection()
+
+		console.log(anchorChildByOffset, anchorRestOffset)
 
 		if (focusElement) {
 			const [ focusRestOffset, focusChildByOffset ] = this.getChildByOffset(
@@ -223,6 +209,8 @@ class Selection {
 		} else {
 			sel.collapse(anchorChildByOffset, anchorRestOffset)
 		}
+
+		this.update()
 	}
 
 	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
@@ -273,6 +261,10 @@ class Selection {
 		let offset = 0
 		let i
 
+		if (container.nodeType === 3) {
+			return [ container.length, false ]
+		}
+
 		for (i = 0; i < container.childNodes.length; i++) {
 			if (container.childNodes[i] === element) {
 				return [ offset, true ]
@@ -314,7 +306,7 @@ class Selection {
 	getChildByOffset(element, offset, leftEdge) {
 		let restOffset = offset
 		let restIsOnEdge = false
-		let lastChild
+		let lastChild = element
 		let i
 		let child
 		const node = getNodeByElement(element)
@@ -387,6 +379,7 @@ class Selection {
 		return 'forward'
 	}
 
+	// TODO: разобраться с br. Выяснилось, что его нельзя зафокусить
 	findIndex(element) {
 		const indexes = []
 		let index
@@ -415,16 +408,17 @@ class Selection {
 		let current = this.core.model.element
 		let i
 
-		for (i = 0; i < indexes.length - 2; i++) {
+		for (i = 0; i < indexes.length - 1; i++) {
 			current = current.childNodes[indexes[i]]
 		}
 
 		return current
 	}
 
-	setSelectedItems() {
-		console.log('setSelectedItems')
-		const { anchorTail, focusTail, anchorFirstLevelNode, focusFirstLevelNode } = this.cutRange()
+	getSelectedItems() {
+		// this.skipUpdate = true
+		const { anchorHead, anchorTail, focusHead, focusTail } = this.cutRange()
+		// console.log(anchorHead, anchorTail, focusHead, focusTail)
 		const anchorContainer = this.isForwardDirection ? this.anchorContainer : this.focusContainer
 		const focusContainer = this.isForwardDirection ? this.focusContainer : this.anchorContainer
 		let current
@@ -433,49 +427,37 @@ class Selection {
 		let selectedItems = []
 
 		if (this.isForwardDirection) {
-			current = anchorTail || anchorFirstLevelNode
-			finish = focusTail || (anchorFirstLevelNode === focusFirstLevelNode ? current.next : focusFirstLevelNode.next)
-		} else {
-			// TODO: очень сомнительное место. Нужно перепроверить все пограничных состояниях
-			current = anchorTail || (
-				anchorFirstLevelNode === focusFirstLevelNode
-					? anchorFirstLevelNode
-					: focusFirstLevelNode.next
-						? focusFirstLevelNode.next
-						: anchorFirstLevelNode
-			)
-			finish = focusTail || current.next
+			current = anchorTail === null ? anchorContainer.getNextSelectableNode() : anchorTail
+			finish = focusHead === null ? focusContainer : focusHead
+		// } else {
+		// 	// TODO: очень сомнительное место. Нужно перепроверить все пограничных состояниях
+		// 	current = anchorTail || (
+		// 		anchorFirstLevelNode === focusFirstLevelNode
+		// 			? anchorFirstLevelNode
+		// 			: focusFirstLevelNode.next
+		// 				? focusFirstLevelNode.next
+		// 				: anchorFirstLevelNode
+		// 	)
+		// 	finish = focusTail || current.next
 		}
 
-		do {
+		while (current) {
 			selectedItems.push(current)
 
-			if (current.first) {
-				selectedItems = selectedItems.concat(this.getNodeChildren(current.first))
-			}
-
-			if (current.next) {
-				current = current.next
-			} else if (container !== focusContainer) {
-				container = container.getNextSelectableNode()
-
-				while (container && !container.first) {
-					container = container.getNextSelectableNode()
-				}
-
-				if (!container) {
-					break
-				}
-
-				selectedItems.push(container)
-				current = container.first
-			} else {
+			if (current === finish) {
 				break
 			}
-		} while (current && current !== finish)
 
-		this.selectedItems = selectedItems
-		this.blurFocusedNodes()
+			if (current.first) {
+				current = current.first
+			} else if (current.next) {
+				current = current.next
+			} else {
+				current = current.parent.getNextSelectableNode()
+			}
+		}
+
+		return selectedItems
 	}
 
 	blurFocusedNodes() {
@@ -506,41 +488,62 @@ class Selection {
 	}
 
 	cutRange() {
-		const anchorFirstLevelNode = this.getFirstLevelNode(this.anchorContainer, this.anchorOffset, true)
-		const focusFirstLevelNode = this.getFirstLevelNode(this.focusContainer, this.focusOffset)
-		let anchorTail
-		let focusTail
-
 		if (this.isForwardDirection) {
-			focusTail = focusFirstLevelNode.split(this.focusOffset - this.getOffset(
+			const focusFirstLevelNode = this.getFirstLevelNode(
+				this.focusContainer,
+				this.focusOffset,
+				!this.isForwardDirection
+			)
+			const { head: focusHead, tail: focusTail } = focusFirstLevelNode.split(this.focusOffset - this.getOffset(
 				this.focusContainer.element,
 				focusFirstLevelNode.element
 			))
-
-			anchorTail = anchorFirstLevelNode.split(this.anchorOffset - this.getOffset(
+			const anchorFirstLevelNode = this.getFirstLevelNode(
+				this.anchorContainer,
+				this.anchorOffset,
+				this.isForwardDirection
+			)
+			const isAnchorTailEqualFocusHead = anchorFirstLevelNode === focusHead
+			const { head: anchorHead, tail: anchorTail } = anchorFirstLevelNode.split(this.anchorOffset - this.getOffset(
 				this.anchorContainer.element,
 				anchorFirstLevelNode.element
 			))
+
+			if (isAnchorTailEqualFocusHead) {
+				return {
+					anchorHead,
+					anchorTail,
+					focusHead: anchorTail,
+					focusTail
+				}
+			}
+
+			return {
+				anchorHead,
+				anchorTail,
+				focusHead,
+				focusTail
+			}
 		} else {
-			focusTail = anchorFirstLevelNode.split(this.anchorOffset - this.getOffset(
-				this.anchorContainer.element,
-				anchorFirstLevelNode.element
-			))
+			// focusTail = anchorFirstLevelNode.split(this.anchorOffset - this.getOffset(
+			// 	this.anchorContainer.element,
+			// 	anchorFirstLevelNode.element
+			// ))
 
-			anchorTail = focusFirstLevelNode.split(this.focusOffset - this.getOffset(
-				this.focusContainer.element,
-				focusFirstLevelNode.element
-			))
+			// anchorTail = focusFirstLevelNode.split(this.focusOffset - this.getOffset(
+			// 	this.focusContainer.element,
+			// 	focusFirstLevelNode.element
+			// ))
 		}
 
-		this.setSelection(
-			this.anchorContainer.element,
-			this.anchorOffset,
-			this.focusContainer.element,
-			this.focusOffset
-		)
+		// this.setSelection(
+		// 	this.anchorContainer.element,
+		// 	this.anchorOffset,
+		// 	this.focusContainer.element,
+		// 	this.focusOffset
+		// )
 
-		return { anchorTail, focusTail, anchorFirstLevelNode, focusFirstLevelNode }
+		// return { anchorTail, focusTail, anchorFirstLevelNode, focusFirstLevelNode }
 	}
 
 	getFirstLevelNode(container, offset, leftEdge) {
@@ -565,10 +568,10 @@ class Selection {
 	}
 
 	// TODO придумать как можно не перерендеривать кнопки на каждый выделенный символ
-	renderControls(controls) {
+	renderControls(controls = null) {
 		let selectedControls = []
 
-		if (typeof controls === 'undefined') {
+		if (controls === null) {
 			Object.keys(this.core.plugins).forEach((type) => {
 				if (this.core.plugins[type].getSelectControls) {
 					selectedControls = selectedControls.concat(this.core.plugins[type].getSelectControls(this))
@@ -599,7 +602,10 @@ class Selection {
 	}
 
 	handleFocusedElement() {
-		const [ , focusedElement ] = this.getChildByOffset(this.anchorContainer.element, this.anchorOffset)
+		const [ , focusedElement ] = this.getChildByOffset(
+			this.anchorContainer.element,
+			this.anchorOffset
+		)
 		let focusedNode = getNodeByElement(focusedElement)
 		const focusedNodes = []
 

@@ -15,6 +15,7 @@ const optionKey = 18
 const apple = 91
 const esc = 27
 const zKey = 90
+const spaceKey = 32
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
 
@@ -31,49 +32,46 @@ class Editing {
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
-		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.wrapWithContainer = this.wrapWithContainer.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.saveChanges = this.saveChanges.bind(this)
 
 		this.node = core.node
 		this.core = core
-		this.previousContainer = null
 		this.updateTimer = null
 
 		this.node.addEventListener('paste', this.onPaste)
 		document.addEventListener('keydown', this.onKeyDown)
 	}
 
-	updateContainer(container) {
-		if (container.isContainer && container.isChanged) {
-			console.log('updateContainer')
-			let content = this.core.parse(container.firstChild, container.lastChild, {
-				parsingContainer: true
-			})
+	updateContainer() {
+		const container = this.core.selection.anchorContainer
 
+		let content = this.core.parse(container.firstChild, container.lastChild, {
+			parsingContainer: true
+		})
+
+		if (container.first) {
+			this.handleTextInRemoveNodes(container.first)
+			container.first.cutUntil()
+		}
+
+		while (container.element.firstChild !== null) {
+			container.element.removeChild(container.element.firstChild)
+		}
+
+		if (content) {
 			if (container.first) {
-				this.handleTextInRemoveNodes(container.first)
-				container.first.cutUntil()
+				container.first.replaceUntil(content)
+			} else {
+				container.append(content)
 			}
+		}
 
-			while (container.element.firstChild !== null) {
-				container.element.removeChild(container.element.firstChild)
-			}
+		container.isChanged = false
 
-			if (content) {
-				if (container.first) {
-					container.first.replaceUntil(content)
-				} else {
-					container.append(content)
-				}
-			}
-
-			container.isChanged = false
-
-			if (this.core.selection.focused) {
-				this.core.selection.restoreSelection(false)
-			}
+		if (this.core.selection.focused) {
+			this.core.selection.restoreSelection(false)
 		}
 	}
 
@@ -96,6 +94,7 @@ class Editing {
 	scheduleUpdate() {
 		if (this.updateTimer !== null) {
 			clearTimeout(this.updateTimer)
+			this.updateTimer = null
 		}
 
 		this.updateTimer = setTimeout(this.saveChanges, 500)
@@ -103,13 +102,10 @@ class Editing {
 
 	onKeyDown(event) {
 		if (
-			this.core.selection.focused &&
-			this.core.node.contains(event.target)
+			this.core.selection.focused
 		) {
 			if (event.keyCode === zKey && event.metaKey) {
 				event.preventDefault()
-
-				this.saveChanges()
 
 				if (event.shiftKey) {
 					this.core.timeTravel.goForward()
@@ -131,7 +127,7 @@ class Editing {
 
 					this.core.selection.anchorContainer.isChanged = true
 
-					if (event.keyCode === 32) {
+					if (event.keyCode === spaceKey) {
 						this.saveChanges()
 					} else {
 						this.scheduleUpdate()
@@ -142,75 +138,93 @@ class Editing {
 	}
 
 	handleModifyKeyDown(event) {
-		const container = this.core.selection.anchorContainer
-
 		switch (event.keyCode) {
 			case backspaceKey:
 				if (
-					container.isChanged &&
-					!this.core.selection.isRange && (
-						this.core.selection.anchorAtFirstPositionInContainer ||
-						this.core.selection.anchorAtLastPositionInContainer
-					)
+					!this.core.selection.isRange &&
+					this.core.selection.anchorAtFirstPositionInContainer
 				) {
-					this.updateContainer(container)
+					this.saveChanges()
 				}
 
 				this.handleBackspaceKeyDown(event)
-				this.core.selection.update()
-				this.saveChanges()
 				break
 			case deletekey:
 				if (
-					container.isChanged &&
-					!this.core.selection.isRange && (
-						this.core.selection.focusAtFirstPositionInContainer ||
-						this.core.selection.focusAtLastPositionInContainer
-					)
+					!this.core.selection.isRange &&
+					this.core.selection.focusAtLastPositionInContainer
 				) {
-					this.updateContainer(container)
+					this.saveChanges()
 				}
 
 				this.handleDeleteKeyDown(event)
-				this.core.selection.update()
-				this.saveChanges()
 				break
 			case enterKey:
-				if (
-					container.isChanged &&
-					!this.core.selection.isRange
-				) {
-					this.updateContainer(container)
+				if (!this.core.selection.isRange) {
+					this.saveChanges()
 				}
 
 				this.handleEnterKeyDown(event)
 				break
 		}
 
-		container.isChanged = true
 		this.core.onUpdate()
 	}
 
 	handleRemoveRange() {
-		const selection = this.core.selection
-		let item
+		const selectedItems = this.core.selection.getSelectedItems()
+		const filteredSelectedItems = selectedItems.filter((item) =>
+			item.isContainer || item.parent.isContainer
+		)
+		const selectedWidgets = selectedItems.filter((item) => item.isWidget)
+		const selectedContainers = selectedItems.filter((item) => item.isContainer)
+		const lastSelectedContainer = selectedContainers[selectedContainers.length - 1]
+		let lastItem
+		let previousSelectableNode = selectedItems[0].getPreviousSelectableNode()
+		let offset = previousSelectableNode ? previousSelectableNode.getOffset() : 0
+		let lastItemNextNode
 
-		while (item = selection.selectedItems.pop()) {
-			if (item === selection.focusContainer && selection.focusContainer.first) {
-				selection.selectedItems[0].preconnect(selection.focusContainer.first)
+		selectedWidgets.forEach((item) => {
+			item.cut()
+			selectedItems.splice(selectedItems.indexOf(item), 1)
+		})
+		selectedContainers.forEach((item, index) => {
+			if (index < selectedContainers.length - 1) {
+				item.cut()
+			}
+		})
+
+		lastItem = selectedItems[selectedItems.length - 1]
+
+		if (!selectedItems[0].isContainer) {
+			previousSelectableNode = selectedItems[0].getClosestContainer()
+			offset = previousSelectableNode.getOffset(selectedItems[0].element)
+			selectedItems[0].cutUntil(lastItem)
+		}
+
+		if (selectedContainers.length > 0 && lastItem) {
+			lastItemNextNode = lastItem.next
+			previousSelectableNode = lastItem.getPreviousSelectableNode()
+
+			if (!lastItem.isContainer) {
+				lastSelectedContainer.first.cutUntil(lastItem)
+			}
+
+			if (lastItem === lastSelectedContainer) {
+				lastItemNextNode = lastSelectedContainer.first
 			}
 
 			if (
-				item.type === 'text' ||
-				item.isInlineWidget ||
-				item.isContainer && item.parent.isSection ||
-				item.isWidget && item.parent.isSection
+				previousSelectableNode &&
+				previousSelectableNode.isContainer
 			) {
-				item.cut()
+				previousSelectableNode.append(lastItemNextNode)
+				lastSelectedContainer.cut()
 			}
 		}
 
-		selection.setSelection(selection.anchorContainer.element, selection.anchorOffset)
+		this.core.selection.setSelection(previousSelectableNode.element, offset)
+		this.saveChanges()
 	}
 
 	handleBackspaceKeyDown(event) {
@@ -225,9 +239,12 @@ class Editing {
 	handleBackspace(event) {
 		if (this.core.selection.anchorContainer.backspaceHandler) {
 			this.core.selection.anchorContainer.backspaceHandler(event)
+
+			this.core.selection.anchorContainer.isChanged = true
+			this.scheduleUpdate()
 		} else {
 			event.preventDefault()
-			console.warn('must be backspaceHandler on ', this.previousContainer)
+			console.warn('must be backspaceHandler on ', this.core.selection.anchorContainer)
 		}
 	}
 
@@ -241,11 +258,14 @@ class Editing {
 	}
 
 	handleDelete(event) {
-		if (this.previousContainer.deleteHandler) {
-			this.previousContainer.deleteHandler(event)
+		if (this.core.selection.anchorContainer.deleteHandler) {
+			this.core.selection.anchorContainer.deleteHandler(event)
+
+			this.core.selection.anchorContainer.isChanged = true
+			this.scheduleUpdate()
 		} else {
 			event.preventDefault()
-			console.warn('must be deleteHandler on ', this.previousContainer)
+			console.warn('must be deleteHandler on ', this.core.selection.anchorContainer)
 		}
 	}
 
@@ -269,27 +289,11 @@ class Editing {
 	handleEnterKeyDownSingle(event) {
 		event.preventDefault()
 
-		if (this.previousContainer.enterHandler) {
-			this.previousContainer.enterHandler(event)
+		if (this.core.selection.anchorContainer.enterHandler) {
+			this.core.selection.anchorContainer.enterHandler(event)
 		} else {
-			console.info('must be enterHandler on ', this.previousContainer)
+			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
-		}
-	}
-
-	onSelectionChange() {
-		if (this.core.selection.focused) {
-			const container = this.core.selection.anchorContainer
-
-			if (!this.core.selection.isRange && container !== this.previousContainer) {
-				this.saveChanges()
-
-				this.previousContainer = container
-			}
-		} else {
-			this.saveChanges()
-
-			this.previousContainer = null
 		}
 	}
 
@@ -378,13 +382,13 @@ class Editing {
 	}
 
 	saveChanges() {
-		if (this.previousContainer && this.previousContainer.isChanged) {
+		if (this.core.selection.anchorContainer.isChanged) {
 			if (this.updateTimer !== null) {
 				clearTimeout(this.updateTimer)
 				this.updateTimer = null
 			}
 
-			this.updateContainer(this.previousContainer)
+			this.updateContainer()
 			this.core.timeTravel.commit()
 		}
 	}
