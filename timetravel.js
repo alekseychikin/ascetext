@@ -38,6 +38,8 @@ class TimeTravel {
 	}
 
 	commit() {
+		const nextSelection = this.selection.getSelectionInIndexes()
+
 		if (this.timer !== null) {
 			clearTimeout(this.timer)
 		}
@@ -49,17 +51,17 @@ class TimeTravel {
 		this.timeline.push({
 			bunch: this.currentBunch,
 			previousSelection: this.previousSelection,
-			nextSelection: this.selection.getSelectionInIndexes()
+			nextSelection
 		})
 		this.currentBunch = []
 		this.preservedPreviousSelection = false
-		this.previousSelection = null
+		this.previousSelection = nextSelection
 		this.timeindex++
 		this.timer = null
 	}
 
 	goBack() {
-		if (this.timeindex > -1) {
+		if (this.timeindex > 0) {
 			const {
 				bunch: previousEvents,
 				previousSelection: selectionIndexes
@@ -118,7 +120,7 @@ class TimeTravel {
 
 				switch (nextEvent.type) {
 					case operationTypes.CUT:
-						nextEvent.target.cutUntil(nextEvent.next)
+						nextEvent.target.cutUntil(nextEvent.until)
 						break
 					case operationTypes.APPEND:
 						nextEvent.container.append(nextEvent.target)

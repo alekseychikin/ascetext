@@ -225,6 +225,7 @@ class Node {
 			this.core.timeTravel.pushChange({
 				type: operationTypes.CUT,
 				container: this.parent,
+				until: nodeUntil,
 				next: last.next,
 				target: this
 			})
