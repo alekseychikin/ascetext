@@ -34,6 +34,7 @@ class Selection {
 		document.addEventListener('mousedown', this.onMouseDown)
 		document.addEventListener('mouseup', this.update)
 		document.addEventListener('keyup', this.update)
+		document.addEventListener('input', this.update)
 	}
 
 	onMouseDown(event) {
@@ -135,8 +136,6 @@ class Selection {
 			this.anchorOffset === anchorOffset &&
 			this.focusOffset === focusOffset
 		) {
-			console.log('same selection')
-
 			return false
 		}
 
@@ -159,7 +158,6 @@ class Selection {
 		anchorContainer.onReplace = this.onFocusContainerReplace
 		anchorContainer.onReplace = this.onAnchorContainerReplace
 
-		console.log('selection update')
 		if (this.isRange) {
 			// this.blurFocusedNodes()
 			// this.cutRange()
@@ -190,14 +188,11 @@ class Selection {
 	}
 
 	setSelection(anchorElement, anchorOffset, focusElement, focusOffset) {
-		// debugger
 		const [ anchorRestOffset, anchorChildByOffset ] = this.getChildByOffset(
 			anchorElement,
 			Math.min(this.getOffset(anchorElement), anchorOffset)
 		)
 		const sel = window.getSelection()
-
-		console.log(anchorChildByOffset, anchorRestOffset)
 
 		if (focusElement) {
 			const [ focusRestOffset, focusChildByOffset ] = this.getChildByOffset(
