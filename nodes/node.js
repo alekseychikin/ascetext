@@ -525,31 +525,34 @@ class Node {
 	getChildByOffset(offset, container = this.element) {
 		let restOffset = offset
 		let i
+		let child
 
 		for (i = 0; i < container.childNodes.length; i++) {
-			if (container.childNodes[i].nodeType === 3) {
-				if (container.childNodes[i].length >= restOffset) {
-					return [ container.childNodes[i], restOffset ]
-				} else {
-					restOffset -= container.childNodes[i].length
+			child = container.childNodes[i]
+
+			if (child.nodeType === 3) {
+				if (child.length >= restOffset) {
+					return [ child, restOffset ]
 				}
+
+				restOffset -= child.length
 			} else if (
-				container.childNodes[i].nodeType === 1 &&
-				container.childNodes[i].tagName.toLowerCase() === 'br'
+				child.nodeType === 1 &&
+				child.tagName.toLowerCase() === 'br'
 			) {
 				if (restOffset === 0) {
-					return [ container.childNodes[i], restOffset ]
-				} else {
-					restOffset -= 1
+					return [ child, restOffset ]
 				}
-			} else if (container.childNodes[i].childNodes) {
-				const [ subChild, subRestOffset ] = this.getChildByOffset(restOffset, container.childNodes[i])
+
+				restOffset -= 1
+			} else if (child.childNodes) {
+				const [ subChild, subRestOffset ] = this.getChildByOffset(restOffset, child)
 
 				if (subChild) {
 					return [ subChild, subRestOffset ]
-				} else {
-					restOffset = subRestOffset
 				}
+
+				restOffset = subRestOffset
 			}
 		}
 

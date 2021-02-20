@@ -218,7 +218,10 @@ class Editing {
 				previousSelectableNode &&
 				previousSelectableNode.isContainer
 			) {
-				previousSelectableNode.append(lastItemNextNode)
+				if (lastItemNextNode) {
+					previousSelectableNode.append(lastItemNextNode)
+				}
+
 				lastSelectedContainer.cut()
 			}
 		}
