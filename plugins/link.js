@@ -12,8 +12,8 @@ class Link extends InlineWidget {
 		selection.restoreSelection()
 	}
 
-	constructor(url) {
-		super('link')
+	constructor(core, url) {
+		super(core, 'link')
 
 		this.removeLink = this.removeLink.bind(this)
 
@@ -109,7 +109,7 @@ class LinkPlugin extends PluginPlugin {
 			const url = element.getAttribute('href')
 			let children
 
-			const node = new Link(url)
+			const node = new Link(this.core, url)
 
 			if (children = parse(element.firstChild, element.lastChild, context)) {
 				node.append(children)
@@ -189,7 +189,7 @@ class LinkPlugin extends PluginPlugin {
 
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = new Link(url)
+				link = new Link(this.core, url)
 				item.connect(link)
 				link.push(item)
 			}

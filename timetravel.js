@@ -26,6 +26,10 @@ class TimeTravel {
 		}
 	}
 
+	preservePreviousSelection() {
+		this.preservedPreviousSelection = true
+	}
+
 	pushChange(event) {
 		if (!this.isLockPushChange) {
 			if (this.timer !== null) {
@@ -138,10 +142,6 @@ class TimeTravel {
 			this.isLockPushChange = false
 			this.timeindex++
 		}
-	}
-
-	preservePreviousSelection() {
-		this.preservedPreviousSelection = true
 	}
 }
 

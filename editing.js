@@ -15,6 +15,7 @@ const optionKey = 18
 const apple = 91
 const esc = 27
 const zKey = 90
+const xKey = 88
 const spaceKey = 32
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
@@ -32,7 +33,6 @@ class Editing {
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
-		this.wrapWithContainer = this.wrapWithContainer.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.saveChanges = this.saveChanges.bind(this)
 
@@ -44,7 +44,9 @@ class Editing {
 		document.addEventListener('keydown', this.onKeyDown)
 	}
 
+	// не нравится
 	updateContainer() {
+		return
 		const container = this.core.selection.anchorContainer
 
 		let content = this.core.parse(container.firstChild, container.lastChild, {
@@ -91,6 +93,7 @@ class Editing {
 		}
 	}
 
+	// не нравится
 	scheduleUpdate() {
 		if (this.updateTimer !== null) {
 			clearTimeout(this.updateTimer)
@@ -100,6 +103,7 @@ class Editing {
 		this.updateTimer = setTimeout(this.saveChanges, 500)
 	}
 
+	// не нравится
 	onKeyDown(event) {
 		if (
 			this.core.selection.focused
@@ -112,6 +116,15 @@ class Editing {
 				} else {
 					this.core.timeTravel.goBack()
 				}
+			} else if (
+				event.keyCode === xKey &&
+				event.metaKey &&
+				this.core.selection.isRange
+			) {
+				event.preventDefault()
+
+				const string = this.handleRemoveRange(true)
+				console.log(string)
 			} else if (
 				!metaKeyCodes.includes(event.keyCode) &&
 				!event.metaKey && !event.altKey
@@ -137,6 +150,7 @@ class Editing {
 		}
 	}
 
+	// не нравится
 	handleModifyKeyDown(event) {
 		switch (event.keyCode) {
 			case backspaceKey:
@@ -171,22 +185,23 @@ class Editing {
 		this.core.onUpdate()
 	}
 
-	handleRemoveRange() {
+	// не нравится
+	handleRemoveRange(isReturnString = false) {
 		const selectedItems = this.core.selection.getSelectedItems()
-		const filteredSelectedItems = selectedItems.filter((item) =>
-			item.isContainer || item.parent.isContainer
-		)
-		const selectedWidgets = selectedItems.filter((item) => item.isWidget)
-		const selectedContainers = selectedItems.filter((item) => item.isContainer)
+		const returnString =
+			isReturnString ? this.stringifyRemovingRange(selectedItems) : ''
+		const filteredSelectedItems = selectedItems.slice()
+		const selectedWidgets = filteredSelectedItems.filter((item) => item.isWidget)
+		const selectedContainers = filteredSelectedItems.filter((item) => item.isContainer)
 		const lastSelectedContainer = selectedContainers[selectedContainers.length - 1]
 		let lastItem
-		let previousSelectableNode = selectedItems[0].getPreviousSelectableNode()
+		let previousSelectableNode = filteredSelectedItems[0].getPreviousSelectableNode()
 		let offset = previousSelectableNode ? previousSelectableNode.getOffset() : 0
 		let lastItemNextNode
 
 		selectedWidgets.forEach((item) => {
 			item.cut()
-			selectedItems.splice(selectedItems.indexOf(item), 1)
+			filteredSelectedItems.splice(filteredSelectedItems.indexOf(item), 1)
 		})
 		selectedContainers.forEach((item, index) => {
 			if (index < selectedContainers.length - 1) {
@@ -194,12 +209,12 @@ class Editing {
 			}
 		})
 
-		lastItem = selectedItems[selectedItems.length - 1]
+		lastItem = filteredSelectedItems[filteredSelectedItems.length - 1]
 
-		if (!selectedItems[0].isContainer) {
-			previousSelectableNode = selectedItems[0].getClosestContainer()
-			offset = previousSelectableNode.getOffset(selectedItems[0].element)
-			selectedItems[0].cutUntil(lastItem)
+		if (!filteredSelectedItems[0].isContainer) {
+			previousSelectableNode = filteredSelectedItems[0].getClosestContainer()
+			offset = previousSelectableNode.getOffset(filteredSelectedItems[0].element)
+			filteredSelectedItems[0].cutUntil(lastItem)
 		}
 
 		if (selectedContainers.length > 0 && lastItem) {
@@ -228,6 +243,38 @@ class Editing {
 
 		this.core.selection.setSelection(previousSelectableNode.element, offset)
 		this.saveChanges()
+
+		if (isReturnString) {
+			return returnString
+		}
+	}
+
+	// не нравится
+	stringifyRemovingRange(items) {
+		let returnString = ''
+		let lastContainer = null
+		let children = ''
+
+		items.forEach((item, index) => {
+			if (item.isContainer || item.isWidget) {
+				if (lastContainer !== null) {
+					returnString += item.stringify(children)
+					children = ''
+				}
+
+				lastContainer = item
+			}
+
+			if (item.parent.isContainer || item.parent.isWidget) {
+				if (lastContainer === null) {
+					returnString += item.stringify(this.core.stringify(item.first))
+				} else {
+					children += item.stringify(this.core.stringify(item.first))
+				}
+			}
+		})
+
+		return returnString + (lastContainer !== null ? lastContainer.stringify(children) : '')
 	}
 
 	handleBackspaceKeyDown(event) {
@@ -300,90 +347,19 @@ class Editing {
 		}
 	}
 
-	wrapWithContainer(node) {
-		let current = node
-		let next
-		let result
-
-		while (current) {
-			next = current.next
-
-			if (current.isContainer) {
-				if (!result) {
-					result = current
-				}
-			} else {
-				const container = new Paragraph(this.core)
-
-				current.preconnect(container)
-				container.push(current)
-
-				if (!result) {
-					result = container
-				}
-			}
-
-			current = next
-		}
-
-		return result
-	}
-
+	// не работает
 	onPaste(event) {
 		const paste = (event.clipboardData || window.clipboardData).getData('text/html')
 		const doc = document.createElement('div')
 
 		doc.innerHTML = paste
 
-		const result = this.wrapWithContainer(this.core.parse(doc.firstChild, doc.lastChild))
-
-		if (this.core.selection.isRange) {
-		} else {
-			const anchorContainer = this.core.selection.anchorContainer
-
-			if (this.core.selection.anchorAtFirstPositionInContainer && this.core.selection.anchorAtLastPositionInContainer) {
-				anchorContainer.replaceWith(result, anchorContainer)
-				this.core.update(result, anchorContainer.next)
-			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
-				anchorContainer.preconnect(result)
-				this.core.update(result, anchorContainer)
-				this.core.setPosition(anchorContainer.findFirstTextElement() || anchorContainer.element, 0)
-			} else if (this.core.selection.anchorAtLastPositionInContainer) {
-				const nextContainer = anchorContainer.getNextSelectableNode()
-
-				anchorContainer.connect(result)
-				this.core.update(result, nextContainer)
-				this.core.setPosition(result.findFirstTextElement() || result.element, 0)
-			} else {
-				const [ selectedAnchorChild, anchorOffset ] = anchorContainer.getChildByOffset(this.core.selection.anchorOffset)
-
-				if (selectedAnchorChild && selectedAnchorChild.nodeType === 3) {
-					const selectedAnchorNode = getNodeByElement(selectedAnchorChild)
-					let anchorTail = selectedAnchorNode.split(anchorOffset)
-					let anchorParent = selectedAnchorNode.parent
-
-					while (anchorParent !== anchorContainer) {
-						anchorTail = anchorParent.split(anchorTail)
-						anchorParent = anchorParent.parent
-					}
-
-					const tail = anchorContainer.split(anchorTail)
-
-					this.core.update(anchorContainer, anchorContainer.next.next)
-					this.core.setPosition(tail.findFirstTextElement() || tail.element, 0)
-
-					anchorContainer.connect(result)
-					this.core.update(result, tail)
-					this.core.setPosition(result.findFirstTextElement() || result.element, 0)
-				} else {
-					console.error('enter under not text focus')
-				}
-			}
-		}
+		const result = this.core.parse(doc.firstChild, doc.lastChild)
 
 		event.preventDefault()
 	}
 
+	// не нравится
 	saveChanges() {
 		if (this.core.selection.anchorContainer.isChanged) {
 			if (this.updateTimer !== null) {

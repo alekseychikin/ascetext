@@ -127,6 +127,7 @@ class TextPlugin extends PluginPlugin {
 		this.setItalic = this.setItalic.bind(this)
 	}
 
+	// не нравится
 	parse(element, parse, context) {
 		if (element.nodeType !== 3 && (element.nodeType === 1 && ![ 'em', 'strong', 'span' ].includes(element.nodeName.toLowerCase()))) {
 			return false
@@ -138,7 +139,7 @@ class TextPlugin extends PluginPlugin {
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
 
-			// TODO: Нужно уметьт лучше определять первую ноду. Имеется ввиду первая текстовая нода в контейнере
+			// TODO: Нужно уметь лучше определять первую ноду. Имеется ввиду первая текстовая нода в контейнере
 			// а не просто в каком угодно первом элементе (например ссылке)
 			if (element === firstChild) {
 				content = content.trimLeft()

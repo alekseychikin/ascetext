@@ -385,44 +385,6 @@ class Node {
 		return container
 	}
 
-	get firstChild() {
-		return this.element.firstChild
-	}
-
-	get lastChild() {
-		return this.element.lastChild
-	}
-
-	findFirstContainerNode() {
-		let current = this
-
-		while (current && !current.isContainer) {
-			current = current.first
-		}
-
-		return current
-	}
-
-	findFirstTextElement() {
-		let element = this.element
-
-		while (element && element && element.nodeType !== 3) {
-			element = element.firstChild
-		}
-
-		return element
-	}
-
-	findLastTextElement() {
-		let element = this.element
-
-		while (element && element.nodeType !== 3) {
-			element = element.lastChild
-		}
-
-		return element
-	}
-
 	getPreviousSelectableNode() {
 		let current = this
 
@@ -485,12 +447,14 @@ class Node {
 		}
 	}
 
+	// не нравится
 	getOffset(element) {
 		const [ offset ] = this.calcOffset(this.element, element)
 
 		return offset
 	}
 
+	// не нравится
 	calcOffset(container, element) {
 		let offset = 0
 		let i
@@ -522,6 +486,7 @@ class Node {
 		return [ offset, false ]
 	}
 
+	// не нравится
 	getChildByOffset(offset, container = this.element) {
 		let restOffset = offset
 		let i
@@ -569,10 +534,12 @@ class Node {
 		return current
 	}
 
+	// не нравится
 	duplicate() {
 		throw new Error(`Plugin ${this.__proto__.constructor.name} must implement method duplicate`)
 	}
 
+	// не нравится
 	split(position) {
 		const container = this.getClosestContainer()
 		const [ selectedChild ] = this.getChildByOffset(position)

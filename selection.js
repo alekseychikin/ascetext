@@ -240,6 +240,7 @@ class Selection {
 		)
 	}
 
+	// не нравится
 	getSelectedElement(element, offset) {
 		if (element.nodeType === 3 || element.nodeType === 1 && element.tagName.toLowerCase() === 'br') {
 			return [ element, offset ]
@@ -254,6 +255,7 @@ class Selection {
 		return offset
 	}
 
+	// не нравится
 	calcOffset(container, element) {
 		let offset = 0
 		let i
@@ -300,6 +302,7 @@ class Selection {
 		return node.getClosestContainer()
 	}
 
+	// не нравится
 	getChildByOffset(element, offset) {
 		let restOffset = offset
 		// TODO: lastChild = element был нужен для того чтобы сработало выделение параграфа без единого элемента
@@ -361,6 +364,7 @@ class Selection {
 		return 'forward'
 	}
 
+	// не нравится
 	findIndex(element) {
 		const indexes = []
 		let index
@@ -385,6 +389,7 @@ class Selection {
 		return indexes
 	}
 
+	// не нравится
 	findElement(indexes) {
 		let current = this.core.model.element
 		let i
@@ -396,6 +401,7 @@ class Selection {
 		return current
 	}
 
+	// не нравится
 	getSelectedItems() {
 		const { anchorHead, anchorTail, focusHead, focusTail } = this.cutRange()
 		const anchorContainer = this.isForwardDirection ? this.anchorContainer : this.focusContainer
@@ -438,23 +444,7 @@ class Selection {
 		this.focusedNodes = []
 	}
 
-	getNodeChildren(node) {
-		let children = []
-		let current = node
-
-		do {
-			children.push(current)
-
-			if (current.first) {
-				children = children.concat(this.getNodeChildren(current.first))
-			}
-
-			current = current.next
-		} while (current)
-
-		return children
-	}
-
+	// не нравится
 	cutRange() {
 		let isAnchorTailEqualFocusHead = false
 		let anchor
@@ -515,6 +505,7 @@ class Selection {
 		}
 	}
 
+	// не нравится
 	getFirstLevelNode(container, offset) {
 		const [ , selectedElement ] = this.getChildByOffset(container.element, offset)
 		let firstLevelNode = getNodeByElement(selectedElement)
