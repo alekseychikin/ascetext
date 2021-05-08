@@ -87,17 +87,6 @@ class Selection {
 			return false
 		}
 
-		// Если выделен br, то anchorElement будет параграф, а selection.anchorOffset — индек br в childNodes
-		// TODO: нужно как-то делать на это поправку
-		this.anchorIndex = this.findIndex(anchorElement)
-		this.focusIndex = this.findIndex(focusElement)
-		this.anchorIndex.push(selection.anchorOffset)
-		this.focusIndex.push(selection.focusOffset)
-
-		this.isForwardDirection = this.getDirection(this.anchorIndex, this.focusIndex) === 'forward'
-		this.focused = true
-		this.isRange = !isCollapsed
-
 		const anchorContainer = this.getClosestContainer(anchorElement)
 		const focusContainer = this.getClosestContainer(focusElement)
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
@@ -107,9 +96,13 @@ class Selection {
 		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
 		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
+		this.anchorIndex = this.getIndex(anchorContainer, anchorElement, selection.anchorOffset)
+		this.focusIndex = this.getIndex(focusContainer, focusElement, selection.focusOffset)
+		this.isForwardDirection = this.getDirection(this.anchorIndex, this.focusIndex) === 'forward'
+		this.focused = true
+		this.isRange = !isCollapsed
 		this.anchorAtFirstPositionInContainer = anchorOffset === 0
 		this.anchorAtLastPositionInContainer = anchorOffset === anchorContainerLength
-
 		this.focusAtFirstPositionInContainer = focusOffset === 0
 		this.focusAtLastPositionInContainer = focusOffset === focusContainerLength
 
@@ -156,7 +149,8 @@ class Selection {
 
 		if (this.isRange) {
 			// this.blurFocusedNodes()
-			// this.cutRange()
+			// this.setSelectedItems()
+			this.cutRange()
 		} else {
 			// this.handleFocusedElement()
 		}
@@ -333,11 +327,10 @@ class Selection {
 		return 'forward'
 	}
 
-	// не нравится
-	findIndex(element) {
+	getIndex(container, element, offset) {
 		const indexes = []
 		let index
-		let current = element
+		let current = container.element
 
 		while (current !== this.core.model.element) {
 			index = 0
@@ -354,6 +347,12 @@ class Selection {
 			indexes.unshift(index)
 			current = current.parentNode
 		}
+
+		if (container.element === element) {
+			element = container.element.childNodes[offset]
+		}
+
+		indexes.push(container.getOffset(element) + (element.nodeType === 3 ? offset : 0))
 
 		return indexes
 	}
