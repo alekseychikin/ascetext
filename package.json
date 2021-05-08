@@ -1,17 +1,17 @@
 {
-  "name": "wysiwygraph",
+  "name": "contenteditor",
   "version": "0.1.0",
   "description": "Editor for web",
   "main": "src/index.js",
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/makingoff/wysiwygraph.git"
+    "url": "git+https://github.com/makingoff/contenteditor.git"
   },
   "author": "Aleksey Chikin <mail@makingoff.name>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/makingoff/wysiwygraph/issues"
+    "url": "https://github.com/makingoff/contenteditor/issues"
   },
-  "homepage": "https://github.com/makingoff/wysiwygraph#readme"
+  "homepage": "https://github.com/makingoff/contenteditor#readme"
 }
