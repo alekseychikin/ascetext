@@ -33,7 +33,9 @@ class Container extends Node {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			const [ childByOffset, restOffset ] = this.getChildByOffset(this.core.selection.anchorOffset)
+			const childByOffset = this.getChildByOffset(this.core.selection.anchorOffset)
+			const childOffset = this.getOffset(childByOffset)
+			const restOffset = this.core.selection.anchorOffset - childOffset
 			const childNode = getNodeByElement(childByOffset)
 			const { head, tail } = childNode.split(restOffset)
 
