@@ -447,81 +447,51 @@ class Node {
 		}
 	}
 
-	// не нравится
 	getOffset(element) {
-		const [ offset ] = this.calcOffset(this.element, element)
+		let index = 0
 
-		return offset
-	}
-
-	// не нравится
-	calcOffset(container, element) {
-		let offset = 0
-		let i
-
-		for (i = 0; i < container.childNodes.length; i++) {
-			if (container.childNodes[i] === element) {
-				return [ offset, true ]
+		this.walk(this.element, (current) => {
+			if (current === element) {
+				return true
 			}
 
-			if (container.childNodes[i].nodeType === 3) {
-				offset += container.childNodes[i].length
+			if (current.nodeType === 3) {
+				index += current.length
 			} else if (
-				container.childNodes[i].nodeType === 1 &&
-				container.childNodes[i].tagName.toLowerCase() === 'br' &&
-				container.lastChild !== container.childNodes[i]
+				current.nodeType === 1 && current.tagName.toLowerCase() === 'br'
 			) {
-				offset += 1
-			} else if (container.childNodes[i].childNodes) {
-				const [ subOffset, returnOffset ] = this.calcOffset(container.childNodes[i], element)
-
-				offset += subOffset
-
-				if (returnOffset) {
-					return [ offset, true ]
+				if (current === this.element.lastChild) {
+					return true
 				}
-			}
-		}
 
-		return [ offset, false ]
+				index += 1
+			}
+		})
+
+		return index
 	}
 
-	// не нравится
-	getChildByOffset(offset, container = this.element) {
+	getChildByOffset(offset) {
 		let restOffset = offset
-		let i
-		let child
 
-		for (i = 0; i < container.childNodes.length; i++) {
-			child = container.childNodes[i]
-
-			if (child.nodeType === 3) {
-				if (child.length >= restOffset) {
-					return [ child, restOffset ]
+		return this.walk(this.element, (current) => {
+			if (current.nodeType === 3) {
+				if (current.length >= restOffset) {
+					return current
 				}
 
-				restOffset -= child.length
+				restOffset -= current.length
 			} else if (
-				child.nodeType === 1 &&
-				child.tagName.toLowerCase() === 'br'
+				current.nodeType === 1 &&
+				current.tagName.toLowerCase() === 'br'
 			) {
 				if (restOffset === 0) {
-					return [ child, restOffset ]
+					return current
 				}
 
 				restOffset -= 1
-			} else if (child.childNodes) {
-				const [ subChild, subRestOffset ] = this.getChildByOffset(restOffset, child)
-
-				if (subChild) {
-					return [ subChild, subRestOffset ]
-				}
-
-				restOffset = subRestOffset
 			}
-		}
-
-		return [ void 0, restOffset ]
+		})
 	}
 
 	getLastNode() {
@@ -542,7 +512,7 @@ class Node {
 	// не нравится
 	split(position) {
 		const container = this.getClosestContainer()
-		const [ selectedChild ] = this.getChildByOffset(position)
+		const selectedChild = this.getChildByOffset(position)
 		let nodeChild = getNodeByElement(selectedChild)
 
 		while (nodeChild.parent !== this) {
@@ -608,6 +578,46 @@ class Node {
 
 	stringify() {
 		return ''
+	}
+
+	walk(rootElement, callback) {
+		let returnValue
+		let current = rootElement.firstChild
+
+		while (current && current !== rootElement) {
+			returnValue = callback(current)
+
+			if (typeof returnValue !== 'undefined') {
+				return returnValue
+			}
+
+			if (current.firstChild) {
+				current = current.firstChild
+
+				continue
+			}
+
+			if (current.nextSibling) {
+				current = current.nextSibling
+
+				continue
+			}
+
+			if (current.parentNode) {
+				current = current.parentNode
+
+				while (current && current !== rootElement) {
+					if (current.nextSibling) {
+						current = current.nextSibling
+
+						break
+					}
+
+					current = current.parentNode
+				}
+			}
+		}
+
 	}
 }
 

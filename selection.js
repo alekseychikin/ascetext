@@ -100,18 +100,12 @@ class Selection {
 
 		const anchorContainer = this.getClosestContainer(anchorElement)
 		const focusContainer = this.getClosestContainer(focusElement)
-		const anchorContainerLength = anchorContainer.isContainer ? this.getOffset(anchorContainer.element) : 0
-		const focusContainerLength = focusContainer.isContainer ? this.getOffset(focusContainer.element) : 0
+		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
+		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
 		const [ anchorSelectedElement, anchorSelectedOffset ] = this.getSelectedElement(anchorElement, selection.anchorOffset)
 		const [ focusSelectedElement, focusSelectedOffset ] = this.getSelectedElement(focusElement, selection.focusOffset)
-		const anchorOffset = anchorSelectedOffset + this.getOffset(
-			anchorContainer.element,
-			anchorSelectedElement
-		)
-		const focusOffset = focusSelectedOffset + this.getOffset(
-			focusContainer.element,
-			focusSelectedElement
-		)
+		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
+		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
 		this.anchorAtFirstPositionInContainer = anchorOffset === 0
 		this.anchorAtLastPositionInContainer = anchorOffset === anchorContainerLength
@@ -302,54 +296,6 @@ class Selection {
 		return node.getClosestContainer()
 	}
 
-	// не нравится
-	getChildByOffset(element, offset) {
-		let restOffset = offset
-		// TODO: lastChild = element был нужен для того чтобы сработало выделение параграфа без единого элемента
-		// Возможно это поправит правильное определение индекса
-		let lastChild
-		let i
-		let child
-		const node = getNodeByElement(element)
-
-		if (node && node.isWidget) {
-			return [ offset, element ]
-		}
-
-		if (element.nodeType === 3) {
-			return [ offset, element ]
-		} else {
-			for (i = 0; i < element.childNodes.length; i++) {
-				child = element.childNodes[i]
-
-				if (child.nodeType === 3) {
-					if (child.length >= restOffset) {
-						return [ restOffset, child ]
-					}
-
-					restOffset -= child.length
-				} else if (child.nodeType === 1 && child.tagName.toLowerCase() === 'br') {
-					if (restOffset === 0) {
-						return [ restOffset, child ]
-					}
-
-					restOffset -= 1
-				} else if (child.childNodes) {
-					const [ subRestOffset, subChild ] = this.getChildByOffset(child, restOffset)
-
-					if (subChild) {
-						return [ subRestOffset, subChild ]
-					}
-
-					lastChild = subChild
-					restOffset = subRestOffset
-				}
-			}
-		}
-
-		return [ restOffset, lastChild ]
-	}
-
 	getDirection(anchorIndex, focusIndex) {
 		let i = 0
 
@@ -507,7 +453,7 @@ class Selection {
 
 	// не нравится
 	getFirstLevelNode(container, offset) {
-		const [ , selectedElement ] = this.getChildByOffset(container.element, offset)
+		const selectedElement = container.getChildByOffset(offset)
 		let firstLevelNode = getNodeByElement(selectedElement)
 
 		while (firstLevelNode.parent !== container) {
@@ -562,10 +508,8 @@ class Selection {
 	}
 
 	handleFocusedElement() {
-		const [ , focusedElement ] = this.getChildByOffset(
-			this.anchorContainer.element,
-			this.anchorOffset
-		)
+		const focusedElement =
+			this.anchorContainer.getChildByOffset(this.anchorOffset)
 		let focusedNode = getNodeByElement(focusedElement)
 		const focusedNodes = []
 
