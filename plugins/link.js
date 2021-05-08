@@ -49,7 +49,7 @@ class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			const node = new Link(this.url)
+			const node = new Link(this.core, this.url)
 			const first = this.first
 			const last = first.getLastNode()
 
@@ -83,7 +83,7 @@ class Link extends InlineWidget {
 	}
 
 	duplicate() {
-		const duplicate = new Link(this.url)
+		const duplicate = new Link(this.core, this.url)
 
 		this.connect(duplicate)
 
