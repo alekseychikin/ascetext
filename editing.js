@@ -23,7 +23,6 @@ const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, opt
 class Editing {
 	constructor(core) {
 		this.handleRemoveRange = this.handleRemoveRange.bind(this)
-		this.updateContainer = this.updateContainer.bind(this)
 		this.handleBackspace = this.handleBackspace.bind(this)
 		this.handleBackspaceKeyDown = this.handleBackspaceKeyDown.bind(this)
 		this.handleDelete = this.handleDelete.bind(this)
@@ -34,7 +33,6 @@ class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onPaste = this.onPaste.bind(this)
-		this.saveChanges = this.saveChanges.bind(this)
 
 		this.node = core.node
 		this.core = core
@@ -44,71 +42,14 @@ class Editing {
 		document.addEventListener('keydown', this.onKeyDown)
 	}
 
-	// не нравится
-	updateContainer() {
-		return
-		const container = this.core.selection.anchorContainer
-
-		let content = this.core.parse(container.firstChild, container.lastChild, {
-			parsingContainer: true
-		})
-
-		if (container.first) {
-			this.handleTextInRemoveNodes(container.first)
-			container.first.cutUntil()
-		}
-
-		while (container.element.firstChild !== null) {
-			container.element.removeChild(container.element.firstChild)
-		}
-
-		if (content) {
-			if (container.first) {
-				container.first.replaceUntil(content)
-			} else {
-				container.append(content)
-			}
-		}
-
-		container.isChanged = false
-
-		if (this.core.selection.focused) {
-			this.core.selection.restoreSelection(false)
-		}
-	}
-
-	handleTextInRemoveNodes(node) {
-		let current = node
-
-		while (current) {
-			if (current.type === 'text') {
-				if (current.content !== current.element.nodeValue) {
-					current.element.nodeValue = current.content
-				}
-			} else if (current.first) {
-				this.handleTextInRemoveNodes(current.first)
-			}
-
-			current = current.next
-		}
-	}
-
-	// не нравится
-	scheduleUpdate() {
-		if (this.updateTimer !== null) {
-			clearTimeout(this.updateTimer)
-			this.updateTimer = null
-		}
-
-		this.updateTimer = setTimeout(this.saveChanges, 500)
-	}
-
-	// не нравится
 	onKeyDown(event) {
-		if (
-			this.core.selection.focused
-		) {
-			if (event.keyCode === zKey && event.metaKey) {
+		if (this.core.selection.focused) {
+			const undoRepeat = event.keyCode === zKey && event.metaKey
+			const cut = event.keyCode === xKey && event.metaKey && this.core.selection.isRange
+			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey
+			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
+
+			if (undoRepeat) {
 				event.preventDefault()
 
 				if (event.shiftKey) {
@@ -116,41 +57,33 @@ class Editing {
 				} else {
 					this.core.timeTravel.goBack()
 				}
-			} else if (
-				event.keyCode === xKey &&
-				event.metaKey &&
-				this.core.selection.isRange
-			) {
+			} else if (cut) {
 				event.preventDefault()
 
 				const string = this.handleRemoveRange(true)
 				console.log(string)
-			} else if (
-				!metaKeyCodes.includes(event.keyCode) &&
-				!event.metaKey && !event.altKey
-			) {
+			} else if (singleKeyPessed) {
 				this.core.timeTravel.preservePreviousSelection()
 
-				if (modifyKeyCodes.includes(event.keyCode)) {
+				if (modifyKeyPressed) {
 					this.handleModifyKeyDown(event)
 				} else {
 					if (this.core.selection.isRange) {
 						this.handleRemoveRange()
 					}
 
-					this.core.selection.anchorContainer.isChanged = true
-
 					if (event.keyCode === spaceKey) {
-						this.saveChanges()
-					} else {
-						this.scheduleUpdate()
+						this.core.selection.anchorContainer.update()
+						this.core.timeTravel.commit()
+						this.core.timeTravel.preservePreviousSelection()
 					}
+
+					this.core.selection.anchorContainer.markDirty()
 				}
 			}
 		}
 	}
 
-	// не нравится
 	handleModifyKeyDown(event) {
 		switch (event.keyCode) {
 			case backspaceKey:
@@ -158,7 +91,7 @@ class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
-					this.saveChanges()
+					this.core.selection.anchorContainer.update()
 				}
 
 				this.handleBackspaceKeyDown(event)
@@ -168,14 +101,15 @@ class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.focusAtLastPositionInContainer
 				) {
-					this.saveChanges()
+					this.core.selection.anchorContainer.update()
 				}
 
 				this.handleDeleteKeyDown(event)
 				break
 			case enterKey:
+				// debugger
 				if (!this.core.selection.isRange) {
-					this.saveChanges()
+					this.core.selection.anchorContainer.update()
 				}
 
 				this.handleEnterKeyDown(event)
@@ -241,8 +175,8 @@ class Editing {
 			}
 		}
 
-		this.core.selection.setSelection(previousSelectableNode.element, offset)
-		this.saveChanges()
+		this.core.selection.setSelection(previousSelectableNode, offset)
+		// this.core.selection.anchorContainer.update()
 
 		if (isReturnString) {
 			return returnString
@@ -290,8 +224,9 @@ class Editing {
 		if (this.core.selection.anchorContainer.backspaceHandler) {
 			this.core.selection.anchorContainer.backspaceHandler(event)
 
-			this.core.selection.anchorContainer.isChanged = true
-			this.scheduleUpdate()
+			if (!event.defaultPrevented) {
+				this.core.selection.anchorContainer.markDirty()
+			}
 		} else {
 			event.preventDefault()
 			console.warn('must be backspaceHandler on ', this.core.selection.anchorContainer)
@@ -311,8 +246,9 @@ class Editing {
 		if (this.core.selection.anchorContainer.deleteHandler) {
 			this.core.selection.anchorContainer.deleteHandler(event)
 
-			this.core.selection.anchorContainer.isChanged = true
-			this.scheduleUpdate()
+			if (!event.defaultPrevented) {
+				this.core.selection.anchorContainer.markDirty()
+			}
 		} else {
 			event.preventDefault()
 			console.warn('must be deleteHandler on ', this.core.selection.anchorContainer)
@@ -355,21 +291,9 @@ class Editing {
 		doc.innerHTML = paste
 
 		const result = this.core.parse(doc.firstChild, doc.lastChild)
+		console.log('paste', result)
 
 		event.preventDefault()
-	}
-
-	// не нравится
-	saveChanges() {
-		if (this.core.selection.anchorContainer.isChanged) {
-			if (this.updateTimer !== null) {
-				clearTimeout(this.updateTimer)
-				this.updateTimer = null
-			}
-
-			this.updateContainer()
-			this.core.timeTravel.commit()
-		}
 	}
 }
 

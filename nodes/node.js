@@ -40,6 +40,7 @@ class Node {
 	append(node) {
 		let current = node
 		const last = node.getNodeUntil()
+		let container
 
 		node.handleEmptyContainer()
 		node.cutUntil()
@@ -76,11 +77,18 @@ class Node {
 		}
 
 		this.last = last
+
+		if (this.isMount && (container = this.getClosestContainer())) {
+			container.transform()
+		}
+
 		this.core.onUpdate()
 	}
 
 	// TODO: объединить с append
 	push(node) {
+		let container
+
 		node.handleEmptyContainer()
 		node.cut()
 
@@ -110,6 +118,10 @@ class Node {
 
 		if (this.isMount) {
 			this.setMount(node)
+
+			if (container = this.getClosestContainer()) {
+				container.transform()
+			}
 		}
 
 		this.core.onUpdate()
@@ -118,6 +130,7 @@ class Node {
 	preconnect(node) {
 		let last = node.getNodeUntil()
 		let current = node
+		let container
 
 		this.handleEmptyContainer()
 		node.handleEmptyContainer()
@@ -158,12 +171,18 @@ class Node {
 
 		last.next = this
 		this.previous = last
+
+		if (this.isMount && (container = this.getClosestContainer())) {
+			container.transform()
+		}
+
 		this.core.onUpdate()
 	}
 
 	connect(node) {
 		const last = node.getNodeUntil()
 		let current = node
+		let container
 
 		this.handleEmptyContainer()
 		node.handleEmptyContainer()
@@ -209,6 +228,11 @@ class Node {
 
 		this.next = node
 		node.previous = this
+
+		if (this.isMount && (container = this.getClosestContainer())) {
+			container.transform()
+		}
+
 		this.core.onUpdate()
 	}
 
@@ -378,7 +402,7 @@ class Node {
 	getClosestContainer() {
 		let container = this
 
-		while (!container.isContainer && !container.isWidget) {
+		while (container && !container.isContainer && !container.isWidget) {
 			container = container.parent
 		}
 

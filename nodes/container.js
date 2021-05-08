@@ -13,11 +13,15 @@ class Container extends Node {
 		this.showToolbar = this.showToolbar.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.onMouseDown = this.onMouseDown.bind(this)
+		this.update = this.update.bind(this)
 
 		this.isContainer = true
 		this.isChanged = false
 		this.isShowToolbar = false
 		this.isShowControls = false
+		this.markDirtyTimer = null
+		this.transformTimer = null
+		this.isUpdating = false
 		this.createControls()
 	}
 
@@ -39,21 +43,16 @@ class Container extends Node {
 			const childNode = getNodeByElement(childByOffset)
 			const { head, tail } = childNode.split(restOffset)
 
-			if (head !== null) {
-				head.connect(new BreakLine(this.core))
-			} else {
-				tail.preconnect(new BreakLine(this.core))
-			}
+			head.connect(new BreakLine(this.core))
 
 			if (this.core.selection.anchorAtLastPositionInContainer && childNode.type !== 'breakLine') {
-				childNode.connect(new BreakLine(this.core))
+				head.connect(new BreakLine(this.core))
 			}
 
 			this.core.selection.setSelection(
 				this.core.selection.anchorContainer,
 				this.core.selection.anchorOffset + 1
 			)
-			this.core.selection.update()
 		} else {
 			if (!this.parent.isSection && !this.parent.isGroup) {
 				return false
@@ -131,7 +130,6 @@ class Container extends Node {
 						this.core.selection.setSelection(container, 0)
 					} else {
 						if (container.first) {
-							previousSelectableNode.isChanged = true
 							previousSelectableNode.append(container.first)
 						}
 
@@ -173,7 +171,6 @@ class Container extends Node {
 					const offset = container.getOffset()
 
 					if (!nextSelectableNode.hasOnlyBr) {
-						container.isChanged = true
 						container.append(nextSelectableNode.first)
 					}
 
@@ -184,6 +181,98 @@ class Container extends Node {
 					this.core.selection.setSelection(nextSelectableNode, 0)
 				}
 			}
+		}
+	}
+
+	markDirty() {
+		this.isChanged = true
+
+		if (this.isUpdating || this.core.timeTravel.isLockPushChange) {
+			return
+		}
+
+		if (this.markDirtyTimer !== null) {
+			clearTimeout(this.markDirtyTimer)
+		}
+
+		this.markDirtyTimer = setTimeout(this.update, 300)
+	}
+
+	transform() {
+		this.isChanged = true
+
+		if (this.isUpdating || this.core.timeTravel.isLockPushChange) {
+			return
+		}
+
+		if (this.transformTimer !== null) {
+			clearTimeout(this.transformTimer)
+		}
+
+		this.transformTimer = setTimeout(this.update, 1)
+	}
+
+	update() {
+		if (this.isUpdating) {
+			return
+		}
+
+		if (this.markDirtyTimer !== null) {
+			clearTimeout(this.markDirtyTimer)
+			this.markDirtyTimer = null
+		}
+
+		if (this.transformTimer !== null) {
+			clearTimeout(this.transformTimer)
+			this.transformTimer = null
+		}
+
+		this.isUpdating = true
+
+		let content = this.core.parse(this.element.firstChild, this.element.lastChild, {
+			parsingContainer: true
+		})
+
+		if (this.first) {
+			this.handleTextInRemoveNodes(this.first)
+			this.first.cutUntil()
+		}
+
+		while (this.element.firstChild !== null) {
+			this.element.removeChild(this.element.firstChild)
+		}
+
+		if (content) {
+			if (this.first) {
+				this.first.replaceUntil(content)
+			} else {
+				this.append(content)
+			}
+		}
+
+		if (this.core.selection.focused) {
+			this.core.selection.restoreSelection(false)
+		}
+
+		this.isChanged = false
+		this.isUpdating = false
+		this.markDirtyTimer = null
+		this.transformTimer = null
+	}
+
+	handleTextInRemoveNodes(node) {
+		let current = node
+
+		while (current) {
+			if (current.type === 'text') {
+				if (current.content !== current.element.nodeValue) {
+					current.element.nodeValue = current.content
+				}
+			} else if (current.first) {
+				this.handleTextInRemoveNodes(current.first)
+			}
+
+			current = current.next
 		}
 	}
 

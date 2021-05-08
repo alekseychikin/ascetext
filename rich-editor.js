@@ -46,6 +46,7 @@ class RichEditor {
 		)) {
 			console.log('children', children)
 			this.model.append(children)
+			this.timeTravel.commit()
 		} else {
 			console.log('empty holder container')
 		}
