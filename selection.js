@@ -42,7 +42,7 @@ class Selection {
 			const anchorNode = getNodeByElement(event.target)
 
 			if (anchorNode && anchorNode.isWidget) {
-				this.setSelection(anchorNode.element, 0)
+				this.setSelection(anchorNode, 0)
 			}
 		}
 	}
@@ -183,34 +183,55 @@ class Selection {
 		this.forceUpdate = true
 	}
 
-	setSelection(anchorElement, anchorOffset, focusElement, focusOffset) {
-		const [ anchorRestOffset, anchorChildByOffset ] = this.getChildByOffset(
-			anchorElement,
-			Math.min(this.getOffset(anchorElement), anchorOffset)
-		)
+	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
 		const sel = window.getSelection()
+		const { element: anchorElement, index: anchorIndex } =
+			this.getSelectionParams(anchorNode, anchorOffset)
 
-		if (focusElement) {
-			const [ focusRestOffset, focusChildByOffset ] = this.getChildByOffset(
-				focusElement,
-				Math.min(this.getOffset(focusElement), focusOffset)
-			)
+		if (focusNode) {
+			const { element: focusElement, index: focusIndex } =
+				this.getSelectionParams(focusNode, focusOffset)
 
-			sel.setBaseAndExtent(anchorChildByOffset, anchorRestOffset, focusChildByOffset, focusRestOffset)
+			sel.setBaseAndExtent(anchorElement, anchorIndex, focusElement, focusIndex)
 		} else {
-			sel.collapse(anchorChildByOffset, anchorRestOffset)
+			sel.collapse(anchorElement, anchorIndex)
 		}
 
 		this.update()
+	}
+
+	getSelectionParams(node, offset) {
+		const childByOffset = node.getChildByOffset(offset)
+		let element = node.element
+		let index = offset
+
+		if (childByOffset.nodeType === 3) {
+			element = childByOffset
+			index -= node.getOffset(childByOffset)
+		} else {
+			const parentNode = childByOffset.parentNode
+			let i
+
+			for (i = 0; i < parentNode.childNodes.length; i++) {
+				if (parentNode.childNodes[i] === childByOffset) {
+					element = parentNode
+					index = i
+
+					break
+				}
+			}
+		}
+
+		return { element, index }
 	}
 
 	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
 	restoreSelection(forceUpdate = true) {
 		this.forceUpdate = forceUpdate
 		this.setSelection(
-			this.anchorContainer.element,
+			this.anchorContainer,
 			this.anchorOffset,
-			this.focusContainer.element,
+			this.focusContainer,
 			this.focusOffset
 		)
 	}
@@ -223,13 +244,15 @@ class Selection {
 	}
 
 	setSelectionByIndexes(indexes) {
-		const anchorElement = this.findElement(indexes.anchorIndex)
-		const focusElement = this.findElement(indexes.focusIndex)
+		const anchorElement = this.findElement(indexes.anchorIndex.slice(0, -1))
+		const focusElement = this.findElement(indexes.focusIndex.slice(0, -1))
+		const anchorNode = getNodeByElement(anchorElement)
+		const focusNode = getNodeByElement(focusElement)
 
 		this.setSelection(
-			anchorElement,
+			anchorNode,
 			indexes.anchorIndex[indexes.anchorIndex.length - 1],
-			focusElement,
+			focusNode,
 			indexes.focusIndex[indexes.focusIndex.length - 1]
 		)
 	}
@@ -335,12 +358,11 @@ class Selection {
 		return indexes
 	}
 
-	// не нравится
 	findElement(indexes) {
 		let current = this.core.model.element
 		let i
 
-		for (i = 0; i < indexes.length - 1; i++) {
+		for (i = 0; i < indexes.length; i++) {
 			current = current.childNodes[indexes[i]]
 		}
 

@@ -28,18 +28,18 @@ class Widget extends WithControls {
 			const paragraph = new Paragraph(this.core)
 
 			container.preconnect(paragraph)
-			this.core.selection.setSelection(paragraph.element, 0)
+			this.core.selection.setSelection(paragraph, 0)
 		}
 
 		container.delete()
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
-				this.core.selection.setSelection(previousNode.element, 0)
+				this.core.selection.setSelection(previousNode, 0)
 			} else {
 				const offset = previousNode.getOffset()
 
-				this.core.selection.setSelection(previousNode.element, offset)
+				this.core.selection.setSelection(previousNode, offset)
 			}
 		}
 	}
@@ -58,13 +58,13 @@ class Widget extends WithControls {
 			const paragraph = new Paragraph(this.core)
 
 			container.preconnect(paragraph)
-			this.core.selection.setSelection(paragraph.element, 0)
+			this.core.selection.setSelection(paragraph, 0)
 		}
 
 		container.delete()
 
 		if (nextNode) {
-			this.core.selection.setSelection(nextNode.element, 0)
+			this.core.selection.setSelection(nextNode, 0)
 		}
 	}
 
@@ -84,7 +84,7 @@ class Widget extends WithControls {
 			container.connect(paragraph)
 		}
 
-		this.core.selection.setSelection(paragraph.element, 0)
+		this.core.selection.setSelection(paragraph, 0)
 	}
 }
 

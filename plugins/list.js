@@ -84,7 +84,7 @@ class ListItem extends Container {
 					paragraph.connect(ul)
 				}
 
-				this.core.selection.setSelection(paragraph.element, 0)
+				this.core.selection.setSelection(paragraph, 0)
 			}
 		}
 	}
@@ -119,10 +119,10 @@ class ListItem extends Container {
 				if (ul) {
 					// debugger
 					paragraph.connect(ul)
-					this.core.selection.setSelection(paragraph.element, 0)
+					this.core.selection.setSelection(paragraph, 0)
 				}
 
-				this.core.selection.setSelection(paragraph.element, 0)
+				this.core.selection.setSelection(paragraph, 0)
 			}
 		} else {
 			const nextItem = new ListItem(this.core)
@@ -130,7 +130,7 @@ class ListItem extends Container {
 			this.connect(nextItem)
 
 			if (this.core.selection.focusAtLastPositionInContainer) {
-				this.core.selection.setSelection(nextItem.element, 0)
+				this.core.selection.setSelection(nextItem, 0)
 			} else {
 				const [ selectedAnchorChild, anchorOffset ] = this.getChildByOffset(
 					this.core.selection.anchorOffset
@@ -148,11 +148,11 @@ class ListItem extends Container {
 
 					if (anchorTail) {
 						nextItem.append(anchorTail)
-						this.core.selection.setSelection(anchorTail.element, 0)
+						this.core.selection.setSelection(anchorTail, 0)
 					} else {
 						nextItem.append(selectedAnchorNode)
 						this.append(new BreakLine())
-						this.core.selection.setSelection(nextItem.element, 0)
+						this.core.selection.setSelection(nextItem, 0)
 					}
 				} else {
 					console.error('enter under not text focus')

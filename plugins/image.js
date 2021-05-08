@@ -233,7 +233,7 @@ class ImageCaption extends Container {
 		const emptyParagraph = new Paragraph(this.core)
 
 		this.parent.connect(emptyParagraph)
-		this.core.selection.setSelection(emptyParagraph.element, 0)
+		this.core.selection.setSelection(emptyParagraph, 0)
 	}
 
 	stringify(children) {

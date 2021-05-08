@@ -48,7 +48,7 @@ class Container extends Node {
 			}
 
 			this.core.selection.setSelection(
-				this.core.selection.anchorContainer.element,
+				this.core.selection.anchorContainer,
 				this.core.selection.anchorOffset + 1
 			)
 			this.core.selection.update()
@@ -64,18 +64,18 @@ class Container extends Node {
 
 				this.connect(emptyParagraph)
 
-				this.core.selection.setSelection(emptyParagraph.element, 0)
+				this.core.selection.setSelection(emptyParagraph, 0)
 			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
 				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
 
 				this.preconnect(emptyParagraph)
 
-				this.core.selection.setSelection(this.element, 0)
+				this.core.selection.setSelection(this, 0)
 			} else {
 				const { tail } = this.split(this.core.selection.anchorOffset)
 
 				if (tail !== null) {
-					this.core.selection.setSelection(tail.element, 0)
+					this.core.selection.setSelection(tail, 0)
 				}
 			}
 		}
@@ -116,9 +116,9 @@ class Container extends Node {
 				if (previousSelectableNode.isContainer) {
 					const offset = previousSelectableNode.getOffset()
 
-					this.core.selection.setSelection(previousSelectableNode.element, offset)
+					this.core.selection.setSelection(previousSelectableNode, offset)
 				} else if (previousSelectableNode.isWidget) {
-					this.core.selection.setSelection(previousSelectableNode.element, 0)
+					this.core.selection.setSelection(previousSelectableNode, 0)
 				}
 			} else {
 				if (previousSelectableNode.isContainer) {
@@ -126,7 +126,7 @@ class Container extends Node {
 
 					if (!offset) {
 						previousSelectableNode.cut()
-						this.core.selection.setSelection(container.element, 0)
+						this.core.selection.setSelection(container, 0)
 					} else {
 						if (container.first) {
 							previousSelectableNode.isChanged = true
@@ -135,10 +135,10 @@ class Container extends Node {
 
 						container.cut()
 
-						this.core.selection.setSelection(previousSelectableNode.element, offset)
+						this.core.selection.setSelection(previousSelectableNode, offset)
 					}
 				} else if (previousSelectableNode.isWidget) {
-					this.core.selection.setSelection(previousSelectableNode.element, 0)
+					this.core.selection.setSelection(previousSelectableNode, 0)
 				}
 			}
 		}
@@ -164,7 +164,7 @@ class Container extends Node {
 				container.cut()
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					this.core.selection.setSelection(nextSelectableNode.element, 0)
+					this.core.selection.setSelection(nextSelectableNode, 0)
 				}
 			} else {
 				if (nextSelectableNode.isContainer) {
@@ -177,9 +177,9 @@ class Container extends Node {
 
 					nextSelectableNode.cut()
 
-					this.core.selection.setSelection(container.element, offset)
+					this.core.selection.setSelection(container, offset)
 				} else if (nextSelectableNode.isWidget) {
-					this.core.selection.setSelection(nextSelectableNode.element, 0)
+					this.core.selection.setSelection(nextSelectableNode, 0)
 				}
 			}
 		}
