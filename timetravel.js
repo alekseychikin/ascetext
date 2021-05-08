@@ -14,7 +14,8 @@ class TimeTravel {
 		this.timeindex = -1
 		this.isLockPushChange = false
 		this.currentBunch = []
-		this.timer = null
+		this.pushChangeTimer = null
+		this.commitTimer = null
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
@@ -32,20 +33,24 @@ class TimeTravel {
 
 	pushChange(event) {
 		if (!this.isLockPushChange) {
-			if (this.timer !== null) {
-				clearTimeout(this.timer)
+			if (this.pushChangeTimer !== null) {
+				clearTimeout(this.pushChangeTimer)
 			}
 
 			this.currentBunch.push(event)
-			this.timer = setTimeout(this.commit, 100)
+			this.pushChangeTimer = setTimeout(this.commit, 100)
 		}
 	}
 
 	commit() {
+		if (!this.currentBunch.length) {
+			return
+		}
+
 		const nextSelection = this.selection.getSelectionInIndexes()
 
-		if (this.timer !== null) {
-			clearTimeout(this.timer)
+		if (this.pushChangeTimer !== null) {
+			clearTimeout(this.pushChangeTimer)
 		}
 
 		if (this.timeindex < this.timeline.length - 1) {
@@ -61,7 +66,7 @@ class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.previousSelection = nextSelection
 		this.timeindex++
-		this.timer = null
+		this.pushChangeTimer = null
 	}
 
 	goBack() {
