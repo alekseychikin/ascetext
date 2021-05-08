@@ -1,6 +1,7 @@
 const InlineWidget = require('../nodes/inline-widget')
 const PluginPlugin = require('./plugin')
 const createElement = require('../create-element')
+const Text = require('./text').Text
 
 class BreakLine extends InlineWidget {
 	constructor(core) {
@@ -10,7 +11,14 @@ class BreakLine extends InlineWidget {
 	}
 
 	split() {
-		return this
+		const head = new Text(this.core, '', {})
+
+		this.preconnect(head)
+
+		return {
+			head,
+			tail: this
+		}
 	}
 }
 

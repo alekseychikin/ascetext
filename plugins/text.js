@@ -61,21 +61,6 @@ class Text extends Node {
 
 	split(position) {
 		const { weight, style } = this
-
-		if (position === 0) {
-			return {
-				head: null,
-				tail: this
-			}
-		}
-
-		if (position === this.content.length) {
-			return {
-				head: this,
-				tail: null
-			}
-		}
-
 		const container = this.getClosestContainer()
 		const params = { weight, style }
 		const head = new Text(this.core, this.content.substr(0, position), params)
@@ -83,7 +68,6 @@ class Text extends Node {
 
 		head.connect(tail)
 		this.replace(head)
-		container.isChanged = true
 		this.core.onUpdate()
 
 		return {

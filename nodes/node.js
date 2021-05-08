@@ -509,7 +509,6 @@ class Node {
 		throw new Error(`Plugin ${this.__proto__.constructor.name} must implement method duplicate`)
 	}
 
-	// не нравится
 	split(position) {
 		const container = this.getClosestContainer()
 		const selectedChild = this.getChildByOffset(position)
@@ -521,40 +520,13 @@ class Node {
 
 		const nodeChildPosition = position - this.getOffset(nodeChild.element)
 		const { head, tail } = nodeChild.split(nodeChildPosition)
+		const duplicate = this.duplicate()
 
-		if (tail !== null) {
-			if (head !== null || tail.previous) {
-				const duplicate = this.duplicate()
-
-				duplicate.append(tail)
-				container.isChanged = true
-
-				return {
-					head: this,
-					tail: duplicate
-				}
-			}
-
-			return {
-				head: null,
-				tail: this
-			}
-		}
-
-		if (head.next) {
-			const duplicate = this.duplicate()
-
-			duplicate.append(head.next)
-
-			return {
-				head: this,
-				tail: duplicate
-			}
-		}
+		duplicate.append(tail)
 
 		return {
 			head: this,
-			tail: null
+			tail: duplicate
 		}
 	}
 
