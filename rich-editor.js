@@ -5,6 +5,7 @@ const Selection = require('./selection')
 const Navigation = require('./navigation')
 const Editing = require('./editing')
 const TimeTravel = require('./timetravel').TimeTravel
+const BreakLine = require('./plugins/break-line').BreakLine
 
 class Root extends Section {
 	constructor(core, element, onUpdate) {
@@ -22,6 +23,7 @@ class RichEditor {
 		this.parse = this.parse.bind(this)
 		this.stringify = this.stringify.bind(this)
 		this.onUpdate = this.onUpdate.bind(this)
+		this.connectWithNormalize = this.connectWithNormalize.bind(this)
 
 		this.node = node
 		this.plugins = plugins
@@ -56,34 +58,41 @@ class RichEditor {
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {
 		let currentElement = firstElement
-		let result
+		let first
+		let previous
 		let current
-		let next
 		let value
 
 		while (currentElement) {
-			next = Object.keys(this.plugins).reduce((parsed, pluginName) => {
+			current = Object.keys(this.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
 				return this.plugins[pluginName].parse(currentElement, this.parse, context)
 			}, false)
 
-			if (next) {
-				value = this.handleParseNext(result, current, next)
+			if (!current && currentElement.childNodes) {
+				current = this.parse(currentElement.firstChild, currentElement.lastChild)
+			}
 
-				current = value.current
-				result = value.result
-			} else {
-				console.log('not matched', currentElement)
+			if (current) {
+				value = this.handleParseNext(first, previous, current)
 
-				if (currentElement.childNodes && (next = this.parse(currentElement.firstChild, currentElement.lastChild))) {
-					if (next) {
-						value = this.handleParseNext(result, current, next)
-
-						current = value.current
-						result = value.result
+				if (value.current && value.current.isContainer) {
+					if (!value.current.first) {
+						value.current.push(new BreakLine(this))
+					} else if (
+						value.current.last.type === 'breakLine' &&
+						value.current.last.previous &&
+						value.current.last.previous.type !== 'breakLine'
+					) {
+						value.current.push(new BreakLine(this))
 					}
 				}
+
+				previous = value.current
+				first = value.first
+			} else {
+				console.log('not matched', currentElement)
 			}
 
 			if (currentElement === lastElement) {
@@ -93,44 +102,52 @@ class RichEditor {
 			currentElement = currentElement.nextSibling
 		}
 
-		if (result) {
-			next = result.getLastNode()
-
-			if (next.type === 'breakLine' && next.previous && next.previous.type !== 'breakLine' && result !== next) {
-				next.cut()
-			}
-		}
-
-		return result
+		return first
 	}
 
-	handleParseNext(result, current, next) {
+	handleParseNext(first, previous, current) {
 		let normalized
 
-		if (!result) {
-			result = next
+		if (current.isDeleteEmpty && !current.first) {
+			return { first, current: previous }
 		}
 
-		if (current) {
-			if (
-				current.type === next.type && current.normalize &&
-				(normalized = current.normalize(next))
-			) {
-				current.replaceUntil(normalized)
+		if (!first) {
+			first = current
+		}
 
-				if (result === current) {
-					result = normalized
+		if (previous) {
+			this.connectWithNormalize(previous, current, (normalized) => {
+				if (first === previous) {
+					first = normalized
 				}
 
-				next = normalized
-			} else {
-				current.connect(next)
-			}
+				current = normalized
+			})
 		}
 
-		current = next.getLastNode()
+		return { first, current: current.getLastNode() }
+	}
 
-		return { result, current }
+	connectWithNormalize(previous, current, callback) {
+		let normalized
+
+		if (
+			previous.type === current.type && previous.normalize &&
+			(normalized = previous.normalize(current, this.connectWithNormalize))
+		) {
+			if (current.next) {
+				normalized.connect(current.next)
+			}
+
+			previous.replaceUntil(normalized)
+
+			if (typeof (callback) === 'function') {
+				callback(normalized)
+			}
+		} else {
+			previous.connect(current)
+		}
 	}
 
 	stringify(first) {

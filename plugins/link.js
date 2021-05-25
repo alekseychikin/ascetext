@@ -37,7 +37,7 @@ class Link extends InlineWidget {
 		}))
 	}
 
-	normalize(element) {
+	normalize(element, connectWithNormalize) {
 		const fields = [ 'url' ]
 		let areEqualElements = true
 		let normalized
@@ -50,30 +50,14 @@ class Link extends InlineWidget {
 
 		if (areEqualElements) {
 			const node = new Link(this.core, this.url)
-			const first = this.first
-			const last = first.getLastNode()
+			const last = this.first.getLastNode()
 
 			if (this.first) {
 				node.append(this.first)
 			}
 
 			if (element.first) {
-				// TODO: Это очень сложный normalize. Нужно вынести эту логику на уровень парсинга
-				// что если во время парсинга образовалась нормализованная нода
-				// то нужно перепарсить дочерние элементы
-				// а здесь оставить логику попроще
-				if (
-					last && element.first && last.type === element.first.type && last.normalize &&
-					(normalized = last.normalize(element.first))
-				) {
-					last.replaceUntil(normalized, element.first)
-
-					if (element.first.next) {
-						normalized.connect(element.first.next)
-					}
-				} else {
-					node.append(element.first)
-				}
+				connectWithNormalize(last, element.first)
 			}
 
 			return node

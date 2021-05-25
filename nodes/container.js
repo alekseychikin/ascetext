@@ -37,17 +37,12 @@ class Container extends Node {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			const childByOffset = this.getChildByOffset(this.core.selection.anchorOffset)
-			const childOffset = this.getOffset(childByOffset)
-			const restOffset = this.core.selection.anchorOffset - childOffset
-			const childNode = getNodeByElement(childByOffset)
-			const { head, tail } = childNode.split(restOffset)
+			const firstLevelNode = this.getFirstLevelNode(this.core.selection.anchorOffset)
+			const { head, tail } = firstLevelNode.split(
+				this.core.selection.anchorOffset - this.getOffset(firstLevelNode.element)
+			)
 
 			head.connect(new BreakLine(this.core))
-
-			if (this.core.selection.anchorAtLastPositionInContainer && childNode.type !== 'breakLine') {
-				head.connect(new BreakLine(this.core))
-			}
 
 			this.core.selection.setSelection(
 				this.core.selection.anchorContainer,
@@ -63,12 +58,14 @@ class Container extends Node {
 			if (this.core.selection.focusAtLastPositionInContainer) {
 				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
 
+				emptyParagraph.append(new BreakLine(this.core))
 				this.connect(emptyParagraph)
 
 				this.core.selection.setSelection(emptyParagraph, 0)
 			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
 				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
 
+				emptyParagraph.append(new BreakLine(this.core))
 				this.preconnect(emptyParagraph)
 
 				this.core.selection.setSelection(this, 0)
@@ -243,11 +240,17 @@ class Container extends Node {
 		}
 
 		if (content) {
-			if (this.first) {
-				this.first.replaceUntil(content)
-			} else {
-				this.append(content)
-			}
+			this.append(content)
+		}
+
+		if (!this.first) {
+			this.push(new BreakLine(this.core))
+		} else if (
+			this.last.type === 'breakLine' &&
+			this.last.previous &&
+			this.last.previous.type !== 'breakLine'
+		) {
+			this.push(new BreakLine(this.core))
 		}
 
 		if (this.core.selection.focused) {

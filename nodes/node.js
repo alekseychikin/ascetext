@@ -42,7 +42,6 @@ class Node {
 		const last = node.getNodeUntil()
 		let container
 
-		node.handleEmptyContainer()
 		node.cutUntil()
 
 		if (this.isMount) {
@@ -89,7 +88,6 @@ class Node {
 	push(node) {
 		let container
 
-		node.handleEmptyContainer()
 		node.cut()
 
 		if (this.isMount) {
@@ -132,8 +130,6 @@ class Node {
 		let current = node
 		let container
 
-		this.handleEmptyContainer()
-		node.handleEmptyContainer()
 		node.cutUntil()
 
 		if (this.parent) {
@@ -184,8 +180,6 @@ class Node {
 		let current = node
 		let container
 
-		this.handleEmptyContainer()
-		node.handleEmptyContainer()
 		node.cutUntil()
 
 		if (this.parent) {
@@ -244,6 +238,7 @@ class Node {
 		const last = this.getNodeUntil(nodeUntil)
 		const parent = this.parent
 		let current = this
+		let container
 
 		if (this.parent && this.parent.isMount) {
 			this.core.timeTravel.pushChange({
@@ -253,6 +248,10 @@ class Node {
 				next: last.next,
 				target: this
 			})
+		}
+
+		if (this.isMount && (container = this.getClosestContainer())) {
+			container.transform()
 		}
 
 		if (current.previous) {
@@ -303,10 +302,6 @@ class Node {
 			current = current.next
 		}
 
-		if (parent) {
-			parent.handleEmptyContainer()
-		}
-
 		this.core.onUpdate()
 	}
 
@@ -348,12 +343,6 @@ class Node {
 			this.childrenOmitOnUnmount(current.first)
 
 			current = current.next
-		}
-	}
-
-	handleEmptyContainer() {
-		if (this.isContainer && this.element.firstChild === null) {
-			this.element.appendChild(document.createElement('br'))
 		}
 	}
 
@@ -516,6 +505,17 @@ class Node {
 				restOffset -= 1
 			}
 		})
+	}
+
+	getFirstLevelNode(offset) {
+		const selectedElement = this.getChildByOffset(offset)
+		let firstLevelNode = getNodeByElement(selectedElement)
+
+		while (firstLevelNode.parent !== this) {
+			firstLevelNode = firstLevelNode.parent
+		}
+
+		return firstLevelNode
 	}
 
 	getLastNode() {
