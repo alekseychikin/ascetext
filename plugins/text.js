@@ -61,7 +61,6 @@ class Text extends Node {
 
 	split(position) {
 		const { weight, style } = this
-		const container = this.getClosestContainer()
 		const params = { weight, style }
 		const head = new Text(this.core, this.content.substr(0, position), params)
 		const tail = new Text(this.core, this.content.substr(position), params)

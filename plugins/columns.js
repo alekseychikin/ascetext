@@ -54,6 +54,7 @@ class Columns extends Widget {
 		}
 	}
 
+	// eslint-disable-next-line class-methods-use-this
 	stringify(children) {
 		return '<div class="columns">' + children + '</div>'
 	}
@@ -69,6 +70,7 @@ class ColumnData extends Section {
 		}))
 	}
 
+	// eslint-disable-next-line class-methods-use-this
 	stringify(children) {
 		return '<div class="column column--data">' + children + '</div>'
 	}

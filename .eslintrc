@@ -1,0 +1,16 @@
+{
+  "extends": [
+    "esnext"
+  ],
+  "env": {
+    "browser": true,
+    "commonjs": true,
+    "node": true
+  },
+  "rules": {
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "import/no-commonjs": "off",
+    "no-cond-assign": "off",
+    "no-use-before-define": ["error", { "functions": true, "variables": true, "classes": false }]
+  }
+}

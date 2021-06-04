@@ -1,5 +1,4 @@
 const Node = require('./node')
-const getNodeByElement = require('./node').getNodeByElement
 const paragraphPackage = require('../plugins/paragraph')
 const BreakLine = require('../plugins/break-line').BreakLine
 const Toolbar = require('../toolbar')
@@ -38,7 +37,7 @@ class Container extends Node {
 			event.preventDefault()
 
 			const firstLevelNode = this.getFirstLevelNode(this.core.selection.anchorOffset)
-			const { head, tail } = firstLevelNode.split(
+			const { head } = firstLevelNode.split(
 				this.core.selection.anchorOffset - this.getOffset(firstLevelNode.element)
 			)
 
@@ -118,25 +117,23 @@ class Container extends Node {
 				} else if (previousSelectableNode.isWidget) {
 					this.core.selection.setSelection(previousSelectableNode, 0)
 				}
-			} else {
-				if (previousSelectableNode.isContainer) {
-					const offset = previousSelectableNode.getOffset()
+			} else if (previousSelectableNode.isContainer) {
+				const offset = previousSelectableNode.getOffset()
 
-					if (!offset) {
-						previousSelectableNode.cut()
-						this.core.selection.setSelection(container, 0)
-					} else {
-						if (container.first) {
-							previousSelectableNode.append(container.first)
-						}
-
-						container.cut()
-
-						this.core.selection.setSelection(previousSelectableNode, offset)
+				if (!offset) {
+					previousSelectableNode.cut()
+					this.core.selection.setSelection(container, 0)
+				} else {
+					if (container.first) {
+						previousSelectableNode.append(container.first)
 					}
-				} else if (previousSelectableNode.isWidget) {
-					this.core.selection.setSelection(previousSelectableNode, 0)
+
+					container.cut()
+
+					this.core.selection.setSelection(previousSelectableNode, offset)
 				}
+			} else if (previousSelectableNode.isWidget) {
+				this.core.selection.setSelection(previousSelectableNode, 0)
 			}
 		}
 	}
@@ -163,20 +160,18 @@ class Container extends Node {
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
 					this.core.selection.setSelection(nextSelectableNode, 0)
 				}
-			} else {
-				if (nextSelectableNode.isContainer) {
-					const offset = container.getOffset()
+			} else if (nextSelectableNode.isContainer) {
+				const offset = container.getOffset()
 
-					if (!nextSelectableNode.hasOnlyBr) {
-						container.append(nextSelectableNode.first)
-					}
-
-					nextSelectableNode.cut()
-
-					this.core.selection.setSelection(container, offset)
-				} else if (nextSelectableNode.isWidget) {
-					this.core.selection.setSelection(nextSelectableNode, 0)
+				if (!nextSelectableNode.hasOnlyBr) {
+					container.append(nextSelectableNode.first)
 				}
+
+				nextSelectableNode.cut()
+
+				this.core.selection.setSelection(container, offset)
+			} else if (nextSelectableNode.isWidget) {
+				this.core.selection.setSelection(nextSelectableNode, 0)
 			}
 		}
 	}
@@ -226,7 +221,7 @@ class Container extends Node {
 
 		this.isUpdating = true
 
-		let content = this.core.parse(this.element.firstChild, this.element.lastChild, {
+		const content = this.core.parse(this.element.firstChild, this.element.lastChild, {
 			parsingContainer: true
 		})
 

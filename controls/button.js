@@ -1,4 +1,5 @@
 const ControlControl = require('./control')
+const getIcon = ControlControl.getIcon
 
 class ControlButton extends ControlControl {
 	handleAction(event) {
@@ -14,7 +15,7 @@ class ControlButton extends ControlControl {
 		this.element.title = params.label
 
 		if (params.icon) {
-			this.element.appendChild(this.getIcon(params.icon))
+			this.element.appendChild(getIcon(params.icon))
 		} else {
 			this.element.appendChild(document.createTextNode(params.label))
 		}

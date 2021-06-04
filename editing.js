@@ -1,7 +1,3 @@
-const Paragraph = require('./plugins/paragraph').Paragraph
-const getNodeByElement = require('./nodes/node').getNodeByElement
-const BreakLine = require('./plugins/break-line').BreakLine
-
 const backspaceKey = 8
 const deletekey = 46
 const enterKey = 13
@@ -189,7 +185,7 @@ class Editing {
 		let lastContainer = null
 		let children = ''
 
-		items.forEach((item, index) => {
+		items.forEach((item) => {
 			if (item.isContainer || item.isWidget) {
 				if (lastContainer !== null) {
 					returnString += item.stringify(children)

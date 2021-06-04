@@ -3,7 +3,7 @@ function createElement(tagname, attributes = {}, children = []) {
 	const element = document.createElement(tagname)
 
 	for (field in attributes) {
-		if (attributes.hasOwnProperty(field)) {
+		if (Object.prototype.hasOwnProperty.call(attributes, field)) {
 			if (field === 'data') {
 				for (dataField in attributes[field]) {
 					element.setAttribute(`data-${dataField}`, attributes[field][dataField])

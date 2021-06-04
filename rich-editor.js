@@ -1,14 +1,13 @@
 // import { debounce } from '../../libs/helpers'
-const getNodeByElement = require('./nodes/node').getNodeByElement
 const Section = require('./nodes/section')
 const Selection = require('./selection')
-const Navigation = require('./navigation')
+// const Navigation = require('./navigation')
 const Editing = require('./editing')
 const TimeTravel = require('./timetravel').TimeTravel
 const BreakLine = require('./plugins/break-line').BreakLine
 
 class Root extends Section {
-	constructor(core, element, onUpdate) {
+	constructor(core, element) {
 		super(core, 'root')
 
 		this.element = element
@@ -64,6 +63,7 @@ class RichEditor {
 		let value
 
 		while (currentElement) {
+			// eslint-disable-next-line no-loop-func
 			current = Object.keys(this.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
@@ -106,8 +106,6 @@ class RichEditor {
 	}
 
 	handleParseNext(first, previous, current) {
-		let normalized
-
 		if (current.isDeleteEmpty && !current.first) {
 			return { first, current: previous }
 		}

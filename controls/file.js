@@ -1,4 +1,5 @@
 const ControlControl = require('./control')
+const getIcon = ControlControl.getIcon
 
 class ControlFile extends ControlControl {
 	handleAction(event) {
@@ -19,7 +20,7 @@ class ControlFile extends ControlControl {
 		this.element.appendChild(this.input)
 
 		if (params.icon) {
-			this.element.appendChild(this.getIcon(params.icon))
+			this.element.appendChild(getIcon(params.icon))
 		} else {
 			this.element.appendChild(document.createTextNode(params.label))
 		}

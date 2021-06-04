@@ -1,4 +1,3 @@
-const pushChange = require('../timetravel').pushChange
 const operationTypes = require('../timetravel').operationTypes
 
 const mapElementToNode = []
@@ -15,6 +14,45 @@ function getNodeByElement(element) {
 		}
 
 		currentElement = currentElement.parentNode
+	}
+}
+
+function walk(rootElement, callback) {
+	let returnValue
+	let current = rootElement.firstChild
+
+	while (current && current !== rootElement) {
+		returnValue = callback(current)
+
+		if (typeof returnValue !== 'undefined') {
+			return returnValue
+		}
+
+		if (current.firstChild) {
+			current = current.firstChild
+
+			continue
+		}
+
+		if (current.nextSibling) {
+			current = current.nextSibling
+
+			continue
+		}
+
+		if (current.parentNode) {
+			current = current.parentNode
+
+			while (current && current !== rootElement) {
+				if (current.nextSibling) {
+					current = current.nextSibling
+
+					break
+				}
+
+				current = current.parentNode
+			}
+		}
 	}
 }
 
@@ -126,7 +164,7 @@ class Node {
 	}
 
 	preconnect(node) {
-		let last = node.getNodeUntil()
+		const last = node.getNodeUntil()
 		let current = node
 		let container
 
@@ -236,7 +274,6 @@ class Node {
 
 	cutUntil(nodeUntil) {
 		const last = this.getNodeUntil(nodeUntil)
-		const parent = this.parent
 		let current = this
 		let container
 
@@ -365,16 +402,13 @@ class Node {
 	}
 
 	replaceUntil(newNode, replaceUntil) {
-		let node = this
-		let next
-
 		if (this.previous) {
 			this.previous.connect(newNode)
 		} else {
 			this.preconnect(newNode)
 		}
 
-		node.cutUntil(replaceUntil)
+		this.cutUntil(replaceUntil)
 
 		if (this.onReplace) {
 			this.onReplace(newNode)
@@ -463,7 +497,7 @@ class Node {
 	getOffset(element) {
 		let index = 0
 
-		this.walk(this.element, (current) => {
+		walk(this.element, (current) => {
 			if (current === element) {
 				return true
 			}
@@ -487,7 +521,7 @@ class Node {
 	getChildByOffset(offset) {
 		let restOffset = offset
 
-		return this.walk(this.element, (current) => {
+		return walk(this.element, (current) => {
 			if (current.nodeType === 3) {
 				if (current.length >= restOffset) {
 					return current
@@ -534,7 +568,6 @@ class Node {
 	}
 
 	split(position) {
-		const container = this.getClosestContainer()
 		const selectedChild = this.getChildByOffset(position)
 		let nodeChild = getNodeByElement(selectedChild)
 
@@ -543,7 +576,7 @@ class Node {
 		}
 
 		const nodeChildPosition = position - this.getOffset(nodeChild.element)
-		const { head, tail } = nodeChild.split(nodeChildPosition)
+		const { tail } = nodeChild.split(nodeChildPosition)
 		const duplicate = this.duplicate()
 
 		duplicate.append(tail)
@@ -572,50 +605,12 @@ class Node {
 		return false
 	}
 
+	// eslint-disable-next-line class-methods-use-this
 	stringify() {
 		return ''
-	}
-
-	walk(rootElement, callback) {
-		let returnValue
-		let current = rootElement.firstChild
-
-		while (current && current !== rootElement) {
-			returnValue = callback(current)
-
-			if (typeof returnValue !== 'undefined') {
-				return returnValue
-			}
-
-			if (current.firstChild) {
-				current = current.firstChild
-
-				continue
-			}
-
-			if (current.nextSibling) {
-				current = current.nextSibling
-
-				continue
-			}
-
-			if (current.parentNode) {
-				current = current.parentNode
-
-				while (current && current !== rootElement) {
-					if (current.nextSibling) {
-						current = current.nextSibling
-
-						break
-					}
-
-					current = current.parentNode
-				}
-			}
-		}
-
 	}
 }
 
 module.exports = Node
 module.exports.getNodeByElement = getNodeByElement
+module.exports.walk

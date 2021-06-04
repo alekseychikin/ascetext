@@ -13,5 +13,10 @@
   "bugs": {
     "url": "https://github.com/makingoff/contenteditor/issues"
   },
-  "homepage": "https://github.com/makingoff/contenteditor#readme"
+  "homepage": "https://github.com/makingoff/contenteditor#readme",
+  "devDependencies": {
+    "eslint": "^7.27.0",
+    "eslint-config-recommended": "^4.1.0",
+    "eslint-plugin-import": "^2.23.3"
+  }
 }
