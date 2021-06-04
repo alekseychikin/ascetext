@@ -205,7 +205,7 @@ class Container extends Node {
 	}
 
 	update() {
-		if (this.isUpdating) {
+		if (this.isUpdating || !this.isMount) {
 			return
 		}
 

@@ -87,6 +87,7 @@ class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
+					// здесь нужно делать синхронизацию, а не апдейт
 					this.core.selection.anchorContainer.update()
 				}
 
@@ -97,6 +98,7 @@ class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.focusAtLastPositionInContainer
 				) {
+					// здесь нужно делать синхронизацию, а не апдейт
 					this.core.selection.anchorContainer.update()
 				}
 
@@ -105,6 +107,7 @@ class Editing {
 			case enterKey:
 				// debugger
 				if (!this.core.selection.isRange) {
+					// здесь нужно делать синхронизацию, а не апдейт
 					this.core.selection.anchorContainer.update()
 				}
 
@@ -115,67 +118,94 @@ class Editing {
 		this.core.onUpdate()
 	}
 
-	// не нравится
 	handleRemoveRange(isReturnString = false) {
 		const selectedItems = this.core.selection.getSelectedItems()
-		const returnString =
-			isReturnString ? this.stringifyRemovingRange(selectedItems) : ''
-		const filteredSelectedItems = selectedItems.slice()
-		const selectedWidgets = filteredSelectedItems.filter((item) => item.isWidget)
-		const selectedContainers = filteredSelectedItems.filter((item) => item.isContainer)
-		const lastSelectedContainer = selectedContainers[selectedContainers.length - 1]
-		let lastItem
-		let previousSelectableNode = filteredSelectedItems[0].getPreviousSelectableNode()
-		let offset = previousSelectableNode ? previousSelectableNode.getOffset() : 0
-		let lastItemNextNode
+		const containersForRemove = []
+		let since
+		let until
+		let index
+		let duplicate
+		let firstContainer
 
-		selectedWidgets.forEach((item) => {
-			item.cut()
-			filteredSelectedItems.splice(filteredSelectedItems.indexOf(item), 1)
-		})
-		selectedContainers.forEach((item, index) => {
-			if (index < selectedContainers.length - 1) {
-				item.cut()
-			}
-		})
-
-		lastItem = filteredSelectedItems[filteredSelectedItems.length - 1]
-
-		if (!filteredSelectedItems[0].isContainer) {
-			previousSelectableNode = filteredSelectedItems[0].getClosestContainer()
-			offset = previousSelectableNode.getOffset(filteredSelectedItems[0].element)
-			filteredSelectedItems[0].cutUntil(lastItem)
+		if (!selectedItems.length) {
+			return ''
 		}
 
-		if (selectedContainers.length > 0 && lastItem) {
-			lastItemNextNode = lastItem.next
-			previousSelectableNode = lastItem.getPreviousSelectableNode()
+		if (!selectedItems[0].isContainer && !selectedItems[0].isWidget) {
+			firstContainer = selectedItems[0].getClosestContainer()
+			duplicate = firstContainer.duplicate()
+			index = 1
+			since = selectedItems[0]
+			until = since
 
-			if (!lastItem.isContainer) {
-				lastSelectedContainer.first.cutUntil(lastItem)
-			}
-
-			if (lastItem === lastSelectedContainer) {
-				lastItemNextNode = lastSelectedContainer.first
-			}
-
-			if (
-				previousSelectableNode &&
-				previousSelectableNode.isContainer
-			) {
-				if (lastItemNextNode) {
-					previousSelectableNode.append(lastItemNextNode)
+			for (; index < selectedItems.length; index++) {
+				if (selectedItems[index].isWidget || selectedItems[index].isContainer) {
+					break
 				}
 
-				lastSelectedContainer.cut()
+				if (selectedItems[index].parent && (
+					selectedItems[index].parent.isWidget || selectedItems[index].parent.isContainer
+				)) {
+					until = selectedItems[index]
+				}
+			}
+
+			since.cutUntil(until)
+			duplicate.append(since)
+			containersForRemove.push(duplicate)
+		} else {
+			containersForRemove.push(selectedItems[0])
+		}
+
+		selectedItems.forEach((item) => {
+			if (item.isContainer || item.isWidget) {
+				containersForRemove.push(item)
+			}
+		})
+
+		let lastContainer = containersForRemove[containersForRemove.length - 1]
+
+		if (containersForRemove.length > 1 && lastContainer.isContainer) {
+			index = selectedItems.indexOf(lastContainer)
+
+			if (index < selectedItems.length - 1) {
+				since = selectedItems[index + 1]
+				until = since
+
+				for (; index < selectedItems.length; index++) {
+					if (selectedItems[index].parent && (
+						selectedItems[index].parent.isWidget || selectedItems[index].parent.isContainer
+					)) {
+						until = selectedItems[index]
+					}
+				}
+
+				if (until.next) {
+					since = until.next
+
+					if (firstContainer.isContainer) {
+						firstContainer.append(since)
+					} else {
+						lastContainer = lastContainer.duplicate()
+
+						lastContainer.append(since)
+					}
+				}
+
 			}
 		}
 
-		this.core.selection.setSelection(previousSelectableNode, offset)
-		// this.core.selection.anchorContainer.update()
+		containersForRemove[0].cutUntil(containersForRemove[containersForRemove.length - 1])
 
-		if (isReturnString) {
-			return returnString
+		if (firstContainer.isContainer) {
+			this.core.selection.setSelection(
+				firstContainer,
+				this.core.selection.isForwardDirection
+					? this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
+					: this.core.selection.focusIndex[this.core.selection.focusIndex.length - 1]
+			)
+		} else if (lastContainer.isContainer) {
+			this.core.selection.setSelection(lastContainer, 0)
 		}
 	}
 
@@ -281,13 +311,20 @@ class Editing {
 
 	// не работает
 	onPaste(event) {
-		const paste = (event.clipboardData || window.clipboardData).getData('text/html')
+		let paste = (event.clipboardData || window.clipboardData).getData('text/html')
+
+		if (!paste.length) {
+			paste = (event.clipboardData || window.clipboardData).getData('text')
+		}
+
 		const doc = document.createElement('div')
 
-		doc.innerHTML = paste
 
-		const result = this.core.parse(doc.firstChild, doc.lastChild)
-		console.log('paste', result)
+		console.log(paste)
+		// doc.innerHTML = paste
+
+		// const result = this.core.parse(doc.firstChild, doc.lastChild)
+		// console.log('paste', result)
 
 		event.preventDefault()
 	}

@@ -149,8 +149,7 @@ class Selection {
 
 		if (this.isRange) {
 			// this.blurFocusedNodes()
-			// this.setSelectedItems()
-			this.cutRange()
+			// this.getSelectedItems()
 		} else {
 			// this.handleFocusedElement()
 		}
@@ -257,51 +256,9 @@ class Selection {
 	getSelectedElement(element, offset) {
 		if (element.nodeType === 3 || element.nodeType === 1 && element.tagName.toLowerCase() === 'br') {
 			return [ element, offset ]
-		} else {
-			return [ element.childNodes[offset], 0 ]
-		}
-	}
-
-	getOffset(container, element) {
-		const [ offset ] = this.calcOffset(container, element)
-
-		return offset
-	}
-
-	// не нравится
-	calcOffset(container, element) {
-		let offset = 0
-		let i
-
-		if (container.nodeType === 3) {
-			return [ container.length, false ]
 		}
 
-		for (i = 0; i < container.childNodes.length; i++) {
-			if (container.childNodes[i] === element) {
-				return [ offset, true ]
-			}
-
-			if (container.childNodes[i].nodeType === 3) {
-				offset += container.childNodes[i].length
-			} else if (
-				container.childNodes[i].nodeType === 1 &&
-				container.childNodes[i].tagName.toLowerCase() === 'br' &&
-				container.lastChild !== container.childNodes[i]
-			) {
-				offset += 1
-			} else if (container.childNodes[i].childNodes) {
-				const [ subOffset, returnOffset ] = this.calcOffset(container.childNodes[i], element)
-
-				offset += subOffset
-
-				if (returnOffset) {
-					return [ offset, true ]
-				}
-			}
-		}
-
-		return [ offset, false ]
+		return [ element.childNodes[offset], 0 ]
 	}
 
 	// eslint-disable-next-line class-methods-use-this
@@ -354,9 +311,10 @@ class Selection {
 
 		if (container.element === element) {
 			element = container.element.childNodes[offset]
+			indexes.push(container.getOffset(element))
+		} else {
+			indexes.push(container.getOffset(element) + (element.nodeType === 3 ? offset : 0))
 		}
-
-		indexes.push(container.getOffset(element) + (element.nodeType === 3 ? offset : 0))
 
 		return indexes
 	}
@@ -372,39 +330,6 @@ class Selection {
 		return current
 	}
 
-	// не нравится
-	getSelectedItems() {
-		const { anchorHead, anchorTail, focusHead, focusTail } = this.cutRange()
-		const anchorContainer = this.isForwardDirection ? this.anchorContainer : this.focusContainer
-		const focusContainer = this.isForwardDirection ? this.focusContainer : this.anchorContainer
-		const finish = !focusHead
-			? focusTail && focusTail.previous
-				? focusTail.previous
-				: focusContainer
-			: focusHead
-		let current = !anchorTail ? anchorContainer.getNextSelectableNode() : anchorTail
-		let container = anchorContainer
-		let selectedItems = []
-
-		while (current) {
-			selectedItems.push(current)
-
-			if (current === finish) {
-				break
-			}
-
-			if (current.first) {
-				current = current.first
-			} else if (current.next) {
-				current = current.next
-			} else {
-				current = current.parent.getNextSelectableNode()
-			}
-		}
-
-		return selectedItems
-	}
-
 	blurFocusedNodes() {
 		this.focusedNodes.forEach((node) => {
 			if (typeof node.onBlur === 'function') {
@@ -415,77 +340,93 @@ class Selection {
 		this.focusedNodes = []
 	}
 
-	// не нравится
+	getSelectedItems() {
+		const { anchorTail, focusHead } = this.cutRange()
+		let current = anchorTail
+		const selectedItems = []
+
+		while (current) {
+			selectedItems.push(current)
+
+			if (current === focusHead) {
+				break
+			}
+
+			if (current.first) {
+				current = current.first
+
+				continue
+			}
+
+			if (current.next) {
+				current = current.next
+
+				continue
+			}
+
+			if (current.parent) {
+				current = current.parent
+
+				while (current) {
+					if (current.isContainer) {
+						current = current.getNextSelectableNode()
+
+						break
+					}
+
+					if (current.next) {
+						current = current.next
+
+						break
+					}
+
+					current = current.parent
+				}
+			}
+		}
+
+		return selectedItems
+	}
+
 	cutRange() {
 		let isAnchorTailEqualFocusHead = false
 		let anchor
 		let focus
 
 		if (this.isForwardDirection) {
-			const focusFirstLevelNode = this.getFirstLevelNode(
-				this.focusContainer,
-				this.focusOffset
-			)
-			focus = focusFirstLevelNode.split(this.focusOffset - this.getOffset(
-				this.focusContainer.element,
-				focusFirstLevelNode.element
-			))
-			const anchorFirstLevelNode = this.getFirstLevelNode(
-				this.anchorContainer,
-				this.anchorOffset
-			)
-			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = anchorFirstLevelNode.split(this.anchorOffset - this.getOffset(
-				this.anchorContainer.element,
-				anchorFirstLevelNode.element
-			))
-		} else {
-			const focusFirstLevelNode = this.getFirstLevelNode(
-				this.anchorContainer,
-				this.anchorOffset
-			)
-			focus = focusFirstLevelNode.split(this.anchorOffset - this.getOffset(
-				this.anchorContainer.element,
-				focusFirstLevelNode.element
-			))
-			const anchorFirstLevelNode = this.getFirstLevelNode(
-				this.focusContainer,
-				this.focusOffset
-			)
-			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = anchorFirstLevelNode.split(this.focusOffset - this.getOffset(
-				this.focusContainer.element,
-				anchorFirstLevelNode.element
-			))
-		}
+			const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
 
-		if (isAnchorTailEqualFocusHead) {
-			return {
-				anchorHead: anchor.head,
-				anchorTail: anchor.tail === null ? anchor.head.next : anchor.tail,
-				focusHead: anchor.tail,
-				focusTail: focus.tail
-			}
+			focus = focusFirstLevelNode.split(
+				this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
+			)
+
+			const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
+
+			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
+			anchor = anchorFirstLevelNode.split(
+				this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
+			)
+		} else {
+			const focusFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
+
+			focus = focusFirstLevelNode.split(
+				this.anchorOffset - this.anchorContainer.getOffset(focusFirstLevelNode.element)
+			)
+
+			const anchorFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
+
+			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
+			anchor = anchorFirstLevelNode.split(
+				this.focusOffset - this.focusContainer.getOffset(anchorFirstLevelNode.element)
+			)
 		}
 
 		return {
 			anchorHead: anchor.head,
-			anchorTail: anchor.tail === null ? anchor.head.next : anchor.tail,
-			focusHead: focus.head,
+			anchorTail: anchor.tail,
+			focusHead: isAnchorTailEqualFocusHead ? anchor.tail : focus.head,
 			focusTail: focus.tail
 		}
-	}
-
-	// не нравится
-	getFirstLevelNode(container, offset) {
-		const selectedElement = container.getChildByOffset(offset)
-		let firstLevelNode = getNodeByElement(selectedElement)
-
-		while (firstLevelNode.parent !== container) {
-			firstLevelNode = firstLevelNode.parent
-		}
-
-		return firstLevelNode
 	}
 
 	updateToolbar() {

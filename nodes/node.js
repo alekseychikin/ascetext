@@ -131,6 +131,7 @@ class Node {
 		if (this.isMount) {
 			this.core.timeTravel.pushChange({
 				type: operationTypes.APPEND,
+				container: this,
 				target: node,
 				last: node
 			})
@@ -281,7 +282,7 @@ class Node {
 			this.core.timeTravel.pushChange({
 				type: operationTypes.CUT,
 				container: this.parent,
-				until: nodeUntil,
+				until: last,
 				next: last.next,
 				target: this
 			})
