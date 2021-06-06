@@ -20,6 +20,11 @@ class BreakLine extends InlineWidget {
 			tail: this
 		}
 	}
+
+	// eslint-disable-next-line class-methods-use-this
+	stringify() {
+		return '<br />'
+	}
 }
 
 class BreakLinePlugin extends PluginPlugin {

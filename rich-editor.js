@@ -15,6 +15,8 @@ class Root extends Section {
 	}
 }
 
+const ignoreParsingElements = ['style', 'script']
+
 class RichEditor {
 	constructor(node, plugins) {
 		let children
@@ -70,7 +72,11 @@ class RichEditor {
 				return this.plugins[pluginName].parse(currentElement, this.parse, context)
 			}, false)
 
-			if (!current && currentElement.childNodes) {
+			if (
+				!current &&
+				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
+				currentElement.childNodes.length
+			) {
 				current = this.parse(currentElement.firstChild, currentElement.lastChild)
 			}
 

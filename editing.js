@@ -11,7 +11,6 @@ const optionKey = 18
 const apple = 91
 const esc = 27
 const zKey = 90
-const xKey = 88
 const spaceKey = 32
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
@@ -29,19 +28,20 @@ class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onPaste = this.onPaste.bind(this)
+		this.onCut = this.onCut.bind(this)
 
 		this.node = core.node
 		this.core = core
 		this.updateTimer = null
 
 		this.node.addEventListener('paste', this.onPaste)
-		document.addEventListener('keydown', this.onKeyDown)
+		this.node.addEventListener('keydown', this.onKeyDown)
+		this.node.addEventListener('cut', this.onCut)
 	}
 
 	onKeyDown(event) {
 		if (this.core.selection.focused) {
 			const undoRepeat = event.keyCode === zKey && event.metaKey
-			const cut = event.keyCode === xKey && event.metaKey && this.core.selection.isRange
 			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
 
@@ -53,11 +53,6 @@ class Editing {
 				} else {
 					this.core.timeTravel.goBack()
 				}
-			} else if (cut) {
-				event.preventDefault()
-
-				const string = this.handleRemoveRange(true)
-				console.log(string)
 			} else if (singleKeyPessed) {
 				this.core.timeTravel.preservePreviousSelection()
 
@@ -118,37 +113,24 @@ class Editing {
 		this.core.onUpdate()
 	}
 
-	handleRemoveRange(isReturnString = false) {
+	handleRemoveRange() {
 		const selectedItems = this.core.selection.getSelectedItems()
 		const containersForRemove = []
-		let since
-		let until
 		let index
 		let duplicate
 		let firstContainer
+		let returnHtmlValue = ''
+		let returnTextValue = ''
 
 		if (!selectedItems.length) {
 			return ''
 		}
 
 		if (!selectedItems[0].isContainer && !selectedItems[0].isWidget) {
+			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
+
 			firstContainer = selectedItems[0].getClosestContainer()
 			duplicate = firstContainer.duplicate()
-			index = 1
-			since = selectedItems[0]
-			until = since
-
-			for (; index < selectedItems.length; index++) {
-				if (selectedItems[index].isWidget || selectedItems[index].isContainer) {
-					break
-				}
-
-				if (selectedItems[index].parent && (
-					selectedItems[index].parent.isWidget || selectedItems[index].parent.isContainer
-				)) {
-					until = selectedItems[index]
-				}
-			}
 
 			since.cutUntil(until)
 			duplicate.append(since)
@@ -169,19 +151,10 @@ class Editing {
 			index = selectedItems.indexOf(lastContainer)
 
 			if (index < selectedItems.length - 1) {
-				since = selectedItems[index + 1]
-				until = since
-
-				for (; index < selectedItems.length; index++) {
-					if (selectedItems[index].parent && (
-						selectedItems[index].parent.isWidget || selectedItems[index].parent.isContainer
-					)) {
-						until = selectedItems[index]
-					}
-				}
+				const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
 
 				if (until.next) {
-					since = until.next
+					const since = until.next
 
 					if (firstContainer.isContainer) {
 						firstContainer.append(since)
@@ -191,9 +164,17 @@ class Editing {
 						lastContainer.append(since)
 					}
 				}
-
 			}
 		}
+
+		containersForRemove.forEach((container) => {
+			const children = this.core.stringify(container.first)
+
+			returnHtmlValue += container.stringify(children)
+			returnTextValue += children
+				.replace(/<br\s*?\/?>/g, '\n')
+				.replace(/(<([^>]+)>)/ig, '') + '\n'
+		})
 
 		containersForRemove[0].cutUntil(containersForRemove[containersForRemove.length - 1])
 
@@ -207,34 +188,32 @@ class Editing {
 		} else if (lastContainer.isContainer) {
 			this.core.selection.setSelection(lastContainer, 0)
 		}
+
+		return {
+			html: returnHtmlValue,
+			text: returnTextValue
+		}
 	}
 
-	// не нравится
-	stringifyRemovingRange(items) {
-		let returnString = ''
-		let lastContainer = null
-		let children = ''
+	// eslint-disable-next-line class-methods-use-this
+	captureSinceAndUntil(items, startIndex) {
+		const since = items[startIndex]
+		let until = since
+		let index = startIndex
 
-		items.forEach((item) => {
-			if (item.isContainer || item.isWidget) {
-				if (lastContainer !== null) {
-					returnString += item.stringify(children)
-					children = ''
-				}
-
-				lastContainer = item
+		for (; index < items.length; index++) {
+			if (items[index].isWidget || items[index].isContainer) {
+				break
 			}
 
-			if (item.parent.isContainer || item.parent.isWidget) {
-				if (lastContainer === null) {
-					returnString += item.stringify(this.core.stringify(item.first))
-				} else {
-					children += item.stringify(this.core.stringify(item.first))
-				}
+			if (items[index].parent && (
+				items[index].parent.isWidget || items[index].parent.isContainer
+			)) {
+				until = items[index]
 			}
-		})
+		}
 
-		return returnString + (lastContainer !== null ? lastContainer.stringify(children) : '')
+		return { since, until }
 	}
 
 	handleBackspaceKeyDown(event) {
@@ -309,22 +288,68 @@ class Editing {
 		}
 	}
 
-	// не работает
+	onCut(event) {
+		if (this.core.selection.isRange) {
+			this.core.timeTravel.preservePreviousSelection()
+
+			const removed = this.handleRemoveRange()
+			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+
+			clipboardData.setData('text/html', '<meta charset="utf-8">' + removed.html)
+			clipboardData.setData('text/plain', removed.text)
+		}
+
+		event.preventDefault()
+	}
+
 	onPaste(event) {
 		let paste = (event.clipboardData || window.clipboardData).getData('text/html')
+		const doc = document.createElement('div')
 
 		if (!paste.length) {
 			paste = (event.clipboardData || window.clipboardData).getData('text')
 		}
 
-		const doc = document.createElement('div')
+		doc.innerHTML = paste
 
+		const result = this.core.parse(doc.firstChild, doc.lastChild)
 
-		console.log(paste)
-		// doc.innerHTML = paste
+		if (this.core.selection.isRange) {
+			this.handleRemoveRange()
+		}
 
-		// const result = this.core.parse(doc.firstChild, doc.lastChild)
-		// console.log('paste', result)
+		if (result.isContainer) {
+			if (result.next) {
+				const { head, tail } = this.core.selection.anchorContainer.split(
+					this.core.selection.anchorOffset
+				)
+				const lastNode = result.getLastNode()
+
+				head.append(result.first)
+				head.connect(result)
+				result.cut()
+				lastNode.append(tail.first)
+				tail.cut()
+			} else {
+				const firstLevelNode = this.core.selection.anchorContainer.getFirstLevelNode(
+					this.core.selection.anchorOffset
+				)
+				const { head } = firstLevelNode.split(
+					this.core.selection.anchorOffset - this.core.selection.anchorContainer.getOffset(
+						firstLevelNode.element
+					)
+				)
+
+				head.connect(result.first)
+			}
+		} else if (result.isWidget) {
+			const { head } = this.core.selection.anchorContainer.split(
+				this.core.selection.anchorOffset
+			)
+
+			head.connect(result)
+		} else {
+		}
 
 		event.preventDefault()
 	}
