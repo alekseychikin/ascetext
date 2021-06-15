@@ -238,9 +238,8 @@ class Container extends Node {
 			this.append(content)
 		}
 
-		if (!this.first) {
-			this.push(new BreakLine(this.core))
-		} else if (
+		if (
+			!this.first ||
 			this.last.type === 'breakLine' &&
 			this.last.previous &&
 			this.last.previous.type !== 'breakLine'

@@ -91,8 +91,10 @@ class Selection {
 		const focusContainer = this.getClosestContainer(focusElement)
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
 		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
-		const [ anchorSelectedElement, anchorSelectedOffset ] = this.getSelectedElement(anchorElement, selection.anchorOffset)
-		const [ focusSelectedElement, focusSelectedOffset ] = this.getSelectedElement(focusElement, selection.focusOffset)
+		const [ anchorSelectedElement, anchorSelectedOffset ] =
+			this.getSelectedElement(anchorElement, selection.anchorOffset)
+		const [ focusSelectedElement, focusSelectedOffset ] =
+			this.getSelectedElement(focusElement, selection.focusOffset)
 		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
 		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
@@ -199,7 +201,9 @@ class Selection {
 		let element = node.element
 		let index = offset
 
-		if (childByOffset.nodeType === 3) {
+		if (node.isWidget && offset === 0) {
+			return { element: node.element, index: 0 }
+		} else if (childByOffset.nodeType === 3) {
 			element = childByOffset
 			index -= node.getOffset(childByOffset)
 		} else {

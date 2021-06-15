@@ -324,9 +324,10 @@ class Editing {
 					this.core.selection.anchorOffset
 				)
 				const lastNode = result.getLastNode()
+				const closestContainerInSection = this.getClosestContainerInSection(head)
 
 				head.append(result.first)
-				head.connect(result)
+				closestContainerInSection.connect(result)
 				result.cut()
 				lastNode.append(tail.first)
 				tail.cut()
@@ -352,6 +353,19 @@ class Editing {
 		}
 
 		event.preventDefault()
+	}
+
+	// eslint-disable-next-line class-methods-use-this
+	getClosestContainerInSection(node) {
+		let current = node
+
+		while (current) {
+			if ((current.isContainer || current.isWidget) && current.parent.isSection) {
+				return current
+			}
+
+			current = current.parent
+		}
 	}
 }
 

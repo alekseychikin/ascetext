@@ -1,4 +1,5 @@
 const Paragraph = require('../plugins/paragraph').Paragraph
+const BreakLine = require('../plugins/break-line').BreakLine
 const WithControls = require('./with-controls')
 
 class Widget extends WithControls {
@@ -31,7 +32,7 @@ class Widget extends WithControls {
 			this.core.selection.setSelection(paragraph, 0)
 		}
 
-		container.delete()
+		container.cut()
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
@@ -61,7 +62,7 @@ class Widget extends WithControls {
 			this.core.selection.setSelection(paragraph, 0)
 		}
 
-		container.delete()
+		container.cut()
 
 		if (nextNode) {
 			this.core.selection.setSelection(nextNode, 0)
@@ -78,6 +79,8 @@ class Widget extends WithControls {
 		const container = this.core.selection.anchorContainer
 		const paragraph = new Paragraph(this.core)
 
+		paragraph.append(new BreakLine(this.core))
+
 		if (event.shiftKey) {
 			container.preconnect(paragraph)
 		} else {
@@ -86,6 +89,10 @@ class Widget extends WithControls {
 
 		this.core.selection.setSelection(paragraph, 0)
 	}
+
+	transform() {}
+
+	update() {}
 }
 
 module.exports = Widget

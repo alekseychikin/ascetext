@@ -1,6 +1,7 @@
 const Widget = require('../nodes/widget')
 const Container = require('../nodes/container')
 const Paragraph = require('../plugins/paragraph').Paragraph
+const BreakLine = require('../plugins/break-line').BreakLine
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
 const ControlFile = require('../controls/file')
@@ -36,8 +37,8 @@ class Image extends Widget {
 		this.updateControlPosition()
 	}
 
-	constructor(src, size, float, params) {
-		super('image')
+	constructor(core, src, size, float, params) {
+		super(core, 'image')
 
 		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
 		this.toggleFloatRight = this.toggleFloatRight.bind(this)
@@ -105,14 +106,14 @@ class Image extends Widget {
 	}
 
 	getClassName() {
-		const classNames = [ 'content-image' ]
+		const classNames = [ 'image' ]
 
 		if (this.size.length) {
-			classNames.push(`content-image--size-${this.size}`)
+			classNames.push(`image--size-${this.size}`)
 		}
 
 		if (this.float !== 'none') {
-			classNames.push(`content-image--float-${this.float}`)
+			classNames.push(`image--float-${this.float}`)
 		}
 
 		return classNames.join(' ')
@@ -202,18 +203,18 @@ class Image extends Widget {
 	}
 
 	stringify(children) {
-		const classNames = [ 'content-image' ]
+		const classNames = [ 'image' ]
 
 		if (children.length) {
-			classNames.push('content-image--with-caption')
+			classNames.push('image--with-caption')
 		}
 
 		if (this.size.length) {
-			classNames.push(`content-image--size-${this.size}`)
+			classNames.push(`image--size-${this.size}`)
 		}
 
 		if (this.float !== 'none') {
-			classNames.push(`content-image--float-${this.float}`)
+			classNames.push(`image--float-${this.float}`)
 		}
 
 		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>'
@@ -229,7 +230,7 @@ class ImageCaption extends Container {
 		}))
 	}
 
-	enterHandler(event) {
+	enterHandler() {
 		const emptyParagraph = new Paragraph(this.core)
 
 		this.parent.connect(emptyParagraph)
@@ -243,6 +244,14 @@ class ImageCaption extends Container {
 
 		return ''
 	}
+
+	duplicate() {
+		const duplicate = new ImageCaption(this.core)
+
+		this.connect(duplicate)
+
+		return duplicate
+	}
 }
 
 class ImagePlugin extends PluginPlugin {
@@ -254,7 +263,7 @@ class ImagePlugin extends PluginPlugin {
 	}
 
 	match(element) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('content-image') > -1) {
+		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
 			return true
 		}
 
@@ -262,14 +271,14 @@ class ImagePlugin extends PluginPlugin {
 	}
 
 	parse(element, parse, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('content-image') > -1) {
+		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
 			let float = 'none'
 
 			classNames.forEach((className) => {
-				const sizeMatched = className.match(/content-image--size-(.*)/)
-				const floatMatched = className.match(/content-image--float-(.*)/)
+				const sizeMatched = className.match(/image--size-(.*)/)
+				const floatMatched = className.match(/image--float-(.*)/)
 
 				if (sizeMatched) {
 					size = sizeMatched[1]
@@ -284,7 +293,7 @@ class ImagePlugin extends PluginPlugin {
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
 				? parse(captionElement.firstChild, captionElement.lastChild, context)
-				: null
+				: new BreakLine(this.core)
 			const image = new Image(this.core, imgElement.src, size, float, this.params)
 			const caption = new ImageCaption(this.core)
 
