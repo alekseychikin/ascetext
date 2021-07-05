@@ -1,16 +1,17 @@
-.rich-editor__toolbar {
+.contenteditor__tooltip {
 	position: absolute;
 	z-index: 1;
-	margin: -7px 0 0 -50px;
+	margin-top: -7px;
 	display: flex;
-	transform: translateX(0);
+	transform: translateY(0);
 	opacity: 1;
 	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
 
-.rich-editor__toolbar.hidden {
-	transform: translateX(-10px);
+.contenteditor__tooltip.hidden {
+	transform: translateY(-10px);
 	opacity: 0;
+	pointer-events: none;
 }
 
 .rich-editor__toolbar .rich-editor__controls {

@@ -22,7 +22,6 @@ class WithControls extends Node {
 		this.controlHandler = this.controlHandler.bind(this)
 		this.setPosition = this.setPosition.bind(this)
 		this.onMouseDown = this.onMouseDown.bind(this)
-
 		this.controls = []
 	}
 

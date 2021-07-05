@@ -208,12 +208,16 @@ class TextPlugin extends PluginPlugin {
 		})
 	}
 
-	getSelectControls(selection) {
+	getSelectControls(focusedNodes) {
 		let hasBold = false
 		let hasItalic = false
 		const controls = []
 
-		selection.selectedItems.forEach((item) => {
+		if (!this.core.selection.isRange) {
+			return []
+		}
+
+		focusedNodes.forEach((item) => {
 			if (item.type === 'text' && item.weight === 'bold') {
 				hasBold = true
 			}
