@@ -195,7 +195,6 @@ class Editing {
 		}
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	captureSinceAndUntil(items, startIndex) {
 		const since = items[startIndex]
 		let until = since
@@ -355,7 +354,6 @@ class Editing {
 		event.preventDefault()
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getClosestContainerInSection(node) {
 		let current = node
 

@@ -21,7 +21,6 @@ class BreakLine extends InlineWidget {
 		}
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	stringify() {
 		return '<br />'
 	}

@@ -189,7 +189,6 @@ class Selection {
 		this.update()
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getSelectionParams(node, offset) {
 		const childByOffset = node.getChildByOffset(offset)
 		let element = node.element
@@ -249,7 +248,6 @@ class Selection {
 		)
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getSelectedElement(element, offset) {
 		if (element.nodeType === 3 || element.nodeType === 1 && element.tagName.toLowerCase() === 'br') {
 			return [ element, offset ]
@@ -258,7 +256,6 @@ class Selection {
 		return [ element.childNodes[offset], 0 ]
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getClosestContainer(element) {
 		let current = element
 		let node
@@ -270,7 +267,6 @@ class Selection {
 		return node.getClosestContainer()
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getDirection(anchorIndex, focusIndex) {
 		let i = 0
 
@@ -384,7 +380,6 @@ class Selection {
 		}
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	getArrayRangeItems(since, until) {
 		let current = since
 		const selectedItems = []
@@ -472,7 +467,6 @@ class Selection {
 		this.focusedNodes = focusedNodes
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	renderControls(controls = []) {
 		// controls — это массив групп кнопок, по отдельным плагинам
 		// Если он пустой, то нужно скрыть тултип

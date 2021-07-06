@@ -92,7 +92,6 @@ class WithControls extends Node {
 		this.removeControls()
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	addResizeEventListener(listener) {
 		if (!listeners.length) {
 			document.body.addEventListener('keydown', windowResizeHandler)
@@ -102,7 +101,6 @@ class WithControls extends Node {
 		listeners.push(listener)
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	removeResizeEventListener(listener) {
 		listeners.splice(listeners.indexOf(listener), 1)
 

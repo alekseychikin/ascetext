@@ -606,7 +606,6 @@ class Node {
 		return false
 	}
 
-	// eslint-disable-next-line class-methods-use-this
 	stringify() {
 		return ''
 	}
