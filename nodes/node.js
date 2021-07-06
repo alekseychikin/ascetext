@@ -82,14 +82,12 @@ class Node {
 
 		node.cutUntil()
 
-		if (this.isMount) {
-			this.core.timeTravel.pushChange({
-				type: operationTypes.APPEND,
-				container: this,
-				target: node,
-				last
-			})
-		}
+		this.emitNodeChange({
+			type: operationTypes.APPEND,
+			container: this,
+			target: node,
+			last
+		})
 
 		if (!this.first) {
 			this.first = node
@@ -128,14 +126,12 @@ class Node {
 
 		node.cut()
 
-		if (this.isMount) {
-			this.core.timeTravel.pushChange({
-				type: operationTypes.APPEND,
-				container: this,
-				target: node,
-				last: node
-			})
-		}
+		this.emitNodeChange({
+			type: operationTypes.APPEND,
+			container: this,
+			target: node,
+			last: node
+		})
 
 		if (this.last) {
 			this.last.next = node
@@ -172,14 +168,12 @@ class Node {
 		node.cutUntil()
 
 		if (this.parent) {
-			if (this.parent.isMount) {
-				this.core.timeTravel.pushChange({
-					type: operationTypes.PRECONNECT,
-					next: this,
-					target: node,
-					last
-				})
-			}
+			this.emitNodeChange({
+				type: operationTypes.PRECONNECT,
+				next: this,
+				target: node,
+				last
+			})
 
 			do {
 				current.parent = this.parent
@@ -222,14 +216,12 @@ class Node {
 		node.cutUntil()
 
 		if (this.parent) {
-			if (this.parent.isMount) {
-				this.core.timeTravel.pushChange({
-					type: operationTypes.CONNECT,
-					previous: this,
-					target: node,
-					last
-				})
-			}
+			this.emitNodeChange({
+				type: operationTypes.CONNECT,
+				previous: this,
+				target: node,
+				last
+			})
 
 			do {
 				current.parent = this.parent
@@ -278,15 +270,13 @@ class Node {
 		let current = this
 		let container
 
-		if (this.parent && this.parent.isMount) {
-			this.core.timeTravel.pushChange({
-				type: operationTypes.CUT,
-				container: this.parent,
-				until: last,
-				next: last.next,
-				target: this
-			})
-		}
+		this.emitNodeChange({
+			type: operationTypes.CUT,
+			container: this.parent,
+			until: last,
+			next: last.next,
+			target: this
+		})
 
 		if (this.isMount && (container = this.getClosestContainer())) {
 			container.transform()
@@ -414,6 +404,19 @@ class Node {
 		if (this.onReplace) {
 			this.onReplace(newNode)
 		}
+	}
+
+	emitNodeChange(params) {
+		const event = document.createEvent('HTMLEvents')
+
+		event.initEvent('node-change', true, true)
+		event.changes = {}
+
+		for (const key in params) {
+			event.changes[key] = params[key]
+		}
+
+		this.element.dispatchEvent(event)
 	}
 
 	get hasOnlyBr() {

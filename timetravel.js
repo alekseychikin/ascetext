@@ -70,7 +70,7 @@ class TimeTravel {
 	}
 
 	goBack() {
-		if (this.timeindex > 0) {
+		if (this.timeindex > -1) {
 			const {
 				bunch: previousEvents,
 				previousSelection: selectionIndexes

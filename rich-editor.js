@@ -25,6 +25,7 @@ class RichEditor {
 		this.stringify = this.stringify.bind(this)
 		this.onUpdate = this.onUpdate.bind(this)
 		this.connectWithNormalize = this.connectWithNormalize.bind(this)
+		this.onNodeChange = this.onNodeChange.bind(this)
 
 		this.node = node
 		this.plugins = plugins
@@ -55,6 +56,7 @@ class RichEditor {
 		}
 
 		this.node.setAttribute('contenteditable', true)
+		this.node.addEventListener('node-change', this.onNodeChange)
 	}
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {
@@ -185,6 +187,10 @@ class RichEditor {
 				this.devTool.renderModel()
 			}
 		}
+	}
+
+	onNodeChange(event) {
+		this.timeTravel.pushChange(event.changes)
 	}
 
 	getContent() {
