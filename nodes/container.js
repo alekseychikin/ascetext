@@ -4,8 +4,8 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const Toolbar = require('../toolbar')
 
 class Container extends Node {
-	constructor(core, type) {
-		super(core, type)
+	constructor(type) {
+		super(type)
 
 		this.toggleControls = this.toggleControls.bind(this)
 		this.hideToolbar = this.hideToolbar.bind(this)
@@ -32,21 +32,27 @@ class Container extends Node {
 		this.selection.focusedControl = true
 	}
 
-	enterHandler(event) {
+	enterHandler(
+		event,
+		{
+			anchorOffset,
+			anchorContainer,
+			setSelection,
+			focusAtLastPositionInContainer,
+			anchorAtFirstPositionInContainer,
+		}
+	) {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			const firstLevelNode = this.getFirstLevelNode(this.core.selection.anchorOffset)
+			const firstLevelNode = this.getFirstLevelNode(anchorOffset)
 			const { head } = firstLevelNode.split(
-				this.core.selection.anchorOffset - this.getOffset(firstLevelNode.element)
+				anchorOffset - this.getOffset(firstLevelNode.element)
 			)
 
-			head.connect(new BreakLine(this.core))
+			head.connect(new BreakLine())
 
-			this.core.selection.setSelection(
-				this.core.selection.anchorContainer,
-				this.core.selection.anchorOffset + 1
-			)
+			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
 			if (!this.parent.isSection && !this.parent.isGroup) {
 				return false
@@ -54,25 +60,25 @@ class Container extends Node {
 
 			event.preventDefault()
 
-			if (this.core.selection.focusAtLastPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
+			if (focusAtLastPositionInContainer) {
+				const emptyParagraph = new paragraphPackage.Paragraph()
 
-				emptyParagraph.append(new BreakLine(this.core))
+				emptyParagraph.append(new BreakLine())
 				this.connect(emptyParagraph)
 
-				this.core.selection.setSelection(emptyParagraph, 0)
-			} else if (this.core.selection.anchorAtFirstPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph(this.core)
+				setSelection(emptyParagraph, 0)
+			} else if (anchorAtFirstPositionInContainer) {
+				const emptyParagraph = new paragraphPackage.Paragraph()
 
-				emptyParagraph.append(new BreakLine(this.core))
+				emptyParagraph.append(new BreakLine())
 				this.preconnect(emptyParagraph)
 
-				this.core.selection.setSelection(this, 0)
+				setSelection(this, 0)
 			} else {
-				const { tail } = this.split(this.core.selection.anchorOffset)
+				const { tail } = this.split(anchorOffset)
 
 				if (tail !== null) {
-					this.core.selection.setSelection(tail, 0)
+					setSelection(tail, 0)
 				}
 			}
 		}
@@ -91,11 +97,19 @@ class Container extends Node {
 	// 	}
 	// }
 
-	backspaceHandler(event) {
-		if (this.core.selection.anchorAtFirstPositionInContainer) {
+	backspaceHandler(
+		event,
+		{
+			anchorAtFirstPositionInContainer,
+			anchorAtLastPositionInContainer,
+			anchorContainer,
+			setSelection
+		}
+	) {
+		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			const container = this.core.selection.anchorContainer
+			const container = anchorContainer
 
 			if (!container.parent.isSection && !container.parent.isGroup) {
 				return false
@@ -107,22 +121,22 @@ class Container extends Node {
 				return false
 			}
 
-			if (this.core.selection.anchorAtLastPositionInContainer) {
+			if (anchorAtLastPositionInContainer) {
 				container.cut()
 
 				if (previousSelectableNode.isContainer) {
 					const offset = previousSelectableNode.getOffset()
 
-					this.core.selection.setSelection(previousSelectableNode, offset)
+					setSelection(previousSelectableNode, offset)
 				} else if (previousSelectableNode.isWidget) {
-					this.core.selection.setSelection(previousSelectableNode, 0)
+					setSelection(previousSelectableNode, 0)
 				}
 			} else if (previousSelectableNode.isContainer) {
 				const offset = previousSelectableNode.getOffset()
 
 				if (!offset) {
 					previousSelectableNode.cut()
-					this.core.selection.setSelection(container, 0)
+					setSelection(container, 0)
 				} else {
 					if (container.first) {
 						previousSelectableNode.append(container.first)
@@ -130,19 +144,27 @@ class Container extends Node {
 
 					container.cut()
 
-					this.core.selection.setSelection(previousSelectableNode, offset)
+					setSelection(previousSelectableNode, offset)
 				}
 			} else if (previousSelectableNode.isWidget) {
-				this.core.selection.setSelection(previousSelectableNode, 0)
+				setSelection(previousSelectableNode, 0)
 			}
 		}
 	}
 
-	deleteHandler(event) {
-		if (this.core.selection.anchorAtLastPositionInContainer) {
+	deleteHandler(
+		event,
+		{
+			anchorAtLastPositionInContainer,
+			anchorAtFirstPositionInContainer,
+			anchorContainer,
+			setSelection
+		}
+	) {
+		if (anchorAtLastPositionInContainer) {
 			event.preventDefault()
 
-			const container = this.core.selection.anchorContainer
+			const container = anchorContainer
 
 			if (!container.parent.isSection && !container.parent.isGroup) {
 				return false
@@ -154,11 +176,11 @@ class Container extends Node {
 				return false
 			}
 
-			if (this.core.selection.anchorAtFirstPositionInContainer) {
+			if (anchorAtFirstPositionInContainer) {
 				container.cut()
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					this.core.selection.setSelection(nextSelectableNode, 0)
+					setSelection(nextSelectableNode, 0)
 				}
 			} else if (nextSelectableNode.isContainer) {
 				const offset = container.getOffset()
@@ -169,17 +191,15 @@ class Container extends Node {
 
 				nextSelectableNode.cut()
 
-				this.core.selection.setSelection(container, offset)
+				setSelection(container, offset)
 			} else if (nextSelectableNode.isWidget) {
-				this.core.selection.setSelection(nextSelectableNode, 0)
+				setSelection(nextSelectableNode, 0)
 			}
 		}
 	}
 
-	markDirty() {
-		this.isChanged = true
-
-		if (this.isUpdating || this.core.timeTravel.isLockPushChange) {
+	markDirty(params) {
+		if (this.isUpdating || params.isLockPushChange) {
 			return
 		}
 
@@ -187,13 +207,14 @@ class Container extends Node {
 			clearTimeout(this.markDirtyTimer)
 		}
 
-		this.markDirtyTimer = setTimeout(this.update, 300)
+		this.isChanged = true
+		this.markDirtyTimer = setTimeout(() => this.update(params), 300)
 	}
 
-	transform() {
+	transform(params) {
 		this.isChanged = true
 
-		if (this.isUpdating || this.core.timeTravel.isLockPushChange) {
+		if (this.isUpdating || params.isLockPushChange) {
 			return
 		}
 
@@ -201,10 +222,10 @@ class Container extends Node {
 			clearTimeout(this.transformTimer)
 		}
 
-		this.transformTimer = setTimeout(this.update, 1)
+		this.transformTimer = setTimeout(() => this.update(params), 1)
 	}
 
-	update() {
+	update({ parse, focused, restoreSelection }) {
 		if (this.isUpdating || !this.isMount) {
 			return
 		}
@@ -221,7 +242,7 @@ class Container extends Node {
 
 		this.isUpdating = true
 
-		const content = this.core.parse(this.element.firstChild, this.element.lastChild, {
+		const content = parse(this.element.firstChild, this.element.lastChild, {
 			parsingContainer: true
 		})
 
@@ -244,11 +265,11 @@ class Container extends Node {
 			this.last.previous &&
 			this.last.previous.type !== 'breakLine'
 		) {
-			this.push(new BreakLine(this.core))
+			this.push(new BreakLine())
 		}
 
-		if (this.core.selection.focused) {
-			this.core.selection.restoreSelection(false)
+		if (focused) {
+			restoreSelection(false)
 		}
 
 		this.isChanged = false

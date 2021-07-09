@@ -3,8 +3,8 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const WithControls = require('./with-controls')
 
 class Widget extends WithControls {
-	constructor(core, type) {
-		super(core, type)
+	constructor(type) {
+		super(type)
 
 		this.isWidget = true
 	}
@@ -56,7 +56,7 @@ class Widget extends WithControls {
 		const nextNode = container.next
 
 		if (!nextNode) {
-			const paragraph = new Paragraph(this.core)
+			const paragraph = new Paragraph()
 
 			container.preconnect(paragraph)
 			this.core.selection.setSelection(paragraph, 0)
@@ -77,9 +77,9 @@ class Widget extends WithControls {
 		}
 
 		const container = this.core.selection.anchorContainer
-		const paragraph = new Paragraph(this.core)
+		const paragraph = new Paragraph()
 
-		paragraph.append(new BreakLine(this.core))
+		paragraph.append(new BreakLine())
 
 		if (event.shiftKey) {
 			container.preconnect(paragraph)

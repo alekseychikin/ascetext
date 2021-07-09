@@ -1,8 +1,8 @@
 const Node = require('./node')
 
 class Section extends Node {
-	constructor(core, type) {
-		super(core, type)
+	constructor(type) {
+		super(type)
 
 		this.isSection = true
 	}

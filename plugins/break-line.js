@@ -4,14 +4,14 @@ const createElement = require('../create-element')
 const Text = require('./text').Text
 
 class BreakLine extends InlineWidget {
-	constructor(core) {
-		super(core, 'breakLine')
+	constructor() {
+		super('breakLine')
 
 		this.setElement(createElement('br'))
 	}
 
 	split() {
-		const head = new Text(this.core, '', {})
+		const head = new Text('', {})
 
 		this.preconnect(head)
 

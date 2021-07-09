@@ -12,8 +12,8 @@ class Link extends InlineWidget {
 		this.core.selection.restoreSelection()
 	}
 
-	constructor(core, url) {
-		super(core, 'link')
+	constructor(url) {
+		super('link')
 
 		this.removeLink = this.removeLink.bind(this)
 
@@ -38,7 +38,7 @@ class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			const node = new Link(this.core, this.url)
+			const node = new Link(this.url)
 			const last = this.first.getLastNode()
 
 			if (this.first) {
@@ -56,7 +56,7 @@ class Link extends InlineWidget {
 	}
 
 	duplicate() {
-		const duplicate = new Link(this.core, this.url)
+		const duplicate = new Link(this.url)
 
 		this.connect(duplicate)
 
@@ -82,7 +82,7 @@ class LinkPlugin extends PluginPlugin {
 			const url = element.getAttribute('href')
 			let children
 
-			const node = new Link(this.core, url)
+			const node = new Link(url)
 
 			if (children = parse(element.firstChild, element.lastChild, context)) {
 				node.append(children)
@@ -192,7 +192,7 @@ class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = new Link(this.core, url)
+				link = new Link(url)
 				item.connect(link)
 				link.push(item)
 			}

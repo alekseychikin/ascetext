@@ -4,8 +4,8 @@ const Paragraph = require('./paragraph').Paragraph
 const createElement = require('../create-element')
 
 class Header extends Paragraph {
-	constructor(core, level) {
-		super(core, 'header')
+	constructor(level) {
+		super('header')
 
 		this.fields = [ 'level' ]
 		this.level = level
@@ -13,7 +13,7 @@ class Header extends Paragraph {
 	}
 
 	duplicate() {
-		const duplicate = new Header(this.core, this.level)
+		const duplicate = new Header(this.level)
 
 		this.connect(duplicate)
 
@@ -36,7 +36,7 @@ class HeaderPlugin extends PluginPlugin {
 		if (element.nodeType === 1 && [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ].includes(element.nodeName.toLowerCase())) {
 			const level = Number(element.nodeName.toLowerCase().match(/(\d)+/)[1])
 			let children
-			const node = new Header(this.core, level)
+			const node = new Header(level)
 
 			context.parsingContainer = true
 

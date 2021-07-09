@@ -37,8 +37,8 @@ class Image extends Widget {
 		this.updateControlPosition()
 	}
 
-	constructor(core, src, size, float, params) {
-		super(core, 'image')
+	constructor(src, size, float, params) {
+		super('image')
 
 		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
 		this.toggleFloatRight = this.toggleFloatRight.bind(this)
@@ -222,8 +222,8 @@ class Image extends Widget {
 }
 
 class ImageCaption extends Container {
-	constructor(core) {
-		super(core, 'image-caption')
+	constructor() {
+		super('image-caption')
 
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
@@ -231,7 +231,7 @@ class ImageCaption extends Container {
 	}
 
 	enterHandler() {
-		const emptyParagraph = new Paragraph(this.core)
+		const emptyParagraph = new Paragraph()
 
 		this.parent.connect(emptyParagraph)
 		this.core.selection.setSelection(emptyParagraph, 0)
@@ -246,7 +246,7 @@ class ImageCaption extends Container {
 	}
 
 	duplicate() {
-		const duplicate = new ImageCaption(this.core)
+		const duplicate = new ImageCaption()
 
 		this.connect(duplicate)
 
@@ -293,9 +293,9 @@ class ImagePlugin extends PluginPlugin {
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
 				? parse(captionElement.firstChild, captionElement.lastChild, context)
-				: new BreakLine(this.core)
-			const image = new Image(this.core, imgElement.src, size, float, this.params)
-			const caption = new ImageCaption(this.core)
+				: new BreakLine()
+			const image = new Image(imgElement.src, size, float, this.params)
+			const caption = new ImageCaption()
 
 			if (captionChildren) {
 				caption.append(captionChildren)
@@ -330,8 +330,8 @@ class ImagePlugin extends PluginPlugin {
 
 		if (files.length) {
 			const src = await this.params.onSelectFile(files[0])
-			const image = new Image(this.core, (this.params.dir || '') + src, '', 'none', this.params)
-			const caption = new ImageCaption(this.core)
+			const image = new Image((this.params.dir || '') + src, '', 'none', this.params)
+			const caption = new ImageCaption()
 
 			image.append(caption)
 			selection.anchorContainer.replaceUntil(image, selection.anchorContainer)

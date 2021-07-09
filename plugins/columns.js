@@ -6,8 +6,8 @@ const Paragraph = require('./paragraph').Paragraph
 const createElement = require('../create-element')
 
 class Columns extends Widget {
-	constructor(core, types, params) {
-		super(core, 'columns')
+	constructor(types, params) {
+		super('columns')
 
 		this.setSecondColumnData = this.setSecondColumnData.bind(this)
 		this.setSecondColumnImage = this.setSecondColumnImage.bind(this)
@@ -37,17 +37,17 @@ class Columns extends Widget {
 
 	setSecondColumnData() {
 		if (this.types[1] !== 'data') {
-			const columnData = new ColumnData(this.core)
+			const columnData = new ColumnData()
 
 			this.types[1] = 'data'
-			columnData.append(new Paragraph(this.core))
+			columnData.append(new Paragraph())
 			this.last.replace(columnData)
 		}
 	}
 
 	setSecondColumnImage() {
 		if (this.types[1] !== 'image') {
-			const columnImage = new ColumnImage(this.core, '', this.params)
+			const columnImage = new ColumnImage('', this.params)
 
 			this.types[1] = 'image'
 			this.last.replace(columnImage)
@@ -75,8 +75,8 @@ class ColumnData extends Section {
 }
 
 class ColumnImage extends Widget {
-	constructor(core, src, params) {
-		super(core, 'column-image')
+	constructor(src, params) {
+		super('column-image')
 
 		this.onInputFileChange = this.onInputFileChange.bind(this)
 		this.updateControlPosition = this.updateControlPosition.bind(this)
@@ -199,7 +199,7 @@ class ColumnsPlugin extends PluginPlugin {
 
 				if (columnElement.classList.contains('column--image')) {
 					const imgChild = columnElement.querySelector('img')
-					const columnImage = new ColumnImage(this.core, imgChild.src, this.params)
+					const columnImage = new ColumnImage(imgChild.src, this.params)
 
 					columns.append(columnImage)
 				} else if (
@@ -209,7 +209,7 @@ class ColumnsPlugin extends PluginPlugin {
 						context
 					)
 				) {
-					const columnData = new ColumnData(this.core)
+					const columnData = new ColumnData()
 
 					columnData.append(children)
 					columns.append(columnData)
@@ -236,10 +236,10 @@ class ColumnsPlugin extends PluginPlugin {
 
 	setColumns(event, selection) {
 		const columns = new Columns([ 'image', 'data' ], this.params)
-		const columnImage = new ColumnImage(this.core, '', this.params)
-		const columnData = new ColumnData(this.core)
+		const columnImage = new ColumnImage('', this.params)
+		const columnData = new ColumnData()
 
-		columnData.append(new Paragraph(this.core))
+		columnData.append(new Paragraph())
 		columns.append(columnImage)
 		columns.append(columnData)
 		selection.anchorContainer.replaceUntil(columns, selection.anchorContainer)

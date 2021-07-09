@@ -57,8 +57,7 @@ function walk(rootElement, callback) {
 }
 
 class Node {
-	constructor(core, type) {
-		this.core = core
+	constructor(type) {
 		this.fields = []
 		this.type = type
 		this.isContainer = false
@@ -78,7 +77,6 @@ class Node {
 	append(node) {
 		let current = node
 		const last = node.getNodeUntil()
-		let container
 
 		node.cutUntil()
 
@@ -112,18 +110,10 @@ class Node {
 		}
 
 		this.last = last
-
-		if (this.isMount && (container = this.getClosestContainer())) {
-			container.transform()
-		}
-
-		this.core.onUpdate()
 	}
 
 	// TODO: объединить с append
 	push(node) {
-		let container
-
 		node.cut()
 
 		this.emitNodeChange({
@@ -151,30 +141,23 @@ class Node {
 
 		if (this.isMount) {
 			this.setMount(node)
-
-			if (container = this.getClosestContainer()) {
-				container.transform()
-			}
 		}
-
-		this.core.onUpdate()
 	}
 
 	preconnect(node) {
 		const last = node.getNodeUntil()
 		let current = node
-		let container
 
 		node.cutUntil()
 
-		if (this.parent) {
-			this.emitNodeChange({
-				type: operationTypes.PRECONNECT,
-				next: this,
-				target: node,
-				last
-			})
+		this.emitNodeChange({
+			type: operationTypes.PRECONNECT,
+			next: this,
+			target: node,
+			last
+		})
 
+		if (this.parent) {
 			do {
 				current.parent = this.parent
 				this.parent.element.insertBefore(current.element, this.element)
@@ -200,18 +183,11 @@ class Node {
 
 		last.next = this
 		this.previous = last
-
-		if (this.isMount && (container = this.getClosestContainer())) {
-			container.transform()
-		}
-
-		this.core.onUpdate()
 	}
 
 	connect(node) {
 		const last = node.getNodeUntil()
 		let current = node
-		let container
 
 		node.cutUntil()
 
@@ -253,12 +229,6 @@ class Node {
 
 		this.next = node
 		node.previous = this
-
-		if (this.isMount && (container = this.getClosestContainer())) {
-			container.transform()
-		}
-
-		this.core.onUpdate()
 	}
 
 	cut() {
@@ -268,18 +238,15 @@ class Node {
 	cutUntil(nodeUntil) {
 		const last = this.getNodeUntil(nodeUntil)
 		let current = this
-		let container
 
-		this.emitNodeChange({
-			type: operationTypes.CUT,
-			container: this.parent,
-			until: last,
-			next: last.next,
-			target: this
-		})
-
-		if (this.isMount && (container = this.getClosestContainer())) {
-			container.transform()
+		if (this.parent) {
+			this.parent.emitNodeChange({
+				type: operationTypes.CUT,
+				container: this.parent,
+				until: last,
+				next: last.next,
+				target: this
+			})
 		}
 
 		if (current.previous) {
@@ -329,8 +296,6 @@ class Node {
 
 			current = current.next
 		}
-
-		this.core.onUpdate()
 	}
 
 	setMount(node) {
@@ -616,4 +581,4 @@ class Node {
 
 module.exports = Node
 module.exports.getNodeByElement = getNodeByElement
-module.exports.walk
+module.exports.walk = walk

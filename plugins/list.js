@@ -8,8 +8,8 @@ const BreakLine = require('./break-line').BreakLine
 const createElement = require('../create-element')
 
 class List extends Group {
-	constructor(core, decor = 'marker') {
-		super(core, 'list')
+	constructor(decor = 'marker') {
+		super('list')
 
 		this.fields = [ 'decor' ]
 		this.decor = decor
@@ -19,7 +19,7 @@ class List extends Group {
 
 	normalize(element) {
 		if (this.decor === element.decor) {
-			const list = new List(this.core, this.decor)
+			const list = new List(this.decor)
 
 			list.append(this.first)
 			list.append(element.first)
@@ -42,8 +42,8 @@ class List extends Group {
 }
 
 class ListItem extends Container {
-	constructor(core) {
-		super(core, 'list-item')
+	constructor() {
+		super('list-item')
 
 		this.setElement(createElement('li'))
 	}
@@ -69,7 +69,7 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph(this.core)
+				const paragraph = new Paragraph()
 
 				parent.connect(paragraph)
 
@@ -102,7 +102,7 @@ class ListItem extends Container {
 			let ul
 
 			if (!isLastItem) {
-				ul = new List(this.core, parent.decor)
+				ul = new List(parent.decor)
 				ul.append(this.next)
 			}
 
@@ -111,7 +111,7 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph(this.core)
+				const paragraph = new Paragraph()
 
 				parent.connect(paragraph)
 				this.delete()
@@ -125,7 +125,7 @@ class ListItem extends Container {
 				this.core.selection.setSelection(paragraph, 0)
 			}
 		} else {
-			const nextItem = new ListItem(this.core)
+			const nextItem = new ListItem()
 
 			this.connect(nextItem)
 
@@ -162,7 +162,7 @@ class ListItem extends Container {
 	}
 
 	duplicate() {
-		const duplicate = new ListItem(this.core)
+		const duplicate = new ListItem()
 
 		this.connect(duplicate)
 
@@ -226,8 +226,8 @@ class ListPlugin extends PluginPlugin {
 	}
 
 	setNumberList(event, selection) {
-		const list = new List(this.core, 'number')
-		const listItem = new ListItem(this.core)
+		const list = new List('number')
+		const listItem = new ListItem()
 
 		list.append(listItem)
 		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)
@@ -235,8 +235,8 @@ class ListPlugin extends PluginPlugin {
 	}
 
 	setMarkerList(event, selection) {
-		const list = new List(this.core, 'marker')
-		const listItem = new ListItem(this.core)
+		const list = new List('marker')
+		const listItem = new ListItem()
 
 		list.append(listItem)
 		selection.anchorContainer.replaceUntil(list, selection.anchorContainer)

@@ -5,8 +5,8 @@ const ControlButton = require('../controls/button')
 const nbsCode = '\u00A0'
 
 class Text extends Node {
-	constructor(core, content, params) {
-		super(core, 'text')
+	constructor(content, params) {
+		super('text')
 
 		this.content = content
 
@@ -50,7 +50,7 @@ class Text extends Node {
 		})
 
 		if (areEqualElements) {
-			return new Text(this.core, this.content + element.content, {
+			return new Text(this.content + element.content, {
 				weight: this.weight,
 				style: this.style
 			})
@@ -62,12 +62,11 @@ class Text extends Node {
 	split(position) {
 		const { weight, style } = this
 		const params = { weight, style }
-		const head = new Text(this.core, this.content.substr(0, position), params)
-		const tail = new Text(this.core, this.content.substr(position), params)
+		const head = new Text(this.content.substr(0, position), params)
+		const tail = new Text(this.content.substr(position), params)
 
 		head.connect(tail)
 		this.replace(head)
-		this.core.onUpdate()
 
 		return {
 			head,
@@ -136,7 +135,7 @@ class TextPlugin extends PluginPlugin {
 				return false
 			}
 
-			return new Text(this.core, content, { weight, style })
+			return new Text(content, { weight, style })
 		}
 
 		if (element.nodeName.toLowerCase() === 'em') {
@@ -168,7 +167,7 @@ class TextPlugin extends PluginPlugin {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.weight === 'bold') {
 				const { style } = item
-				const replacementItem = new Text(this.core, item.content, { style })
+				const replacementItem = new Text(item.content, { style })
 
 				item.replaceUntil(replacementItem, item)
 			}
@@ -179,7 +178,7 @@ class TextPlugin extends PluginPlugin {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text') {
 				const { style } = item
-				const replacementItem = new Text(this.core, item.content, { style, weight: 'bold' })
+				const replacementItem = new Text(item.content, { style, weight: 'bold' })
 
 				item.replaceUntil(replacementItem, item)
 			}
@@ -190,7 +189,7 @@ class TextPlugin extends PluginPlugin {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.style === 'italic') {
 				const { weight } = item
-				const replacementItem = new Text(this.core, item.content, { weight })
+				const replacementItem = new Text(item.content, { weight })
 
 				item.replaceUntil(replacementItem, item)
 			}
@@ -201,7 +200,7 @@ class TextPlugin extends PluginPlugin {
 		selection.selectedItems.forEach((item) => {
 			if (item.type === 'text') {
 				const { weight } = item
-				const replacementItem = new Text(this.core, item.content, { weight, style: 'italic' })
+				const replacementItem = new Text(item.content, { weight, style: 'italic' })
 
 				item.replaceUntil(replacementItem, item)
 			}

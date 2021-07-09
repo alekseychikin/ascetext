@@ -1,3 +1,5 @@
+const getNodeByElement = require('./nodes/node').getNodeByElement
+
 const backspaceKey = 8
 const deletekey = 46
 const enterKey = 13
@@ -26,6 +28,7 @@ class Editing {
 		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
+		this.onNodeTransform = this.onNodeTransform.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
@@ -33,10 +36,12 @@ class Editing {
 		this.node = core.node
 		this.core = core
 		this.updateTimer = null
+		this.modifyKeyHandlerParams = {}
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
 		this.node.addEventListener('cut', this.onCut)
+		this.node.addEventListener('node-change', this.onNodeTransform)
 	}
 
 	onKeyDown(event) {
@@ -64,12 +69,12 @@ class Editing {
 					}
 
 					if (event.keyCode === spaceKey) {
-						this.core.selection.anchorContainer.update()
+						this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
 						this.core.timeTravel.commit()
 						this.core.timeTravel.preservePreviousSelection()
 					}
 
-					this.core.selection.anchorContainer.markDirty()
+					this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
 				}
 			}
 		}
@@ -83,7 +88,7 @@ class Editing {
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
 					// здесь нужно делать синхронизацию, а не апдейт
-					this.core.selection.anchorContainer.update()
+					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
 				}
 
 				this.handleBackspaceKeyDown(event)
@@ -94,7 +99,7 @@ class Editing {
 					this.core.selection.focusAtLastPositionInContainer
 				) {
 					// здесь нужно делать синхронизацию, а не апдейт
-					this.core.selection.anchorContainer.update()
+					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
 				}
 
 				this.handleDeleteKeyDown(event)
@@ -103,7 +108,7 @@ class Editing {
 				// debugger
 				if (!this.core.selection.isRange) {
 					// здесь нужно делать синхронизацию, а не апдейт
-					this.core.selection.anchorContainer.update()
+					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
 				}
 
 				this.handleEnterKeyDown(event)
@@ -226,10 +231,13 @@ class Editing {
 
 	handleBackspace(event) {
 		if (this.core.selection.anchorContainer.backspaceHandler) {
-			this.core.selection.anchorContainer.backspaceHandler(event)
+			this.core.selection.anchorContainer.backspaceHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
 
 			if (!event.defaultPrevented) {
-				this.core.selection.anchorContainer.markDirty()
+				this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
 			}
 		} else {
 			event.preventDefault()
@@ -248,10 +256,13 @@ class Editing {
 
 	handleDelete(event) {
 		if (this.core.selection.anchorContainer.deleteHandler) {
-			this.core.selection.anchorContainer.deleteHandler(event)
+			this.core.selection.anchorContainer.deleteHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
 
 			if (!event.defaultPrevented) {
-				this.core.selection.anchorContainer.markDirty()
+				this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
 			}
 		} else {
 			event.preventDefault()
@@ -272,7 +283,10 @@ class Editing {
 		this.handleRemoveRange()
 
 		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.enterHandler) {
-			this.core.selection.anchorContainer.enterHandler(event)
+			this.core.selection.anchorContainer.enterHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
 		}
 	}
 
@@ -280,10 +294,39 @@ class Editing {
 		event.preventDefault()
 
 		if (this.core.selection.anchorContainer.enterHandler) {
-			this.core.selection.anchorContainer.enterHandler(event)
+			this.core.selection.anchorContainer.enterHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
 		} else {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
+		}
+	}
+
+	getModifyKeyHandlerParams() {
+		this.modifyKeyHandlerParams.anchorOffset = this.core.selection.anchorOffset
+		this.modifyKeyHandlerParams.focusOffset = this.core.selection.focusOffset
+		this.modifyKeyHandlerParams.setSelection = this.core.selection.setSelection
+		this.modifyKeyHandlerParams.restoreSelection = this.core.selection.restoreSelection
+		this.modifyKeyHandlerParams.anchorAtFirstPositionInContainer = this.core.selection.anchorAtFirstPositionInContainer
+		this.modifyKeyHandlerParams.anchorAtLastPositionInContainer = this.core.selection.anchorAtLastPositionInContainer
+		this.modifyKeyHandlerParams.focusAtFirstPositionInContainer = this.core.selection.focusAtFirstPositionInContainer
+		this.modifyKeyHandlerParams.focusAtLastPositionInContainer = this.core.selection.focusAtLastPositionInContainer
+		this.modifyKeyHandlerParams.anchorContainer = this.core.selection.anchorContainer
+		this.modifyKeyHandlerParams.focusContainer = this.core.selection.focusContainer
+		this.modifyKeyHandlerParams.focused = this.core.selection.focused
+		this.modifyKeyHandlerParams.parse = this.core.parse
+		this.modifyKeyHandlerParams.isLockPushChange = this.core.timeTravel.isLockPushChange
+
+		return this.modifyKeyHandlerParams
+	}
+
+	onNodeTransform(event) {
+		const container = getNodeByElement(event.target).getClosestContainer()
+
+		if (container) {
+			container.transform(this.getModifyKeyHandlerParams())
 		}
 	}
 

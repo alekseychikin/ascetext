@@ -14,6 +14,8 @@ class Selection {
 		this.showTooltip = this.showTooltip.bind(this)
 		this.hideTooltip = this.hideTooltip.bind(this)
 		this.onUpdate = this.onUpdate.bind(this)
+		this.setSelection = this.setSelection.bind(this)
+		this.restoreSelection = this.restoreSelection.bind(this)
 
 		this.tooltip = createElement('div', {
 			'class': 'contenteditor__tooltip hidden'
