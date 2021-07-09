@@ -226,7 +226,7 @@ class Container extends Node {
 	}
 
 	update({ parse, focused, restoreSelection }) {
-		if (this.isUpdating || !this.isMount) {
+		if (this.isUpdating) {
 			return
 		}
 

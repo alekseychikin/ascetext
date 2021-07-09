@@ -11,7 +11,6 @@ class Root extends Section {
 		super(core, 'root')
 
 		this.element = element
-		this.isMount = true
 	}
 }
 

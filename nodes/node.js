@@ -65,7 +65,6 @@ class Node {
 		this.isSection = false
 		this.isGroup = false
 		this.isDeleteEmpty = false
-		this.isMount = false
 
 		mapElementToNode.push(this)
 	}
@@ -101,11 +100,6 @@ class Node {
 		while (current) {
 			current.parent = this
 			this.element.appendChild(current.element)
-
-			if (this.isMount) {
-				this.setMount(current)
-			}
-
 			current = current.next
 		}
 
@@ -138,10 +132,6 @@ class Node {
 		}
 
 		this.element.appendChild(node.element)
-
-		if (this.isMount) {
-			this.setMount(node)
-		}
 	}
 
 	preconnect(node) {
@@ -161,10 +151,6 @@ class Node {
 			do {
 				current.parent = this.parent
 				this.parent.element.insertBefore(current.element, this.element)
-
-				if (this.parent.isMount) {
-					this.setMount(current)
-				}
 
 				if (!current.next) {
 					break
@@ -206,10 +192,6 @@ class Node {
 					this.parent.element.insertBefore(current.element, this.next.element)
 				} else {
 					this.parent.element.appendChild(current.element)
-				}
-
-				if (this.parent.isMount) {
-					this.setMount(current)
 				}
 
 				if (!current.next) {
@@ -279,61 +261,11 @@ class Node {
 				current.element.parentNode.removeChild(current.element)
 			}
 
-			if (current.isMount) {
-				if (current.onUnmount) {
-					current.onUnmount()
-				}
-
-				current.isMount = false
-				this.childrenOmitOnUnmount(current.first)
-			}
-
 			delete current.parent
 
 			if (current === last) {
 				break
 			}
-
-			current = current.next
-		}
-	}
-
-	setMount(node) {
-		if (node.onMount) {
-			node.onMount()
-		}
-
-		node.isMount = true
-		this.childrenOmitOnMount(node.first)
-	}
-
-	childrenOmitOnMount(node) {
-		let current = node
-
-		while (current) {
-			if (!current.isMount) {
-				if (current.onMount) {
-					current.onMount()
-				}
-
-				current.isMount = true
-				this.childrenOmitOnMount(current.first)
-			}
-
-			current = current.next
-		}
-	}
-
-	childrenOmitOnUnmount(node) {
-		let current = node
-
-		while (current) {
-			if (current.onUnmount) {
-				current.onUnmount()
-			}
-
-			current.isMount = false
-			this.childrenOmitOnUnmount(current.first)
 
 			current = current.next
 		}
