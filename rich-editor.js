@@ -2,6 +2,7 @@
 const Section = require('./nodes/section')
 const Selection = require('./selection')
 // const Navigation = require('./navigation')
+const Toolbar = require('./toolbar')
 const Editing = require('./editing')
 const TimeTravel = require('./timetravel').TimeTravel
 const BreakLine = require('./plugins/break-line').BreakLine
@@ -32,8 +33,10 @@ class RichEditor {
 		// this.navigation = new Navigation(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
+		this.toolbar = new Toolbar(plugins, this.selection)
 		this.timeTravel = new TimeTravel(this.selection)
 		this.selection.onUpdate(this.timeTravel.onSelectionChange)
+		this.selection.onUpdate(this.toolbar.onSelectionChange)
 
 		Object.keys(this.plugins).forEach((pluginName) => this.plugins[pluginName].setCore(this))
 
