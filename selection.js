@@ -2,7 +2,7 @@ const getNodeByElement = require('./nodes/node').getNodeByElement
 
 class Selection {
 	constructor(core) {
-		this.onMouseDown = this.onMouseDown.bind(this)
+		this.onFocus = this.onFocus.bind(this)
 		this.update = this.update.bind(this)
 		this.onAnchorContainerReplace = this.onAnchorContainerReplace.bind(this)
 		this.onFocusContainerReplace = this.onFocusContainerReplace.bind(this)
@@ -21,13 +21,13 @@ class Selection {
 		this.renderedCustomControls = false
 		this.onUpdateHandlers = []
 
-		document.addEventListener('mousedown', this.onMouseDown)
+		document.addEventListener('focus', this.onFocus, true)
 		document.addEventListener('mouseup', this.update)
 		document.addEventListener('keyup', this.update)
 		document.addEventListener('input', this.update)
 	}
 
-	onMouseDown(event) {
+	onFocus(event) {
 		if (this.core.node.contains(event.target)) {
 			const anchorNode = getNodeByElement(event.target)
 
