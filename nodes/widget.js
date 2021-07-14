@@ -3,8 +3,8 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const WithControls = require('./with-controls')
 
 class Widget extends WithControls {
-	constructor(type) {
-		super(type)
+	constructor(type, attributes) {
+		super(type, attributes)
 
 		this.isWidget = true
 	}

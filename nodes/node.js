@@ -57,9 +57,9 @@ function walk(rootElement, callback) {
 }
 
 class Node {
-	constructor(type) {
-		this.fields = []
+	constructor(type, attributes = {}) {
 		this.type = type
+		this.attributes = attributes
 		this.isContainer = false
 		this.isWidget = false
 		this.isSection = false
@@ -467,9 +467,13 @@ class Node {
 		return current
 	}
 
-	// не нравится
 	duplicate() {
-		throw new Error(`Plugin ${this.__proto__.constructor.name} must implement method duplicate`)
+		// eslint-disable-next-line no-proto
+		const duplicate = new this.__proto__.constructor(this.attributes)
+
+		this.connect(duplicate)
+
+		return duplicate
 	}
 
 	split(position) {

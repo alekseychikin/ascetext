@@ -4,18 +4,10 @@ const Container = require('../nodes/container')
 const createElement = require('../create-element')
 
 class Paragraph extends Container {
-	constructor(type = 'paragraph') {
-		super(type)
+	constructor() {
+		super('paragraph')
 
 		this.setElement(createElement('p'))
-	}
-
-	duplicate() {
-		const duplicate = new Paragraph()
-
-		this.connect(duplicate)
-
-		return duplicate
 	}
 
 	stringify(children) {

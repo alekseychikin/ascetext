@@ -5,26 +5,18 @@ const ControlButton = require('../controls/button')
 const nbsCode = '\u00A0'
 
 class Text extends Node {
-	constructor(content, params) {
-		super('text')
+	constructor(attributes = {}, content = '') {
+		super('text', attributes)
 
 		this.content = content
 
-		if (params.weight) {
-			this.weight = params.weight
-		}
-
-		if (params.style) {
-			this.style = params.style
-		}
-
-		if (!this.weight && !this.style) {
+		if (!attributes.weight && !attributes.style) {
 			this.element = document.createTextNode(this.content)
-		} else if (this.weight === 'bold') {
+		} else if (attributes.weight === 'bold') {
 			this.element = document.createElement('strong')
 			const element = document.createTextNode(this.content)
 
-			if (this.style === 'italic') {
+			if (attributes.style === 'italic') {
 				const italic = document.createElement('em')
 
 				italic.appendChild(element)
@@ -32,7 +24,7 @@ class Text extends Node {
 			} else {
 				this.element.appendChild(element)
 			}
-		} else if (this.style === 'italic') {
+		} else if (attributes.style === 'italic') {
 			this.element = document.createElement('em')
 			const element = document.createTextNode(this.content)
 			this.element.appendChild(element)
@@ -44,26 +36,21 @@ class Text extends Node {
 		let areEqualElements = true
 
 		fields.forEach((field) => {
-			if (this[field] !== element[field]) {
+			if (this.attributes[field] !== element.attributes[field]) {
 				areEqualElements = false
 			}
 		})
 
 		if (areEqualElements) {
-			return new Text(this.content + element.content, {
-				weight: this.weight,
-				style: this.style
-			})
+			return new Text(this.attributes, this.content + element.content)
 		}
 
 		return false
 	}
 
 	split(position) {
-		const { weight, style } = this
-		const params = { weight, style }
-		const head = new Text(this.content.substr(0, position), params)
-		const tail = new Text(this.content.substr(position), params)
+		const head = new Text(this.attributes, this.content.substr(0, position))
+		const tail = new Text(this.attributes, this.content.substr(position))
 
 		head.connect(tail)
 		this.replace(head)
@@ -77,21 +64,21 @@ class Text extends Node {
 	stringify() {
 		let content = ''
 
-		if (this.weight === 'bold') {
+		if (this.attributes.weight === 'bold') {
 			content += '<strong>'
 		}
 
-		if (this.style === 'italic') {
+		if (this.attributes.style === 'italic') {
 			content += '<em>'
 		}
 
 		content += this.content
 
-		if (this.style === 'italic') {
+		if (this.attributes.style === 'italic') {
 			content += '</em>'
 		}
 
-		if (this.weight === 'bold') {
+		if (this.attributes.weight === 'bold') {
 			content += '</strong>'
 		}
 
@@ -135,7 +122,7 @@ class TextPlugin extends PluginPlugin {
 				return false
 			}
 
-			return new Text(content, { weight, style })
+			return new Text({ weight, style }, content)
 		}
 
 		if (element.nodeName.toLowerCase() === 'em') {
@@ -173,11 +160,11 @@ class TextPlugin extends PluginPlugin {
 		}
 
 		focusedNodes.forEach((item) => {
-			if (item.type === 'text' && item.weight === 'bold') {
+			if (item.type === 'text' && item.attributes.weight === 'bold') {
 				hasBold = true
 			}
 
-			if (item.type === 'text' && item.style === 'italic') {
+			if (item.type === 'text' && item.attributes.style === 'italic') {
 				hasItalic = true
 			}
 		})
@@ -225,9 +212,9 @@ class TextPlugin extends PluginPlugin {
 
 	unsetBold(event, { getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
-			if (item.type === 'text' && item.weight === 'bold') {
-				const { style } = item
-				const replacementItem = new Text(item.content, { style })
+			if (item.type === 'text' && item.attributes.weight === 'bold') {
+				const { style } = item.attributes
+				const replacementItem = new Text({ style }, item.content)
 
 				item.replace(replacementItem)
 			}
@@ -238,8 +225,8 @@ class TextPlugin extends PluginPlugin {
 	setBold(event, { getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				const { style } = item
-				const replacementItem = new Text(item.content, { style, weight: 'bold' })
+				const { style } = item.attributes
+				const replacementItem = new Text({ style, weight: 'bold' }, item.content)
 
 				item.replace(replacementItem)
 			}
@@ -251,9 +238,9 @@ class TextPlugin extends PluginPlugin {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
-			if (item.type === 'text' && item.style === 'italic') {
-				const { weight } = item
-				const replacementItem = new Text(item.content, { weight })
+			if (item.type === 'text' && item.attributes.style === 'italic') {
+				const { weight } = item.attributes
+				const replacementItem = new Text({ weight }, item.content)
 
 				item.replace(replacementItem)
 			}
@@ -264,8 +251,8 @@ class TextPlugin extends PluginPlugin {
 	setItalic(event, { getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				const { weight } = item
-				const replacementItem = new Text(item.content, { weight, style: 'italic' })
+				const { weight } = item.attributes
+				const replacementItem = new Text({ weight, style: 'italic' }, item.content)
 
 				item.replace(replacementItem)
 			}

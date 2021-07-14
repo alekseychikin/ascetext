@@ -1,27 +1,17 @@
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
-const Paragraph = require('./paragraph').Paragraph
+const Container = require('./Container').Paragraph
 const createElement = require('../create-element')
 
-class Header extends Paragraph {
-	constructor(level) {
-		super('header')
+class Header extends Container {
+	constructor(attributes) {
+		super('header', attributes)
 
-		this.fields = [ 'level' ]
-		this.level = level
-		this.setElement(createElement(`h${this.level}`))
-	}
-
-	duplicate() {
-		const duplicate = new Header(this.level)
-
-		this.connect(duplicate)
-
-		return duplicate
+		this.setElement(createElement(`h${attributes.level}`))
 	}
 
 	stringify(children) {
-		return '<h' + this.level + '>' + children + '</h' + this.level + '>'
+		return '<h' + this.attributes.level + '>' + children + '</h' + this.attributes.level + '>'
 	}
 }
 
@@ -36,7 +26,7 @@ class HeaderPlugin extends PluginPlugin {
 		if (element.nodeType === 1 && [ 'h1', 'h2', 'h3', 'h4', 'h5', 'h6' ].includes(element.nodeName.toLowerCase())) {
 			const level = Number(element.nodeName.toLowerCase().match(/(\d)+/)[1])
 			let children
-			const node = new Header(level)
+			const node = new Header({ level })
 
 			context.parsingContainer = true
 
@@ -70,10 +60,10 @@ class HeaderPlugin extends PluginPlugin {
 
 			containers.forEach((container) => {
 				if (container.type !== 'header' || container.level !== level) {
-					const header = new Header(level)
+					const header = new Header({ level })
 
 					header.append(container.first)
-					container.replaceUntil(header, container)
+					container.replace(header)
 				}
 			})
 		}

@@ -8,18 +8,16 @@ const BreakLine = require('./break-line').BreakLine
 const createElement = require('../create-element')
 
 class List extends Group {
-	constructor(decor = 'marker') {
-		super('list')
+	constructor(attributes = { decor: 'marker' }) {
+		super('list', attributes)
 
-		this.fields = [ 'decor' ]
-		this.decor = decor
 		this.isDeleteEmpty = true
-		this.setElement(createElement(this.decor === 'number' ? 'ol' : 'ul'))
+		this.setElement(createElement(this.attributes.decor === 'number' ? 'ol' : 'ul'))
 	}
 
 	normalize(element) {
-		if (this.decor === element.decor) {
-			const list = new List(this.decor)
+		if (this.attributes.decor === element.attributes.decor) {
+			const list = new List(this.attributes)
 
 			list.append(this.first)
 			list.append(element.first)
@@ -29,13 +27,7 @@ class List extends Group {
 	}
 
 	stringify(children) {
-		let tagName = ''
-
-		if (this.decor === 'number') {
-			tagName = 'ol'
-		} else {
-			tagName = 'ul'
-		}
+		const tagName = this.attributes.decor === 'number' ? 'ol' : 'ul'
 
 		return '<' + tagName + '>' + children + '</' + tagName + '>'
 	}

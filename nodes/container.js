@@ -4,8 +4,8 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const Toolbar = require('../toolbar')
 
 class Container extends Node {
-	constructor(type) {
-		super(type)
+	constructor(type, attributes = {}) {
+		super(type, attributes)
 
 		this.toggleControls = this.toggleControls.bind(this)
 		this.hideToolbar = this.hideToolbar.bind(this)

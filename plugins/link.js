@@ -6,16 +6,14 @@ const ControlLink = require('../controls/link')
 const createElement = require('../create-element')
 
 class Link extends InlineWidget {
-	constructor(url) {
-		super('link')
+	constructor(attributes) {
+		super('link', attributes)
 
-		this.fields = [ 'url' ]
-		this.url = url
 		this.isDeleteEmpty = true
 		this.controls = []
 
 		this.setElement(createElement('a', {
-			href: this.url
+			href: attributes.url
 		}))
 	}
 
@@ -24,13 +22,13 @@ class Link extends InlineWidget {
 		let areEqualElements = true
 
 		fields.forEach((field) => {
-			if (this[field] !== element[field]) {
+			if (this.attributes[field] !== element.attributes[field]) {
 				areEqualElements = false
 			}
 		})
 
 		if (areEqualElements) {
-			const node = new Link(this.url)
+			const node = new Link(this.attributes)
 			const last = this.first.getLastNode()
 
 			if (this.first) {
@@ -48,7 +46,7 @@ class Link extends InlineWidget {
 	}
 
 	duplicate() {
-		const duplicate = new Link(this.url)
+		const duplicate = new Link(this.attributes)
 
 		this.connect(duplicate)
 
@@ -74,7 +72,7 @@ class LinkPlugin extends PluginPlugin {
 			const url = element.getAttribute('href')
 			let children
 
-			const node = new Link(url)
+			const node = new Link({ url })
 
 			if (children = parse(element.firstChild, element.lastChild, context)) {
 				node.append(children)
@@ -132,8 +130,8 @@ class LinkPlugin extends PluginPlugin {
 		return link
 			? [
 					new ControlLink({
-						label: link.url,
-						url: link.url
+						label: link.attributes.url,
+						url: link.attributes.url
 					}),
 					new ControlButton({
 						label: 'Удалить',
@@ -185,7 +183,7 @@ class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = new Link(url)
+				link = new Link({ url })
 				item.connect(link)
 				link.push(item)
 			}

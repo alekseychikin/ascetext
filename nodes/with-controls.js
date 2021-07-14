@@ -16,8 +16,8 @@ function windowResizeHandler() {
 }
 
 class WithControls extends Node {
-	constructor(type) {
-		super(type)
+	constructor(type, attributes = {}) {
+		super(type, attributes)
 
 		this.controlHandler = this.controlHandler.bind(this)
 		this.setPosition = this.setPosition.bind(this)

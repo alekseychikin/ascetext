@@ -9,20 +9,14 @@ const createElement = require('../create-element')
 const Toolbar = require('../toolbar')
 
 class Image extends Widget {
-	constructor(src, size, float, params) {
-		super('image')
+	constructor(attributes) {
+		super('image', Object.assign({ size: '', float: 'none' }, attributes))
 
 		this.onInputFileChange = this.onInputFileChange.bind(this)
 		this.updateControlPosition = this.updateControlPosition.bind(this)
 
-		this.fields = [ 'size', 'float' ]
-		this.src = src
-		this.size = size || ''
-		this.float = float || 'none'
-		this.params = params
-
 		this.image = createElement('img', {
-			src: this.src
+			src: attributes.src
 		})
 		this.setElement(createElement('figure', {
 			'class': this.getClassName(),
@@ -34,12 +28,12 @@ class Image extends Widget {
 	getClassName() {
 		const classNames = [ 'image' ]
 
-		if (this.size.length) {
-			classNames.push(`image--size-${this.size}`)
+		if (this.attributes.size.length) {
+			classNames.push(`image--size-${this.attributes.size}`)
 		}
 
-		if (this.float !== 'none') {
-			classNames.push(`image--float-${this.float}`)
+		if (this.attributes.float !== 'none') {
+			classNames.push(`image--float-${this.attributes.float}`)
 		}
 
 		return classNames.join(' ')
@@ -135,15 +129,16 @@ class Image extends Widget {
 			classNames.push('image--with-caption')
 		}
 
-		if (this.size.length) {
-			classNames.push(`image--size-${this.size}`)
+		console.log(this)
+		if (this.attributes.size.length) {
+			classNames.push(`image--size-${this.attributes.size}`)
 		}
 
-		if (this.float !== 'none') {
-			classNames.push(`image--float-${this.float}`)
+		if (this.attributes.float !== 'none') {
+			classNames.push(`image--float-${this.attributes.float}`)
 		}
 
-		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>'
+		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.attributes.src + '" />' + children + '</figure>'
 	}
 }
 
@@ -170,14 +165,6 @@ class ImageCaption extends Container {
 		}
 
 		return ''
-	}
-
-	duplicate() {
-		const duplicate = new ImageCaption()
-
-		this.connect(duplicate)
-
-		return duplicate
 	}
 }
 
@@ -226,7 +213,7 @@ class ImagePlugin extends PluginPlugin {
 			const captionChildren = captionElement
 				? parse(captionElement.firstChild, captionElement.lastChild, context)
 				: new BreakLine()
-			const image = new Image(imgElement.src, size, float, this.params)
+			const image = new Image({ src: imgElement.src, size, float})
 			const caption = new ImageCaption()
 
 			if (captionChildren) {
@@ -261,7 +248,7 @@ class ImagePlugin extends PluginPlugin {
 <path d="M5 1H13V2H5V1Z" fill="white"/>\
 <path d="M5 14H13V15H5V14Z" fill="white"/>\
 </svg>',
-					selected: image.float === 'left',
+					selected: image.attributes.float === 'left',
 					action: (event, params) => this.toggleFloatLeft(event, params, image)
 				}),
 				new ControlButton({
@@ -273,7 +260,7 @@ class ImagePlugin extends PluginPlugin {
 <path d="M3 1H11V2H3V1Z" fill="white"/>\
 <path d="M3 14H11V15H3V14Z" fill="white"/>\
 </svg>',
-					selected: image.float === 'right',
+					selected: image.attributes.float === 'right',
 					action: (event, params) => this.toggleFloatRight(event, params, image)
 				}),
 				new ControlButton({
@@ -281,7 +268,7 @@ class ImagePlugin extends PluginPlugin {
 					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
 </svg>',
-					selected: image.size === 'wide',
+					selected: image.attributes.size === 'wide',
 					action: (event, params) => this.toggleSizeWide(event, params, image)
 				}),
 				new ControlButton({
@@ -289,7 +276,7 @@ class ImagePlugin extends PluginPlugin {
 					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
 </svg>',
-					selected: image.size === 'banner',
+					selected: image.attributes.size === 'banner',
 					action: (event, params) => this.toggleSizeBanner(event, params, image)
 				})
 			]
@@ -299,29 +286,29 @@ class ImagePlugin extends PluginPlugin {
 	}
 
 	toggleFloatLeft(event, { restoreSelection }, image) {
-		image.size = ''
-		image.float = image.float === 'left' ? 'none' : 'left'
+		image.attributes.size = ''
+		image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
 		image.element.className = image.getClassName()
 		restoreSelection()
 	}
 
 	toggleFloatRight(event, { restoreSelection }, image) {
-		image.size = ''
-		image.float = image.float === 'right' ? 'none' : 'right'
+		image.attributes.size = ''
+		image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
 		image.element.className = image.getClassName()
 		restoreSelection()
 	}
 
 	toggleSizeWide(event, { restoreSelection }, image) {
-		image.float = 'none'
-		image.size = image.size === 'wide' ? '' : 'wide'
+		image.attributes.float = 'none'
+		image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
 		image.element.className = image.getClassName()
 		restoreSelection()
 	}
 
 	toggleSizeBanner(event, { restoreSelection }, image) {
-		image.float = 'none'
-		image.size = image.size === 'banner' ? '' : 'banner'
+		image.attributes.float = 'none'
+		image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
 		image.element.className = image.getClassName()
 		restoreSelection()
 	}
@@ -347,7 +334,9 @@ class ImagePlugin extends PluginPlugin {
 
 		if (files.length) {
 			const src = await this.params.onSelectFile(files[0])
-			const image = new Image((this.params.dir || '') + src, '', 'none', this.params)
+			const image = new Image({
+				src: (this.params.dir || '') + src
+			})
 			const caption = new ImageCaption()
 
 			image.append(caption)
