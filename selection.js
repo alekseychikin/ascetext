@@ -22,7 +22,7 @@ class Selection {
 		this.onUpdateHandlers = []
 
 		document.addEventListener('focus', this.onFocus, true)
-		document.addEventListener('mouseup', this.update)
+		document.addEventListener('click', () => setTimeout(this.update, 0))
 		document.addEventListener('keyup', this.update)
 		document.addEventListener('input', this.update)
 	}
@@ -37,21 +37,6 @@ class Selection {
 		}
 	}
 
-	blur() {
-		this.focused = false
-		this.anchorContainer = null
-		this.focusContainer = null
-		this.anchorOffset = null
-		this.focusOffset = null
-
-		if (process.env.ENV === 'develop') {
-			this.core.devTool.renderSelection({
-				anchorIndex: [],
-				focusIndex: []
-			})
-		}
-	}
-
 	update() {
 		const selection = document.getSelection()
 		const { anchorNode: anchorElement, focusNode: focusElement, isCollapsed } = selection
@@ -63,8 +48,10 @@ class Selection {
 		}
 
 		if (!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) {
-			console.log('blur')
-			this.blur()
+			if (this.focused) {
+				console.log('blur')
+				this.blur()
+			}
 
 			return false
 		}
@@ -122,6 +109,16 @@ class Selection {
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
 
+	blur() {
+		this.focused = false
+		this.anchorContainer = null
+		this.focusContainer = null
+		this.anchorOffset = null
+		this.focusOffset = null
+
+		this.onUpdateHandlers.forEach((handler) => handler(this))
+	}
+
 	onUpdate(handler) {
 		this.onUpdateHandlers.push(handler)
 	}
@@ -149,7 +146,15 @@ class Selection {
 			const { element: focusElement, index: focusIndex } =
 				this.getSelectionParams(focusNode, focusOffset)
 
-			sel.setBaseAndExtent(anchorElement, anchorIndex, focusElement, focusIndex)
+			if (anchorElement === focusElement && anchorIndex === focusIndex) {
+				if (anchorNode.isWidget) {
+					anchorNode.element.focus()
+				} else {
+					sel.collapse(anchorElement, anchorIndex)
+				}
+			} else {
+				sel.setBaseAndExtent(anchorElement, anchorIndex, focusElement, focusIndex)
+			}
 		} else {
 			sel.collapse(anchorElement, anchorIndex)
 		}
@@ -345,14 +350,14 @@ class Selection {
 		while (current) {
 			selectedItems.push(current)
 
-			if (current === until) {
-				break
-			}
-
-			if (current.first) {
+			if (current.first && !current.isWidget) {
 				current = current.first
 
 				continue
+			}
+
+			if (current === until) {
+				break
 			}
 
 			if (current.next) {
@@ -363,6 +368,10 @@ class Selection {
 
 			if (current.parent) {
 				current = current.parent
+
+				if (current === until) {
+					break
+				}
 
 				while (current) {
 					if (current.isContainer) {

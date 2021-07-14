@@ -163,50 +163,6 @@ class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	unsetBold(event, selection) {
-		selection.selectedItems.forEach((item) => {
-			if (item.type === 'text' && item.weight === 'bold') {
-				const { style } = item
-				const replacementItem = new Text(item.content, { style })
-
-				item.replaceUntil(replacementItem, item)
-			}
-		})
-	}
-
-	setBold(event, selection) {
-		selection.selectedItems.forEach((item) => {
-			if (item.type === 'text') {
-				const { style } = item
-				const replacementItem = new Text(item.content, { style, weight: 'bold' })
-
-				item.replaceUntil(replacementItem, item)
-			}
-		})
-	}
-
-	unsetItalic(event, selection) {
-		selection.selectedItems.forEach((item) => {
-			if (item.type === 'text' && item.style === 'italic') {
-				const { weight } = item
-				const replacementItem = new Text(item.content, { weight })
-
-				item.replaceUntil(replacementItem, item)
-			}
-		})
-	}
-
-	setItalic(event, selection) {
-		selection.selectedItems.forEach((item) => {
-			if (item.type === 'text') {
-				const { weight } = item
-				const replacementItem = new Text(item.content, { weight, style: 'italic' })
-
-				item.replaceUntil(replacementItem, item)
-			}
-		})
-	}
-
 	getSelectControls(focusedNodes) {
 		let hasBold = false
 		let hasItalic = false
@@ -265,6 +221,56 @@ class TextPlugin extends PluginPlugin {
 		}
 
 		return controls
+	}
+
+	unsetBold(event, { getSelectedItems, restoreSelection }) {
+		getSelectedItems().forEach((item) => {
+			if (item.type === 'text' && item.weight === 'bold') {
+				const { style } = item
+				const replacementItem = new Text(item.content, { style })
+
+				item.replace(replacementItem)
+			}
+		})
+		restoreSelection()
+	}
+
+	setBold(event, { getSelectedItems, restoreSelection }) {
+		getSelectedItems().forEach((item) => {
+			if (item.type === 'text') {
+				const { style } = item
+				const replacementItem = new Text(item.content, { style, weight: 'bold' })
+
+				item.replace(replacementItem)
+			}
+		})
+		restoreSelection()
+	}
+
+	unsetItalic(event, { getSelectedItems, restoreSelection }) {
+		const selectedItems = getSelectedItems()
+
+		selectedItems.forEach((item) => {
+			if (item.type === 'text' && item.style === 'italic') {
+				const { weight } = item
+				const replacementItem = new Text(item.content, { weight })
+
+				item.replace(replacementItem)
+			}
+		})
+		restoreSelection()
+	}
+
+	setItalic(event, { getSelectedItems, restoreSelection }) {
+		getSelectedItems().forEach((item) => {
+			if (item.type === 'text') {
+				const { weight } = item
+				const replacementItem = new Text(item.content, { weight, style: 'italic' })
+
+				item.replace(replacementItem)
+			}
+		})
+		restoreSelection()
 	}
 }
 

@@ -21,7 +21,7 @@ class Container extends Node {
 		this.markDirtyTimer = null
 		this.transformTimer = null
 		this.isUpdating = false
-		this.createControls()
+		// this.createControls()
 	}
 
 	setElement(element) {

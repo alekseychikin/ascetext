@@ -6,16 +6,8 @@ const ControlLink = require('../controls/link')
 const createElement = require('../create-element')
 
 class Link extends InlineWidget {
-	removeLink() {
-		this.connect(this.first)
-		this.delete()
-		this.core.selection.restoreSelection()
-	}
-
 	constructor(url) {
 		super('link')
-
-		this.removeLink = this.removeLink.bind(this)
 
 		this.fields = [ 'url' ]
 		this.url = url
@@ -148,45 +140,46 @@ class LinkPlugin extends PluginPlugin {
 						icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
 		<path fill-rule="evenodd" clip-rule="evenodd" d="M4 13L3 12L7 8L3 4L4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13Z" fill="white"/>\
 		</svg>',
-						action: this.removeLink
+						action: (event, params) => this.removeLink(event, params, link)
 					})
 				]
 			: []
 	}
 
-	openLinkControls() {
-		this.core.selection.renderControls([
+	openLinkControls(event, { renderControls }) {
+		renderControls([
 			[
 				new ControlInput({
 					placeholder: 'Введите адрес ссылки',
 					autofocus: true,
 					action: this.setLink,
-					cancel: () => this.core.selection.restoreSelection()
+					cancel: (event, { restoreSelection }) => restoreSelection()
 				}),
 				new ControlButton({
 					label: 'Отменить',
 					icon: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
 	<path fill-rule="evenodd" clip-rule="evenodd" d="M4 13L3 12L7 8L3 4L4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13Z" fill="white"/>\
 	</svg>',
-					action: () => this.core.selection.restoreSelection()
+					action: (event, { restoreSelection }) => restoreSelection()
 				})
 			]
 		])
 	}
 
-	removeLinks() {
-		const selectedItems = this.core.selection.getSelectedItems()
+	removeLinks(event, { getSelectedItems, restoreSelection }) {
+		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'link') {
 				item.connect(item.first)
-				item.delete()
+				item.cut()
 			}
 		})
+		restoreSelection()
 	}
 
-	setLink(event) {
-		const selectedItems = this.core.selection.getSelectedItems()
+	setLink(event, { getSelectedItems, restoreSelection }) {
+		const selectedItems = getSelectedItems()
 		const url = event.target.value
 		let link
 
@@ -197,7 +190,13 @@ class LinkPlugin extends PluginPlugin {
 				link.push(item)
 			}
 		})
-		this.core.selection.restoreSelection()
+		restoreSelection()
+	}
+
+	removeLink(event, { restoreSelection }, link) {
+		link.connect(link.first)
+		link.cut()
+		restoreSelection()
 	}
 }
 

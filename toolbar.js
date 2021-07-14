@@ -8,10 +8,17 @@ class Toolbar {
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showTooltip = this.showTooltip.bind(this)
 		this.hideTooltip = this.hideTooltip.bind(this)
+		this.renderControls = this.renderControls.bind(this)
+		this.restoreSelection = this.restoreSelection.bind(this)
+		this.getSelectedItems = this.getSelectedItems.bind(this)
+		this.onMouseDown = this.onMouseDown.bind(this)
 
 		this.selection = selection
 		this.plugins = plugins
 		this.focusedNodes = []
+		this.lastFocusedRange = false
+		this.previousSelection = null
+		this.isKeepOpen = false
 
 		this.tooltip = createElement('div', {
 			'class': 'contenteditor__tooltip hidden'
@@ -25,10 +32,26 @@ class Toolbar {
 
 		document.body.appendChild(this.containerAvatar)
 		document.body.appendChild(this.tooltip)
+		document.addEventListener('mousedown', this.onMouseDown)
+		document.addEventListener('keydown', this.onMouseDown)
 	}
 
 	onSelectionChange() {
-		this.updateTooltip()
+		if (this.selection.focused) {
+			this.updateTooltip()
+		} else if (this.isKeepOpen) {
+			this.isKeepOpen = false
+		} else {
+			this.hideTooltip()
+		}
+	}
+
+	onMouseDown(event) {
+		if (this.tooltip.contains(event.target)) {
+			this.isKeepOpen = true
+
+			setTimeout(() => this.isKeepOpen = false, 10)
+		}
 	}
 
 	blurFocusedNodes() {
@@ -37,8 +60,6 @@ class Toolbar {
 				node.onBlur()
 			}
 		})
-
-		this.focusedNodes = []
 	}
 
 	updateTooltip() {
@@ -61,11 +82,15 @@ class Toolbar {
 		if (
 			focusedNodes.length !== this.focusedNodes.length ||
 			this.selection.isRange ||
+			this.lastFocusedRange && !this.selection.isRange ||
 			focusedNodes.filter((node, index) => this.focusedNodes[index] !== node).length
 		) {
 			Object.keys(this.plugins).forEach((type) => {
 				if (this.plugins[type].getSelectControls) {
-					const nodeControls = this.plugins[type].getSelectControls(focusedNodes)
+					const nodeControls = this.plugins[type].getSelectControls(
+						focusedNodes,
+						this.selection.isRange
+					)
 
 					if (nodeControls.length) {
 						controls.push(nodeControls)
@@ -73,11 +98,13 @@ class Toolbar {
 				}
 			})
 
+			this.previousSelection = this.selection.getSelectionInIndexes()
 			this.renderControls(controls)
 		} else {
 			this.renderTooltip()
 		}
 
+		this.lastFocusedRange = this.selection.isRange
 		this.focusedNodes = focusedNodes
 	}
 
@@ -100,6 +127,9 @@ class Toolbar {
 				)
 
 				this.tooltip.appendChild(group)
+				groupControls.forEach((control) =>
+					control.setEventListener(this.controlHandler)
+				)
 			})
 
 			this.showTooltip()
@@ -109,7 +139,26 @@ class Toolbar {
 	}
 
 	controlHandler(action, event) {
-		action(event, this)
+		action(event, {
+			restoreSelection: this.restoreSelection,
+			renderControls: this.renderControls,
+			getSelectedItems: this.getSelectedItems
+		})
+	}
+
+	restoreSelection() {
+		if (this.previousSelection !== null) {
+			this.lastFocusedRange = false
+			this.focusedNodes = []
+			this.selection.setSelectionByIndexes(this.previousSelection)
+			this.updateTooltip()
+		}
+	}
+
+	getSelectedItems() {
+		this.restoreSelection()
+
+		return this.selection.getSelectedItems()
 	}
 
 	emptyTooltip() {
@@ -162,8 +211,10 @@ class Toolbar {
 	}
 
 	hideTooltip() {
-		this.tooltip.classList.add('hidden')
 		this.isShowTooltip = false
+		this.lastFocusedRange = false
+		this.focusedNodes = []
+		this.tooltip.classList.add('hidden')
 		this.containerAvatar.innerHTML = ''
 	}
 }

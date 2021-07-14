@@ -9,41 +9,9 @@ const createElement = require('../create-element')
 const Toolbar = require('../toolbar')
 
 class Image extends Widget {
-	toggleFloatLeft() {
-		this.size = ''
-		this.float = this.float === 'left' ? 'none' : 'left'
-		this.element.className = this.getClassName()
-		this.updateControlPosition()
-	}
-
-	toggleFloatRight() {
-		this.size = ''
-		this.float = this.float === 'right' ? 'none' : 'right'
-		this.element.className = this.getClassName()
-		this.updateControlPosition()
-	}
-
-	toggleSizeWide() {
-		this.float = 'none'
-		this.size = this.size === 'wide' ? '' : 'wide'
-		this.element.className = this.getClassName()
-		this.updateControlPosition()
-	}
-
-	toggleSizeBanner() {
-		this.float = 'none'
-		this.size = this.size === 'banner' ? '' : 'banner'
-		this.element.className = this.getClassName()
-		this.updateControlPosition()
-	}
-
 	constructor(src, size, float, params) {
 		super('image')
 
-		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
-		this.toggleFloatRight = this.toggleFloatRight.bind(this)
-		this.toggleSizeWide = this.toggleSizeWide.bind(this)
-		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
 		this.onInputFileChange = this.onInputFileChange.bind(this)
 		this.updateControlPosition = this.updateControlPosition.bind(this)
 
@@ -53,48 +21,6 @@ class Image extends Widget {
 		this.float = float || 'none'
 		this.params = params
 
-		this.controls = [
-			new ControlButton({
-				label: 'Обтекание справа',
-				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M11 4H15V5H11V4ZM8 5H2V11H8V5ZM2 4H1V5V11V12H2H8H9V11V5V4H8H2ZM13 6H11V7H13V6Z" fill="white"/>\
-<path d="M13 11H11V12H13V11Z" fill="white"/>\
-<path d="M15 9H11V10H15V9Z" fill="white"/>\
-<path d="M5 1H13V2H5V1Z" fill="white"/>\
-<path d="M5 14H13V15H5V14Z" fill="white"/>\
-</svg>',
-				selected: (image) => image.float === 'left',
-				action: this.toggleFloatLeft
-			}),
-			new ControlButton({
-				label: 'Обтекание слева',
-				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M1 4H5V5H1V4ZM14 5H8V11H14V5ZM8 4H7V5V11V12H8H14H15V11V5V4H14H8ZM3 6H1V7H3V6Z" fill="white"/>\
-<path d="M3 11H1V12H3V11Z" fill="white"/>\
-<path d="M5 9H1V10H5V9Z" fill="white"/>\
-<path d="M3 1H11V2H3V1Z" fill="white"/>\
-<path d="M3 14H11V15H3V14Z" fill="white"/>\
-</svg>',
-				selected: (image) => image.float === 'right',
-				action: this.toggleFloatRight
-			}),
-			new ControlButton({
-				label: 'Широкая картинка',
-				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
-</svg>',
-				selected: (image) => image.size === 'wide',
-				action: this.toggleSizeWide
-			}),
-			new ControlButton({
-				label: 'Банер',
-				icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
-</svg>',
-				selected: (image) => image.size === 'banner',
-				action: this.toggleSizeBanner
-			})
-		]
 		this.image = createElement('img', {
 			src: this.src
 		})
@@ -230,11 +156,12 @@ class ImageCaption extends Container {
 		}))
 	}
 
-	enterHandler() {
+	enterHandler(event, { setSelection }) {
 		const emptyParagraph = new Paragraph()
 
+		emptyParagraph.append(new BreakLine())
 		this.parent.connect(emptyParagraph)
-		this.core.selection.setSelection(emptyParagraph, 0)
+		setSelection(emptyParagraph, 0)
 	}
 
 	stringify(children) {
@@ -257,6 +184,11 @@ class ImageCaption extends Container {
 class ImagePlugin extends PluginPlugin {
 	constructor(params) {
 		super()
+
+		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
+		this.toggleFloatRight = this.toggleFloatRight.bind(this)
+		this.toggleSizeWide = this.toggleSizeWide.bind(this)
+		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
 
 		this.insertImage = this.insertImage.bind(this)
 		this.params = params
@@ -307,6 +239,91 @@ class ImagePlugin extends PluginPlugin {
 		}
 
 		return false
+	}
+
+	getSelectControls(focusedNodes, isRange) {
+		let image
+
+		focusedNodes.forEach((item) => {
+			if (item.type === 'image') {
+				image = item
+			}
+		})
+
+		if (image && !isRange) {
+			return [
+				new ControlButton({
+					label: 'Обтекание справа',
+					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M11 4H15V5H11V4ZM8 5H2V11H8V5ZM2 4H1V5V11V12H2H8H9V11V5V4H8H2ZM13 6H11V7H13V6Z" fill="white"/>\
+<path d="M13 11H11V12H13V11Z" fill="white"/>\
+<path d="M15 9H11V10H15V9Z" fill="white"/>\
+<path d="M5 1H13V2H5V1Z" fill="white"/>\
+<path d="M5 14H13V15H5V14Z" fill="white"/>\
+</svg>',
+					selected: image.float === 'left',
+					action: (event, params) => this.toggleFloatLeft(event, params, image)
+				}),
+				new ControlButton({
+					label: 'Обтекание слева',
+					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M1 4H5V5H1V4ZM14 5H8V11H14V5ZM8 4H7V5V11V12H8H14H15V11V5V4H14H8ZM3 6H1V7H3V6Z" fill="white"/>\
+<path d="M3 11H1V12H3V11Z" fill="white"/>\
+<path d="M5 9H1V10H5V9Z" fill="white"/>\
+<path d="M3 1H11V2H3V1Z" fill="white"/>\
+<path d="M3 14H11V15H3V14Z" fill="white"/>\
+</svg>',
+					selected: image.float === 'right',
+					action: (event, params) => this.toggleFloatRight(event, params, image)
+				}),
+				new ControlButton({
+					label: 'Широкая картинка',
+					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
+</svg>',
+					selected: image.size === 'wide',
+					action: (event, params) => this.toggleSizeWide(event, params, image)
+				}),
+				new ControlButton({
+					label: 'Банер',
+					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
+</svg>',
+					selected: image.size === 'banner',
+					action: (event, params) => this.toggleSizeBanner(event, params, image)
+				})
+			]
+		}
+
+		return []
+	}
+
+	toggleFloatLeft(event, { restoreSelection }, image) {
+		image.size = ''
+		image.float = image.float === 'left' ? 'none' : 'left'
+		image.element.className = image.getClassName()
+		restoreSelection()
+	}
+
+	toggleFloatRight(event, { restoreSelection }, image) {
+		image.size = ''
+		image.float = image.float === 'right' ? 'none' : 'right'
+		image.element.className = image.getClassName()
+		restoreSelection()
+	}
+
+	toggleSizeWide(event, { restoreSelection }, image) {
+		image.float = 'none'
+		image.size = image.size === 'wide' ? '' : 'wide'
+		image.element.className = image.getClassName()
+		restoreSelection()
+	}
+
+	toggleSizeBanner(event, { restoreSelection }, image) {
+		image.float = 'none'
+		image.size = image.size === 'banner' ? '' : 'banner'
+		image.element.className = image.getClassName()
+		restoreSelection()
 	}
 
 	getInsertControls(container) {

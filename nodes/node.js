@@ -422,6 +422,10 @@ class Node {
 	getChildByOffset(offset) {
 		let restOffset = offset
 
+		if (this.isWidget && !offset) {
+			return this.element
+		}
+
 		return walk(this.element, (current) => {
 			if (current.nodeType === 3) {
 				if (current.length >= restOffset) {

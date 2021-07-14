@@ -2,12 +2,12 @@ const ControlControl = require('./control')
 
 class ControlInput extends ControlControl {
 	handleAction(event) {
-		this.handlers.action(this.params.action, event)
+		this.handler(this.params.action, event)
 	}
 
 	handleCancel(event) {
-		if (this.handlers.cancel) {
-			this.handlers.cancel(this.params.cancel, event)
+		if (this.params.cancel) {
+			this.handler(this.params.cancel, event)
 		}
 	}
 
@@ -34,8 +34,8 @@ class ControlInput extends ControlControl {
 		this.element.className = 'rich-editor__control-input'
 	}
 
-	setEventListener(handler, field) {
-		this.handlers[field] = handler
+	setEventListener(handler) {
+		this.handler = handler
 	}
 
 	getElement() {
