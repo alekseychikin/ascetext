@@ -35,29 +35,14 @@ class ParagraphPlugin extends PluginPlugin {
 		return false
 	}
 
-	setParagraph(event, selection) {
-		const containers = [ selection.anchorContainer ]
+	setParagraph(event, { anchorContainer, restoreSelection }) {
+		if (anchorContainer.type !== 'paragraph') {
+			const paragraph = new Paragraph()
 
-		selection.selectedItems.forEach((item) => {
-			const container = item.getClosestContainer()
-
-			if (containers.indexOf(container) === -1) {
-				containers.push(container)
-			}
-		})
-
-		if (containers.indexOf(selection.focusContainer)) {
-			containers.push(selection.focusContainer)
+			paragraph.append(anchorContainer.first)
+			anchorContainer.replace(paragraph)
+			restoreSelection()
 		}
-
-		containers.forEach((container) => {
-			if (container.type !== 'paragraph') {
-				const paragraph = new Paragraph()
-
-				paragraph.append(container.first)
-				container.replaceUntil(paragraph, container)
-			}
-		})
 	}
 
 	getInsertControls(container) {

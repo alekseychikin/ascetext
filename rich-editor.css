@@ -1,7 +1,7 @@
 .contenteditor__tooltip {
 	position: absolute;
 	z-index: 1;
-	margin-top: -7px;
+	margin-top: -10px;
 	display: flex;
 	transform: translateY(0);
 	opacity: 1;
@@ -12,6 +12,35 @@
 	transform: translateY(-10px);
 	opacity: 0;
 	pointer-events: none;
+}
+
+.contenteditor__toggle-button-holder {
+	position: absolute;
+	z-index: 1;
+	margin: -10px 0 0 -45px;
+	opacity: 1;
+	transform: translateX(0);
+	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.contenteditor__toggle-button-holder.hidden {
+	transform: translateX(-10px);
+	opacity: 0;
+	pointer-events: none;
+}
+
+.contenteditor__toggle-button {
+	display: block;
+	border: 0;
+	padding: 0;
+	width: 40px;
+	height: 40px;
+	cursor: pointer;
+	outline: none;
+}
+
+.contenteditor__toggle-button--insert {
+	background: url('./icons/plus.svg');
 }
 
 .rich-editor__toolbar .rich-editor__controls {
@@ -27,17 +56,6 @@
 	pointer-events: none;
 	transform: translateX(-10px);
 	transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out, left 0.15s step-end;
-}
-
-.rich-editor__toolbar-toggler {
-	display: block;
-	border: 0;
-	padding: 0;
-	width: 40px;
-	height: 40px;
-	background: url('./icons/plus.svg');
-	cursor: pointer;
-	outline: none;
 }
 
 .show-controls .rich-editor__toolbar-toggler {

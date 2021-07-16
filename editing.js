@@ -58,7 +58,7 @@ class Editing {
 				} else {
 					this.core.timeTravel.goBack()
 				}
-			} else if (singleKeyPessed) {
+			} else if (singleKeyPessed || modifyKeyPressed) {
 				this.core.timeTravel.preservePreviousSelection()
 
 				if (modifyKeyPressed) {

@@ -11,18 +11,27 @@ class Toolbar {
 		this.renderControls = this.renderControls.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
 		this.getSelectedItems = this.getSelectedItems.bind(this)
+		this.toggleTooltip = this.toggleTooltip.bind(this)
 		this.onMouseDown = this.onMouseDown.bind(this)
+		this.onMouseUp = this.onMouseUp.bind(this)
+		this.onKeyDown = this.onKeyDown.bind(this)
 
+		this.lastTooltipType = ''
+		this.isShowTooltip = false
+		this.isKeepOpen = false
 		this.selection = selection
 		this.plugins = plugins
 		this.focusedNodes = []
 		this.lastFocusedRange = false
 		this.previousSelection = null
-		this.isKeepOpen = false
 
 		this.tooltip = createElement('div', {
 			'class': 'contenteditor__tooltip hidden'
 		})
+		this.toggleButtonHolder = createElement('div', {
+			'class': 'contenteditor__toggle-button-holder hidden'
+		})
+		this.toggleButton = null
 		this.containerAvatar = createElement('div')
 		this.containerAvatar.style.position = 'absolute'
 		this.containerAvatar.style.bottom = '0'
@@ -32,26 +41,39 @@ class Toolbar {
 
 		document.body.appendChild(this.containerAvatar)
 		document.body.appendChild(this.tooltip)
+		document.body.appendChild(this.toggleButtonHolder)
 		document.addEventListener('mousedown', this.onMouseDown)
-		document.addEventListener('keydown', this.onMouseDown)
+		document.addEventListener('mouseup', this.onMouseUp)
+		document.addEventListener('keydown', this.onKeyDown)
+		document.addEventListener('keyup', this.onMouseUp)
 	}
 
 	onSelectionChange() {
-		if (this.selection.focused) {
-			this.updateTooltip()
-		} else if (this.isKeepOpen) {
+		if (this.isKeepOpen) {
 			this.isKeepOpen = false
 		} else {
-			this.hideTooltip()
+			this.updateTooltip()
 		}
 	}
 
 	onMouseDown(event) {
-		if (this.tooltip.contains(event.target)) {
+		if (this.tooltip.contains(event.target) || this.toggleButtonHolder.contains(event.target)) {
 			this.isKeepOpen = true
-
-			setTimeout(() => this.isKeepOpen = false, 10)
+		} else if (this.lastTooltipType !== 'selection' && this.isShowTooltip) {
+			this.hideTooltip()
 		}
+	}
+
+	onKeyDown(event) {
+		if (event.keyCode === 27) {
+			this.hideTooltip()
+		} else if (this.tooltip.contains(event.target) || this.toggleButtonHolder.contains(event.target)) {
+			this.isKeepOpen = true
+		}
+	}
+
+	onMouseUp() {
+		setTimeout(() => this.isKeepOpen = false, 100)
 	}
 
 	blurFocusedNodes() {
@@ -63,6 +85,42 @@ class Toolbar {
 	}
 
 	updateTooltip() {
+		if (!this.selection.focused) {
+			this.hideTooltip()
+			this.hideToggleButtonHolder()
+
+			return
+		}
+
+		if (
+			!this.selection.isRange &&
+			this.selection.anchorAtFirstPositionInContainer &&
+			this.selection.anchorAtLastPositionInContainer &&
+			this.selection.anchorContainer.isContainer &&
+			this.selection.anchorContainer.parent.isSection
+		) {
+			this.renderInsertButton()
+		} else {
+			this.renderSelectedTooltip()
+		}
+	}
+
+	renderInsertButton() {
+		this.toggleButtonHolder.innerHTML = ''
+
+		if (this.renderInsertTooltip()) {
+			this.toggleButton = createElement('button', {
+				'class': 'contenteditor__toggle-button contenteditor__toggle-button--insert'
+			})
+			this.toggleButtonHolder.appendChild(this.toggleButton)
+			this.toggleButton.addEventListener('click', this.toggleTooltip)
+			this.hideTooltip()
+			this.renderToggleButtonHolder()
+			this.showToggleButtonHolder()
+		}
+	}
+
+	renderSelectedTooltip() {
 		const anchorElement =
 			this.selection.anchorContainer.getChildByOffset(this.selection.anchorOffset)
 		const focusElement =
@@ -99,50 +157,84 @@ class Toolbar {
 			})
 
 			this.previousSelection = this.selection.getSelectionInIndexes()
-			this.renderControls(controls)
+
+			if (controls.length) {
+				this.renderControls(controls)
+				this.showTooltip('selection')
+			} else {
+				this.hideTooltip()
+			}
 		} else {
 			this.renderTooltip()
 		}
 
+		this.hideToggleButtonHolder()
 		this.lastFocusedRange = this.selection.isRange
 		this.focusedNodes = focusedNodes
 	}
 
-	renderControls(controls = []) {
-		// controls — это массив групп кнопок, по отдельным плагинам
-		// Если он пустой, то нужно скрыть тултип
-		// Если не пустой, то нужно сравнить с тем, что уже отрендерено
-		// и новые добавить в тултип, а старые убрать
+	renderInsertTooltip() {
+		this.emptyTooltip()
+
+		const controls = []
+
+		Object.keys(this.plugins).forEach((type) => {
+			if (this.plugins[type].getInsertControls) {
+				const nodeControls = this.plugins[type].getInsertControls(
+					this.selection.anchorContainer
+				)
+
+				if (nodeControls.length) {
+					controls.push(nodeControls)
+				}
+			}
+		})
+
+		this.previousSelection = this.selection.getSelectionInIndexes()
 
 		if (controls.length) {
-			this.emptyTooltip()
+			this.renderControls(controls)
 
-			controls.forEach((groupControls) => {
-				const group = createElement(
-					'div',
-					{
-						className: 'contenteditor__tooltip-group'
-					},
-					groupControls.map((control) => control.getElement())
-				)
-
-				this.tooltip.appendChild(group)
-				groupControls.forEach((control) =>
-					control.setEventListener(this.controlHandler)
-				)
-			})
-
-			this.showTooltip()
-		} else {
-			this.hideTooltip()
+			return true
 		}
+
+		return false
+	}
+
+	toggleTooltip() {
+		if (this.isShowTooltip) {
+			this.hideTooltip()
+		} else {
+			this.showTooltip('insert')
+			this.renderTooltip('begin')
+		}
+	}
+
+	renderControls(controls) {
+		this.emptyTooltip()
+
+		controls.forEach((groupControls) => {
+			const group = createElement(
+				'div',
+				{
+					className: 'contenteditor__tooltip-group'
+				},
+				groupControls.map((control) => control.getElement())
+			)
+
+			this.tooltip.appendChild(group)
+			groupControls.forEach((control) =>
+				control.setEventListener(this.controlHandler)
+			)
+		})
 	}
 
 	controlHandler(action, event) {
 		action(event, {
 			restoreSelection: this.restoreSelection,
 			renderControls: this.renderControls,
-			getSelectedItems: this.getSelectedItems
+			getSelectedItems: this.getSelectedItems,
+			anchorContainer: this.selection.anchorContainer
 		})
 	}
 
@@ -165,13 +257,33 @@ class Toolbar {
 		this.tooltip.innerHTML = ''
 	}
 
-	showTooltip() {
+	showTooltip(type) {
 		this.isShowTooltip = true
+		this.lastTooltipType = type
 		this.tooltip.classList.remove('hidden')
 		this.renderTooltip()
 	}
 
-	renderTooltip() {
+	showToggleButtonHolder() {
+		this.toggleButtonHolder.classList.remove('hidden')
+	}
+
+	hideToggleButtonHolder() {
+		this.toggleButtonHolder.classList.add('hidden')
+	}
+
+	renderToggleButtonHolder() {
+		const container = this.selection.anchorContainer
+		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
+		const containerBoundingClientRect = container.element.getBoundingClientRect()
+		const offsetTop = containerBoundingClientRect.top + scrollTop
+		const offsetLeft = containerBoundingClientRect.left
+
+		this.toggleButtonHolder.style.top = offsetTop + 'px'
+		this.toggleButtonHolder.style.left = offsetLeft + 'px'
+	}
+
+	renderTooltip(position = 'caret') {
 		if (!this.isShowTooltip) {
 			return null
 		}
@@ -179,35 +291,40 @@ class Toolbar {
 		const container = this.selection.anchorContainer
 		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
 		const containerBoundingClientRect = container.element.getBoundingClientRect()
-		const offsetTop = containerBoundingClientRect.top + scrollTop
-		const offsetLeft = containerBoundingClientRect.left
 		const styles = getStyle(container.element)
+		let offsetTop = containerBoundingClientRect.top + scrollTop
+		let offsetLeft = containerBoundingClientRect.left
 
-		this.containerAvatar.style.width = container.offsetWidth
-		this.containerAvatar.style.fontFamily = styles.fontFamily
-		this.containerAvatar.style.fontSize = styles.fontSize
-		this.containerAvatar.style.lineHeight = styles.lineHeight
-		this.containerAvatar.style.padding = styles.padding
-		this.containerAvatar.style.boxSizing = styles.boxSizing
-		this.containerAvatar.style.width = styles.width
+		if (position === 'caret') {
+			this.containerAvatar.style.width = container.offsetWidth
+			this.containerAvatar.style.fontFamily = styles.fontFamily
+			this.containerAvatar.style.fontSize = styles.fontSize
+			this.containerAvatar.style.lineHeight = styles.lineHeight
+			this.containerAvatar.style.padding = styles.padding
+			this.containerAvatar.style.boxSizing = styles.boxSizing
+			this.containerAvatar.style.width = styles.width
 
-		const content = container.element.outerText
-		const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
-		const fakeContent = content.substr(0, this.selection.anchorOffset) +
-			'<span data-selected-text>' +
-			content.substr(this.selection.anchorOffset, selectedLength) +
-			'</span>' +
-			content.substr(this.selection.focusOffset)
+			const content = container.element.outerText
+			const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
+			const fakeContent = content.substr(0, this.selection.anchorOffset) +
+				'<span data-selected-text>' +
+				content.substr(this.selection.anchorOffset, selectedLength) +
+				'</span>' +
+				content.substr(this.selection.focusOffset)
 
-		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+			this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
 
-		const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
+			const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
 
-		this.tooltip.style.top = offsetTop + selectedText.offsetTop - this.tooltip.offsetHeight + 'px'
-		this.tooltip.style.left = Math.max(10, offsetLeft +
-			selectedText.offsetLeft +
-			selectedText.offsetWidth / 2 -
-			this.tooltip.offsetWidth / 2) + 'px'
+			offsetTop += selectedText.offsetTop - this.tooltip.offsetHeight
+			offsetLeft +=
+				selectedText.offsetLeft +
+				selectedText.offsetWidth / 2 -
+				this.tooltip.offsetWidth / 2
+		}
+
+		this.tooltip.style.top = offsetTop + 'px'
+		this.tooltip.style.left = Math.max(10, offsetLeft) + 'px'
 	}
 
 	hideTooltip() {
