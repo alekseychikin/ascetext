@@ -100,6 +100,17 @@ class Toolbar {
 			this.selection.anchorContainer.parent.isSection
 		) {
 			this.renderInsertButton()
+		} else if (
+			!this.selection.isRange &&
+			this.selection.anchorContainer.isContainer &&
+			this.selection.anchorContainer.parent.isSection &&
+			this.selection.anchorAtFirstPositionInContainer &&
+			(
+				this.selection.anchorContainer.first !== 'breakLine' ||
+				this.selection.anchorContainer.first !== this.selection.anchorContainer.last
+			)
+		) {
+			this.renderReplaceButton()
 		} else {
 			this.renderSelectedTooltip()
 		}
@@ -111,6 +122,21 @@ class Toolbar {
 		if (this.renderInsertTooltip()) {
 			this.toggleButton = createElement('button', {
 				'class': 'contenteditor__toggle-button contenteditor__toggle-button--insert'
+			})
+			this.toggleButtonHolder.appendChild(this.toggleButton)
+			this.toggleButton.addEventListener('click', this.toggleTooltip)
+			this.hideTooltip()
+			this.renderToggleButtonHolder()
+			this.showToggleButtonHolder()
+		}
+	}
+
+	renderReplaceButton() {
+		this.toggleButtonHolder.innerHTML = ''
+
+		if (this.renderReplaceTooltip()) {
+			this.toggleButton = createElement('button', {
+				'class': 'contenteditor__toggle-button contenteditor__toggle-button--replace'
 			})
 			this.toggleButtonHolder.appendChild(this.toggleButton)
 			this.toggleButton.addEventListener('click', this.toggleTooltip)
@@ -181,6 +207,34 @@ class Toolbar {
 		Object.keys(this.plugins).forEach((type) => {
 			if (this.plugins[type].getInsertControls) {
 				const nodeControls = this.plugins[type].getInsertControls(
+					this.selection.anchorContainer
+				)
+
+				if (nodeControls.length) {
+					controls.push(nodeControls)
+				}
+			}
+		})
+
+		this.previousSelection = this.selection.getSelectionInIndexes()
+
+		if (controls.length) {
+			this.renderControls(controls)
+
+			return true
+		}
+
+		return false
+	}
+
+	renderReplaceTooltip() {
+		this.emptyTooltip()
+
+		const controls = []
+
+		Object.keys(this.plugins).forEach((type) => {
+			if (this.plugins[type].getReplaceControls) {
+				const nodeControls = this.plugins[type].getReplaceControls(
 					this.selection.anchorContainer
 				)
 

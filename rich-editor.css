@@ -43,6 +43,10 @@
 	background: url('./icons/plus.svg');
 }
 
+.contenteditor__toggle-button--replace {
+	background: url('./icons/replace.svg');
+}
+
 .rich-editor__toolbar .rich-editor__controls {
 	top: 0;
 	left: 50px;
