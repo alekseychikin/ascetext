@@ -15,79 +15,76 @@ class Widget extends WithControls {
 		this.element.setAttribute('data-widget', '')
 	}
 
-	backspaceHandler(event) {
+	backspaceHandler(event, { anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = this.core.selection.anchorContainer
-		const previousNode = container.previous
+		const previousNode = anchorContainer.previous
 
 		if (!previousNode) {
 			const paragraph = new Paragraph(this.core)
 
-			container.preconnect(paragraph)
-			this.core.selection.setSelection(paragraph, 0)
+			anchorContainer.preconnect(paragraph)
+			setSelection(paragraph, 0)
 		}
 
-		container.cut()
+		anchorContainer.cut()
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
-				this.core.selection.setSelection(previousNode, 0)
+				setSelection(previousNode, 0)
 			} else {
 				const offset = previousNode.getOffset()
 
-				this.core.selection.setSelection(previousNode, offset)
+				setSelection(previousNode, offset)
 			}
 		}
 	}
 
-	deleteHandler(event) {
+	deleteHandler(event, { anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = this.core.selection.anchorContainer
-		const nextNode = container.next
+		const nextNode = anchorContainer.next
 
 		if (!nextNode) {
 			const paragraph = new Paragraph()
 
-			container.preconnect(paragraph)
-			this.core.selection.setSelection(paragraph, 0)
+			anchorContainer.preconnect(paragraph)
+			setSelection(paragraph, 0)
 		}
 
-		container.cut()
+		anchorContainer.cut()
 
 		if (nextNode) {
-			this.core.selection.setSelection(nextNode, 0)
+			setSelection(nextNode, 0)
 		}
 	}
 
-	enterHandler(event) {
+	enterHandler(event, { anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const container = this.core.selection.anchorContainer
 		const paragraph = new Paragraph()
 
 		paragraph.append(new BreakLine())
 
 		if (event.shiftKey) {
-			container.preconnect(paragraph)
+			anchorContainer.preconnect(paragraph)
 		} else {
-			container.connect(paragraph)
+			anchorContainer.connect(paragraph)
 		}
 
-		this.core.selection.setSelection(paragraph, 0)
+		setSelection(paragraph, 0)
 	}
 
 	transform() {}
