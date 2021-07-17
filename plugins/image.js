@@ -149,6 +149,7 @@ class ImageCaption extends Container {
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
+		this.append(new BreakLine())
 	}
 
 	enterHandler(event, { setSelection }) {
@@ -178,7 +179,18 @@ class ImagePlugin extends PluginPlugin {
 		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
 
 		this.insertImage = this.insertImage.bind(this)
-		this.params = params
+		this.updateImage = this.updateImage.bind(this)
+		this.params = Object.assign({
+			onSelectFile: (file) => new Promise((resolve) => {
+				const reader = new FileReader()
+
+				reader.onload = event => {
+					resolve(event.target.result)
+				}
+
+				reader.readAsDataURL(file)
+			})
+		}, params)
 	}
 
 	match(element) {
@@ -278,7 +290,15 @@ class ImagePlugin extends PluginPlugin {
 </svg>',
 					selected: image.attributes.size === 'banner',
 					action: (event, params) => this.toggleSizeBanner(event, params, image)
+				}),
+				new ControlFile({
+					label: 'Обновить картинку',
+					icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
+	<path fill-rule="evenodd" clip-rule="evenodd" d="M22.5 4.5H1.5V19.5H22.5V4.5ZM21 6H3V18H21V6ZM14.25 10.1893L14.7803 10.7197L19.2803 15.2197L18.2197 16.2803L14.25 12.3107L11.7803 14.7803L11.25 15.3107L10.7197 14.7803L9 13.0607L5.78033 16.2803L4.71967 15.2197L8.46967 11.4697L9 10.9393L9.53033 11.4697L11.25 13.1893L13.7197 10.7197L14.25 10.1893ZM10.5 10.5C11.3284 10.5 12 9.82843 12 9C12 8.17157 11.3284 7.5 10.5 7.5C9.67157 7.5 9 8.17157 9 9C9 9.82843 9.67157 10.5 10.5 10.5Z" fill="#fff"/>\
+	</svg>',
+					action: (event, params) => this.updateImage(image, event, params)
 				})
+
 			]
 		}
 
@@ -325,7 +345,7 @@ class ImagePlugin extends PluginPlugin {
 		]
 	}
 
-	async insertImage(event, selection) {
+	async insertImage(event, { getAnchorContainer, restoreSelection }) {
 		const { files } = event.target
 
 		if (files.length) {
@@ -336,8 +356,18 @@ class ImagePlugin extends PluginPlugin {
 			const caption = new ImageCaption()
 
 			image.append(caption)
-			selection.anchorContainer.replaceUntil(image, selection.anchorContainer)
-			selection.restoreSelection()
+			getAnchorContainer().replace(image)
+			restoreSelection()
+		}
+	}
+
+	async updateImage(image, event) {
+		const { files } = event.target
+
+		if (files.length) {
+			const src = await this.params.onSelectFile(files[0])
+
+			image.image.src = src
 		}
 	}
 }

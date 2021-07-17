@@ -288,7 +288,11 @@ class Toolbar {
 			restoreSelection: this.restoreSelection,
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems,
-			anchorContainer: this.selection.anchorContainer
+			getAnchorContainer: () => {
+				this.restoreSelection()
+
+				return this.selection.anchorContainer
+			}
 		})
 	}
 
