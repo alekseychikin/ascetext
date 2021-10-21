@@ -46,7 +46,7 @@ class ParagraphPlugin extends PluginPlugin {
 	}
 
 	getInsertControls(container) {
-		if (container.type === 'paragraph') {
+		if (container.type === 'paragraph' || !container.parent.isSection) {
 			return []
 		}
 
@@ -60,7 +60,7 @@ class ParagraphPlugin extends PluginPlugin {
 	}
 
 	getReplaceControls(container) {
-		if (container.type === 'paragraph') {
+		if (container.type === 'paragraph' || !container.parent.isSection) {
 			return []
 		}
 

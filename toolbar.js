@@ -96,14 +96,12 @@ class Toolbar {
 			!this.selection.isRange &&
 			this.selection.anchorAtFirstPositionInContainer &&
 			this.selection.anchorAtLastPositionInContainer &&
-			this.selection.anchorContainer.isContainer &&
-			this.selection.anchorContainer.parent.isSection
+			this.selection.anchorContainer.isContainer
 		) {
 			this.renderInsertButton()
 		} else if (
 			!this.selection.isRange &&
 			this.selection.anchorContainer.isContainer &&
-			this.selection.anchorContainer.parent.isSection &&
 			this.selection.anchorAtFirstPositionInContainer &&
 			(
 				this.selection.anchorContainer.first !== 'breakLine' ||
@@ -287,12 +285,7 @@ class Toolbar {
 		action(event, {
 			restoreSelection: this.restoreSelection,
 			renderControls: this.renderControls,
-			getSelectedItems: this.getSelectedItems,
-			getAnchorContainer: () => {
-				this.restoreSelection()
-
-				return this.selection.anchorContainer
-			}
+			getSelectedItems: this.getSelectedItems
 		})
 	}
 

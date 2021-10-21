@@ -261,7 +261,7 @@ class ImagePlugin extends PluginPlugin {
 <path d="M5 14H13V15H5V14Z" fill="white"/>\
 </svg>',
 					selected: image.attributes.float === 'left',
-					action: (event, params) => this.toggleFloatLeft(event, params, image)
+					action: this.toggleFloatLeft(image)
 				}),
 				new ControlButton({
 					label: 'Обтекание слева',
@@ -273,7 +273,7 @@ class ImagePlugin extends PluginPlugin {
 <path d="M3 14H11V15H3V14Z" fill="white"/>\
 </svg>',
 					selected: image.attributes.float === 'right',
-					action: (event, params) => this.toggleFloatRight(event, params, image)
+					action: this.toggleFloatRight(image)
 				}),
 				new ControlButton({
 					label: 'Широкая картинка',
@@ -281,7 +281,7 @@ class ImagePlugin extends PluginPlugin {
 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
 </svg>',
 					selected: image.attributes.size === 'wide',
-					action: (event, params) => this.toggleSizeWide(event, params, image)
+					action: this.toggleSizeWide(image)
 				}),
 				new ControlButton({
 					label: 'Банер',
@@ -289,14 +289,14 @@ class ImagePlugin extends PluginPlugin {
 <path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
 </svg>',
 					selected: image.attributes.size === 'banner',
-					action: (event, params) => this.toggleSizeBanner(event, params, image)
+					action: this.toggleSizeBanner(image)
 				}),
 				new ControlFile({
 					label: 'Обновить картинку',
 					icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
 	<path fill-rule="evenodd" clip-rule="evenodd" d="M22.5 4.5H1.5V19.5H22.5V4.5ZM21 6H3V18H21V6ZM14.25 10.1893L14.7803 10.7197L19.2803 15.2197L18.2197 16.2803L14.25 12.3107L11.7803 14.7803L11.25 15.3107L10.7197 14.7803L9 13.0607L5.78033 16.2803L4.71967 15.2197L8.46967 11.4697L9 10.9393L9.53033 11.4697L11.25 13.1893L13.7197 10.7197L14.25 10.1893ZM10.5 10.5C11.3284 10.5 12 9.82843 12 9C12 8.17157 11.3284 7.5 10.5 7.5C9.67157 7.5 9 8.17157 9 9C9 9.82843 9.67157 10.5 10.5 10.5Z" fill="#fff"/>\
 	</svg>',
-					action: (event, params) => this.updateImage(image, event, params)
+					action: this.updateImage(image)
 				})
 
 			]
@@ -305,69 +305,85 @@ class ImagePlugin extends PluginPlugin {
 		return []
 	}
 
-	toggleFloatLeft(event, { restoreSelection }, image) {
-		image.attributes.size = ''
-		image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
-		image.element.className = image.getClassName()
-		restoreSelection()
+	toggleFloatLeft(image) {
+		return (event, { restoreSelection }) => {
+			image.attributes.size = ''
+			image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
+			image.element.className = image.getClassName()
+			restoreSelection()
+		}
 	}
 
-	toggleFloatRight(event, { restoreSelection }, image) {
-		image.attributes.size = ''
-		image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
-		image.element.className = image.getClassName()
-		restoreSelection()
+	toggleFloatRight(image) {
+		return (event, { restoreSelection }) => {
+			image.attributes.size = ''
+			image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
+			image.element.className = image.getClassName()
+			restoreSelection()
+		}
 	}
 
-	toggleSizeWide(event, { restoreSelection }, image) {
-		image.attributes.float = 'none'
-		image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
-		image.element.className = image.getClassName()
-		restoreSelection()
+	toggleSizeWide(image) {
+		return (event, { restoreSelection }) => {
+			image.attributes.float = 'none'
+			image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
+			image.element.className = image.getClassName()
+			restoreSelection()
+		}
 	}
 
-	toggleSizeBanner(event, { restoreSelection }, image) {
-		image.attributes.float = 'none'
-		image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
-		image.element.className = image.getClassName()
-		restoreSelection()
+	toggleSizeBanner(image) {
+		return (event, { restoreSelection }) => {
+			image.attributes.float = 'none'
+			image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
+			image.element.className = image.getClassName()
+			restoreSelection()
+		}
 	}
 
-	getInsertControls() {
+	getInsertControls(container) {
+		if (!container.parent.isSection) {
+			return []
+		}
+
 		return [
 			new ControlFile({
 				label: 'Вставить картинку',
 				icon: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path fill-rule="evenodd" clip-rule="evenodd" d="M22.5 4.5H1.5V19.5H22.5V4.5ZM21 6H3V18H21V6ZM14.25 10.1893L14.7803 10.7197L19.2803 15.2197L18.2197 16.2803L14.25 12.3107L11.7803 14.7803L11.25 15.3107L10.7197 14.7803L9 13.0607L5.78033 16.2803L4.71967 15.2197L8.46967 11.4697L9 10.9393L9.53033 11.4697L11.25 13.1893L13.7197 10.7197L14.25 10.1893ZM10.5 10.5C11.3284 10.5 12 9.82843 12 9C12 8.17157 11.3284 7.5 10.5 7.5C9.67157 7.5 9 8.17157 9 9C9 9.82843 9.67157 10.5 10.5 10.5Z" fill="#fff"/>\
 </svg>',
-				action: this.insertImage
+				action: this.insertImage(container)
 			})
 		]
 	}
 
-	async insertImage(event, { getAnchorContainer, restoreSelection }) {
-		const { files } = event.target
+	insertImage(container) {
+		return async (event, { restoreSelection }) => {
+			const { files } = event.target
 
-		if (files.length) {
-			const src = await this.params.onSelectFile(files[0])
-			const image = new Image({
-				src: (this.params.dir || '') + src
-			})
-			const caption = new ImageCaption()
+			if (files.length) {
+				const src = await this.params.onSelectFile(files[0])
+				const image = new Image({
+					src: (this.params.dir || '') + src
+				})
+				const caption = new ImageCaption()
 
-			image.append(caption)
-			getAnchorContainer().replace(image)
-			restoreSelection()
+				image.append(caption)
+				container.replace(image)
+				restoreSelection()
+			}
 		}
 	}
 
-	async updateImage(image, event) {
-		const { files } = event.target
+	updateImage(image) {
+		return async (event) => {
+			const { files } = event.target
 
-		if (files.length) {
-			const src = await this.params.onSelectFile(files[0])
+			if (files.length) {
+				const src = await this.params.onSelectFile(files[0])
 
-			image.image.src = src
+				image.image.src = src
+			}
 		}
 	}
 }
