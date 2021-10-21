@@ -1,19 +1,19 @@
 {
-  "name": "contenteditor",
+  "name": "ascetext",
   "version": "0.1.0",
   "description": "Editor for web",
   "main": "src/index.js",
   "scripts": {},
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/makingoff/contenteditor.git"
+    "url": "git+https://github.com/makingoff/ascetext.git"
   },
   "author": "Aleksey Chikin <mail@makingoff.name>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/makingoff/contenteditor/issues"
+    "url": "https://github.com/makingoff/ascetext/issues"
   },
-  "homepage": "https://github.com/makingoff/contenteditor#readme",
+  "homepage": "https://github.com/makingoff/ascetext#readme",
   "devDependencies": {
     "eslint": "^7.27.0",
     "eslint-config-recommended": "^4.1.0",
