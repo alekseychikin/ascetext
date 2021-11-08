@@ -203,6 +203,10 @@ class RichEditor {
 
 	destroy() {
 		this.node.setAttribute('contenteditable', false)
+		this.node.removeEventListener('node-change', this.onNodeChange)
+		this.editing.destroy()
+		this.selection.destroy()
+		this.toolbar.destroy()
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}

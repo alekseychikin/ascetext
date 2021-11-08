@@ -408,6 +408,13 @@ class Editing {
 			current = current.parent
 		}
 	}
+
+	destroy() {
+		this.node.removeEventListener('paste', this.onPaste)
+		this.node.removeEventListener('keydown', this.onKeyDown)
+		this.node.removeEventListener('cut', this.onCut)
+		this.node.removeEventListener('node-change', this.onNodeTransform)
+	}
 }
 
 module.exports = Editing

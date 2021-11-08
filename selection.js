@@ -9,6 +9,7 @@ class Selection {
 		this.onUpdate = this.onUpdate.bind(this)
 		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
+		this.onClickHandler = () => setTimeout(this.update, 0)
 
 		this.core = core
 		this.selection = {}
@@ -22,7 +23,7 @@ class Selection {
 		this.onUpdateHandlers = []
 
 		document.addEventListener('focus', this.onFocus, true)
-		document.addEventListener('click', () => setTimeout(this.update, 0))
+		document.addEventListener('click', this.onClickHandler)
 		document.addEventListener('keyup', this.update)
 		document.addEventListener('input', this.update)
 	}
@@ -392,6 +393,13 @@ class Selection {
 		}
 
 		return selectedItems
+	}
+
+	destroy() {
+		document.removeEventListener('focus', this.onFocus, true)
+		document.removeEventListener('click', this.onClickHandler)
+		document.removeEventListener('keyup', this.update)
+		document.removeEventListener('input', this.update)
 	}
 
 	// addPluginControl(control) {

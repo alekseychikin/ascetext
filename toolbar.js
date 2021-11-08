@@ -385,6 +385,16 @@ class Toolbar {
 		this.tooltip.classList.add('hidden')
 		this.containerAvatar.innerHTML = ''
 	}
+
+	destroy() {
+		document.body.removeChild(this.containerAvatar)
+		document.body.removeChild(this.tooltip)
+		document.body.removeChild(this.toggleButtonHolder)
+		document.removeEventListener('mousedown', this.onMouseDown)
+		document.removeEventListener('mouseup', this.onMouseUp)
+		document.removeEventListener('keydown', this.onKeyDown)
+		document.removeEventListener('keyup', this.onMouseUp)
+	}
 }
 
 module.exports = Toolbar
