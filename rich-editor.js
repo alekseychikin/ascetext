@@ -196,8 +196,6 @@ class RichEditor {
 	}
 
 	getContent() {
-		this.editing.saveChanges()
-
 		return this.stringify(this.model.first)
 	}
 
