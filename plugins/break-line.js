@@ -29,7 +29,7 @@ class BreakLine extends InlineWidget {
 class BreakLinePlugin extends PluginPlugin {
 	parse(element) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'br') {
-			return new BreakLine(this.core)
+			return new BreakLine()
 		}
 
 		return false

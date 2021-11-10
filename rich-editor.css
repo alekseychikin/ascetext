@@ -2,6 +2,7 @@
 	position: absolute;
 	z-index: 1;
 	margin-top: -10px;
+	height: 40px;
 	display: flex;
 	transform: translateY(0);
 	opacity: 1;

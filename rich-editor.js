@@ -23,13 +23,14 @@ class RichEditor {
 
 		this.parse = this.parse.bind(this)
 		this.stringify = this.stringify.bind(this)
-		this.onUpdate = this.onUpdate.bind(this)
+		this.onChange = this.onChange.bind(this)
 		this.connectWithNormalize = this.connectWithNormalize.bind(this)
 		this.onNodeChange = this.onNodeChange.bind(this)
 
 		this.node = node
+		this.onChangeHandlers = []
 		this.plugins = plugins
-		this.model = new Root(this, node, this.onUpdate)
+		this.model = new Root(this, node)
 		// this.navigation = new Navigation(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
@@ -175,24 +176,17 @@ class RichEditor {
 		return content
 	}
 
-	// onUpdate = debounce(() => {
-	// 	if (process.env.ENV === 'develop') {
-	// 		if (this.devTool) {
-	// 			this.devTool.renderModel()
-	// 		}
-	// 	}
-	// }, 50)
+	onChange(callback) {
+		this.onChangeHandlers.push(callback)
 
-	onUpdate() {
-		if (process.env.ENV === 'develop') {
-			if (this.devTool) {
-				this.devTool.renderModel()
-			}
+		return function () {
+			this.onChangeHandlers.splice(this.onChangeHandlers.indexOf(callback), 1)
 		}
 	}
 
 	onNodeChange(event) {
 		this.timeTravel.pushChange(event.changes)
+		this.onChangeHandlers.forEach((handler) => handler())
 	}
 
 	getContent() {
@@ -200,6 +194,7 @@ class RichEditor {
 	}
 
 	destroy() {
+		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
 		this.node.setAttribute('contenteditable', false)
 		this.node.removeEventListener('node-change', this.onNodeChange)
 		this.editing.destroy()

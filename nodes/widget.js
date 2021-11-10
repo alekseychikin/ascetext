@@ -25,7 +25,7 @@ class Widget extends WithControls {
 		const previousNode = anchorContainer.previous
 
 		if (!previousNode) {
-			const paragraph = new Paragraph(this.core)
+			const paragraph = new Paragraph()
 
 			anchorContainer.preconnect(paragraph)
 			setSelection(paragraph, 0)

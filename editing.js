@@ -114,8 +114,6 @@ class Editing {
 				this.handleEnterKeyDown(event)
 				break
 		}
-
-		this.core.onUpdate()
 	}
 
 	handleRemoveRange() {
