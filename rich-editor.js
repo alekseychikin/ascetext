@@ -88,13 +88,13 @@ class RichEditor {
 
 				if (value.current && value.current.isContainer) {
 					if (!value.current.first) {
-						value.current.push(new BreakLine(this))
+						value.current.push(new BreakLine())
 					} else if (
 						value.current.last.type === 'breakLine' &&
 						value.current.last.previous &&
 						value.current.last.previous.type !== 'breakLine'
 					) {
-						value.current.push(new BreakLine(this))
+						value.current.push(new BreakLine())
 					}
 				}
 

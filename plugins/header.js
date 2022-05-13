@@ -61,13 +61,13 @@ class HeaderPlugin extends PluginPlugin {
 		return false
 	}
 
-	setHeader(level, container) {
-		return (event, { restoreSelection }) => {
-			if (container.type !== 'header' || container.level !== level) {
+	setHeader(level) {
+		return (event, { restoreSelection, anchorContainer }) => {
+			if (anchorContainer.type !== 'header' || anchorContainer.level !== level) {
 				const header = new Header({ level })
 
-				header.append(container.first)
-				container.replace(header)
+				header.append(anchorContainer.first)
+				anchorContainer.replace(header)
 				restoreSelection()
 			}
 		}
@@ -84,7 +84,7 @@ class HeaderPlugin extends PluginPlugin {
 				new ControlButton({
 					label: 'Сделать заголовком',
 					icon: icons[level],
-					action: this.setHeader(level, container)
+					action: this.setHeader(level)
 				})
 			)
 
@@ -102,7 +102,7 @@ class HeaderPlugin extends PluginPlugin {
 				new ControlButton({
 					label: 'Сделать заголовком',
 					icon: icons[level],
-					action: this.setHeader(level, container)
+					action: this.setHeader(level)
 				})
 			)
 

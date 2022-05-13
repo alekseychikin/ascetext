@@ -283,6 +283,8 @@ class Toolbar {
 
 	controlHandler(action, event) {
 		action(event, {
+			anchorContainer: this.selection.anchorContainer,
+			focusContainer: this.selection.focusContainer,
 			restoreSelection: this.restoreSelection,
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems
