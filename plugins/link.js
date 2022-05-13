@@ -3,7 +3,7 @@ const InlineWidget = require('../nodes/inline-widget')
 const ControlButton = require('../controls/button')
 const ControlInput = require('../controls/input')
 const ControlLink = require('../controls/link')
-const createElement = require('../create-element')
+const createElement = require('../core/create-element')
 
 const icons = {
 	create: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\

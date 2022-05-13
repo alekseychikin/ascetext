@@ -1,7 +1,7 @@
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
 const Container = require('../nodes/container')
-const createElement = require('../create-element')
+const createElement = require('../core/create-element')
 
 const icons = {
 	create: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\

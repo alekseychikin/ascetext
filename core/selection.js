@@ -1,4 +1,4 @@
-const getNodeByElement = require('./nodes/node').getNodeByElement
+const getNodeByElement = require('../nodes/node').getNodeByElement
 
 class Selection {
 	constructor(core) {

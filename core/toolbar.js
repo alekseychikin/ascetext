@@ -1,5 +1,5 @@
-const getStyle = require('./utils/getStyle')
-const getNodeByElement = require('./nodes/node').getNodeByElement
+const getStyle = require('../utils/getStyle')
+const getNodeByElement = require('../nodes/node').getNodeByElement
 const createElement = require('./create-element')
 
 class Toolbar {

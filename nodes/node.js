@@ -1,4 +1,4 @@
-const operationTypes = require('../timetravel').operationTypes
+const operationTypes = require('../core/timetravel').operationTypes
 
 const mapElementToNode = []
 

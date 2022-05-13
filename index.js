@@ -1,3 +1,3 @@
-const RichEditor = require('./rich-editor')
+const RichEditor = require('./core/rich-editor')
 
 module.exports = RichEditor

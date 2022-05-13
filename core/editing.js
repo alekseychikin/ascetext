@@ -1,4 +1,4 @@
-const getNodeByElement = require('./nodes/node').getNodeByElement
+const getNodeByElement = require('../nodes/node').getNodeByElement
 
 const backspaceKey = 8
 const deletekey = 46

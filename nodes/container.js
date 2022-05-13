@@ -1,7 +1,7 @@
 const Node = require('./node')
 const paragraphPackage = require('../plugins/paragraph')
 const BreakLine = require('../plugins/break-line').BreakLine
-const Toolbar = require('../toolbar')
+const Toolbar = require('../core/toolbar')
 
 class Container extends Node {
 	constructor(type, attributes = {}) {

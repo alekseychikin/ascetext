@@ -1,6 +1,6 @@
 const InlineWidget = require('../nodes/inline-widget')
 const PluginPlugin = require('./plugin')
-const createElement = require('../create-element')
+const createElement = require('../core/create-element')
 const Text = require('./text').Text
 
 class BreakLine extends InlineWidget {
