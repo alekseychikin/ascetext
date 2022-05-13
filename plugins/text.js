@@ -150,12 +150,12 @@ class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	getSelectControls(focusedNodes) {
+	getSelectControls(focusedNodes, isRange) {
 		let hasBold = false
 		let hasItalic = false
 		const controls = []
 
-		if (!this.core.selection.isRange) {
+		if (!isRange) {
 			return []
 		}
 

@@ -97,7 +97,7 @@ class LinkPlugin extends PluginPlugin {
 		return false
 	}
 
-	getSelectControls(focusedNodes) {
+	getSelectControls(focusedNodes, isRange) {
 		let link = false
 		let hasText = false
 
@@ -111,7 +111,7 @@ class LinkPlugin extends PluginPlugin {
 			}
 		})
 
-		if (this.core.selection.isRange) {
+		if (isRange) {
 			if (link) {
 				return [
 					new ControlButton({
