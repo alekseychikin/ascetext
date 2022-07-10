@@ -58,10 +58,10 @@ class Link extends InlineWidget {
 		return false
 	}
 
-	duplicate() {
+	duplicate(builder) {
 		const duplicate = new Link(this.attributes)
 
-		this.connect(duplicate)
+		builder.connect(this, duplicate)
 
 		return duplicate
 	}
@@ -147,7 +147,7 @@ class LinkPlugin extends PluginPlugin {
 					new ControlButton({
 						label: 'Удалить',
 						icon: icons.remove,
-						action: (event, params) => this.removeLink(event, params, link)
+						action: removeLink(link)
 					})
 				]
 			: []
@@ -176,14 +176,14 @@ class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'link') {
-				item.connect(item.first)
+				builder.connect(item, item.first)
 				builder.cut(item)
 			}
 		})
 		restoreSelection()
 	}
 
-	setLink(event, { getSelectedItems, restoreSelection }) {
+	setLink(event, { builder, getSelectedItems, restoreSelection }) {
 		const selectedItems = getSelectedItems()
 		const url = event.target.value
 		let link
@@ -191,17 +191,19 @@ class LinkPlugin extends PluginPlugin {
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
 				link = new Link({ url })
-				item.connect(link)
-				link.push(item)
+				builder.connect(item, link)
+				builder.push(link, item)
 			}
 		})
 		restoreSelection()
 	}
 
-	removeLink(event, { builder, restoreSelection }, link) {
-		link.connect(link.first)
-		builder.cut(link)
-		restoreSelection()
+	removeLink(link) {
+		return function (event, { builder, restoreSelection }) {
+			builder.connect(link, link.first)
+			builder.cut(link)
+			restoreSelection()
+		}
 	}
 }
 

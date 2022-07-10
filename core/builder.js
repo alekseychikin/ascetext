@@ -165,7 +165,7 @@ class Builder {
 	}
 
 	cut(node) {
-		return this.cutUntil(node)
+		return this.cutUntil(node, node)
 	}
 
 	cutUntil(node, until) {
