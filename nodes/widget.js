@@ -15,7 +15,7 @@ class Widget extends WithControls {
 		this.element.setAttribute('data-widget', '')
 	}
 
-	backspaceHandler(event, { anchorContainer, setSelection }) {
+	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
@@ -25,13 +25,13 @@ class Widget extends WithControls {
 		const previousNode = anchorContainer.previous
 
 		if (!previousNode) {
-			const paragraph = new Paragraph()
+			const paragraph = builder.create('paragraph')
 
-			anchorContainer.preconnect(paragraph)
+			builder.preconnect(anchorContainer, paragraph)
 			setSelection(paragraph, 0)
 		}
 
-		anchorContainer.cut()
+		builder.cut(anchorContainer)
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
@@ -44,7 +44,7 @@ class Widget extends WithControls {
 		}
 	}
 
-	deleteHandler(event, { anchorContainer, setSelection }) {
+	deleteHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
@@ -54,34 +54,32 @@ class Widget extends WithControls {
 		const nextNode = anchorContainer.next
 
 		if (!nextNode) {
-			const paragraph = new Paragraph()
+			const paragraph = builder.create('paragraph')
 
-			anchorContainer.preconnect(paragraph)
+			builder.preconnect(anchorContainer, paragraph)
 			setSelection(paragraph, 0)
 		}
 
-		anchorContainer.cut()
+		builder.cut(anchorContainer)
 
 		if (nextNode) {
 			setSelection(nextNode, 0)
 		}
 	}
 
-	enterHandler(event, { anchorContainer, setSelection }) {
+	enterHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 
 		if (!this.parent.isSection) {
 			return false
 		}
 
-		const paragraph = new Paragraph()
-
-		paragraph.append(new BreakLine())
+		const paragraph = builder.create('paragraph')
 
 		if (event.shiftKey) {
-			anchorContainer.preconnect(paragraph)
+			builder.preconnect(anchorContainer, paragraph)
 		} else {
-			anchorContainer.connect(paragraph)
+			builder.connect(anchorContainer, paragraph)
 		}
 
 		setSelection(paragraph, 0)

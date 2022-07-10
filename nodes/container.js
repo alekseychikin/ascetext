@@ -35,6 +35,7 @@ class Container extends Node {
 	enterHandler(
 		event,
 		{
+			builder,
 			anchorOffset,
 			anchorContainer,
 			setSelection,
@@ -42,15 +43,17 @@ class Container extends Node {
 			anchorAtFirstPositionInContainer,
 		}
 	) {
+		// debugger
 		if (event.shiftKey) {
 			event.preventDefault()
 
 			const firstLevelNode = this.getFirstLevelNode(anchorOffset)
-			const { head } = firstLevelNode.split(
+			const { head } = builder.split(
+				firstLevelNode,
 				anchorOffset - this.getOffset(firstLevelNode.element)
 			)
 
-			head.connect(new BreakLine())
+			builder.connect(head, builder.create('breakLine'))
 
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
@@ -61,21 +64,19 @@ class Container extends Node {
 			event.preventDefault()
 
 			if (focusAtLastPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph()
+				const emptyParagraph = builder.create('paragraph')
 
-				emptyParagraph.append(new BreakLine())
-				this.connect(emptyParagraph)
+				builder.connect(this, emptyParagraph)
 
 				setSelection(emptyParagraph, 0)
 			} else if (anchorAtFirstPositionInContainer) {
-				const emptyParagraph = new paragraphPackage.Paragraph()
+				const emptyParagraph = builder.create('paragraph')
 
-				emptyParagraph.append(new BreakLine())
-				this.preconnect(emptyParagraph)
+				builder.preconnect(this, emptyParagraph)
 
 				setSelection(this, 0)
 			} else {
-				const { tail } = this.split(anchorOffset)
+				const { tail } = builder.split(this, anchorOffset)
 
 				if (tail !== null) {
 					setSelection(tail, 0)
@@ -100,6 +101,7 @@ class Container extends Node {
 	backspaceHandler(
 		event,
 		{
+			builder,
 			anchorAtFirstPositionInContainer,
 			anchorAtLastPositionInContainer,
 			anchorContainer,
@@ -109,12 +111,11 @@ class Container extends Node {
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			const container = anchorContainer
-
-			if (!container.parent.isSection && !container.parent.isGroup) {
+			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
 				return false
 			}
 
+			const container = anchorContainer
 			const previousSelectableNode = container.getPreviousSelectableNode()
 
 			if (!previousSelectableNode) {
@@ -122,7 +123,7 @@ class Container extends Node {
 			}
 
 			if (anchorAtLastPositionInContainer) {
-				container.cut()
+				builder.cut(container)
 
 				if (previousSelectableNode.isContainer) {
 					const offset = previousSelectableNode.getOffset()
@@ -135,15 +136,14 @@ class Container extends Node {
 				const offset = previousSelectableNode.getOffset()
 
 				if (!offset) {
-					previousSelectableNode.cut()
+					builder.cut(previousSelectableNode)
 					setSelection(container, 0)
 				} else {
 					if (container.first) {
-						previousSelectableNode.append(container.first)
+						builder.append(previousSelectableNode, container.first)
 					}
 
-					container.cut()
-
+					builder.cut(container)
 					setSelection(previousSelectableNode, offset)
 				}
 			} else if (previousSelectableNode.isWidget) {
@@ -155,6 +155,7 @@ class Container extends Node {
 	deleteHandler(
 		event,
 		{
+			builder,
 			anchorAtLastPositionInContainer,
 			anchorAtFirstPositionInContainer,
 			anchorContainer,
@@ -164,12 +165,11 @@ class Container extends Node {
 		if (anchorAtLastPositionInContainer) {
 			event.preventDefault()
 
-			const container = anchorContainer
-
-			if (!container.parent.isSection && !container.parent.isGroup) {
+			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
 				return false
 			}
 
+			const container = anchorContainer
 			const nextSelectableNode = container.getNextSelectableNode()
 
 			if (!nextSelectableNode) {
@@ -177,7 +177,7 @@ class Container extends Node {
 			}
 
 			if (anchorAtFirstPositionInContainer) {
-				container.cut()
+				builder.cut(container)
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
 					setSelection(nextSelectableNode, 0)
@@ -186,11 +186,10 @@ class Container extends Node {
 				const offset = container.getOffset()
 
 				if (!nextSelectableNode.hasOnlyBr) {
-					container.append(nextSelectableNode.first)
+					builder.append(container, nextSelectableNode.first)
 				}
 
-				nextSelectableNode.cut()
-
+				builder.cut(nextSelectableNode)
 				setSelection(container, offset)
 			} else if (nextSelectableNode.isWidget) {
 				setSelection(nextSelectableNode, 0)
@@ -225,7 +224,7 @@ class Container extends Node {
 		this.transformTimer = setTimeout(() => this.update(params), 1)
 	}
 
-	update({ parse, focused, restoreSelection }) {
+	update({ builder, focused, restoreSelection }) {
 		if (this.isUpdating || !this.isChanged) {
 			return
 		}
@@ -242,13 +241,13 @@ class Container extends Node {
 
 		this.isUpdating = true
 
-		const content = parse(this.element.firstChild, this.element.lastChild, {
+		const content = builder.parse(this.element.firstChild, this.element.lastChild, {
 			parsingContainer: true
 		})
 
 		if (this.first) {
 			this.handleTextInRemoveNodes(this.first)
-			this.first.cutUntil()
+			builder.cutUntil(this.first)
 		}
 
 		while (this.element.firstChild !== null) {
@@ -256,17 +255,17 @@ class Container extends Node {
 		}
 
 		if (content) {
-			this.append(content)
+			builder.append(this, content)
 		}
 
-		if (
-			!this.first ||
-			this.last.type === 'breakLine' &&
-			this.last.previous &&
-			this.last.previous.type !== 'breakLine'
-		) {
-			this.push(new BreakLine())
-		}
+		// if (
+		// 	!this.first ||
+		// 	this.last.type === 'breakLine' &&
+		// 	this.last.previous &&
+		// 	this.last.previous.type !== 'breakLine'
+		// ) {
+		// 	builder.push(this, builder.create('breakLine'))
+		// }
 
 		if (focused) {
 			restoreSelection(false)

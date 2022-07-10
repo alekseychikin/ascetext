@@ -73,204 +73,6 @@ class Node {
 		this.element = element
 	}
 
-	append(node) {
-		let current = node
-		const last = node.getNodeUntil()
-
-		node.cutUntil()
-
-		this.emitNodeChange({
-			type: operationTypes.APPEND,
-			container: this,
-			target: node,
-			last
-		})
-
-		if (!this.first) {
-			this.first = node
-		} else {
-			this.last.next = node
-			node.previous = this.last
-		}
-
-		if (this.isContainer && this.hasOnlyBr) {
-			this.element.removeChild(this.element.firstChild)
-		}
-
-		while (current) {
-			current.parent = this
-			this.element.appendChild(current.element)
-			current = current.next
-		}
-
-		this.last = last
-	}
-
-	// TODO: объединить с append
-	push(node) {
-		node.cut()
-
-		this.emitNodeChange({
-			type: operationTypes.APPEND,
-			container: this,
-			target: node,
-			last: node
-		})
-
-		if (this.last) {
-			this.last.next = node
-			node.previous = this.last
-		} else {
-			this.first = node
-		}
-
-		this.last = node
-		node.parent = this
-
-		if (this.isContainer && this.hasOnlyBr) {
-			this.element.removeChild(this.element.firstChild)
-		}
-
-		this.element.appendChild(node.element)
-	}
-
-	preconnect(node) {
-		const last = node.getNodeUntil()
-		let current = node
-
-		node.cutUntil()
-
-		this.emitNodeChange({
-			type: operationTypes.PRECONNECT,
-			next: this,
-			target: node,
-			last
-		})
-
-		if (this.parent) {
-			do {
-				current.parent = this.parent
-				this.parent.element.insertBefore(current.element, this.element)
-
-				if (!current.next) {
-					break
-				}
-
-				current = current.next
-			} while (true) // eslint-disable-line no-constant-condition
-		}
-
-		if (this.previous) {
-			this.previous.next = node
-			node.previous = this.previous
-		} else if (this.parent) {
-			this.parent.first = node
-		}
-
-		last.next = this
-		this.previous = last
-	}
-
-	connect(node) {
-		const last = node.getNodeUntil()
-		let current = node
-
-		node.cutUntil()
-
-		if (this.parent) {
-			this.emitNodeChange({
-				type: operationTypes.CONNECT,
-				previous: this,
-				target: node,
-				last
-			})
-
-			do {
-				current.parent = this.parent
-
-				if (this.next) {
-					this.parent.element.insertBefore(current.element, this.next.element)
-				} else {
-					this.parent.element.appendChild(current.element)
-				}
-
-				if (!current.next) {
-					break
-				}
-
-				current = current.next
-			} while (true) // eslint-disable-line no-constant-condition
-		}
-
-		if (this.next) {
-			this.next.previous = last
-			last.next = this.next
-		} else if (this.parent) {
-			this.parent.last = last
-		}
-
-		this.next = node
-		node.previous = this
-	}
-
-	cut() {
-		this.cutUntil(this)
-	}
-
-	cutUntil(nodeUntil) {
-		const last = this.getNodeUntil(nodeUntil)
-		let current = this
-
-		if (this.parent) {
-			this.parent.emitNodeChange({
-				type: operationTypes.CUT,
-				container: this.parent,
-				until: last,
-				next: last.next,
-				target: this
-			})
-		}
-
-		if (current.previous) {
-			if (current.parent && current.parent.last === last) {
-				current.parent.last = current.previous
-			}
-
-			if (last.next) {
-				current.previous.next = last.next
-				last.next.previous = current.previous
-			} else {
-				delete current.previous.next
-			}
-		} else if (last.next) {
-			if (current.parent) {
-				current.parent.first = last.next
-			}
-
-			delete last.next.previous
-		} else if (current.parent) {
-			delete current.parent.first
-			delete current.parent.last
-		}
-
-		delete current.previous
-		delete last.next
-
-		while (current) {
-			if (current.element.parentNode) {
-				current.element.parentNode.removeChild(current.element)
-			}
-
-			delete current.parent
-
-			if (current === last) {
-				break
-			}
-
-			current = current.next
-		}
-	}
-
 	getNodeUntil(nodeUntil) {
 		let current = this
 
@@ -283,37 +85,6 @@ class Node {
 		}
 
 		return current
-	}
-
-	replace(newNode) {
-		this.replaceUntil(newNode, this)
-	}
-
-	replaceUntil(newNode, replaceUntil) {
-		if (this.previous) {
-			this.previous.connect(newNode)
-		} else {
-			this.preconnect(newNode)
-		}
-
-		this.cutUntil(replaceUntil)
-
-		if (this.onReplace) {
-			this.onReplace(newNode)
-		}
-	}
-
-	emitNodeChange(params) {
-		const event = document.createEvent('HTMLEvents')
-
-		event.initEvent('node-change', true, true)
-		event.changes = {}
-
-		for (const key in params) {
-			event.changes[key] = params[key]
-		}
-
-		this.element.dispatchEvent(event)
 	}
 
 	get hasOnlyBr() {
@@ -467,28 +238,28 @@ class Node {
 		return current
 	}
 
-	duplicate() {
+	duplicate(builder) {
 		// eslint-disable-next-line no-proto
 		const duplicate = new this.__proto__.constructor(this.attributes)
 
-		this.connect(duplicate)
+		builder.connect(this, duplicate)
 
 		return duplicate
 	}
 
-	split(position) {
-		const selectedChild = this.getChildByOffset(position)
+	split(offset, builder) {
+		const selectedChild = this.getChildByOffset(offset)
 		let nodeChild = getNodeByElement(selectedChild)
 
 		while (nodeChild.parent !== this) {
 			nodeChild = nodeChild.parent
 		}
 
-		const nodeChildPosition = position - this.getOffset(nodeChild.element)
-		const { tail } = nodeChild.split(nodeChildPosition)
-		const duplicate = this.duplicate()
+		const nodeChildOffset = offset - this.getOffset(nodeChild.element)
+		const { tail } = builder.split(nodeChild, nodeChildOffset)
+		const duplicate = this.duplicate(builder)
 
-		duplicate.append(tail)
+		builder.append(duplicate, tail)
 
 		return {
 			head: this,

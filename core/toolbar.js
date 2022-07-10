@@ -3,7 +3,7 @@ const getNodeByElement = require('../nodes/node').getNodeByElement
 const createElement = require('./create-element')
 
 class Toolbar {
-	constructor(plugins, selection) {
+	constructor(plugins, selection, builder) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showTooltip = this.showTooltip.bind(this)
@@ -19,6 +19,7 @@ class Toolbar {
 		this.lastTooltipType = ''
 		this.isShowTooltip = false
 		this.isKeepOpen = false
+		this.builder = builder
 		this.selection = selection
 		this.plugins = plugins
 		this.focusedNodes = []
@@ -283,6 +284,7 @@ class Toolbar {
 
 	controlHandler(action, event) {
 		action(event, {
+			builder: this.builder,
 			anchorContainer: this.selection.anchorContainer,
 			focusContainer: this.selection.focusContainer,
 			restoreSelection: this.restoreSelection,

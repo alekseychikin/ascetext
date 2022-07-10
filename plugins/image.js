@@ -149,14 +149,12 @@ class ImageCaption extends Container {
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
-		this.append(new BreakLine())
 	}
 
-	enterHandler(event, { setSelection }) {
+	enterHandler(event, { builder, setSelection }) {
 		const emptyParagraph = new Paragraph()
 
-		emptyParagraph.append(new BreakLine())
-		this.parent.connect(emptyParagraph)
+		builder.connect(this.parent, emptyParagraph)
 		setSelection(emptyParagraph, 0)
 	}
 
@@ -193,6 +191,10 @@ class ImagePlugin extends PluginPlugin {
 		}, params)
 	}
 
+	create(params) {
+		return new Image(params)
+	}
+
 	match(element) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
 			return true
@@ -201,7 +203,7 @@ class ImagePlugin extends PluginPlugin {
 		return false
 	}
 
-	parse(element, parse, context) {
+	parse(element, builder, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
@@ -223,16 +225,16 @@ class ImagePlugin extends PluginPlugin {
 			const imgElement = element.querySelector('img')
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
-				? parse(captionElement.firstChild, captionElement.lastChild, context)
-				: new BreakLine()
+				? builder.parse(captionElement.firstChild, captionElement.lastChild, context)
+				: builder.create('breakLine')
 			const image = new Image({ src: imgElement.src, size, float})
 			const caption = new ImageCaption()
 
 			if (captionChildren) {
-				caption.append(captionChildren)
+				builder.append(caption, captionChildren)
 			}
 
-			image.append(caption)
+			builder.append(image, caption)
 
 			return image
 		}
@@ -298,7 +300,6 @@ class ImagePlugin extends PluginPlugin {
 	</svg>',
 					action: this.updateImage(image)
 				})
-
 			]
 		}
 
@@ -358,7 +359,7 @@ class ImagePlugin extends PluginPlugin {
 	}
 
 	insertImage(container) {
-		return async (event, { restoreSelection }) => {
+		return async (event, { builder, restoreSelection }) => {
 			const { files } = event.target
 
 			if (files.length) {
@@ -368,8 +369,9 @@ class ImagePlugin extends PluginPlugin {
 				})
 				const caption = new ImageCaption()
 
-				image.append(caption)
-				container.replace(image)
+				builder.append(caption, builder.create('breakLine'))
+				builder.append(image, caption)
+				builder.replace(container, image)
 				restoreSelection()
 			}
 		}
@@ -389,4 +391,3 @@ class ImagePlugin extends PluginPlugin {
 }
 
 module.exports.ImagePlugin = ImagePlugin
-module.exports.Image = Image

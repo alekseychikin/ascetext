@@ -24,5 +24,6 @@
     "eslint-plugin-import": "^2.23.3",
     "gulp": "^4.0.2",
     "parcel-bundler": "^1.12.5"
-  }
+  },
+  "dependencies": {}
 }

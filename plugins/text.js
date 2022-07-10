@@ -48,12 +48,12 @@ class Text extends Node {
 		return false
 	}
 
-	split(position) {
+	split(position, builder) {
 		const head = new Text(this.attributes, this.content.substr(0, position))
 		const tail = new Text(this.attributes, this.content.substr(position))
 
-		head.connect(tail)
-		this.replace(head)
+		builder.connect(head, tail)
+		builder.replace(this, head)
 
 		return {
 			head,
@@ -96,8 +96,12 @@ class TextPlugin extends PluginPlugin {
 		this.setItalic = this.setItalic.bind(this)
 	}
 
+	create(params, text) {
+		return new Text(params, text)
+	}
+
 	// не нравится
-	parse(element, parse, context) {
+	parse(element, builder, context) {
 		if (element.nodeType !== 3 && (element.nodeType === 1 && ![ 'em', 'strong', 'span' ].includes(element.nodeName.toLowerCase()))) {
 			return false
 		}
@@ -128,7 +132,7 @@ class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'em') {
 			context.style = 'italic'
 
-			const model = parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element.firstChild, element.lastChild, context)
 
 			delete context.style
 
@@ -138,7 +142,7 @@ class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'strong') {
 			context.weight = 'bold'
 
-			const model = parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element.firstChild, element.lastChild, context)
 
 			delete context.weight
 
@@ -146,7 +150,7 @@ class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'span') {
-			return parse(element.firstChild, element.lastChild, context)
+			return builder.parse(element.firstChild, element.lastChild, context)
 		}
 	}
 
@@ -210,31 +214,31 @@ class TextPlugin extends PluginPlugin {
 		return controls
 	}
 
-	unsetBold(event, { getSelectedItems, restoreSelection }) {
+	unsetBold(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text' && item.attributes.weight === 'bold') {
 				const { style } = item.attributes
 				const replacementItem = new Text({ style }, item.content)
 
-				item.replace(replacementItem)
+				builder.replace(item, replacementItem)
 			}
 		})
 		restoreSelection()
 	}
 
-	setBold(event, { getSelectedItems, restoreSelection }) {
+	setBold(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				const { style } = item.attributes
 				const replacementItem = new Text({ style, weight: 'bold' }, item.content)
 
-				item.replace(replacementItem)
+				builder.replace(item, replacementItem)
 			}
 		})
 		restoreSelection()
 	}
 
-	unsetItalic(event, { getSelectedItems, restoreSelection }) {
+	unsetItalic(event, { builder, getSelectedItems, restoreSelection }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
@@ -242,19 +246,19 @@ class TextPlugin extends PluginPlugin {
 				const { weight } = item.attributes
 				const replacementItem = new Text({ weight }, item.content)
 
-				item.replace(replacementItem)
+				builder.replace(item, replacementItem)
 			}
 		})
 		restoreSelection()
 	}
 
-	setItalic(event, { getSelectedItems, restoreSelection }) {
+	setItalic(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				const { weight } = item.attributes
 				const replacementItem = new Text({ weight, style: 'italic' }, item.content)
 
-				item.replace(replacementItem)
+				builder.replace(item, replacementItem)
 			}
 		})
 		restoreSelection()

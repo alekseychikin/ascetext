@@ -10,8 +10,8 @@ class BreakLine extends InlineWidget {
 		this.setElement(createElement('br'))
 	}
 
-	split() {
-		const head = new Text('', {})
+	split(offset, builder) {
+		const head = builder.create('text')
 
 		this.preconnect(head)
 
@@ -27,6 +27,10 @@ class BreakLine extends InlineWidget {
 }
 
 class BreakLinePlugin extends PluginPlugin {
+	create() {
+		return new BreakLine()
+	}
+
 	parse(element) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'br') {
 			return new BreakLine()
@@ -37,4 +41,3 @@ class BreakLinePlugin extends PluginPlugin {
 }
 
 module.exports.BreakLinePlugin = BreakLinePlugin
-module.exports.BreakLine = BreakLine

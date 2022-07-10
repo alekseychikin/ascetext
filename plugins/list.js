@@ -42,6 +42,7 @@ class ListItem extends Container {
 	}
 
 	backspaceHandler(event, {
+		builder,
 		anchorAtFirstPositionInContainer,
 		setSelection
 	}) {
@@ -54,8 +55,8 @@ class ListItem extends Container {
 			let ul
 
 			if (!isLastItem) {
-				ul = new List(parent.attributes)
-				ul.append(this.next)
+				ul = builder.create('list', parent.attributes)
+				builder.append(ul, this.next)
 			}
 
 			if (parent.parent.type === 'list-item') {
@@ -63,19 +64,19 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph()
+				const paragraph = builder.create('paragraph')
 
-				parent.connect(paragraph)
+				builder.connect(parent, paragraph)
 
 				if (this.first) {
-					paragraph.append(this.first)
+					builder.append(paragraph, this.first)
 				}
 
-				this.cut()
+				builder.cut(this)
 
 				if (ul) {
 					// debugger
-					paragraph.connect(ul)
+					builder.connect(paragraph, ul)
 				}
 
 				setSelection(paragraph, 0)
@@ -84,6 +85,7 @@ class ListItem extends Container {
 	}
 
 	enterHandler(event, {
+		builder,
 		focusAtLastPositionInContainer,
 		anchorAtFirstPositionInContainer,
 		setSelection,
@@ -101,8 +103,8 @@ class ListItem extends Container {
 			let ul
 
 			if (!isLastItem) {
-				ul = new List(parent.decor)
-				ul.append(this.next)
+				ul = builder.create('list', parent.decor)
+				builder.append(ul, this.next)
 			}
 
 			if (parent.parent.type === 'list-item') {
@@ -110,15 +112,14 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = new Paragraph()
+				const paragraph = builder.create('paragraph')
 
-				paragraph.append(new BreakLine())
-				parent.connect(paragraph)
-				this.cut()
+				builder.connect(parent, paragraph)
+				builder.cut(this)
 
 				if (ul) {
 					// debugger
-					paragraph.connect(ul)
+					builder.connect(paragraph, ul)
 					setSelection(paragraph, 0)
 				}
 
@@ -127,11 +128,10 @@ class ListItem extends Container {
 		} else if (focusAtLastPositionInContainer) {
 			const nextItem = new ListItem()
 
-			nextItem.append(new BreakLine())
-			this.connect(nextItem)
+			builder(this.connect, nextItem)
 			setSelection(nextItem, 0)
 		} else {
-			const { tail } = this.split(anchorOffset)
+			const { tail } = builder.split(this, anchorOffset)
 
 			if (tail !== null) {
 				setSelection(tail, 0)
@@ -153,6 +153,10 @@ class ListItem extends Container {
 }
 
 class ListPlugin extends PluginPlugin {
+	create(params) {
+		return new List(params)
+	}
+
 	getInsertControls(container) {
 		if (container.parent.isSection) {
 			return [
@@ -179,7 +183,7 @@ class ListPlugin extends PluginPlugin {
 		return []
 	}
 
-	parse(element, parse, context) {
+	parse(element, builder, context) {
 		const nodeName = element.nodeName.toLowerCase()
 
 		if (element.nodeType === 1 && (nodeName === 'ul' || nodeName === 'ol')) {
@@ -188,8 +192,8 @@ class ListPlugin extends PluginPlugin {
 			const list = new List(decor)
 			let children
 
-			if (children = parse(element.firstChild, element.lastChild, context)) {
-				list.append(children)
+			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+				builder.append(list, children)
 			}
 
 			return list
@@ -201,8 +205,8 @@ class ListPlugin extends PluginPlugin {
 
 			context.parsingContainer = true
 
-			if (children = parse(element.firstChild, element.lastChild, context)) {
-				listItem.append(children)
+			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+				builder.append(listItem, children)
 			}
 
 			context.parsingContainer = false
@@ -214,25 +218,23 @@ class ListPlugin extends PluginPlugin {
 	}
 
 	setNumberList(container) {
-		return (event, { restoreSelection }) => {
+		return (event, { builder, restoreSelection }) => {
 			const list = new List('number')
 			const listItem = new ListItem()
 
-			list.append(listItem)
-			listItem.append(new BreakLine())
-			container.replace(list)
+			builder.append(list, listItem)
+			builder.replace(container, list)
 			restoreSelection()
 		}
 	}
 
 	setMarkerList(container) {
-		return (event, { restoreSelection }) => {
+		return (event, { builder, restoreSelection }) => {
 			const list = new List('marker')
 			const listItem = new ListItem()
 
-			list.append(listItem)
-			listItem.append(new BreakLine())
-			container.replace(list)
+			builder.append(list, listItem)
+			builder.replace(container, list)
 			restoreSelection()
 		}
 	}

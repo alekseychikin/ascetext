@@ -35,22 +35,22 @@ class Columns extends Widget {
 		}))
 	}
 
-	setSecondColumnData() {
+	setSecondColumnData({ builder }) {
 		if (this.types[1] !== 'data') {
 			const columnData = new ColumnData()
 
 			this.types[1] = 'data'
-			columnData.append(new Paragraph())
-			this.last.replace(columnData)
+			builder.append(columnData, new Paragraph())
+			builder.replace(this.last, columnData)
 		}
 	}
 
-	setSecondColumnImage() {
+	setSecondColumnImage({ builder }) {
 		if (this.types[1] !== 'image') {
 			const columnImage = new ColumnImage('', this.params)
 
 			this.types[1] = 'image'
-			this.last.replace(columnImage)
+			builder.replace(this.last, columnImage)
 		}
 	}
 
@@ -183,7 +183,11 @@ class ColumnsPlugin extends PluginPlugin {
 		this.params = params
 	}
 
-	parse(element, parse, context) {
+	create(types) {
+		return new Columns(types)
+	}
+
+	parse(element, builder, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'div' && element.className === 'columns') {
 			const columnElements = Array.from(element.childNodes).filter((child) =>
 				child.nodeType === 1 && child.nodeName.toLowerCase() === 'div' && child.classList.contains('column')
@@ -191,7 +195,6 @@ class ColumnsPlugin extends PluginPlugin {
 			const types = columnElements.map((element) =>
 				element.classList.contains('column--image') ? 'image' : 'data'
 			)
-
 			const columns = new Columns(types)
 
 			columnElements.forEach((columnElement) => {
@@ -201,9 +204,9 @@ class ColumnsPlugin extends PluginPlugin {
 					const imgChild = columnElement.querySelector('img')
 					const columnImage = new ColumnImage(imgChild.src, this.params)
 
-					columns.append(columnImage)
+					builder.append(columns, columnImage)
 				} else if (
-					children = parse(
+					children = builder.parse(
 						columnElement.firstChild,
 						columnElement.lastChild,
 						context
@@ -211,8 +214,8 @@ class ColumnsPlugin extends PluginPlugin {
 				) {
 					const columnData = new ColumnData()
 
-					columnData.append(children)
-					columns.append(columnData)
+					builder.append(columnData, children)
+					builder.append(columns, columnData)
 				}
 			})
 
@@ -234,7 +237,7 @@ class ColumnsPlugin extends PluginPlugin {
 		return []
 	}
 
-	setColumns(event, selection) {
+	setColumns(event, { builder, anchorContainer, restoreSelection }) {
 		const columns = new Columns([ 'image', 'data' ], this.params)
 		const columnImage = new ColumnImage('', this.params)
 		const columnData = new ColumnData()
@@ -242,8 +245,8 @@ class ColumnsPlugin extends PluginPlugin {
 		columnData.append(new Paragraph())
 		columns.append(columnImage)
 		columns.append(columnData)
-		selection.anchorContainer.replaceUntil(columns, selection.anchorContainer)
-		selection.restoreSelection()
+		builder.replace(anchorContainer, columns)
+		restoreSelection()
 	}
 }
 

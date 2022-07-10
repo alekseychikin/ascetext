@@ -22,15 +22,19 @@ class Paragraph extends Container {
 }
 
 class ParagraphPlugin extends PluginPlugin {
-	parse(element, parse, context) {
+	create() {
+		return new Paragraph()
+	}
+
+	parse(element, builder, context) {
 		if (element.nodeType === 1 && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
 			const node = new Paragraph()
 			let children
 
 			context.parsingContainer = true
 
-			if (children = parse(element.firstChild, element.lastChild, context)) {
-				node.append(children)
+			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+				builder.append(node, children)
 			}
 
 			context.parsingContainer = false
@@ -41,12 +45,12 @@ class ParagraphPlugin extends PluginPlugin {
 		return false
 	}
 
-	setParagraph(event, { anchorContainer, restoreSelection }) {
+	setParagraph(event, { builder, anchorContainer, restoreSelection }) {
 		if (anchorContainer.type !== 'paragraph') {
 			const paragraph = new Paragraph()
 
-			paragraph.append(anchorContainer.first)
-			anchorContainer.replace(paragraph)
+			builder.append(paragraph, anchorContainer.first)
+			builder.replace(anchorContainer, paragraph)
 			restoreSelection()
 		}
 	}

@@ -4,8 +4,6 @@ class Selection {
 	constructor(core) {
 		this.onFocus = this.onFocus.bind(this)
 		this.update = this.update.bind(this)
-		this.onAnchorContainerReplace = this.onAnchorContainerReplace.bind(this)
-		this.onFocusContainerReplace = this.onFocusContainerReplace.bind(this)
 		this.onUpdate = this.onUpdate.bind(this)
 		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
@@ -88,14 +86,6 @@ class Selection {
 			return false
 		}
 
-		if (this.anchorContainer) {
-			delete this.anchorContainer.onReplace
-		}
-
-		if (this.focusContainer) {
-			delete this.focusContainer.onReplace
-		}
-
 		this.focusedControl = false
 		this.forceUpdate = false
 		this.anchorContainer = anchorContainer
@@ -103,9 +93,6 @@ class Selection {
 		this.anchorOffset = anchorOffset
 		this.focusOffset = focusOffset
 		this.selectedItems = []
-
-		anchorContainer.onReplace = this.onFocusContainerReplace
-		anchorContainer.onReplace = this.onAnchorContainerReplace
 
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
@@ -122,20 +109,6 @@ class Selection {
 
 	onUpdate(handler) {
 		this.onUpdateHandlers.push(handler)
-	}
-
-	onAnchorContainerReplace(replacement) {
-		if (this.anchorContainer === this.focusContainer) {
-			this.focusContainer = replacement
-		}
-
-		this.anchorContainer = replacement
-		this.forceUpdate = true
-	}
-
-	onFocusContainerReplace(replacement) {
-		this.focusContainer = replacement
-		this.forceUpdate = true
 	}
 
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
@@ -311,27 +284,31 @@ class Selection {
 		if (this.isForwardDirection) {
 			const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
 
-			focus = focusFirstLevelNode.split(
+			focus = this.core.builder.split(
+				focusFirstLevelNode,
 				this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
 			)
 
 			const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
 
 			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = anchorFirstLevelNode.split(
+			anchor = this.core.builder.split(
+				anchorFirstLevelNode,
 				this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
 			)
 		} else {
 			const focusFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
 
-			focus = focusFirstLevelNode.split(
+			focus = this.core.builder.split(
+				focusFirstLevelNode,
 				this.anchorOffset - this.anchorContainer.getOffset(focusFirstLevelNode.element)
 			)
 
 			const anchorFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
 
 			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = anchorFirstLevelNode.split(
+			anchor = this.core.builder.split(
+				anchorFirstLevelNode,
 				this.focusOffset - this.focusContainer.getOffset(anchorFirstLevelNode.element)
 			)
 		}

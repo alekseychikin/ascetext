@@ -11,7 +11,7 @@ import { ListPlugin } from '../plugins/list'
 
 const plugins = {
 	text: new TextPlugin(),
-	breakLink: new BreakLinePlugin(),
+	breakLine: new BreakLinePlugin(),
 	header: new HeaderPlugin(),
 	paragraph: new ParagraphPlugin(),
 	link: new LinkPlugin(),

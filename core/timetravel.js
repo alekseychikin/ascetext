@@ -6,7 +6,7 @@ const operationTypes = {
 }
 
 class TimeTravel {
-	constructor(selection) {
+	constructor(selection, builder) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.commit = this.commit.bind(this)
 
@@ -16,6 +16,7 @@ class TimeTravel {
 		this.currentBunch = []
 		this.pushChangeTimer = null
 		this.commitTimer = null
+		this.builder = builder
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
@@ -37,6 +38,7 @@ class TimeTravel {
 				clearTimeout(this.pushChangeTimer)
 			}
 
+			console.log(event)
 			this.currentBunch.push(event)
 			this.pushChangeTimer = setTimeout(this.commit, 100)
 		}
@@ -70,6 +72,7 @@ class TimeTravel {
 	}
 
 	goBack() {
+		// debugger
 		if (this.timeindex > -1) {
 			const {
 				bunch: previousEvents,
@@ -86,22 +89,18 @@ class TimeTravel {
 				switch (previousEvent.type) {
 					case operationTypes.CUT:
 						if (previousEvent.next) {
-							previousEvent.next.preconnect(previousEvent.target)
-						} else {
-							previousEvent.container.append(previousEvent.target)
+							this.builder.preconnect(previousEvent.next, previousEvent.target)
+						} else if (previousEvent.previous) {
+							this.builder.connect(previousEvent.previous, previousEvent.target)
+						} else if (previousEvent.container) {
+							this.builder.append(previousEvent.container, previousEvent.target)
 						}
 
 						break
 					case operationTypes.APPEND:
-						previousEvent.target.cutUntil(previousEvent.last)
-
-						break
 					case operationTypes.PRECONNECT:
-						previousEvent.target.cutUntil(previousEvent.last)
-
-						break
 					case operationTypes.CONNECT:
-						previousEvent.target.cutUntil(previousEvent.last)
+						this.builder.cutUntil(previousEvent.target, previousEvent.last)
 
 						break
 				}
@@ -129,16 +128,16 @@ class TimeTravel {
 
 				switch (nextEvent.type) {
 					case operationTypes.CUT:
-						nextEvent.target.cutUntil(nextEvent.until)
+						this.builder.cutUntil(nextEvent.target, nextEvent.until)
 						break
 					case operationTypes.APPEND:
-						nextEvent.container.append(nextEvent.target)
+						this.builder.append(nextEvent.container, nextEvent.target)
 						break
 					case operationTypes.PRECONNECT:
-						nextEvent.next.preconnect(nextEvent.target)
+						this.builder.preconnect(nextEvent.next, nextEvent.target)
 						break
 					case operationTypes.CONNECT:
-						nextEvent.previous.connect(nextEvent.target)
+						this.builder.connect(nextEvent.previous, nextEvent.target)
 						break
 				}
 			}

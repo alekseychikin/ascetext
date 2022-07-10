@@ -1,5 +1,6 @@
 // import { debounce } from '../../libs/helpers'
 const Section = require('../nodes/section')
+const Builder = require('./builder')
 const Selection = require('./selection')
 // const Navigation = require('./navigation')
 const Toolbar = require('./toolbar')
@@ -15,16 +16,12 @@ class Root extends Section {
 	}
 }
 
-const ignoreParsingElements = ['style', 'script']
-
 class RichEditor {
 	constructor(node, plugins) {
 		let children
 
-		this.parse = this.parse.bind(this)
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
-		this.connectWithNormalize = this.connectWithNormalize.bind(this)
 		this.onNodeChange = this.onNodeChange.bind(this)
 
 		this.node = node
@@ -32,10 +29,11 @@ class RichEditor {
 		this.plugins = plugins
 		this.model = new Root(this, node)
 		// this.navigation = new Navigation(this)
+		this.builder = new Builder(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
-		this.toolbar = new Toolbar(plugins, this.selection)
-		this.timeTravel = new TimeTravel(this.selection)
+		this.toolbar = new Toolbar(plugins, this.selection, this.builder)
+		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.selection.onUpdate(this.timeTravel.onSelectionChange)
 		this.selection.onUpdate(this.toolbar.onSelectionChange)
 
@@ -45,12 +43,12 @@ class RichEditor {
 			container.appendChild(node.childNodes[0])
 		}
 
-		if (children = this.parse(
+		if (children = this.builder.parse(
 			container.firstChild,
 			container.lastChild
 		)) {
 			console.log('children', children)
-			this.model.append(children)
+			this.builder.append(this.model, children)
 			this.timeTravel.commit()
 		} else {
 			console.log('empty holder container')
@@ -58,103 +56,6 @@ class RichEditor {
 
 		this.node.setAttribute('contenteditable', true)
 		this.node.addEventListener('node-change', this.onNodeChange)
-	}
-
-	parse(firstElement, lastElement, context = { selection: this.selection }) {
-		let currentElement = firstElement
-		let first
-		let previous
-		let current
-		let value
-
-		while (currentElement) {
-			// eslint-disable-next-line no-loop-func
-			current = Object.keys(this.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.plugins[pluginName].parse(currentElement, this.parse, context)
-			}, false)
-
-			if (
-				!current &&
-				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
-				currentElement.childNodes.length
-			) {
-				current = this.parse(currentElement.firstChild, currentElement.lastChild)
-			}
-
-			if (current) {
-				value = this.handleParseNext(first, previous, current)
-
-				if (value.current && value.current.isContainer) {
-					if (!value.current.first) {
-						value.current.push(new BreakLine())
-					} else if (
-						value.current.last.type === 'breakLine' &&
-						value.current.last.previous &&
-						value.current.last.previous.type !== 'breakLine'
-					) {
-						value.current.push(new BreakLine())
-					}
-				}
-
-				previous = value.current
-				first = value.first
-			} else {
-				console.log('not matched', currentElement)
-			}
-
-			if (currentElement === lastElement) {
-				break
-			}
-
-			currentElement = currentElement.nextSibling
-		}
-
-		return first
-	}
-
-	handleParseNext(first, previous, current) {
-		if (current.isDeleteEmpty && !current.first) {
-			return { first, current: previous }
-		}
-
-		if (!first) {
-			first = current
-		}
-
-		if (previous) {
-			this.connectWithNormalize(previous, current, (normalized) => {
-				if (first === previous) {
-					first = normalized
-				}
-
-				current = normalized
-			})
-		}
-
-		return { first, current: current.getLastNode() }
-	}
-
-	connectWithNormalize(previous, current, callback) {
-		let normalized
-
-		if (
-			previous.type === current.type && previous.normalize &&
-			(normalized = previous.normalize(current, this.connectWithNormalize))
-		) {
-			if (current.next) {
-				normalized.connect(current.next)
-			}
-
-			previous.replaceUntil(normalized)
-
-			if (typeof (callback) === 'function') {
-				callback(normalized)
-			}
-		} else {
-			previous.connect(current)
-		}
 	}
 
 	stringify(first) {
@@ -182,8 +83,8 @@ class RichEditor {
 		}
 	}
 
-	onNodeChange(event) {
-		this.timeTravel.pushChange(event.changes)
+	onNodeChange(changes) {
+		this.timeTravel.pushChange(changes)
 		this.onChangeHandlers.forEach((handler) => handler())
 	}
 

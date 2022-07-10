@@ -133,10 +133,10 @@ class Editing {
 			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
 
 			firstContainer = selectedItems[0].getClosestContainer()
-			duplicate = firstContainer.duplicate()
+			duplicate = firstContainer.duplicate(this.core.builder)
 
-			since.cutUntil(until)
-			duplicate.append(since)
+			this.core.builder.cutUntil(since, until)
+			this.core.builder.append(duplicate, since)
 			containersForRemove.push(duplicate)
 		} else {
 			containersForRemove.push(selectedItems[0])
@@ -160,11 +160,11 @@ class Editing {
 					const since = until.next
 
 					if (firstContainer.isContainer) {
-						firstContainer.append(since)
+						this.core.builder.append(firstContainer, since)
 					} else {
-						lastContainer = lastContainer.duplicate()
+						lastContainer = lastContainer.duplicate(this.core.builder)
 
-						lastContainer.append(since)
+						this.core.builder.append(lastContainer, since)
 					}
 				}
 			}
@@ -179,9 +179,10 @@ class Editing {
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		})
 
-		containersForRemove[0].cutUntil(containersForRemove[containersForRemove.length - 1])
+		this.core.builder.cutUntil(containersForRemove[0], containersForRemove[containersForRemove.length - 1])
 
 		if (firstContainer.isContainer) {
+			firstContainer.transform(this.getModifyKeyHandlerParams())
 			this.core.selection.setSelection(
 				firstContainer,
 				this.core.selection.isForwardDirection
@@ -189,6 +190,7 @@ class Editing {
 					: this.core.selection.focusIndex[this.core.selection.focusIndex.length - 1]
 			)
 		} else if (lastContainer.isContainer) {
+			lastContainer.transform(this.getModifyKeyHandlerParams())
 			this.core.selection.setSelection(lastContainer, 0)
 		}
 
@@ -303,6 +305,7 @@ class Editing {
 	}
 
 	getModifyKeyHandlerParams() {
+		this.modifyKeyHandlerParams.builder = this.core.builder
 		this.modifyKeyHandlerParams.anchorOffset = this.core.selection.anchorOffset
 		this.modifyKeyHandlerParams.focusOffset = this.core.selection.focusOffset
 		this.modifyKeyHandlerParams.setSelection = this.core.selection.setSelection
@@ -314,7 +317,6 @@ class Editing {
 		this.modifyKeyHandlerParams.anchorContainer = this.core.selection.anchorContainer
 		this.modifyKeyHandlerParams.focusContainer = this.core.selection.focusContainer
 		this.modifyKeyHandlerParams.focused = this.core.selection.focused
-		this.modifyKeyHandlerParams.parse = this.core.parse
 		this.modifyKeyHandlerParams.isLockPushChange = this.core.timeTravel.isLockPushChange
 
 		return this.modifyKeyHandlerParams
@@ -352,7 +354,7 @@ class Editing {
 
 		doc.innerHTML = paste
 
-		const result = this.core.parse(doc.firstChild, doc.lastChild)
+		const result = this.core.builder.parse(doc.firstChild, doc.lastChild)
 
 		if (this.core.selection.isRange) {
 			this.handleRemoveRange()
@@ -360,35 +362,38 @@ class Editing {
 
 		if (result.isContainer) {
 			if (result.next) {
-				const { head, tail } = this.core.selection.anchorContainer.split(
+				const { head, tail } = this.builder.split(
+					this.core.selection.anchorContainer,
 					this.core.selection.anchorOffset
 				)
 				const lastNode = result.getLastNode()
 				const closestContainerInSection = this.getClosestContainerInSection(head)
 
-				head.append(result.first)
-				closestContainerInSection.connect(result)
-				result.cut()
-				lastNode.append(tail.first)
+				this.core.builder.append(head, result.first)
+				this.core.builder.connect(closestContainerInSection, result)
+				this.core.builder.cut(result)
+				this.core.builder.append(lastNode, tail.first)
 				tail.cut()
 			} else {
 				const firstLevelNode = this.core.selection.anchorContainer.getFirstLevelNode(
 					this.core.selection.anchorOffset
 				)
-				const { head } = firstLevelNode.split(
+				const { head } = this.core.builder.split(
+					firstLevelNode,
 					this.core.selection.anchorOffset - this.core.selection.anchorContainer.getOffset(
 						firstLevelNode.element
 					)
 				)
 
-				head.connect(result.first)
+				this.core.builder.connect(head, result.first)
 			}
 		} else if (result.isWidget) {
-			const { head } = this.core.selection.anchorContainer.split(
+			const { head } = this.core.builder.split(
+				this.core.selection.anchorContainer,
 				this.core.selection.anchorOffset
 			)
 
-			head.connect(result)
+			this.core.builder.connect(head, result)
 		} else {
 		}
 

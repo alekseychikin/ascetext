@@ -80,15 +80,19 @@ class LinkPlugin extends PluginPlugin {
 		this.setLink = this.setLink.bind(this)
 	}
 
-	parse(element, parse, context) {
+	create(url) {
+		return new Link({ url })
+	}
+
+	parse(element, builder, context) {
 		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'a') {
 			const url = element.getAttribute('href')
 			let children
 
 			const node = new Link({ url })
 
-			if (children = parse(element.firstChild, element.lastChild, context)) {
-				node.append(children)
+			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+				builder.append(node, children)
 			}
 
 			return node
@@ -167,13 +171,13 @@ class LinkPlugin extends PluginPlugin {
 		])
 	}
 
-	removeLinks(event, { getSelectedItems, restoreSelection }) {
+	removeLinks(event, { builder, getSelectedItems, restoreSelection }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'link') {
 				item.connect(item.first)
-				item.cut()
+				builder.cut(item)
 			}
 		})
 		restoreSelection()
@@ -194,9 +198,9 @@ class LinkPlugin extends PluginPlugin {
 		restoreSelection()
 	}
 
-	removeLink(event, { restoreSelection }, link) {
+	removeLink(event, { builder, restoreSelection }, link) {
 		link.connect(link.first)
-		link.cut()
+		builder.cut(link)
 		restoreSelection()
 	}
 }
