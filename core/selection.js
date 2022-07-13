@@ -277,46 +277,38 @@ class Selection {
 	}
 
 	cutRange() {
-		let isAnchorTailEqualFocusHead = false
+		let anchorContainer = this.anchorContainer
+		let anchorOffset = this.anchorOffset
+		let focusContainer = this.focusContainer
+		let focusOffset = this.focusOffset
 		let anchor
 		let focus
 
-		if (this.isForwardDirection) {
-			const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
-
-			focus = this.core.builder.split(
-				focusFirstLevelNode,
-				this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
-			)
-
-			const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
-
-			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = this.core.builder.split(
-				anchorFirstLevelNode,
-				this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
-			)
-		} else {
-			const focusFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
-
-			focus = this.core.builder.split(
-				focusFirstLevelNode,
-				this.anchorOffset - this.anchorContainer.getOffset(focusFirstLevelNode.element)
-			)
-
-			const anchorFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
-
-			isAnchorTailEqualFocusHead = anchorFirstLevelNode === focus.head
-			anchor = this.core.builder.split(
-				anchorFirstLevelNode,
-				this.focusOffset - this.focusContainer.getOffset(anchorFirstLevelNode.element)
-			)
+		if (!this.isForwardDirection) {
+			anchorContainer = this.focusContainer
+			anchorOffset = this.focusOffset
+			focusContainer = this.anchorContainer
+			focusOffset = this.anchorOffset
 		}
+
+		const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
+
+		focus = this.core.builder.split(
+			focusFirstLevelNode,
+			this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
+		)
+
+		const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
+
+		anchor = this.core.builder.split(
+			anchorFirstLevelNode,
+			this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
+		)
 
 		return {
 			anchorHead: anchor.head,
 			anchorTail: anchor.tail,
-			focusHead: isAnchorTailEqualFocusHead ? anchor.tail : focus.head,
+			focusHead: anchorFirstLevelNode === focus.head ? anchor.tail : focus.head,
 			focusTail: focus.tail
 		}
 	}

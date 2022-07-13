@@ -64,22 +64,22 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = builder.create('paragraph')
+				const newBlock = builder.createBlock()
 
-				builder.connect(parent, paragraph)
+				builder.connect(parent, newBlock)
 
 				if (this.first) {
-					builder.append(paragraph, this.first)
+					builder.append(newBlock, this.first)
 				}
 
 				builder.cut(this)
 
 				if (ul) {
 					// debugger
-					builder.connect(paragraph, ul)
+					builder.connect(newBlock, ul)
 				}
 
-				setSelection(paragraph, 0)
+				setSelection(newBlock, 0)
 			}
 		}
 	}

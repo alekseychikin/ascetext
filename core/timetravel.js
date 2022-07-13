@@ -12,7 +12,7 @@ class TimeTravel {
 
 		this.timeline = []
 		this.timeindex = -1
-		this.isLockPushChange = false
+		this.isLockPushChange = true
 		this.currentBunch = []
 		this.pushChangeTimer = null
 		this.commitTimer = null
@@ -20,6 +20,10 @@ class TimeTravel {
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
+	}
+
+	begin() {
+		this.isLockPushChange = false
 	}
 
 	onSelectionChange(selection) {
@@ -38,7 +42,6 @@ class TimeTravel {
 				clearTimeout(this.pushChangeTimer)
 			}
 
-			console.log(event)
 			this.currentBunch.push(event)
 			this.pushChangeTimer = setTimeout(this.commit, 100)
 		}

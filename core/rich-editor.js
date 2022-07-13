@@ -54,6 +54,7 @@ class RichEditor {
 			console.log('empty holder container')
 		}
 
+		this.timeTravel.begin()
 		this.node.setAttribute('contenteditable', true)
 		this.node.addEventListener('node-change', this.onNodeChange)
 	}
@@ -89,6 +90,8 @@ class RichEditor {
 	}
 
 	getContent() {
+		this.editing.save()
+
 		return this.stringify(this.model.first)
 	}
 

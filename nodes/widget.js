@@ -1,5 +1,3 @@
-const Paragraph = require('../plugins/paragraph').Paragraph
-const BreakLine = require('../plugins/break-line').BreakLine
 const WithControls = require('./with-controls')
 
 class Widget extends WithControls {
@@ -25,10 +23,10 @@ class Widget extends WithControls {
 		const previousNode = anchorContainer.previous
 
 		if (!previousNode) {
-			const paragraph = builder.create('paragraph')
+			const newBlock = builder.createBlock()
 
-			builder.preconnect(anchorContainer, paragraph)
-			setSelection(paragraph, 0)
+			builder.preconnect(anchorContainer, newBlock)
+			setSelection(newBlock, 0)
 		}
 
 		builder.cut(anchorContainer)
@@ -54,10 +52,10 @@ class Widget extends WithControls {
 		const nextNode = anchorContainer.next
 
 		if (!nextNode) {
-			const paragraph = builder.create('paragraph')
+			const newBlock = builder.createBlock()
 
-			builder.preconnect(anchorContainer, paragraph)
-			setSelection(paragraph, 0)
+			builder.preconnect(anchorContainer, newBlock)
+			setSelection(newBlock, 0)
 		}
 
 		builder.cut(anchorContainer)
@@ -74,15 +72,15 @@ class Widget extends WithControls {
 			return false
 		}
 
-		const paragraph = builder.create('paragraph')
+		const newBlock = builder.createBlock()
 
 		if (event.shiftKey) {
-			builder.preconnect(anchorContainer, paragraph)
+			builder.preconnect(anchorContainer, newBlock)
 		} else {
-			builder.connect(anchorContainer, paragraph)
+			builder.connect(anchorContainer, newBlock)
 		}
 
-		setSelection(paragraph, 0)
+		setSelection(newBlock, 0)
 	}
 
 	transform() {}

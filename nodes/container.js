@@ -28,6 +28,10 @@ class Container extends Node {
 		this.element = element
 	}
 
+	get isEmpty() {
+		return this.first === this.last && this.first.type === 'breakLine'
+	}
+
 	onMouseDown() {
 		this.selection.focusedControl = true
 	}
@@ -64,15 +68,15 @@ class Container extends Node {
 			event.preventDefault()
 
 			if (focusAtLastPositionInContainer) {
-				const emptyParagraph = builder.create('paragraph')
+				const newBlock = builder.createBlock()
 
-				builder.connect(this, emptyParagraph)
+				builder.connect(this, newBlock)
 
-				setSelection(emptyParagraph, 0)
+				setSelection(newBlock, 0)
 			} else if (anchorAtFirstPositionInContainer) {
-				const emptyParagraph = builder.create('paragraph')
+				const newBlock = builder.createBlock()
 
-				builder.preconnect(this, emptyParagraph)
+				builder.preconnect(this, newBlock)
 
 				setSelection(this, 0)
 			} else {

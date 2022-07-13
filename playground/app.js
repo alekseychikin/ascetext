@@ -20,5 +20,9 @@ const plugins = {
 }
 
 const editor = new Editor(document.getElementById('app'), plugins)
+const saveButton = document.getElementById('save').addEventListener('click', function (event) {
+	const content = editor.getContent()
+	console.log(content)
+})
 
 console.log(editor)

@@ -88,6 +88,9 @@ class Editing {
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
 					// здесь нужно делать синхронизацию, а не апдейт
+					// потому что апдейт — это замена содержимого, а в этом случае нужно
+					// синхронизировать модель данных
+					// нужно спарсить без нормализации и без обновления реальных нод
 					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
 				}
 
@@ -298,6 +301,7 @@ class Editing {
 				event,
 				this.getModifyKeyHandlerParams()
 			)
+			this.core.timeTravel.commit()
 		} else {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
@@ -330,6 +334,12 @@ class Editing {
 		}
 	}
 
+	save() {
+		if (this.core.selection.anchorContainer) {
+			this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+		}
+	}
+
 	onCut(event) {
 		if (this.core.selection.isRange) {
 			this.core.timeTravel.preservePreviousSelection()
@@ -351,6 +361,7 @@ class Editing {
 		if (!paste.length) {
 			paste = (event.clipboardData || window.clipboardData).getData('text')
 		}
+		console.log(paste)
 
 		doc.innerHTML = paste
 
@@ -362,30 +373,30 @@ class Editing {
 
 		if (result.isContainer) {
 			if (result.next) {
-				const { head, tail } = this.builder.split(
-					this.core.selection.anchorContainer,
-					this.core.selection.anchorOffset
-				)
-				const lastNode = result.getLastNode()
-				const closestContainerInSection = this.getClosestContainerInSection(head)
-
-				this.core.builder.append(head, result.first)
-				this.core.builder.connect(closestContainerInSection, result)
-				this.core.builder.cut(result)
-				this.core.builder.append(lastNode, tail.first)
-				tail.cut()
-			} else {
-				const firstLevelNode = this.core.selection.anchorContainer.getFirstLevelNode(
-					this.core.selection.anchorOffset
-				)
-				const { head } = this.core.builder.split(
-					firstLevelNode,
-					this.core.selection.anchorOffset - this.core.selection.anchorContainer.getOffset(
-						firstLevelNode.element
+				if (this.core.selection.anchorContainer.isEmpty) {
+					this.core.builder.replace(this.core.selection.anchorContainer, result)
+				} else {
+					const { head, tail } = this.core.builder.split(
+						this.core.selection.anchorContainer,
+						this.core.selection.anchorOffset
 					)
-				)
+					const lastNode = result.getLastNode()
 
-				this.core.builder.connect(head, result.first)
+					this.core.builder.append(head, result.first)
+					this.core.builder.connect(this.getClosestContainerInSection(head), result.next)
+					this.core.builder.append(lastNode, tail.first)
+					this.core.builder.cut(tail)
+				}
+			} else {
+				if (this.core.selection.anchorContainer.isEmpty) {
+					this.core.builder.replace(this.core.selection.anchorContainer, result)
+				} else {
+					this.core.builder.insert(
+						this.core.selection.anchorContainer,
+						result.first,
+						this.core.selection.anchorOffset
+					)
+				}
 			}
 		} else if (result.isWidget) {
 			const { head } = this.core.builder.split(
@@ -395,6 +406,7 @@ class Editing {
 
 			this.core.builder.connect(head, result)
 		} else {
+			this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 		}
 
 		event.preventDefault()
@@ -414,8 +426,8 @@ class Editing {
 
 	destroy() {
 		this.node.removeEventListener('paste', this.onPaste)
-		this.node.removeEventListener('keydown', this.onKeyDown)
 		this.node.removeEventListener('cut', this.onCut)
+		this.node.removeEventListener('keydown', this.onKeyDown)
 		this.node.removeEventListener('node-change', this.onNodeTransform)
 	}
 }

@@ -14,11 +14,14 @@ class Builder {
 		const node = this.core.plugins[name].create(...params)
 
 		if (node.isContainer) {
-			console.log('append breakLine')
 			this.append(node, this.create('breakLine'))
 		}
 
 		return node
+	}
+
+	createBlock() {
+		return this.create('paragraph')
 	}
 
 	split(node, offset) {
@@ -236,6 +239,13 @@ class Builder {
 		}
 
 		this.cutUntil(node, until)
+	}
+
+	insert(container, node, offset) {
+		const firstLevelNode = container.getFirstLevelNode(offset)
+		const { head } = this.split(firstLevelNode, offset - container.getOffset(firstLevelNode.element))
+
+		this.connect(head, node)
 	}
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {
