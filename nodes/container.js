@@ -24,10 +24,6 @@ class Container extends Node {
 		// this.createControls()
 	}
 
-	setElement(element) {
-		this.element = element
-	}
-
 	get isEmpty() {
 		return this.first === this.last && this.first.type === 'breakLine'
 	}

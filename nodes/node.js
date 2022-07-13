@@ -1,20 +1,20 @@
 const operationTypes = require('../core/timetravel').operationTypes
 
-const mapElementToNode = []
+const mapElementToNode = {}
+let id = 1
 
 function getNodeByElement(element) {
 	let currentElement = element
-	let i
 
 	while (currentElement) {
-		for (i = 0; i < mapElementToNode.length; i++) {
-			if (mapElementToNode[i].element === currentElement) {
-				return mapElementToNode[i]
-			}
+		if (mapElementToNode[currentElement.nodeId]) {
+			return mapElementToNode[currentElement.nodeId]
 		}
 
 		currentElement = currentElement.parentNode
 	}
+
+	return false
 }
 
 function walk(rootElement, callback) {
@@ -58,6 +58,7 @@ function walk(rootElement, callback) {
 
 class Node {
 	constructor(type, attributes = {}) {
+		this.id = id++
 		this.type = type
 		this.attributes = attributes
 		this.isContainer = false
@@ -65,12 +66,12 @@ class Node {
 		this.isSection = false
 		this.isGroup = false
 		this.isDeleteEmpty = false
-
-		mapElementToNode.push(this)
 	}
 
 	setElement(element) {
 		this.element = element
+		this.element.nodeId = this.id
+		mapElementToNode[this.id] = this
 	}
 
 	getNodeUntil(nodeUntil) {

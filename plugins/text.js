@@ -6,29 +6,32 @@ const nbsCode = '\u00A0'
 
 class Text extends Node {
 	constructor(attributes = {}, content = '') {
+		let node
 		super('text', attributes)
 
 		this.content = content
 
 		if (!attributes.weight && !attributes.style) {
-			this.element = document.createTextNode(this.content)
+			node = document.createTextNode(this.content)
 		} else if (attributes.weight === 'bold') {
-			this.element = document.createElement('strong')
+			node = document.createElement('strong')
 			const element = document.createTextNode(this.content)
 
 			if (attributes.style === 'italic') {
 				const italic = document.createElement('em')
 
 				italic.appendChild(element)
-				this.element.appendChild(italic)
+				node.appendChild(italic)
 			} else {
-				this.element.appendChild(element)
+				node.appendChild(element)
 			}
 		} else if (attributes.style === 'italic') {
-			this.element = document.createElement('em')
+			node = document.createElement('em')
 			const element = document.createTextNode(this.content)
-			this.element.appendChild(element)
+			node.appendChild(element)
 		}
+
+		this.setElement(node)
 	}
 
 	normalize(element) {
