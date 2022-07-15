@@ -55,8 +55,8 @@ class Selection {
 			return false
 		}
 
-		const anchorContainer = this.getClosestContainer(anchorElement)
-		const focusContainer = this.getClosestContainer(focusElement)
+		const anchorContainer = getNodeByElement(anchorElement).getClosestContainer()
+		const focusContainer = getNodeByElement(focusElement).getClosestContainer()
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
 		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
 		const [ anchorSelectedElement, anchorSelectedOffset ] =
@@ -201,17 +201,6 @@ class Selection {
 		}
 
 		return [ element.childNodes[offset], 0 ]
-	}
-
-	getClosestContainer(element) {
-		let current = element
-		let node
-
-		while (!(node = getNodeByElement(current))) {
-			current = current.parentNode
-		}
-
-		return node.getClosestContainer()
 	}
 
 	getDirection(anchorIndex, focusIndex) {
