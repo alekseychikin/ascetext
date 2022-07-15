@@ -7,7 +7,7 @@ class Selection {
 		this.onUpdate = this.onUpdate.bind(this)
 		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
-		this.onClickHandler = () => setTimeout(this.update, 0)
+		this.eventHandler = this.eventHandler.bind(this)
 
 		this.core = core
 		this.selection = {}
@@ -21,13 +21,18 @@ class Selection {
 		this.onUpdateHandlers = []
 
 		document.addEventListener('focus', this.onFocus, true)
-		document.addEventListener('click', this.onClickHandler)
-		document.addEventListener('keyup', this.update)
-		document.addEventListener('input', this.update)
+		document.addEventListener('click', this.eventHandler)
+		document.addEventListener('keyup', this.eventHandler)
+		document.addEventListener('keydown', this.eventHandler)
+		document.addEventListener('input', this.eventHandler)
+	}
+
+	eventHandler(event) {
+		setTimeout(() => this.update(event), 0)
 	}
 
 	onFocus(event) {
-		if (this.core.node.contains(event.target)) {
+		if (this.core.node.contains(event.target) && this.core.node !== event.target) {
 			const anchorNode = getNodeByElement(event.target)
 
 			if (anchorNode && anchorNode.isWidget) {
