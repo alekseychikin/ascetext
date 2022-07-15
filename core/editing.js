@@ -371,30 +371,43 @@ class Editing {
 			this.handleRemoveRange()
 		}
 
+		this.core.timeTravel.preservePreviousSelection()
+
 		if (result.isContainer) {
 			if (result.next) {
+				const lastNode = result.getLastNode()
+
 				if (this.core.selection.anchorContainer.isEmpty) {
 					this.core.builder.replace(this.core.selection.anchorContainer, result)
+					this.core.selection.setSelection(lastNode, lastNode.getOffset())
 				} else {
 					const { head, tail } = this.core.builder.split(
 						this.core.selection.anchorContainer,
 						this.core.selection.anchorOffset
 					)
-					const lastNode = result.getLastNode()
+					const tailFirst = tail.first
 
 					this.core.builder.append(head, result.first)
 					this.core.builder.connect(this.getClosestContainerInSection(head), result.next)
 					this.core.builder.append(lastNode, tail.first)
 					this.core.builder.cut(tail)
+					this.core.selection.setSelection(lastNode, lastNode.getOffset(tailFirst.element))
 				}
 			} else {
 				if (this.core.selection.anchorContainer.isEmpty) {
 					this.core.builder.replace(this.core.selection.anchorContainer, result)
+					this.core.selection.setSelection(result, result.getOffset())
 				} else {
+					const firstNode = result.first
+
 					this.core.builder.insert(
 						this.core.selection.anchorContainer,
-						result.first,
+						firstNode,
 						this.core.selection.anchorOffset
+					)
+					this.core.selection.setSelection(
+						this.core.selection.anchorContainer,
+						this.core.selection.anchorContainer.getOffset(firstNode.next.element)
 					)
 				}
 			}
@@ -409,6 +422,7 @@ class Editing {
 			this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 		}
 
+		this.core.timeTravel.commit()
 		event.preventDefault()
 	}
 
