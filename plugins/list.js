@@ -112,23 +112,23 @@ class ListItem extends Container {
 					// Если есть созданный ul
 						// Добавить после li ещё один li и поместить в него ul
 			} else if (parent.parent.isSection) {
-				const paragraph = builder.create('paragraph')
+				const newBlock = builder.createBlock()
 
-				builder.connect(parent, paragraph)
+				builder.connect(parent, newBlock)
 				builder.cut(this)
 
 				if (ul) {
 					// debugger
-					builder.connect(paragraph, ul)
-					setSelection(paragraph, 0)
+					builder.connect(newBlock, ul)
+					setSelection(newBlock, 0)
 				}
 
-				setSelection(paragraph, 0)
+				setSelection(newBlock, 0)
 			}
 		} else if (focusAtLastPositionInContainer) {
-			const nextItem = new ListItem()
+			const nextItem = builder.create('list', 'item')
 
-			builder(this.connect, nextItem)
+			builder.connect(this, nextItem)
 			setSelection(nextItem, 0)
 		} else {
 			const { tail } = builder.split(this, anchorOffset)
@@ -139,10 +139,10 @@ class ListItem extends Container {
 		}
 	}
 
-	duplicate() {
-		const duplicate = new ListItem()
+	duplicate(builder) {
+		const duplicate = builder.create('list', 'item')
 
-		this.connect(duplicate)
+		builder.connect(this, duplicate)
 
 		return duplicate
 	}
@@ -154,6 +154,10 @@ class ListItem extends Container {
 
 class ListPlugin extends PluginPlugin {
 	create(params) {
+		if (params === 'item') {
+			return new ListItem()
+		}
+
 		return new List(params)
 	}
 
@@ -189,7 +193,7 @@ class ListPlugin extends PluginPlugin {
 		if (element.nodeType === 1 && (nodeName === 'ul' || nodeName === 'ol')) {
 			const nodeName = element.nodeName.toLowerCase()
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
-			const list = new List(decor)
+			const list = builder.create('list', { decor })
 			let children
 
 			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
@@ -200,7 +204,7 @@ class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeType === 1 && nodeName === 'li') {
-			const listItem = new ListItem()
+			const listItem = builder.create('list', 'item')
 			let children
 
 			context.parsingContainer = true
@@ -219,8 +223,8 @@ class ListPlugin extends PluginPlugin {
 
 	setNumberList(container) {
 		return (event, { builder, restoreSelection }) => {
-			const list = new List('number')
-			const listItem = new ListItem()
+			const list = builder.create('list', { decor: 'number' })
+			const listItem = builder.create('list', 'item')
 
 			builder.append(list, listItem)
 			builder.replace(container, list)
@@ -230,8 +234,8 @@ class ListPlugin extends PluginPlugin {
 
 	setMarkerList(container) {
 		return (event, { builder, restoreSelection }) => {
-			const list = new List('marker')
-			const listItem = new ListItem()
+			const list = builder.create('list', { decor: 'marker' })
+			const listItem = builder.create('list', 'item')
 
 			builder.append(list, listItem)
 			builder.replace(container, list)
