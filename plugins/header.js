@@ -41,14 +41,14 @@ class HeaderPlugin extends PluginPlugin {
 		this.setHeader = this.setHeader.bind(this)
 	}
 
-	create(level) {
+	create({ level }) {
 		return new Header({ level })
 	}
 
 	parse(element, builder, context) {
 		if (element.nodeType === 1 && this.supportHeaders.includes(element.nodeName.toLowerCase())) {
 			const matches = element.nodeName.toLowerCase().match(/(?<level>\d)+/)
-			const node = new Header({ level: Number(matches.groups.level) })
+			const node = builder.create('header', { level: Number(matches.groups.level) })
 			let children
 
 			context.parsingContainer = true
@@ -68,7 +68,7 @@ class HeaderPlugin extends PluginPlugin {
 	setHeader(level) {
 		return (event, { builder, restoreSelection, anchorContainer }) => {
 			if (anchorContainer.type !== 'header' || anchorContainer.level !== level) {
-				const header = new Header({ level })
+				const header = builder.create('header', { level })
 
 				builder.append(header, anchorContainer.first)
 				builder.replace(anchorContainer, header)

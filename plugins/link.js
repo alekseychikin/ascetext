@@ -147,7 +147,7 @@ class LinkPlugin extends PluginPlugin {
 					new ControlButton({
 						label: 'Удалить',
 						icon: icons.remove,
-						action: removeLink(link)
+						action: this.removeLink(link)
 					})
 				]
 			: []
