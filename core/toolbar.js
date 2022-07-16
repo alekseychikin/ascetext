@@ -3,7 +3,7 @@ const getNodeByElement = require('../nodes/node').getNodeByElement
 const createElement = require('./create-element')
 
 class Toolbar {
-	constructor(plugins, selection, builder) {
+	constructor(plugins, selection, builder, timeTravel) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showTooltip = this.showTooltip.bind(this)
@@ -21,6 +21,7 @@ class Toolbar {
 		this.isKeepOpen = false
 		this.builder = builder
 		this.selection = selection
+		this.timeTravel = timeTravel
 		this.plugins = plugins
 		this.focusedNodes = []
 		this.lastFocusedRange = false
@@ -283,6 +284,7 @@ class Toolbar {
 	}
 
 	controlHandler(action, event) {
+		this.timeTravel.preservePreviousSelection()
 		action(event, {
 			builder: this.builder,
 			anchorContainer: this.selection.anchorContainer,
