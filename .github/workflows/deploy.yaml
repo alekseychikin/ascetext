@@ -1,0 +1,20 @@
+name: Deploy
+on:
+  push:
+    branches:
+      - master
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    container:
+      image: makingoff/php-node:alpha4
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shimataro/ssh-key-action@v2
+        with:
+          key: ${{ secrets.SSH_SECRET_KEY }}
+          known_hosts: ${{ secrets.KNOWN_HOST }}
+      - run: npm install
+      - run: npm run build
+      - run: npx rsync --archive --verbose --compress --human-readable --progress --recursive --delete --files-from=.rsyncrc ./playground/ ${{ secrets.HOST }}:/var/www/ascetext.alekseychikin.ru/
+

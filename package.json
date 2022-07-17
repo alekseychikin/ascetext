@@ -4,7 +4,8 @@
   "description": "Editor for web",
   "main": "src/index.js",
   "scripts": {
-    "start": "npx gulp"
+    "start": "npx gulp",
+    "build": "npx gulp --production"
   },
   "repository": {
     "type": "git",

@@ -2,7 +2,7 @@ const gulp = require('gulp')
 const Bundler = require('parcel-bundler')
 const browserSync = require('browser-sync').create()
 
-function start(done) {
+function watch(done) {
 	const watchParams = { ignoreInitial: false }
 	browserSync.init({
 		server: {
@@ -45,4 +45,5 @@ function scripts(watch) {
 }
 
 module.exports.scripts = scripts(false)
-module.exports.default = gulp.parallel(start, scripts(true))
+module.exports.default = gulp.parallel(assets, scripts(false))
+module.exports.watch = gulp.parallel(scripts(true), watch)
