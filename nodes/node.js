@@ -241,7 +241,7 @@ class Node {
 
 	duplicate(builder) {
 		// eslint-disable-next-line no-proto
-		const duplicate = new this.__proto__.constructor(builder, this.attributes)
+		const duplicate = builder.create(this.type, this.attributes)
 
 		builder.connect(this, duplicate)
 

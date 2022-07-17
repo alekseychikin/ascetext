@@ -25,7 +25,7 @@ class Container extends Node {
 	}
 
 	get isEmpty() {
-		return this.first === this.last && this.first.type === 'breakLine'
+		return !this.first || this.first === this.last && this.first.type === 'breakLine'
 	}
 
 	onMouseDown() {

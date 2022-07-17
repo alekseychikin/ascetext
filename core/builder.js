@@ -32,6 +32,10 @@ class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
+		if (node.isContainer && node.isEmpty && node.first) {
+			this.cut(node.first)
+		}
+
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
