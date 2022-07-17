@@ -83,9 +83,9 @@ class Image extends Widget {
 		this.selection = selection
 		this.input = document.createElement('input')
 		this.control = document.createElement('label')
-		this.control.className = 'rich-editor__image-control'
+		this.control.className = 'contenteditor__image-control'
 		this.input.type = 'file'
-		this.input.className = 'rich-editor__image-control-input'
+		this.input.className = 'contenteditor__image-control-input'
 		content.appendChild(document.createTextNode('Загрузить фотографию'))
 		this.control.appendChild(content)
 		this.control.appendChild(this.input)
@@ -255,43 +255,32 @@ class ImagePlugin extends PluginPlugin {
 			return [
 				new ControlButton({
 					label: 'Обтекание справа',
-					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M11 4H15V5H11V4ZM8 5H2V11H8V5ZM2 4H1V5V11V12H2H8H9V11V5V4H8H2ZM13 6H11V7H13V6Z" fill="white"/>\
-<path d="M13 11H11V12H13V11Z" fill="white"/>\
-<path d="M15 9H11V10H15V9Z" fill="white"/>\
-<path d="M5 1H13V2H5V1Z" fill="white"/>\
-<path d="M5 14H13V15H5V14Z" fill="white"/>\
+					icon: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path d="M12 7.333h8M12 2h8M0 12.667h20M0 18h20" stroke="#000" stroke-width="1.3"/>\
+<mask id="a" fill="#fff"><rect width="9" height="9" rx="1"/></mask>\
+<rect width="9" height="9" rx="1" stroke="#000" stroke-width="2.6" mask="url(#a)"/>\
 </svg>',
 					selected: image.attributes.float === 'left',
 					action: this.toggleFloatLeft(image)
 				}),
 				new ControlButton({
 					label: 'Обтекание слева',
-					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M1 4H5V5H1V4ZM14 5H8V11H14V5ZM8 4H7V5V11V12H8H14H15V11V5V4H14H8ZM3 6H1V7H3V6Z" fill="white"/>\
-<path d="M3 11H1V12H3V11Z" fill="white"/>\
-<path d="M5 9H1V10H5V9Z" fill="white"/>\
-<path d="M3 1H11V2H3V1Z" fill="white"/>\
-<path d="M3 14H11V15H3V14Z" fill="white"/>\
+					icon: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path d="M0 7.333h8M0 2h8M0 12.667h20M0 18h20" stroke="#000" stroke-width="1.3"/>\
+<mask id="b" fill="#fff"><rect x="11" width="9" height="9" rx="1"/></mask>\
+<rect x="11" width="9" height="9" rx="1" stroke="#000" stroke-width="2.6" mask="url(#b)"/>\
 </svg>',
 					selected: image.attributes.float === 'right',
 					action: this.toggleFloatRight(image)
 				}),
 				new ControlButton({
 					label: 'Широкая картинка',
-					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM13 5H3V11H13V5ZM3 4H2V5V11V12H3H13H14V11V5V4H13H3ZM12 14H4V15H12V14Z" fill="#fff"/>\
+					icon: '<svg width="26" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<rect x=".65" y="3.95" width="24.7" height="9.7" rx="1.35" stroke="#000" stroke-width="1.3"/>\
+<path fill="#000" d="M4 0h18v1H4zM4 17h18v1H4z"/>\
 </svg>',
 					selected: image.attributes.size === 'wide',
 					action: this.toggleSizeWide(image)
-				}),
-				new ControlButton({
-					label: 'Банер',
-					icon: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 1H12V2H4V1ZM14 5H2V11H14V5ZM2 4H1V5V11V12H2H14H15V11V5V4H14H2ZM12 14H4V15H12V14Z" fill="#fff"/>\
-</svg>',
-					selected: image.attributes.size === 'banner',
-					action: this.toggleSizeBanner(image)
 				}),
 				new ControlFile({
 					label: 'Обновить картинку',

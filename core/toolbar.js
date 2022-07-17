@@ -35,11 +35,13 @@ class Toolbar {
 		})
 		this.toggleButton = null
 		this.containerAvatar = createElement('div')
-		this.containerAvatar.style.position = 'absolute'
+		this.containerAvatar.style.position = 'fixed'
 		this.containerAvatar.style.bottom = '0'
 		this.containerAvatar.style.right = '0'
 		this.containerAvatar.style.border = '1px solid #000'
-		// this.containerAvatar.style.left = '-99999%'
+		this.containerAvatar.style.background = '#fff'
+		this.containerAvatar.style.opacity = '0'
+		this.containerAvatar.style.pointerEvents = 'none'
 
 		document.body.appendChild(this.containerAvatar)
 		document.body.appendChild(this.tooltip)
@@ -186,7 +188,7 @@ class Toolbar {
 
 			if (controls.length) {
 				this.renderControls(controls)
-				this.showTooltip('selection')
+				this.showTooltip(focusedNodes.length === 1 && focusedNodes[0].isWidget ? 'settings' : 'selection')
 			} else {
 				this.hideTooltip()
 			}
@@ -318,7 +320,7 @@ class Toolbar {
 		this.isShowTooltip = true
 		this.lastTooltipType = type
 		this.tooltip.classList.remove('hidden')
-		this.renderTooltip()
+		this.renderTooltip(type === 'settings' ? 'center' : 'caret')
 	}
 
 	showToggleButtonHolder() {
@@ -353,18 +355,20 @@ class Toolbar {
 		let offsetLeft = containerBoundingClientRect.left
 
 		if (position === 'caret') {
-			this.containerAvatar.style.width = container.offsetWidth
+			// console.log(container, container.element.offsetWidth, styles.width)
+			this.containerAvatar.style.width = container.element.offsetWidth + 'px'
 			this.containerAvatar.style.fontFamily = styles.fontFamily
 			this.containerAvatar.style.fontSize = styles.fontSize
 			this.containerAvatar.style.lineHeight = styles.lineHeight
 			this.containerAvatar.style.padding = styles.padding
 			this.containerAvatar.style.boxSizing = styles.boxSizing
-			this.containerAvatar.style.width = styles.width
+			// this.containerAvatar.style.width = styles.width
+			this.containerAvatar.style.textAlign = styles.textAlign
 
 			const content = container.element.outerText
 			const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
 			const fakeContent = content.substr(0, this.selection.anchorOffset) +
-				'<span data-selected-text>' +
+				'<span style="background: blue" data-selected-text>' +
 				content.substr(this.selection.anchorOffset, selectedLength) +
 				'</span>' +
 				content.substr(this.selection.focusOffset)
@@ -378,6 +382,9 @@ class Toolbar {
 				selectedText.offsetLeft +
 				selectedText.offsetWidth / 2 -
 				this.tooltip.offsetWidth / 2
+		} else if (position === 'center') {
+			offsetTop -= this.tooltip.offsetHeight
+			offsetLeft += container.element.offsetWidth / 2 - this.tooltip.offsetWidth / 2
 		}
 
 		this.tooltip.style.top = offsetTop + 'px'

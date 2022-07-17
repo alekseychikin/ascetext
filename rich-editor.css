@@ -1,11 +1,16 @@
 .contenteditor__tooltip {
 	position: absolute;
+	overflow: hidden;
 	z-index: 1;
-	margin-top: -10px;
-	height: 40px;
 	display: flex;
-	transform: translateY(0);
+	margin-top: -10px;
+	border: 1px solid #ececec;
+	border-radius: 4px;
+	height: 40px;
 	opacity: 1;
+	background: #fff;
+	box-shadow: 0px 2px 10px #ebebeb;
+	transform: translateY(0);
 	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
 
@@ -122,7 +127,7 @@
 	border-color: transparent #2c276a transparent transparent;
 }
 
-.rich-editor__control {
+.contenteditor__control {
 	display: inline-block;
 	vertical-align: top;
 	box-sizing: border-box;
@@ -130,24 +135,41 @@
 	padding: 8px;
 	min-width: 40px;
 	height: 40px;
-	background: #2c276a;
 	cursor: pointer;
 	outline: none;
-	color: white;
+	color: #fff;
+	background: none;
 	font: 16px/26px 'PT Sans', sans-serif;
-
 }
 
-.rich-editor__control.selected {
+.contenteditor__control path,
+.contenteditor__control circle {
+	fill: #000;
+}
+
+.contenteditor__control:hover rect {
+	stroke: #000;
+}
+
+.contenteditor__control:hover path,
+.contenteditor__control:hover circle {
+	fill: #fff;
+}
+
+.contenteditor__control:hover rect {
+	stroke: #fff;
+}
+
+.contenteditor__control.selected {
 	color: #8d68db;
 }
 
-.rich-editor__control:hover,
-.rich-editor__control.rich-editor__control--selected {
-	background: #554f9e;
+.contenteditor__control:hover,
+.contenteditor__control.rich-editor__control--selected {
+	background: #ff18a4;
 }
 
-.rich-editor__control-input {
+.contenteditor__control-input {
 	display: inline-block;
 	vertical-align: top;
 	box-sizing: border-box;
@@ -161,7 +183,7 @@
 	font: 16px/26px 'PT Sans', sans-serif;
 }
 
-.rich-editor__control-input-file {
+.contenteditor__control-input-file {
 	position: absolute;
 	opacity: 0;
 	left: -999%;

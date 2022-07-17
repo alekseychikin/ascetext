@@ -27,15 +27,15 @@ class ControlButton extends ControlControl {
 
 	getElement(node) {
 		const classNames = [
-			'rich-editor__control'
+			'contenteditor__control'
 		]
 
 		if (this.params.selected && (typeof this.params.selected === 'function' && this.params.selected(node) || this.params.selected === true)) {
-			classNames.push('rich-editor__control--selected')
+			classNames.push('contenteditor__control--selected')
 		}
 
 		if (this.params.disabled && (typeof this.params.disabled === 'function' && this.params.disabled(node) || this.params.disabled === true)) {
-			classNames.push('rich-editor__control--disabled')
+			classNames.push('contenteditor__control--disabled')
 		}
 
 		this.element.className = classNames.join(' ')

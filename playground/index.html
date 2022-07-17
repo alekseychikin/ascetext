@@ -3,21 +3,104 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Document</title>
-	<link rel="stylesheet" href="./dist/rich-editor.css">
+	<title>Ascetext — ascetic text editor for modern web</title>
+	<link rel="stylesheet" href="./dist/rich-editor.css" />
+	<link rel="stylesheet" href="./reset.css" />
+	<link rel="stylesheet" href="./playground.css" />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet" />
 </head>
 <body>
-	<h1>Ascetext playground</h1>
+	<main class="playground">
+		<h1 class="playground__header">Ascetext playground</h1>
 
-	<main style="padding: 50px">
-		<section id="app" style="padding: 20px;">
-			<p>Text <em>for</em> editing</p>
-			<p>Text <em>for</em> editing</p>
-			<p>Text <em>for</em> editing</p>
+		<section class="playground__editor" id="app">
+			<h2>Profile</h2>
+
+			<p>
+				I have been working Web Developer for over 10 years. I like to combine designing architectures,
+				creating user interfaces and web animations, creating development tools, and product development.
+			</p>
+
+			<p>
+				I like to share knowledge. Summary I taught 6 courses of basics HTML, CSS and JavaScript.
+				I like reviewing the teammates' code and helping them.
+			</p>
+
+			<p>
+				I am an author of small <a href="https://github.com/alekseychikin">open-source projects</a>.
+				Started <a href="https://youtube.com/user/MakingoffDelay">YouTube channel</a> with master classes
+				and thoughts about modern web problematic.
+			</p>
+
+			<p>
+				TypeScript, JavaScript, React, Node.js, CSS, HTML, PostCSS, Git
+			</p>
+
+			<h2>Employment History</h2>
+
+			<ul>
+				<li>
+					<strong>Frontend Developer at Innova, Moscow</strong><br />
+					<em>03.2016–09.2021</em><br />
+					Created architecture and developed indoor products for company:
+					Created landing pages with complicated animations. Developed web shop for gamers.
+					Developed hybrid application for launching games. Made integration with purchase systems
+				</li>
+
+				<li>
+					<strong>Full Stack Developer at Typomania design school, Moscow</strong><br />
+					<em>volunteer since 2019</em><br />
+					Created full-stack solution for videoclips competition. Besides frontend, I developed backend
+					written on php, with Amazon services (S3, CloudFront, SNS, SES), and YouTube API integration.
+				</li>
+
+				<li>
+					<strong>Frontend Developer at DMTEL, Moscow.</strong><br />
+					<em>04.2013–04.2015</em><br />
+					Created an MVP service for analysing telecom traffic, designed the project architecture from scratch.
+					Special device analyses traffic and stores it in database and specific data formats, and web application
+					provides access to data via tables, graphics, charts, pdf reports, search with autocompletion.
+				</li>
+
+				<li>
+					<strong>Web Developer at Long Cat, Saransk.</strong><br />
+					<em>03.2012–04.2013</em><br />
+					Developed an MVP service where educational institutions could post reports and documents.
+					The service provides simple hosting by subscription for schools and kindergartens with common
+					information, news, teaching staff, documents and reports. Designed and developed backend and frontend:
+					public side and administration side.
+				</li>
+
+				<li>
+					<strong>Web Developer at Internet House, Saransk.</strong><br />
+					<em>03.2008–07.2010</em><br />
+					Created websites for local companies. Created markup and integrations with CMS. Developed web application
+					for city administration for managing government program of housing people. Before it was four denormalised
+					no-syncronised databases from four city districts. I designed normalised centralised database and migrations.
+					Developed user interface for managing records.
+				</li>
+			</ul>
+
+			<h2>Education</h2>
+
+			<p>
+				Specialist, Ogarev Mordovia State University<br />
+				<em>09.2005–07.2010</em><br />
+				Specialist degree in math methods and information security software.
+			</p>
+
+			<figure class="image">
+				<img src="image.jpg" alt="" />
+				<figcaption>TypeScript, JavaScript, React, Node.js, CSS, HTML, PostCSS, Git</figcaption>
+			</figure>
 		</section>
 	</main>
 
-	<button id="save">Save</button>
+	<div class="playground__action">
+		<button class="playground__button" id="save">Save</button>
+	</div>
 
 	<script src="./dist/app.js"></script>
 </body>

@@ -1,0 +1,102 @@
+html,
+body {
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+}
+
+html {
+	font-size: 10px;
+}
+
+body {
+	font: 1.6rem/2.4rem 'Roboto', sans-serif;
+	color: #000;
+	background: #fff;
+}
+
+.playground {
+	margin: 0 auto;
+	padding: 50px;
+	max-width: 844px;
+}
+
+.playground__header {
+	font-weight: 700;
+	font-size: 3.4rem;
+	line-height: 4rem;
+	letter-spacing: -0.02em;
+}
+
+.playground__editor {
+	margin-top: 2.4rem;
+	outline: none;
+}
+
+.playground__editor h2 {
+	font-weight: 700;
+	font-size: 2rem;
+	line-height: 2.4rem;
+	letter-spacing: -0.02em;
+}
+
+.playground__editor * + h2 {
+	margin-top: 2.4rem;
+}
+
+.playground__editor * + p,
+.playground__editor * + ul {
+	margin: 1.2rem 0;
+}
+
+.playground__editor ul {
+	padding-left: 2.6rem;
+	list-style: disc;
+}
+
+.playground__editor li + li {
+	margin-top: 0.6rem;
+}
+
+.playground__editor img {
+	max-width: 100%;
+}
+
+.playground__editor strong {
+	font-weight: bold;
+}
+
+.playground__editor em {
+	font-style: italic;
+}
+
+.playground__editor small {
+	font-size: 1.2rem;
+	color: #ddd;
+}
+
+.playground__editor figcaption {
+	font-style: italic;
+	font-size: 1.4rem;
+	text-align: center;
+}
+
+.playground__action {
+	text-align: center;
+}
+
+.playground__button {
+	border: 0;
+	border-radius: 4px;
+	padding: 5px 20px;
+	font-size: 2rem;
+	line-height: 2.4rem;
+	background: #ff18a4;
+	color: #fff;
+	cursor: pointer;
+}
+
+.playground__button:hover {
+	opacity: 0.8;
+}
