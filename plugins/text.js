@@ -85,7 +85,7 @@ class Text extends Node {
 			content += '</strong>'
 		}
 
-		return content
+		return content.replace(/\u00A0/, '&nbsp;')
 	}
 }
 
@@ -103,7 +103,9 @@ class TextPlugin extends PluginPlugin {
 		return new Text(params, text)
 	}
 
-	// не нравится
+	// Нужно придумать нормальные правила как парсить текст
+	// Нужно понять в каких случаях нужно удалять пробелы, а в каких оставлять
+	// В каких случаях нужно множество пробелов схлопывать в один
 	parse(element, builder, context) {
 		if (element.nodeType !== 3 && (element.nodeType === 1 && ![ 'em', 'strong', 'span' ].includes(element.nodeName.toLowerCase()))) {
 			return false
@@ -115,17 +117,17 @@ class TextPlugin extends PluginPlugin {
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
 
-			// TODO: Нужно уметь лучше определять первую ноду. Имеется ввиду первая текстовая нода в контейнере
-			// а не просто в каком угодно первом элементе (например ссылке)
-			if (element === firstChild) {
-				content = content.trimLeft()
+			if (element === firstChild || element.previousSibling && element.previousSibling.nodeType !== 3 && element.previousSibling.tagName.toLowerCase() === 'br') {
+				content = content.replace(/^[^\S\u00A0]+/, '')
 			}
 
-			if (element === lastChild) {
-				content = content.replace(/\n[\n\s]*$/, '').replace(/\s$/, nbsCode)
+			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && element.nextSibling.tagName.toLowerCase() === 'br') {
+				content = content.replace(/[^\S\u00A0]+$/, '')//.replace(/\s$/, nbsCode)
 			}
 
-			if (!content.length || !context.parsingContainer && content.match(/^[\n\s]+$/)) {
+			content = content.replace(/[^\S\u00A0]+/g, ' ')
+
+			if (!content.length || !context.parsingContainer && content.match(/^[^\S\u00A0]+$/)) {
 				return false
 			}
 

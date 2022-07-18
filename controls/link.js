@@ -8,7 +8,7 @@ class ControlLink extends ControlControl {
 		this.element.title = params.label
 		this.element.href = params.url
 		this.element.target = '_blank'
-		this.element.className = 'rich-editor__control'
+		this.element.className = 'contenteditor__control'
 		this.element.appendChild(document.createTextNode(params.url))
 	}
 }

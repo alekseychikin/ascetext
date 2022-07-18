@@ -137,7 +137,7 @@
 	height: 40px;
 	cursor: pointer;
 	outline: none;
-	color: #fff;
+	color: #000;
 	background: none;
 	font: 16px/26px 'PT Sans', sans-serif;
 }
@@ -147,25 +147,25 @@
 	fill: #000;
 }
 
-.contenteditor__control:hover rect {
-	stroke: #000;
+.contenteditor__control:hover,
+.contenteditor__control.selected {
+	color: #fff;
 }
 
 .contenteditor__control:hover path,
-.contenteditor__control:hover circle {
+.contenteditor__control:hover circle,
+.contenteditor__control--selected path,
+.contenteditor__control--selected circle {
 	fill: #fff;
 }
 
-.contenteditor__control:hover rect {
+.contenteditor__control:hover rect,
+.contenteditor__control--selected rect {
 	stroke: #fff;
 }
 
-.contenteditor__control.selected {
-	color: #8d68db;
-}
-
 .contenteditor__control:hover,
-.contenteditor__control.rich-editor__control--selected {
+.contenteditor__control--selected {
 	background: #ff18a4;
 }
 
@@ -177,9 +177,7 @@
 	padding: 8px;
 	min-width: 40px;
 	height: 40px;
-	background: #2c276a;
 	outline: none;
-	color: white;
 	font: 16px/26px 'PT Sans', sans-serif;
 }
 

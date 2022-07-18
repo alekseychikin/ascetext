@@ -31,7 +31,7 @@ class ControlInput extends ControlControl {
 		this.element = document.createElement('input')
 		this.element.addEventListener('keydown', this.handleKeydown)
 		this.element.placeholder = params.placeholder
-		this.element.className = 'rich-editor__control-input'
+		this.element.className = 'contenteditor__control-input'
 	}
 
 	setEventListener(handler) {

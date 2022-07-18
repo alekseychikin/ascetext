@@ -254,6 +254,7 @@ class Builder {
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {
 		let currentElement = firstElement
+		let nextElement
 		let first
 		let previous
 		let current
@@ -275,6 +276,8 @@ class Builder {
 				current = this.parse(currentElement.firstChild, currentElement.lastChild)
 			}
 
+			nextElement = currentElement.nextSibling
+
 			if (current) {
 				value = this.handleParseNext(first, previous, current)
 
@@ -294,13 +297,17 @@ class Builder {
 				first = value.first
 			} else {
 				console.log('not matched', currentElement)
+
+				if (currentElement.parentNode) {
+					currentElement.parentNode.removeChild(currentElement)
+				}
 			}
 
 			if (currentElement === lastElement) {
 				break
 			}
 
-			currentElement = currentElement.nextSibling
+			currentElement = nextElement
 		}
 
 		return first

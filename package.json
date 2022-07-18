@@ -4,7 +4,7 @@
   "description": "Editor for web",
   "main": "src/index.js",
   "scripts": {
-    "start": "npx gulp",
+    "start": "npx gulp watch",
     "build": "npx gulp --production"
   },
   "repository": {

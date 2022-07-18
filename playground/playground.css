@@ -77,12 +77,12 @@ body {
 }
 
 .playground__editor figcaption {
-	font-style: italic;
 	font-size: 1.4rem;
 	text-align: center;
 }
 
 .playground__action {
+	margin-top: 50px;
 	text-align: center;
 }
 
