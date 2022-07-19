@@ -1,4 +1,4 @@
-import 'babel-polyfill'
+import 'regenerator-runtime/runtime'
 
 import Editor from '../index'
 import { ParagraphPlugin } from '../plugins/paragraph'
