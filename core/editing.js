@@ -188,9 +188,7 @@ class Editing {
 			firstContainer.transform(this.getModifyKeyHandlerParams())
 			this.core.selection.setSelection(
 				firstContainer,
-				this.core.selection.isForwardDirection
-					? this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
-					: this.core.selection.focusIndex[this.core.selection.focusIndex.length - 1]
+				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
 			)
 		} else if (lastContainer.isContainer) {
 			lastContainer.transform(this.getModifyKeyHandlerParams())

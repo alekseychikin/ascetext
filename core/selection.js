@@ -60,20 +60,26 @@ class Selection {
 			return false
 		}
 
-		const anchorContainer = getNodeByElement(anchorElement).getClosestContainer()
-		const focusContainer = getNodeByElement(focusElement).getClosestContainer()
+		const firstContainer = getNodeByElement(anchorElement).getClosestContainer()
+		const lastContainer = getNodeByElement(focusElement).getClosestContainer()
+		const firstIndex = this.getIndex(firstContainer, anchorElement, selection.anchorOffset)
+		const lastIndex = this.getIndex(lastContainer, focusElement, selection.focusOffset)
+		const isForwardDirection = this.getDirection(firstIndex, lastIndex) === 'forward'
+		const [ anchorContainer, focusContainer ] =
+			isForwardDirection ? [ firstContainer, lastContainer ] : [ lastContainer, firstContainer ]
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
 		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
-		const [ anchorSelectedElement, anchorSelectedOffset ] =
-			this.getSelectedElement(anchorElement, selection.anchorOffset)
-		const [ focusSelectedElement, focusSelectedOffset ] =
-			this.getSelectedElement(focusElement, selection.focusOffset)
+		const [ anchorSelectedElement, anchorSelectedOffset ] = isForwardDirection
+			? this.getSelectedElement(anchorElement, selection.anchorOffset)
+			: this.getSelectedElement(focusElement, selection.focusOffset)
+		const [ focusSelectedElement, focusSelectedOffset ] = isForwardDirection
+			? this.getSelectedElement(focusElement, selection.focusOffset)
+			: this.getSelectedElement(anchorElement, selection.anchorOffset)
 		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
 		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
-		this.anchorIndex = this.getIndex(anchorContainer, anchorElement, selection.anchorOffset)
-		this.focusIndex = this.getIndex(focusContainer, focusElement, selection.focusOffset)
-		this.isForwardDirection = this.getDirection(this.anchorIndex, this.focusIndex) === 'forward'
+		this.anchorIndex = isForwardDirection ? firstIndex : lastIndex
+		this.focusIndex = isForwardDirection ? lastIndex : firstIndex
 		this.focused = true
 		this.isRange = !isCollapsed
 		this.anchorAtFirstPositionInContainer = anchorOffset === 0
@@ -271,30 +277,13 @@ class Selection {
 	}
 
 	cutRange() {
-		let anchorContainer = this.anchorContainer
-		let anchorOffset = this.anchorOffset
-		let focusContainer = this.focusContainer
-		let focusOffset = this.focusOffset
-		let anchor
-		let focus
-
-		if (!this.isForwardDirection) {
-			anchorContainer = this.focusContainer
-			anchorOffset = this.focusOffset
-			focusContainer = this.anchorContainer
-			focusOffset = this.anchorOffset
-		}
-
 		const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
-
-		focus = this.core.builder.split(
+		const focus = this.core.builder.split(
 			focusFirstLevelNode,
 			this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
 		)
-
 		const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
-
-		anchor = this.core.builder.split(
+		const anchor = this.core.builder.split(
 			anchorFirstLevelNode,
 			this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
 		)
