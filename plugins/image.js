@@ -256,9 +256,9 @@ class ImagePlugin extends PluginPlugin {
 				new ControlButton({
 					label: 'Обтекание справа',
 					icon: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path d="M12 7.333h8M12 2h8M0 12.667h20M0 18h20" stroke="#000" stroke-width="1.3"/>\
 <mask id="a" fill="#fff"><rect width="9" height="9" rx="1"/></mask>\
 <rect width="9" height="9" rx="1" stroke="#000" stroke-width="2.6" mask="url(#a)"/>\
+<path fill="#000" d="M12 1.3h8v1.3h-8zM12 6.6h8v1.3h-8zM0 12h20v1.3H0zM0 17.4h20v1.3H0z"/>\
 </svg>',
 					selected: image.attributes.float === 'left',
 					action: this.toggleFloatLeft(image)
@@ -266,9 +266,9 @@ class ImagePlugin extends PluginPlugin {
 				new ControlButton({
 					label: 'Обтекание слева',
 					icon: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path d="M0 7.333h8M0 2h8M0 12.667h20M0 18h20" stroke="#000" stroke-width="1.3"/>\
 <mask id="b" fill="#fff"><rect x="11" width="9" height="9" rx="1"/></mask>\
 <rect x="11" width="9" height="9" rx="1" stroke="#000" stroke-width="2.6" mask="url(#b)"/>\
+<path fill="#000" d="M0 1.3h8v1.3H0zM0 6.6h8v1.3H0zM0 12h20v1.3H0zM0 17.4h20v1.3H0z"/>\
 </svg>',
 					selected: image.attributes.float === 'right',
 					action: this.toggleFloatRight(image)

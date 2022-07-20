@@ -59,6 +59,24 @@ body {
 	margin-top: 0.6rem;
 }
 
+.playground__editor figure {
+	text-align: center;
+}
+
+.playground__editor figure.image--float-left {
+	margin: 0 24px 24px 0;
+	float: left;
+}
+
+.playground__editor figure.image--float-right {
+	margin: 0 24px 0 24px;
+	float: right;
+}
+
+.playground__editor figure.image--size-wide img {
+	width: 100%;
+}
+
 .playground__editor img {
 	max-width: 100%;
 }
