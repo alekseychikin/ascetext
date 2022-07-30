@@ -148,7 +148,7 @@ class Selection {
 	}
 
 	getSelectionParams(node, offset) {
-		const childByOffset = node.getChildByOffset(offset)
+		const { element: childByOffset } = node.getChildByOffset(offset)
 		let element = node.element
 		let index = offset
 
@@ -271,28 +271,36 @@ class Selection {
 	}
 
 	getSelectedItems() {
-		const { anchorTail, focusHead } = this.cutRange()
+		const { head, tail } = this.cutRange()
 
-		return this.getArrayRangeItems(anchorTail, focusHead)
+		return this.getArrayRangeItems(head, tail)
 	}
 
 	cutRange() {
-		const focusFirstLevelNode = this.focusContainer.getFirstLevelNode(this.focusOffset)
 		const focus = this.core.builder.split(
-			focusFirstLevelNode,
-			this.focusOffset - this.focusContainer.getOffset(focusFirstLevelNode.element)
+			this.focusContainer,
+			this.focusOffset
 		)
-		const anchorFirstLevelNode = this.anchorContainer.getFirstLevelNode(this.anchorOffset)
 		const anchor = this.core.builder.split(
-			anchorFirstLevelNode,
-			this.anchorOffset - this.anchorContainer.getOffset(anchorFirstLevelNode.element)
+			this.anchorContainer,
+			this.anchorOffset
 		)
+		const anchorNextContainer = this.anchorContainer.getNextSelectableNode()
+		const focusPreviousContainer = this.focusContainer.getPreviousSelectableNode()
 
 		return {
-			anchorHead: anchor.head,
-			anchorTail: anchor.tail,
-			focusHead: anchorFirstLevelNode === focus.head ? anchor.tail : focus.head,
-			focusTail: focus.tail
+			head: !anchor.head && !focus.head
+				? this.anchorContainer
+				: !anchor.tail
+					? anchorNextContainer
+					: anchor.tail,
+			tail: !focus.head && !anchor.head
+				? focusPreviousContainer.last || focusPreviousContainer
+				: !focus.head
+					? this.focusContainer
+					: !focus.head.element.parentNode || focus.head === anchor.head
+						? this.deepesetLastNode(anchor.tail)
+						: this.deepesetLastNode(focus.head)
 		}
 	}
 
@@ -303,14 +311,14 @@ class Selection {
 		while (current) {
 			selectedItems.push(current)
 
+			if (current === until) {
+				break
+			}
+
 			if (current.first && !current.isWidget) {
 				current = current.first
 
 				continue
-			}
-
-			if (current === until) {
-				break
 			}
 
 			if (current.next) {
@@ -345,6 +353,14 @@ class Selection {
 		}
 
 		return selectedItems
+	}
+
+	deepesetLastNode(node) {
+		if (node.last) {
+			return this.deepesetLastNode(node.last)
+		}
+
+		return node
 	}
 
 	destroy() {

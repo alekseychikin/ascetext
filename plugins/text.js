@@ -52,11 +52,35 @@ class Text extends Node {
 	}
 
 	split(position, builder) {
+		if (!position) {
+			return {
+				head: this.previous,
+				tail: this
+			}
+		} else if (position > this.content.length - 1) {
+			return {
+				head: this,
+				tail: this.next
+			}
+		}
+
 		const head = new Text(this.attributes, this.content.substr(0, position))
 		const tail = new Text(this.attributes, this.content.substr(position))
 
 		builder.connect(head, tail)
 		builder.replace(this, head)
+
+		if (tail.content[0] === ' ') {
+			content = nbsCode + tail.content.substr(1)
+			tail.content = content
+			tail.element.nodeValue = content
+		}
+
+		if (head.content[head.content.length - 1] === ' ') {
+			content = head.content.substr(0, head.content.length - 1) + nbsCode
+			head.content = content
+			head.element.nodeValue = content
+		}
 
 		return {
 			head,

@@ -149,13 +149,11 @@ class Toolbar {
 	}
 
 	renderSelectedTooltip() {
-		const anchorElement =
-			this.selection.anchorContainer.getChildByOffset(this.selection.anchorOffset)
-		const focusElement =
-			this.selection.focusContainer.getChildByOffset(this.selection.focusOffset)
 		const controls = []
-		const focusNode = getNodeByElement(focusElement)
-		let anchorNode = getNodeByElement(anchorElement)
+		const { node: focusNode } =
+			this.selection.focusContainer.getChildByOffset(this.selection.focusOffset)
+		let { node: anchorNode } =
+			this.selection.anchorContainer.getChildByOffset(this.selection.anchorOffset)
 		let focusedNodes = this.selection.getArrayRangeItems(anchorNode, focusNode)
 
 		while (anchorNode !== this.selection.anchorContainer.parent) {
@@ -295,6 +293,7 @@ class Toolbar {
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems
 		})
+		this.timeTravel.commit()
 	}
 
 	restoreSelection() {

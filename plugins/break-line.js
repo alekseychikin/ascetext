@@ -11,12 +11,8 @@ class BreakLine extends InlineWidget {
 	}
 
 	split(offset, builder) {
-		const head = builder.create('text')
-
-		builder.preconnect(this, head)
-
 		return {
-			head,
+			head: this.previous,
 			tail: this
 		}
 	}

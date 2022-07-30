@@ -14,8 +14,6 @@ class TimeTravel {
 		this.timeindex = -1
 		this.isLockPushChange = true
 		this.currentBunch = []
-		this.pushChangeTimer = null
-		this.commitTimer = null
 		this.builder = builder
 		this.selection = selection
 		this.previousSelection = null
@@ -29,6 +27,7 @@ class TimeTravel {
 	onSelectionChange(selection) {
 		if (!this.preservedPreviousSelection) {
 			this.previousSelection = selection.getSelectionInIndexes()
+			// console.log('timetravel previous selection', this.previousSelection.anchorIndex, this.previousSelection.focusIndex)
 		}
 	}
 
@@ -38,12 +37,7 @@ class TimeTravel {
 
 	pushChange(event) {
 		if (!this.isLockPushChange) {
-			if (this.pushChangeTimer !== null) {
-				clearTimeout(this.pushChangeTimer)
-			}
-
 			this.currentBunch.push(event)
-			this.pushChangeTimer = setTimeout(this.commit, 100)
 		}
 	}
 
@@ -53,10 +47,6 @@ class TimeTravel {
 		}
 
 		const nextSelection = this.selection.getSelectionInIndexes()
-
-		if (this.pushChangeTimer !== null) {
-			clearTimeout(this.pushChangeTimer)
-		}
 
 		if (this.timeindex < this.timeline.length - 1) {
 			this.timeline.splice(this.timeindex + 1)
@@ -71,7 +61,6 @@ class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.previousSelection = nextSelection
 		this.timeindex++
-		this.pushChangeTimer = null
 	}
 
 	goBack() {

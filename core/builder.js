@@ -24,8 +24,10 @@ class Builder {
 		return this.create('paragraph')
 	}
 
-	split(node, offset) {
-		return node.split(offset, this)
+	split(container, offset) {
+		const firstLevelNode = container.getFirstLevelNode(offset)
+
+		return firstLevelNode.split(offset - container.getOffset(firstLevelNode.element), this)
 	}
 
 	append(node, target) {
@@ -246,10 +248,25 @@ class Builder {
 	}
 
 	insert(container, node, offset) {
-		const firstLevelNode = container.getFirstLevelNode(offset)
-		const { head } = this.split(firstLevelNode, offset - container.getOffset(firstLevelNode.element))
+		const { head, tail } = this.split(container, offset)
 
-		this.connect(head, node)
+		if (head) {
+			this.connect(head, node)
+
+			return node
+		} else {
+			this.preconnect(tail, node)
+
+			return tail
+		}
+	}
+
+	moveTail(container, target, offset) {
+		const { tail } = this.split(container, offset)
+
+		if (tail) {
+			this.append(target, tail)
+		}
 	}
 
 	parse(firstElement, lastElement, context = { selection: this.selection }) {

@@ -83,7 +83,7 @@ class Widget extends WithControls {
 		setSelection(newBlock, 0)
 	}
 
-	transform() {}
+	markDirty() {}
 
 	update() {}
 }

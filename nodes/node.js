@@ -195,10 +195,10 @@ class Node {
 		let restOffset = offset
 
 		if (this.isWidget && !offset) {
-			return this.element
+			return this
 		}
 
-		return walk(this.element, (current) => {
+		const element = walk(this.element, (current) => {
 			if (current.nodeType === 3) {
 				if (current.length >= restOffset) {
 					return current
@@ -216,11 +216,12 @@ class Node {
 				restOffset -= 1
 			}
 		})
+
+		return { node: getNodeByElement(element), element }
 	}
 
 	getFirstLevelNode(offset) {
-		const selectedElement = this.getChildByOffset(offset)
-		let firstLevelNode = getNodeByElement(selectedElement)
+		let { node: firstLevelNode } = this.getChildByOffset(offset)
 
 		while (firstLevelNode.parent !== this) {
 			firstLevelNode = firstLevelNode.parent
@@ -249,22 +250,33 @@ class Node {
 	}
 
 	split(offset, builder) {
-		const selectedChild = this.getChildByOffset(offset)
-		let nodeChild = getNodeByElement(selectedChild)
+		let { node: nodeChild } = this.getChildByOffset(offset)
 
 		while (nodeChild.parent !== this) {
 			nodeChild = nodeChild.parent
 		}
 
-		const nodeChildOffset = offset - this.getOffset(nodeChild.element)
-		const { tail } = builder.split(nodeChild, nodeChildOffset)
-		const duplicate = this.duplicate(builder)
+		const { head, tail } = builder.split(this, offset)
 
-		builder.append(duplicate, tail)
+		if (head && tail) {
+			const duplicate = this.duplicate(builder)
+
+			builder.append(duplicate, tail)
+
+			return {
+				head: this,
+				tail: duplicate
+			}
+		} else if (head) {
+			return {
+				head: this,
+				tail: this.next
+			}
+		}
 
 		return {
-			head: this,
-			tail: duplicate
+			head: null,
+			tail: this
 		}
 	}
 

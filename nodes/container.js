@@ -12,15 +12,11 @@ class Container extends Node {
 		this.showToolbar = this.showToolbar.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.onMouseDown = this.onMouseDown.bind(this)
-		this.update = this.update.bind(this)
 
 		this.isContainer = true
 		this.isChanged = false
 		this.isShowToolbar = false
 		this.isShowControls = false
-		this.markDirtyTimer = null
-		this.transformTimer = null
-		this.isUpdating = false
 		// this.createControls()
 	}
 
@@ -47,14 +43,7 @@ class Container extends Node {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			const firstLevelNode = this.getFirstLevelNode(anchorOffset)
-			const { head } = builder.split(
-				firstLevelNode,
-				anchorOffset - this.getOffset(firstLevelNode.element)
-			)
-
-			builder.connect(head, builder.create('breakLine'))
-
+			builder.insert(this, builder.create('breakLine'), anchorOffset)
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
 			if (!this.parent.isSection && !this.parent.isGroup) {
@@ -63,25 +52,11 @@ class Container extends Node {
 
 			event.preventDefault()
 
-			if (focusAtLastPositionInContainer) {
-				const newBlock = builder.createBlock()
+			const newBlock = builder.createBlock()
 
-				builder.connect(this, newBlock)
-
-				setSelection(newBlock, 0)
-			} else if (anchorAtFirstPositionInContainer) {
-				const newBlock = builder.createBlock()
-
-				builder.preconnect(this, newBlock)
-
-				setSelection(this, 0)
-			} else {
-				const { tail } = builder.split(this, anchorOffset)
-
-				if (tail !== null) {
-					setSelection(tail, 0)
-				}
-			}
+			builder.connect(this, newBlock)
+			builder.moveTail(this, newBlock, anchorOffset)
+			setSelection(newBlock, 0)
 		}
 	}
 
@@ -194,102 +169,6 @@ class Container extends Node {
 			} else if (nextSelectableNode.isWidget) {
 				setSelection(nextSelectableNode, 0)
 			}
-		}
-	}
-
-	markDirty(params) {
-		if (this.isUpdating || params.isLockPushChange) {
-			return
-		}
-
-		if (this.markDirtyTimer !== null) {
-			clearTimeout(this.markDirtyTimer)
-		}
-
-		this.isChanged = true
-		this.markDirtyTimer = setTimeout(() => this.update(params), 300)
-	}
-
-	transform(params) {
-		this.isChanged = true
-
-		if (this.isUpdating || params.isLockPushChange) {
-			return
-		}
-
-		if (this.transformTimer !== null) {
-			clearTimeout(this.transformTimer)
-		}
-
-		this.transformTimer = setTimeout(() => this.update(params), 1)
-	}
-
-	update({ builder, focused, restoreSelection }) {
-		if (this.isUpdating || !this.isChanged) {
-			return
-		}
-
-		if (this.markDirtyTimer !== null) {
-			clearTimeout(this.markDirtyTimer)
-			this.markDirtyTimer = null
-		}
-
-		if (this.transformTimer !== null) {
-			clearTimeout(this.transformTimer)
-			this.transformTimer = null
-		}
-
-		this.isUpdating = true
-
-		const content = builder.parse(this.element.firstChild, this.element.lastChild, {
-			parsingContainer: true
-		})
-
-		if (this.first) {
-			this.handleTextInRemoveNodes(this.first)
-			builder.cutUntil(this.first)
-		}
-
-		while (this.element.firstChild !== null) {
-			this.element.removeChild(this.element.firstChild)
-		}
-
-		if (content) {
-			builder.append(this, content)
-		}
-
-		// if (
-		// 	!this.first ||
-		// 	this.last.type === 'breakLine' &&
-		// 	this.last.previous &&
-		// 	this.last.previous.type !== 'breakLine'
-		// ) {
-		// 	builder.push(this, builder.create('breakLine'))
-		// }
-
-		if (focused) {
-			restoreSelection(false)
-		}
-
-		this.isChanged = false
-		this.isUpdating = false
-		this.markDirtyTimer = null
-		this.transformTimer = null
-	}
-
-	handleTextInRemoveNodes(node) {
-		let current = node
-
-		while (current) {
-			if (current.type === 'text') {
-				if (current.content !== current.element.nodeValue) {
-					current.element.nodeValue = current.content
-				}
-			} else if (current.first) {
-				this.handleTextInRemoveNodes(current.first)
-			}
-
-			current = current.next
 		}
 	}
 

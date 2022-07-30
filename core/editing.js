@@ -28,15 +28,16 @@ class Editing {
 		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
-		this.onNodeTransform = this.onNodeTransform.bind(this)
+		this.update = this.update.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
 
 		this.node = core.node
 		this.core = core
-		this.updateTimer = null
+		this.updatingContainers = []
 		this.modifyKeyHandlerParams = {}
+		this.markDirtyTimer = null
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
@@ -64,17 +65,29 @@ class Editing {
 				if (modifyKeyPressed) {
 					this.handleModifyKeyDown(event)
 				} else {
-					if (this.core.selection.isRange) {
-						this.handleRemoveRange()
-					}
+					this.handleRemoveRange()
 
 					if (event.keyCode === spaceKey) {
-						this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+						// здесь нужно делать синхронизацию, а не апдейт
+						// потому что апдейт — это замена содержимого, а в этом случае нужно
+						// синхронизировать модель данных
+						// нужно спарсить без нормализации и без обновления реальных нод
+						this.update()
 						this.core.timeTravel.commit()
 						this.core.timeTravel.preservePreviousSelection()
+
+						const { node, element } = this.core.selection.anchorContainer.getChildByOffset(this.core.selection.anchorOffset)
+						const offset = this.core.selection.anchorOffset - this.core.selection.anchorContainer.getOffset(element)
+						const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? '\u00A0' : ' ') + node.content.substr(offset)
+
+						node.content = content
+						element.nodeValue = content
+						this.core.selection.setSelection(this.core.selection.anchorContainer, this.core.selection.anchorOffset + 1)
+						event.preventDefault()
 					}
 
-					this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
+					console.log('markDirty', this.core.selection.anchorOffset)
+					this.markDirty(this.core.selection.anchorContainer)
 				}
 			}
 		}
@@ -91,7 +104,8 @@ class Editing {
 					// потому что апдейт — это замена содержимого, а в этом случае нужно
 					// синхронизировать модель данных
 					// нужно спарсить без нормализации и без обновления реальных нод
-					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+					this.update()
+					this.core.timeTravel.preservePreviousSelection()
 				}
 
 				this.handleBackspaceKeyDown(event)
@@ -102,7 +116,8 @@ class Editing {
 					this.core.selection.focusAtLastPositionInContainer
 				) {
 					// здесь нужно делать синхронизацию, а не апдейт
-					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+					this.update()
+					this.core.timeTravel.preservePreviousSelection()
 				}
 
 				this.handleDeleteKeyDown(event)
@@ -111,7 +126,8 @@ class Editing {
 				// debugger
 				if (!this.core.selection.isRange) {
 					// здесь нужно делать синхронизацию, а не апдейт
-					this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+					this.update()
+					this.core.timeTravel.preservePreviousSelection()
 				}
 
 				this.handleEnterKeyDown(event)
@@ -120,6 +136,10 @@ class Editing {
 	}
 
 	handleRemoveRange() {
+		if (!this.core.selection.isRange) {
+			return ''
+		}
+
 		const selectedItems = this.core.selection.getSelectedItems()
 		const containersForRemove = []
 		let index
@@ -137,12 +157,9 @@ class Editing {
 
 			firstContainer = selectedItems[0].getClosestContainer()
 			duplicate = firstContainer.duplicate(this.core.builder)
-
 			this.core.builder.cutUntil(since, until)
 			this.core.builder.append(duplicate, since)
 			containersForRemove.push(duplicate)
-		} else {
-			containersForRemove.push(selectedItems[0])
 		}
 
 		selectedItems.forEach((item) => {
@@ -152,23 +169,22 @@ class Editing {
 		})
 
 		let lastContainer = containersForRemove[containersForRemove.length - 1]
+		const nextSelectableNode = lastContainer.getNextSelectableNode()
+		index = selectedItems.indexOf(lastContainer)
 
-		if (containersForRemove.length > 1 && lastContainer.isContainer) {
-			index = selectedItems.indexOf(lastContainer)
+		if (lastContainer.isContainer) {
+			const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
+			const since = until
+				? until.next
+				: lastContainer.isContainer && !lastContainer.isEmpty && lastContainer.first
 
-			if (index < selectedItems.length - 1) {
-				const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
+			if (since) {
+				if (!firstContainer) {
+					firstContainer = selectedItems[0].getClosestContainer().getPreviousSelectableNode()
+				}
 
-				if (until.next) {
-					const since = until.next
-
-					if (firstContainer.isContainer) {
-						this.core.builder.append(firstContainer, since)
-					} else {
-						lastContainer = lastContainer.duplicate(this.core.builder)
-
-						this.core.builder.append(lastContainer, since)
-					}
+				if (firstContainer.isContainer) {
+					this.core.builder.append(firstContainer, since)
 				}
 			}
 		}
@@ -182,17 +198,16 @@ class Editing {
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		})
 
-		this.core.builder.cutUntil(containersForRemove[0], containersForRemove[containersForRemove.length - 1])
+		containersForRemove.forEach((container) => this.core.builder.cut(container))
 
-		if (firstContainer.isContainer) {
-			firstContainer.transform(this.getModifyKeyHandlerParams())
+		if (firstContainer && firstContainer.isContainer) {
+			this.markDirty(firstContainer)
 			this.core.selection.setSelection(
 				firstContainer,
 				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
 			)
-		} else if (lastContainer.isContainer) {
-			lastContainer.transform(this.getModifyKeyHandlerParams())
-			this.core.selection.setSelection(lastContainer, 0)
+		} else {
+			this.core.selection.setSelection(nextSelectableNode, 0)
 		}
 
 		return {
@@ -225,6 +240,7 @@ class Editing {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
+			this.update()
 		} else {
 			this.handleBackspace(event)
 		}
@@ -237,8 +253,10 @@ class Editing {
 				this.getModifyKeyHandlerParams()
 			)
 
-			if (!event.defaultPrevented) {
-				this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
+			if (event.defaultPrevented) {
+				this.update()
+			} else {
+				this.markDirty(this.core.selection.anchorContainer)
 			}
 		} else {
 			event.preventDefault()
@@ -250,6 +268,7 @@ class Editing {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
+			this.core.timeTravel.commit()
 		} else {
 			this.handleDelete(event)
 		}
@@ -262,8 +281,10 @@ class Editing {
 				this.getModifyKeyHandlerParams()
 			)
 
-			if (!event.defaultPrevented) {
-				this.core.selection.anchorContainer.markDirty(this.getModifyKeyHandlerParams())
+			if (event.defaultPrevented) {
+				this.update()
+			} else {
+				this.markDirty(this.core.selection.anchorContainer)
 			}
 		} else {
 			event.preventDefault()
@@ -324,17 +345,79 @@ class Editing {
 		return this.modifyKeyHandlerParams
 	}
 
-	onNodeTransform(event) {
-		const container = getNodeByElement(event.target).getClosestContainer()
+	markDirty(container) {
+		this.isChanged = true
 
-		if (container) {
-			container.transform(this.getModifyKeyHandlerParams())
+		if (this.updatingContainers.indexOf(container) > -1 || this.core.timeTravel.isLockPushChange) {
+			return
+		}
+
+		if (this.markDirtyTimer !== null) {
+			clearTimeout(this.markDirtyTimer)
+		}
+
+		this.updatingContainers.push(container)
+
+		this.markDirtyTimer = setTimeout(this.update, 350)
+	}
+
+	update() {
+		clearTimeout(this.markDirtyTimer)
+		this.markDirtyTimer = null
+
+		while (container = this.updatingContainers.pop()) {
+			const content = this.core.builder.parse(container.element.firstChild, container.element.lastChild, {
+				parsingContainer: true
+			}) || this.core.builder.create('breakLine')
+
+			if (container.first) {
+				this.handleTextInRemoveNodes(container.first)
+				this.core.builder.cutUntil(container.first)
+			}
+
+			while (container.element.firstChild !== null) {
+				container.element.removeChild(container.element.firstChild)
+			}
+
+			this.core.builder.append(container, content)
+
+			// if (
+			// 	!this.first ||
+			// 	this.last.type === 'breakLine' &&
+			// 	this.last.previous &&
+			// 	this.last.previous.type !== 'breakLine'
+			// ) {
+			// 	this.core.builder.push(this, this.core.builder.create('breakLine'))
+			// }
+			console.log('updated container', container.element)
+		}
+
+		if (this.core.selection.focused) {
+			this.core.selection.restoreSelection(false)
+		}
+
+		this.core.timeTravel.commit()
+	}
+
+	handleTextInRemoveNodes(node) {
+		let current = node
+
+		while (current) {
+			if (current.type === 'text') {
+				if (current.content !== current.element.nodeValue) {
+					current.element.nodeValue = current.content
+				}
+			} else if (current.first) {
+				this.handleTextInRemoveNodes(current.first)
+			}
+
+			current = current.next
 		}
 	}
 
 	save() {
 		if (this.core.selection.anchorContainer) {
-			this.core.selection.anchorContainer.update(this.getModifyKeyHandlerParams())
+			this.update()
 		}
 	}
 
@@ -365,57 +448,33 @@ class Editing {
 
 		const result = this.core.builder.parse(doc.firstChild, doc.lastChild)
 
-		if (this.core.selection.isRange) {
-			this.handleRemoveRange()
-		}
-
+		this.handleRemoveRange()
 		this.core.timeTravel.preservePreviousSelection()
 
 		if (result.isContainer) {
-			if (result.next) {
-				const lastNode = result.getLastNode()
+			const lastNode = result.getLastNode()
 
-				if (this.core.selection.anchorContainer.isEmpty) {
-					this.core.builder.replace(this.core.selection.anchorContainer, result)
-					this.core.selection.setSelection(lastNode, lastNode.getOffset())
-				} else {
-					const { head, tail } = this.core.builder.split(
-						this.core.selection.anchorContainer,
-						this.core.selection.anchorOffset
-					)
-					const tailFirst = tail.first
-
-					this.core.builder.append(head, result.first)
-					this.core.builder.connect(this.getClosestContainerInSection(head), result.next)
-					this.core.builder.append(lastNode, tail.first)
-					this.core.builder.cut(tail)
-					this.core.selection.setSelection(lastNode, lastNode.getOffset(tailFirst.element))
-				}
+			if (this.core.selection.anchorContainer.isEmpty) {
+				this.core.builder.replace(this.core.selection.anchorContainer, result)
+				this.core.selection.setSelection(lastNode, lastNode.getOffset())
 			} else {
-				if (this.core.selection.anchorContainer.isEmpty) {
-					this.core.builder.replace(this.core.selection.anchorContainer, result)
-					this.core.selection.setSelection(result, result.getOffset())
-				} else {
-					const firstNode = result.first
-
-					this.core.builder.insert(
-						this.core.selection.anchorContainer,
-						firstNode,
-						this.core.selection.anchorOffset
-					)
-					this.core.selection.setSelection(
-						this.core.selection.anchorContainer,
-						this.core.selection.anchorContainer.getOffset(firstNode.next.element)
-					)
+				if (result.next) {
+					this.core.builder.connect(this.core.selection.anchorContainer, result.next)
+					this.core.builder.moveTail(this.core.selection.anchorContainer, lastNode, this.core.selection.anchorOffset)
 				}
-			}
-		} else if (result.isWidget) {
-			const { head } = this.core.builder.split(
-				this.core.selection.anchorContainer,
-				this.core.selection.anchorOffset
-			)
 
-			this.core.builder.connect(head, result)
+				this.core.builder.insert(
+					this.core.selection.anchorContainer,
+					result.first,
+					this.core.selection.anchorOffset
+				)
+			}
+		} else if (result.isWidget || result.isGroup) {
+			if (this.core.selection.anchorContainer.isEmpty) {
+				this.core.builder.replace(this.core.selection.anchorContainer, result)
+			} else {
+				this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
+			}
 		} else {
 			this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 		}

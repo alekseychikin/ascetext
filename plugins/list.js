@@ -125,17 +125,13 @@ class ListItem extends Container {
 
 				setSelection(newBlock, 0)
 			}
-		} else if (focusAtLastPositionInContainer) {
+		} else {
 			const nextItem = builder.create('list', 'item')
 
 			builder.connect(this, nextItem)
-			setSelection(nextItem, 0)
-		} else {
-			const { tail } = builder.split(this, anchorOffset)
+			builder.moveTail(this, nextItem, anchorOffset)
 
-			if (tail !== null) {
-				setSelection(tail, 0)
-			}
+			setSelection(nextItem, 0)
 		}
 	}
 
