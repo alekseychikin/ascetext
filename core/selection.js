@@ -19,6 +19,7 @@ class Selection {
 		this.forceUpdate = false
 		this.renderedCustomControls = false
 		this.onUpdateHandlers = []
+		this.selectedItems = []
 
 		document.addEventListener('focus', this.onFocus, true)
 		document.addEventListener('click', this.eventHandler)
@@ -60,13 +61,17 @@ class Selection {
 			return false
 		}
 
-		const firstContainer = getNodeByElement(anchorElement).getClosestContainer()
-		const lastContainer = getNodeByElement(focusElement).getClosestContainer()
+		const firstNode = getNodeByElement(anchorElement)
+		const lastNode = getNodeByElement(focusElement)
+		const firstContainer = firstNode.getClosestContainer()
+		const lastContainer = lastNode.getClosestContainer()
 		const firstIndex = this.getIndex(firstContainer, anchorElement, selection.anchorOffset)
 		const lastIndex = this.getIndex(lastContainer, focusElement, selection.focusOffset)
 		const isForwardDirection = this.getDirection(firstIndex, lastIndex) === 'forward'
 		const [ anchorContainer, focusContainer ] =
 			isForwardDirection ? [ firstContainer, lastContainer ] : [ lastContainer, firstContainer ]
+		const [ anchorNode, focusNode ]=
+			isForwardDirection ? [ firstNode, lastNode ] : [ lastNode, firstNode ]
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
 		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
 		const [ anchorSelectedElement, anchorSelectedOffset ] = isForwardDirection
@@ -94,6 +99,8 @@ class Selection {
 			this.anchorOffset === anchorOffset &&
 			this.focusOffset === focusOffset
 		) {
+			this.onUpdateHandlers.forEach((handler) => handler(this))
+
 			return false
 		}
 
@@ -103,8 +110,8 @@ class Selection {
 		this.focusContainer = focusContainer
 		this.anchorOffset = anchorOffset
 		this.focusOffset = focusOffset
-		this.selectedItems = []
 
+		this.handleSelectedItems(anchorNode, focusNode)
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
 
@@ -361,6 +368,23 @@ class Selection {
 		}
 
 		return node
+	}
+
+	handleSelectedItems(anchorNode, focusNode) {
+		const selectedItems = this.getArrayRangeItems(anchorNode, focusNode)
+
+		selectedItems.forEach((item) => {
+			if (item.isWidget && this.selectedItems.indexOf(item) === -1) {
+				item.onFocus(this)
+			}
+		})
+		this.selectedItems.forEach((item) => {
+			if (item.isWidget && selectedItems.indexOf(item) === -1) {
+				item.onBlur(this)
+			}
+		})
+
+		this.selectedItems = selectedItems
 	}
 
 	destroy() {

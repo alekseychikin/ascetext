@@ -183,6 +183,34 @@ class ListPlugin extends PluginPlugin {
 		return []
 	}
 
+	getReplaceControls(container) {
+		const controls = []
+
+		if (container.type === 'list-item') {
+			if (container.parent.parent.type === 'list-item') {
+				controls.push(new ControlButton({
+					label: 'На один уровень влево',
+					icon: '<svg width="16" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path d="M1.439 0H0v15h1.439V0ZM9.712 15l1.076-1.06-5.697-5.81h10.326V6.718H5.091l5.697-5.504L9.712 0l-5.41 5.371a3 3 0 0 0 0 4.258L9.712 15Z" fill="#000"/>\
+</svg>',
+					action:this.indentLeft(container)
+				}))
+			}
+
+			if (container.previous) {
+				controls.push(new ControlButton({
+					label: 'На один уровень вправо',
+					icon: '<svg width="16" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">\
+<path d="M13.978 15h1.439V0h-1.439v15ZM5.705 0 4.629 1.06l5.697 5.81H0v1.413h10.325L4.63 13.787 5.705 15l5.41-5.371a3 3 0 0 0 0-4.258L5.704 0Z" fill="#000"/>\
+</svg>',
+					action: this.indentRight(container)
+				}))
+			}
+		}
+
+		return controls
+	}
+
 	parse(element, builder, context) {
 		const nodeName = element.nodeName.toLowerCase()
 
@@ -236,6 +264,42 @@ class ListPlugin extends PluginPlugin {
 			builder.append(list, listItem)
 			builder.replace(container, list)
 			restoreSelection()
+		}
+	}
+
+	indentLeft(container) {
+		return (event, { builder, setSelection }) => {
+			if (container.next) {
+				const list = builder.create('list', { decor: container.parent.attributes.decor })
+
+				builder.append(list, container.next)
+				builder.append(container, list)
+			}
+
+			const parent = container.parent
+			builder.connect(parent.parent, container)
+
+			if (!parent.first) {
+				builder.cut(parent)
+			}
+
+			setSelection(container, 0)
+		}
+	}
+
+	indentRight(container) {
+		return (event, { builder, setSelection }) => {
+			let list
+
+			if (container.previous.last.type === 'list') {
+				list = container.previous.last
+			} else {
+				list = builder.create('list', { decor: container.parent.attributes.decor })
+			}
+
+			builder.append(container.previous, list)
+			builder.push(list, container)
+			setSelection(container, 0)
 		}
 	}
 }

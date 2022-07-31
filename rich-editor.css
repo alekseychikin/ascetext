@@ -46,11 +46,11 @@
 }
 
 .contenteditor__toggle-button--insert {
-	background: url('./icons/plus.svg');
+	background: url('./icons/plus.svg') center no-repeat;
 }
 
 .contenteditor__toggle-button--replace {
-	background: url('./icons/replace.svg');
+	background: url('./icons/replace.svg') center no-repeat;
 }
 
 .rich-editor__toolbar .rich-editor__controls {

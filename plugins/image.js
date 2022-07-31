@@ -152,7 +152,7 @@ class ImageCaption extends Container {
 	}
 
 	enterHandler(event, { builder, setSelection }) {
-		const emptyParagraph = new Paragraph()
+		const emptyParagraph = builder.createBlock()
 
 		builder.connect(this.parent, emptyParagraph)
 		setSelection(emptyParagraph, 0)

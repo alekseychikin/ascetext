@@ -106,7 +106,6 @@ class Toolbar {
 		} else if (
 			!this.selection.isRange &&
 			this.selection.anchorContainer.isContainer &&
-			this.selection.anchorAtFirstPositionInContainer &&
 			(
 				this.selection.anchorContainer.first !== 'breakLine' ||
 				this.selection.anchorContainer.first !== this.selection.anchorContainer.last
@@ -150,15 +149,12 @@ class Toolbar {
 
 	renderSelectedTooltip() {
 		const controls = []
-		const { node: focusNode } =
-			this.selection.focusContainer.getChildByOffset(this.selection.focusOffset)
-		let { node: anchorNode } =
-			this.selection.anchorContainer.getChildByOffset(this.selection.anchorOffset)
-		let focusedNodes = this.selection.getArrayRangeItems(anchorNode, focusNode)
+		let focusedNodes = this.selection.selectedItems
+		let firstNode = focusedNodes[0]
 
-		while (anchorNode !== this.selection.anchorContainer.parent) {
-			focusedNodes.push(anchorNode)
-			anchorNode = anchorNode.parent
+		while (firstNode && firstNode !== this.selection.anchorContainer.parent) {
+			focusedNodes.push(firstNode)
+			firstNode = firstNode.parent
 		}
 
 		focusedNodes = focusedNodes.filter((node, index, self) => self.indexOf(node) === index)
@@ -290,6 +286,7 @@ class Toolbar {
 			anchorContainer: this.selection.anchorContainer,
 			focusContainer: this.selection.focusContainer,
 			restoreSelection: this.restoreSelection,
+			setSelection: this.selection.setSelection,
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems
 		})
@@ -354,14 +351,12 @@ class Toolbar {
 		let offsetLeft = containerBoundingClientRect.left
 
 		if (position === 'caret') {
-			// console.log(container, container.element.offsetWidth, styles.width)
 			this.containerAvatar.style.width = container.element.offsetWidth + 'px'
 			this.containerAvatar.style.fontFamily = styles.fontFamily
 			this.containerAvatar.style.fontSize = styles.fontSize
 			this.containerAvatar.style.lineHeight = styles.lineHeight
 			this.containerAvatar.style.padding = styles.padding
 			this.containerAvatar.style.boxSizing = styles.boxSizing
-			// this.containerAvatar.style.width = styles.width
 			this.containerAvatar.style.textAlign = styles.textAlign
 
 			const content = container.element.outerText
@@ -384,6 +379,9 @@ class Toolbar {
 		} else if (position === 'center') {
 			offsetTop -= this.tooltip.offsetHeight
 			offsetLeft += container.element.offsetWidth / 2 - this.tooltip.offsetWidth / 2
+		} else {
+			offsetTop -= 40
+			offsetLeft -= 40
 		}
 
 		this.tooltip.style.top = offsetTop + 'px'

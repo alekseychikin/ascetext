@@ -41,10 +41,23 @@ body {
 	letter-spacing: -0.02em;
 }
 
+.playground__editor h3 {
+	font-weight: bold;
+	font-size: 1.8rem;
+	line-height: 2.4rem;
+	letter-spacing: -0.02em;
+}
+
+.playground__editor h4 {
+	font-weight: bold;
+}
+
 .playground__editor * + h2 {
 	margin-top: 2.4rem;
 }
 
+.playground__editor * + h3,
+.playground__editor * + h4,
 .playground__editor * + p,
 .playground__editor * + ul {
 	margin: 1.2rem 0;
@@ -61,6 +74,7 @@ body {
 
 .playground__editor figure {
 	text-align: center;
+	outline: none;
 }
 
 .playground__editor figure.image--float-left {
@@ -77,7 +91,13 @@ body {
 	width: 100%;
 }
 
+.playground__editor figure.image[data-focus] {
+	border-radius: 8px;
+	box-shadow: 0 0 0 3px #fff, 0 0 0 5px #ff18a4;
+}
+
 .playground__editor img {
+	border-radius: 8px;
 	max-width: 100%;
 }
 

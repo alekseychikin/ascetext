@@ -14,6 +14,8 @@ function getNodeByElement(element) {
 		currentElement = currentElement.parentNode
 	}
 
+	// debugger
+
 	return false
 }
 
@@ -195,7 +197,7 @@ class Node {
 		let restOffset = offset
 
 		if (this.isWidget && !offset) {
-			return this
+			return { node: this, element: this.element }
 		}
 
 		const element = walk(this.element, (current) => {
@@ -268,12 +270,14 @@ class Node {
 				tail: duplicate
 			}
 		} else if (head) {
+			// debugger
 			return {
 				head: this,
 				tail: this.next
 			}
 		}
 
+		// debugger
 		return {
 			head: null,
 			tail: this

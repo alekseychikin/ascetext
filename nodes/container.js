@@ -52,11 +52,17 @@ class Container extends Node {
 
 			event.preventDefault()
 
-			const newBlock = builder.createBlock()
+			if (anchorAtFirstPositionInContainer) {
+				const newBlock = builder.createBlock()
 
-			builder.connect(this, newBlock)
-			builder.moveTail(this, newBlock, anchorOffset)
-			setSelection(newBlock, 0)
+				builder.preconnect(this, newBlock)
+				setSelection(this, 0)
+			} else {
+				const newBlock = this.duplicate(builder)
+
+				builder.moveTail(this, newBlock, anchorOffset)
+				setSelection(newBlock, 0)
+			}
 		}
 	}
 

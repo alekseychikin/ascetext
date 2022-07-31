@@ -80,11 +80,13 @@ class WithControls extends Node {
 	}
 
 	onFocus(selection) {
+		this.element.setAttribute('data-focus', '')
 		this.selection = selection
 		this.renderControls(this.controls)
 	}
 
 	onBlur() {
+		this.element.removeAttribute('data-focus')
 		this.removeControls()
 	}
 
