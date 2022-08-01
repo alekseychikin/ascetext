@@ -155,7 +155,7 @@ class ImageCaption extends Container {
 		const emptyParagraph = builder.createBlock()
 
 		builder.connect(this.parent, emptyParagraph)
-		setSelection(emptyParagraph, 0)
+		setSelection(emptyParagraph)
 	}
 
 	stringify(children) {

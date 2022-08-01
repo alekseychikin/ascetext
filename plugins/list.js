@@ -48,6 +48,8 @@ class ListItem extends Container {
 	}) {
 		const parent = this.parent
 		const isLastItem = parent.last === this
+		const isEmptyItem = focusAtLastPositionInContainer &&
+			anchorAtFirstPositionInContainer
 
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
@@ -60,11 +62,21 @@ class ListItem extends Container {
 			}
 
 			if (parent.parent.type === 'list-item') {
-				// Добавить после li ещё один li
-					// Если есть созданный ul
-						// Добавить после li ещё один li и поместить в него ul
+				if (ul) {
+					builder.append(this, ul)
+				}
+
+				builder.connect(parent.parent, this)
+
+				if (!parent.first) {
+					builder.cut(parent)
+				}
+
+				setSelection(this)
 			} else if (parent.parent.isSection) {
 				const newBlock = builder.createBlock()
+				const last = this.last
+				const parent = this.parent
 
 				builder.connect(parent, newBlock)
 
@@ -75,11 +87,18 @@ class ListItem extends Container {
 				builder.cut(this)
 
 				if (ul) {
-					// debugger
 					builder.connect(newBlock, ul)
 				}
 
-				setSelection(newBlock, 0)
+				if (!parent.first) {
+					builder.cut(parent)
+				}
+
+				if (last && last.type === 'list') {
+					builder.connect(newBlock, last)
+				}
+
+				setSelection(newBlock)
 			}
 		}
 	}
@@ -89,6 +108,7 @@ class ListItem extends Container {
 		focusAtLastPositionInContainer,
 		anchorAtFirstPositionInContainer,
 		setSelection,
+		anchorContainer,
 		anchorOffset
 	}) {
 		event.preventDefault()
@@ -99,39 +119,46 @@ class ListItem extends Container {
 		// const isFirstItem = parent.first === this
 		const isLastItem = parent.last === this
 
-		if (isEmptyItem) {
-			let ul
+		if (event.shiftKey) {
+			event.preventDefault()
 
-			if (!isLastItem) {
-				ul = builder.create('list', parent.decor)
-				builder.append(ul, this.next)
-			}
-
-			if (parent.parent.type === 'list-item') {
-				// Добавить после li ещё один li
-					// Если есть созданный ul
-						// Добавить после li ещё один li и поместить в него ul
-			} else if (parent.parent.isSection) {
-				const newBlock = builder.createBlock()
-
-				builder.connect(parent, newBlock)
-				builder.cut(this)
-
-				if (ul) {
-					// debugger
-					builder.connect(newBlock, ul)
-					setSelection(newBlock, 0)
-				}
-
-				setSelection(newBlock, 0)
-			}
+			builder.insert(this, builder.create('breakLine'), anchorOffset)
+			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
-			const nextItem = builder.create('list', 'item')
+			if (isEmptyItem) {
+				let ul
 
-			builder.connect(this, nextItem)
-			builder.moveTail(this, nextItem, anchorOffset)
+				if (parent.parent.type === 'list-item') {
+					const nextItem = builder.create('list', 'item')
 
-			setSelection(nextItem, 0)
+					builder.connect(this, nextItem)
+					setSelection(nextItem)
+				} else if (parent.parent.isSection) {
+					if (!isLastItem) {
+						ul = builder.create('list', parent.attributes.decor)
+						builder.append(ul, this.next)
+					}
+
+					const newBlock = builder.createBlock()
+
+					builder.connect(parent, newBlock)
+					builder.cut(this)
+
+					if (ul) {
+						// debugger
+						builder.connect(newBlock, ul)
+					}
+
+					setSelection(newBlock)
+				}
+			} else {
+				const nextItem = builder.create('list', 'item')
+
+				builder.connect(this, nextItem)
+				builder.moveTail(this, nextItem, anchorOffset)
+
+				setSelection(nextItem)
+			}
 		}
 	}
 
@@ -283,7 +310,7 @@ class ListPlugin extends PluginPlugin {
 				builder.cut(parent)
 			}
 
-			setSelection(container, 0)
+			setSelection(container)
 		}
 	}
 
@@ -299,7 +326,7 @@ class ListPlugin extends PluginPlugin {
 
 			builder.append(container.previous, list)
 			builder.push(list, container)
-			setSelection(container, 0)
+			setSelection(container)
 		}
 	}
 }

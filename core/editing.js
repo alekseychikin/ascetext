@@ -207,7 +207,7 @@ class Editing {
 				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
 			)
 		} else {
-			this.core.selection.setSelection(nextSelectableNode, 0)
+			this.core.selection.setSelection(nextSelectableNode)
 		}
 
 		return {
@@ -456,7 +456,7 @@ class Editing {
 
 			if (this.core.selection.anchorContainer.isEmpty) {
 				this.core.builder.replace(this.core.selection.anchorContainer, result)
-				this.core.selection.setSelection(lastNode, lastNode.getOffset())
+				this.core.selection.setSelection(lastNode, -1)
 			} else {
 				if (result.next) {
 					this.core.builder.connect(this.core.selection.anchorContainer, result.next)

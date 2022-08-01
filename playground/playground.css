@@ -59,7 +59,8 @@ body {
 .playground__editor * + h3,
 .playground__editor * + h4,
 .playground__editor * + p,
-.playground__editor * + ul {
+.playground__editor * + ul,
+.playground__editor ul ul {
 	margin: 1.2rem 0;
 }
 

@@ -46,7 +46,7 @@ class WithControls extends Node {
 			this.renderControls(this.controls)
 			this.element.focus({ preventScroll: true })
 			this.setPosition()
-			this.selection.setSelection(this, 0)
+			this.selection.setSelection(this)
 		}
 	}
 

@@ -37,7 +37,7 @@ class Selection {
 			const anchorNode = getNodeByElement(event.target)
 
 			if (anchorNode && anchorNode.isWidget) {
-				this.setSelection(anchorNode, 0)
+				this.setSelection(anchorNode)
 			}
 		}
 	}
@@ -131,8 +131,11 @@ class Selection {
 
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
 		const sel = window.getSelection()
-		const { element: anchorElement, index: anchorIndex } =
-			this.getSelectionParams(anchorNode, anchorOffset)
+		const { element: anchorElement, index: anchorIndex } = this.getSelectionParams(
+			anchorNode,
+			typeof anchorOffset === 'undefined' ? 0 : anchorOffset < 0 ?
+				anchorNode.getOffset() + anchorOffset + 1 : anchorOffset
+		)
 
 		if (focusNode) {
 			const { element: focusElement, index: focusIndex } =

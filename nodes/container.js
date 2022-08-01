@@ -56,12 +56,12 @@ class Container extends Node {
 				const newBlock = builder.createBlock()
 
 				builder.preconnect(this, newBlock)
-				setSelection(this, 0)
+				setSelection(this)
 			} else {
 				const newBlock = this.duplicate(builder)
 
 				builder.moveTail(this, newBlock, anchorOffset)
-				setSelection(newBlock, 0)
+				setSelection(newBlock)
 			}
 		}
 	}
@@ -107,18 +107,16 @@ class Container extends Node {
 				builder.cut(container)
 
 				if (previousSelectableNode.isContainer) {
-					const offset = previousSelectableNode.getOffset()
-
-					setSelection(previousSelectableNode, offset)
+					setSelection(previousSelectableNode, -1)
 				} else if (previousSelectableNode.isWidget) {
-					setSelection(previousSelectableNode, 0)
+					setSelection(previousSelectableNode)
 				}
 			} else if (previousSelectableNode.isContainer) {
 				const offset = previousSelectableNode.getOffset()
 
-				if (!offset) {
+				if (previousSelectableNode.isEmpty) {
 					builder.cut(previousSelectableNode)
-					setSelection(container, 0)
+					setSelection(container)
 				} else {
 					if (container.first) {
 						builder.append(previousSelectableNode, container.first)
@@ -128,7 +126,7 @@ class Container extends Node {
 					setSelection(previousSelectableNode, offset)
 				}
 			} else if (previousSelectableNode.isWidget) {
-				setSelection(previousSelectableNode, 0)
+				setSelection(previousSelectableNode)
 			}
 		}
 	}
@@ -161,7 +159,7 @@ class Container extends Node {
 				builder.cut(container)
 
 				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					setSelection(nextSelectableNode, 0)
+					setSelection(nextSelectableNode)
 				}
 			} else if (nextSelectableNode.isContainer) {
 				const offset = container.getOffset()
@@ -173,7 +171,7 @@ class Container extends Node {
 				builder.cut(nextSelectableNode)
 				setSelection(container, offset)
 			} else if (nextSelectableNode.isWidget) {
-				setSelection(nextSelectableNode, 0)
+				setSelection(nextSelectableNode)
 			}
 		}
 	}

@@ -26,18 +26,16 @@ class Widget extends WithControls {
 			const newBlock = builder.createBlock()
 
 			builder.preconnect(anchorContainer, newBlock)
-			setSelection(newBlock, 0)
+			setSelection(newBlock)
 		}
 
 		builder.cut(anchorContainer)
 
 		if (previousNode) {
 			if (previousNode.isWidget) {
-				setSelection(previousNode, 0)
+				setSelection(previousNode)
 			} else {
-				const offset = previousNode.getOffset()
-
-				setSelection(previousNode, offset)
+				setSelection(previousNode, -1)
 			}
 		}
 	}
@@ -55,13 +53,13 @@ class Widget extends WithControls {
 			const newBlock = builder.createBlock()
 
 			builder.preconnect(anchorContainer, newBlock)
-			setSelection(newBlock, 0)
+			setSelection(newBlock)
 		}
 
 		builder.cut(anchorContainer)
 
 		if (nextNode) {
-			setSelection(nextNode, 0)
+			setSelection(nextNode)
 		}
 	}
 
@@ -80,7 +78,7 @@ class Widget extends WithControls {
 			builder.connect(anchorContainer, newBlock)
 		}
 
-		setSelection(newBlock, 0)
+		setSelection(newBlock)
 	}
 
 	markDirty() {}
