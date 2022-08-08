@@ -86,7 +86,7 @@ class Editing {
 						event.preventDefault()
 					}
 
-					console.log('markDirty', this.core.selection.anchorOffset)
+					// console.log('markDirty', this.core.selection.anchorOffset)
 					this.markDirty(this.core.selection.anchorContainer)
 				}
 			}
@@ -145,6 +145,8 @@ class Editing {
 		let index
 		let duplicate
 		let firstContainer
+		let nextSelectableNode
+		let children
 		let returnHtmlValue = ''
 		let returnTextValue = ''
 
@@ -156,10 +158,12 @@ class Editing {
 			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
 
 			firstContainer = selectedItems[0].getClosestContainer()
-			duplicate = firstContainer.duplicate(this.core.builder)
 			this.core.builder.cutUntil(since, until)
-			this.core.builder.append(duplicate, since)
-			containersForRemove.push(duplicate)
+			children = this.core.stringify(since)
+			returnHtmlValue += children
+			returnTextValue += children
+				.replace(/<br\s*?\/?>/g, '\n')
+				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		}
 
 		selectedItems.forEach((item) => {
@@ -168,23 +172,26 @@ class Editing {
 			}
 		})
 
-		let lastContainer = containersForRemove[containersForRemove.length - 1]
-		const nextSelectableNode = lastContainer.getNextSelectableNode()
-		index = selectedItems.indexOf(lastContainer)
+		if (containersForRemove.length) {
+			let lastContainer = containersForRemove[containersForRemove.length - 1]
 
-		if (lastContainer.isContainer) {
-			const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
-			const since = until
-				? until.next
-				: lastContainer.isContainer && !lastContainer.isEmpty && lastContainer.first
+			nextSelectableNode = lastContainer.getNextSelectableNode()
+			index = selectedItems.indexOf(lastContainer)
 
-			if (since) {
-				if (!firstContainer) {
-					firstContainer = selectedItems[0].getClosestContainer().getPreviousSelectableNode()
-				}
+			if (lastContainer.isContainer) {
+				const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
+				const since = until
+					? until.next
+					: lastContainer.isContainer && !lastContainer.isEmpty && lastContainer.first
 
-				if (firstContainer.isContainer) {
-					this.core.builder.append(firstContainer, since)
+				if (since) {
+					if (!firstContainer) {
+						firstContainer = selectedItems[0].getClosestContainer().getPreviousSelectableNode()
+					}
+
+					if (firstContainer.isContainer) {
+						this.core.builder.append(firstContainer, since)
+					}
 				}
 			}
 		}
@@ -198,7 +205,13 @@ class Editing {
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		})
 
-		containersForRemove.forEach((container) => this.core.builder.cut(container))
+		for (index = containersForRemove.length - 1; index >=0; index--) {
+			if (containersForRemove[index].parent.isSection) {
+				this.core.builder.cut(containersForRemove[index])
+			} else if (typeof containersForRemove[index].delete === 'function') {
+				containersForRemove[index].delete({ builder: this.core.builder })
+			}
+		}
 
 		if (firstContainer && firstContainer.isContainer) {
 			this.markDirty(firstContainer)
@@ -348,7 +361,7 @@ class Editing {
 	markDirty(container) {
 		this.isChanged = true
 
-		if (this.updatingContainers.indexOf(container) > -1 || this.core.timeTravel.isLockPushChange) {
+		if (this.core.timeTravel.isLockPushChange) {
 			return
 		}
 
@@ -356,7 +369,9 @@ class Editing {
 			clearTimeout(this.markDirtyTimer)
 		}
 
-		this.updatingContainers.push(container)
+		if (this.updatingContainers.indexOf(container) === -1) {
+			this.updatingContainers.push(container)
+		}
 
 		this.markDirtyTimer = setTimeout(this.update, 350)
 	}

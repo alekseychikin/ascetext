@@ -34,71 +34,38 @@ class List extends Group {
 	}
 }
 
-class ListItem extends Container {
+class ListItemContent extends Container {
 	constructor() {
-		super('list-item')
+		super('list-item-content')
 
-		this.setElement(createElement('li'))
+		this.setElement(createElement('div'))
+	}
+
+	delete({ builder }) {
+		if (this.next && this.next.type === 'list') {
+			builder.connect(this.parent, this.next.first)
+		}
+
+		builder.cut(this.parent)
 	}
 
 	backspaceHandler(event, {
 		builder,
+		anchorContainer,
 		anchorAtFirstPositionInContainer,
+		focusAtLastPositionInContainer,
 		setSelection
 	}) {
-		const parent = this.parent
-		const isLastItem = parent.last === this
-		const isEmptyItem = focusAtLastPositionInContainer &&
-			anchorAtFirstPositionInContainer
+		const item = this.parent
+		const parent = item.parent
 
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			let ul
-
-			if (!isLastItem) {
-				ul = builder.create('list', parent.attributes)
-				builder.append(ul, this.next)
-			}
-
 			if (parent.parent.type === 'list-item') {
-				if (ul) {
-					builder.append(this, ul)
-				}
-
-				builder.connect(parent.parent, this)
-
-				if (!parent.first) {
-					builder.cut(parent)
-				}
-
-				setSelection(this)
+				this.indentLeft(event, { builder, anchorContainer, setSelection })
 			} else if (parent.parent.isSection) {
-				const newBlock = builder.createBlock()
-				const last = this.last
-				const parent = this.parent
-
-				builder.connect(parent, newBlock)
-
-				if (this.first) {
-					builder.append(newBlock, this.first)
-				}
-
-				builder.cut(this)
-
-				if (ul) {
-					builder.connect(newBlock, ul)
-				}
-
-				if (!parent.first) {
-					builder.cut(parent)
-				}
-
-				if (last && last.type === 'list') {
-					builder.connect(newBlock, last)
-				}
-
-				setSelection(newBlock)
+				this.putEmptyBlockInMiddle(builder, setSelection)
 			}
 		}
 	}
@@ -113,11 +80,8 @@ class ListItem extends Container {
 	}) {
 		event.preventDefault()
 
-		const isEmptyItem = focusAtLastPositionInContainer &&
-			anchorAtFirstPositionInContainer
-		const parent = this.parent
-		// const isFirstItem = parent.first === this
-		const isLastItem = parent.last === this
+		const item = this.parent
+		const parent = item.parent
 
 		if (event.shiftKey) {
 			event.preventDefault()
@@ -125,41 +89,107 @@ class ListItem extends Container {
 			builder.insert(this, builder.create('breakLine'), anchorOffset)
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
-			if (isEmptyItem) {
-				let ul
-
+			if (anchorContainer.isEmpty) {
 				if (parent.parent.type === 'list-item') {
-					const nextItem = builder.create('list', 'item')
-
-					builder.connect(this, nextItem)
-					setSelection(nextItem)
+					this.indentLeft(event, { anchorContainer, setSelection, builder })
 				} else if (parent.parent.isSection) {
-					if (!isLastItem) {
-						ul = builder.create('list', parent.attributes.decor)
-						builder.append(ul, this.next)
-					}
-
-					const newBlock = builder.createBlock()
-
-					builder.connect(parent, newBlock)
-					builder.cut(this)
-
-					if (ul) {
-						// debugger
-						builder.connect(newBlock, ul)
-					}
-
-					setSelection(newBlock)
+					this.putEmptyBlockInMiddle(builder, setSelection)
 				}
 			} else {
 				const nextItem = builder.create('list', 'item')
+				const content = builder.create('list', 'content')
 
-				builder.connect(this, nextItem)
-				builder.moveTail(this, nextItem, anchorOffset)
+				builder.append(nextItem, content)
+				builder.connect(item, nextItem)
+				builder.moveTail(this, content, anchorOffset)
 
 				setSelection(nextItem)
 			}
 		}
+	}
+
+	indentLeft(event, { builder, anchorContainer, setSelection }) {
+		const item = anchorContainer.parent
+
+		if (item.next) {
+			const list = builder.create('list', { decor: item.parent.attributes.decor })
+
+			builder.append(list, item.next)
+			builder.append(item, list)
+		}
+
+		const parent = item.parent
+		builder.connect(parent.parent, item)
+
+		if (!parent.first) {
+			builder.cut(parent)
+		}
+
+		setSelection(anchorContainer)
+	}
+
+	indentRight(event, { builder, anchorContainer, setSelection }) {
+		const item = anchorContainer.parent
+		let list
+
+		if (item.previous.last.type === 'list') {
+			list = item.previous.last
+		} else {
+			list = builder.create('list', { decor: item.parent.attributes.decor })
+		}
+
+		builder.append(item.previous, list)
+		builder.push(list, item)
+		setSelection(anchorContainer)
+	}
+
+	putEmptyBlockInMiddle(builder, setSelection) {
+		const item = this.parent
+		const parent = item.parent
+		const newBlock = builder.createBlock()
+		const last = item.last
+		const next = item.next
+
+		builder.connect(parent, newBlock)
+
+		if (this.first) {
+			builder.append(newBlock, this.first)
+		}
+
+		builder.cut(item)
+
+		if (next) {
+			const ul = builder.create('list', parent.attributes)
+
+			builder.append(ul, next)
+			builder.connect(newBlock, ul)
+		}
+
+		if (!parent.first) {
+			builder.cut(parent)
+		}
+
+		if (last && last.type === 'list') {
+			builder.connect(newBlock, last)
+		}
+
+		setSelection(newBlock)
+	}
+
+	duplicate(builder) {
+		const duplicate = builder.create('list', 'content')
+
+		builder.connect(this, duplicate)
+
+		return duplicate
+	}
+}
+
+class ListItem extends Group {
+	constructor() {
+		super('list-item')
+
+		this.setElement(createElement('li'))
 	}
 
 	duplicate(builder) {
@@ -179,6 +209,10 @@ class ListPlugin extends PluginPlugin {
 	create(params) {
 		if (params === 'item') {
 			return new ListItem()
+		}
+
+		if (params === 'content') {
+			return new ListItemContent()
 		}
 
 		return new List(params)
@@ -213,24 +247,24 @@ class ListPlugin extends PluginPlugin {
 	getReplaceControls(container) {
 		const controls = []
 
-		if (container.type === 'list-item') {
-			if (container.parent.parent.type === 'list-item') {
+		if (container.type === 'list-item-content') {
+			if (container.parent.parent.parent.type === 'list-item') {
 				controls.push(new ControlButton({
 					label: 'На один уровень влево',
 					icon: '<svg width="16" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path d="M1.439 0H0v15h1.439V0ZM9.712 15l1.076-1.06-5.697-5.81h10.326V6.718H5.091l5.697-5.504L9.712 0l-5.41 5.371a3 3 0 0 0 0 4.258L9.712 15Z" fill="#000"/>\
 </svg>',
-					action:this.indentLeft(container)
+					action: container.indentLeft
 				}))
 			}
 
-			if (container.previous) {
+			if (container.parent.previous) {
 				controls.push(new ControlButton({
 					label: 'На один уровень вправо',
 					icon: '<svg width="16" height="15" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path d="M13.978 15h1.439V0h-1.439v15ZM5.705 0 4.629 1.06l5.697 5.81H0v1.413h10.325L4.63 13.787 5.705 15l5.41-5.371a3 3 0 0 0 0-4.258L5.704 0Z" fill="#000"/>\
 </svg>',
-					action: this.indentRight(container)
+					action: container.indentRight
 				}))
 			}
 		}
@@ -256,12 +290,20 @@ class ListPlugin extends PluginPlugin {
 
 		if (element.nodeType === 1 && nodeName === 'li') {
 			const listItem = builder.create('list', 'item')
+			const content = builder.create('list', 'content')
 			let children
 
 			context.parsingContainer = true
 
 			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
-				builder.append(listItem, children)
+				const last = children.getLastNode()
+
+				builder.append(listItem, content)
+				builder.append(content, children)
+
+				if (last.type === 'list') {
+					builder.connect(content, last)
+				}
 			}
 
 			context.parsingContainer = false
@@ -291,42 +333,6 @@ class ListPlugin extends PluginPlugin {
 			builder.append(list, listItem)
 			builder.replace(container, list)
 			restoreSelection()
-		}
-	}
-
-	indentLeft(container) {
-		return (event, { builder, setSelection }) => {
-			if (container.next) {
-				const list = builder.create('list', { decor: container.parent.attributes.decor })
-
-				builder.append(list, container.next)
-				builder.append(container, list)
-			}
-
-			const parent = container.parent
-			builder.connect(parent.parent, container)
-
-			if (!parent.first) {
-				builder.cut(parent)
-			}
-
-			setSelection(container)
-		}
-	}
-
-	indentRight(container) {
-		return (event, { builder, setSelection }) => {
-			let list
-
-			if (container.previous.last.type === 'list') {
-				list = container.previous.last
-			} else {
-				list = builder.create('list', { decor: container.parent.attributes.decor })
-			}
-
-			builder.append(container.previous, list)
-			builder.push(list, container)
-			setSelection(container)
 		}
 	}
 }

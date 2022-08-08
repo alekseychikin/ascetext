@@ -46,6 +46,8 @@ class Container extends Node {
 			builder.insert(this, builder.create('breakLine'), anchorOffset)
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
+			let newBlock
+
 			if (!this.parent.isSection && !this.parent.isGroup) {
 				return false
 			}
@@ -53,12 +55,15 @@ class Container extends Node {
 			event.preventDefault()
 
 			if (anchorAtFirstPositionInContainer) {
-				const newBlock = builder.createBlock()
-
-				builder.preconnect(this, newBlock)
+				builder.preconnect(this, builder.createBlock())
 				setSelection(this)
 			} else {
-				const newBlock = this.duplicate(builder)
+				if (focusAtLastPositionInContainer) {
+					newBlock = builder.createBlock()
+					builder.connect(this, newBlock)
+				} else {
+					newBlock = this.duplicate(builder)
+				}
 
 				builder.moveTail(this, newBlock, anchorOffset)
 				setSelection(newBlock)
@@ -115,8 +120,14 @@ class Container extends Node {
 				const offset = previousSelectableNode.getOffset()
 
 				if (previousSelectableNode.isEmpty) {
-					builder.cut(previousSelectableNode)
-					setSelection(container)
+					if (previousSelectableNode.parent.isSection) {
+						builder.cut(previousSelectableNode)
+						setSelection(container)
+					} else {
+						builder.append(previousSelectableNode, container.first)
+						builder.cut(container)
+						setSelection(previousSelectableNode)
+					}
 				} else {
 					if (container.first) {
 						builder.append(previousSelectableNode, container.first)
