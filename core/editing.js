@@ -381,29 +381,41 @@ class Editing {
 		this.markDirtyTimer = null
 
 		while (container = this.updatingContainers.pop()) {
-			const content = this.core.builder.parse(container.element.firstChild, container.element.lastChild, {
-				parsingContainer: true
-			}) || this.core.builder.create('breakLine')
+			if (container.isContainer) {
+				const content = this.core.builder.parse(container.element.firstChild, container.element.lastChild, {
+					parsingContainer: true
+				}) || this.core.builder.create('breakLine')
 
-			if (container.first) {
-				this.handleTextInRemoveNodes(container.first)
-				this.core.builder.cutUntil(container.first)
+				if (container.first) {
+					this.handleTextInRemoveNodes(container.first)
+					this.core.builder.cutUntil(container.first)
+				}
+
+				while (container.element.firstChild !== null) {
+					container.element.removeChild(container.element.firstChild)
+				}
+
+				this.core.builder.append(container, content)
+
+				// if (
+				// 	!this.first ||
+				// 	this.last.type === 'breakLine' &&
+				// 	this.last.previous &&
+				// 	this.last.previous.type !== 'breakLine'
+				// ) {
+				// 	this.core.builder.push(this, this.core.builder.create('breakLine'))
+				// }
 			}
 
-			while (container.element.firstChild !== null) {
-				container.element.removeChild(container.element.firstChild)
+			if (container.next && container.type === container.next.type && container.normalize) {
+				const normalized = container.normalize(container.next, this.core.builder)
+
+				if (normalized) {
+					this.core.builder.connect(container.next, normalized)
+					this.core.builder.cutUntil(container, container.next)
+					this.updatingContainers.push(normalized)
+				}
 			}
-
-			this.core.builder.append(container, content)
-
-			// if (
-			// 	!this.first ||
-			// 	this.last.type === 'breakLine' &&
-			// 	this.last.previous &&
-			// 	this.last.previous.type !== 'breakLine'
-			// ) {
-			// 	this.core.builder.push(this, this.core.builder.create('breakLine'))
-			// }
 			console.log('updated container', container.element)
 		}
 

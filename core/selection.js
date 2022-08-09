@@ -309,8 +309,8 @@ class Selection {
 				: !focus.head
 					? this.focusContainer
 					: !focus.head.element.parentNode || focus.head === anchor.head
-						? this.deepesetLastNode(anchor.tail)
-						: this.deepesetLastNode(focus.head)
+						? anchor.tail.deepesetLastNode()
+						: focus.head.deepesetLastNode()
 		}
 	}
 
@@ -363,14 +363,6 @@ class Selection {
 		}
 
 		return selectedItems
-	}
-
-	deepesetLastNode(node) {
-		if (node.last) {
-			return this.deepesetLastNode(node.last)
-		}
-
-		return node
 	}
 
 	handleSelectedItems(anchorNode, focusNode) {

@@ -60,12 +60,33 @@ body {
 .playground__editor * + h4,
 .playground__editor * + p,
 .playground__editor * + ul,
-.playground__editor ul ul {
+.playground__editor * + ol,
+.playground__editor ul ul,
+.playground__editor ul ol,
+.playground__editor ol ul,
+.playground__editor ol ol {
 	margin: 1.2rem 0;
 }
 
+.playground__editor ol {
+	counter-reset: list;
+	padding-left: 1rem;
+}
+
+.playground__editor li {
+	position: relative;
+	padding-left: 1.6rem;
+}
+
+.playground__editor li::before {
+	counter-increment: list;
+	content: counter(list) ".";
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
 .playground__editor ul {
-	padding-left: 2.6rem;
 	list-style: disc;
 }
 

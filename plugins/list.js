@@ -12,23 +12,23 @@ class List extends Group {
 		super('list', attributes)
 
 		this.isDeleteEmpty = true
-		this.setElement(createElement(this.attributes.decor === 'number' ? 'ol' : 'ul'))
-		console.log(this)
+		this.setElement(createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul'))
 	}
 
-	normalize(element) {
+	normalize(element, builder) {
+		console.log('normilize')
 		if (this.attributes.decor === element.attributes.decor) {
 			const list = new List(this.attributes)
 
-			list.append(this.first)
-			list.append(element.first)
+			builder.append(list, this.first)
+			builder.append(list, element.first)
 
 			return list
 		}
 	}
 
 	stringify(children) {
-		const tagName = this.attributes.decor === 'number' ? 'ol' : 'ul'
+		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
 
 		return '<' + tagName + '>' + children + '</' + tagName + '>'
 	}
@@ -42,11 +42,17 @@ class ListItemContent extends Container {
 	}
 
 	delete({ builder }) {
+		const list = this.parent.parent
+
 		if (this.next && this.next.type === 'list') {
 			builder.connect(this.parent, this.next.first)
 		}
 
 		builder.cut(this.parent)
+
+		if (list.type === 'list' && !list.first) {
+			builder.cut(list)
+		}
 	}
 
 	backspaceHandler(event, {
@@ -104,6 +110,39 @@ class ListItemContent extends Container {
 				builder.moveTail(this, content, anchorOffset)
 
 				setSelection(nextItem)
+			}
+		}
+	}
+
+	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer, setSelection }) {
+		const item = this.parent
+		const parent = item.parent
+
+		if (focusAtLastPositionInContainer) {
+			event.preventDefault()
+
+			const nextSelectableNode = anchorContainer.getNextSelectableNode()
+
+			if (!nextSelectableNode) {
+				return false
+			}
+
+			if (nextSelectableNode.isContainer) {
+				const offset = anchorContainer.getOffset()
+
+				if (!nextSelectableNode.hasOnlyBr) {
+					builder.append(anchorContainer, nextSelectableNode.first)
+				}
+
+				if (nextSelectableNode.parent.isSection) {
+					builder.cut(nextSelectableNode)
+				} else if (typeof nextSelectableNode.delete === 'function') {
+					nextSelectableNode.delete({ builder })
+				}
+
+				setSelection(anchorContainer, offset)
+			} else if (nextSelectableNode.isWidget) {
+				setSelection(nextSelectableNode)
 			}
 		}
 	}

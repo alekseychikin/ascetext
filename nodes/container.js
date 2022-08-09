@@ -179,7 +179,12 @@ class Container extends Node {
 					builder.append(container, nextSelectableNode.first)
 				}
 
-				builder.cut(nextSelectableNode)
+				if (nextSelectableNode.parent.isSection) {
+					builder.cut(nextSelectableNode)
+				} else if (typeof nextSelectableNode.delete === 'function') {
+					nextSelectableNode.delete({ builder })
+				}
+
 				setSelection(container, offset)
 			} else if (nextSelectableNode.isWidget) {
 				setSelection(nextSelectableNode)

@@ -284,6 +284,22 @@ class Node {
 		}
 	}
 
+	deepesetLastNode(node = this) {
+		if (node.last) {
+			return node.last.deepesetLastNode()
+		}
+
+		return node
+	}
+
+	deepesetFirstNode(node = this) {
+		if (node.first) {
+			return node.first.deepesetFirstNode()
+		}
+
+		return node
+	}
+
 	contains(childNode) {
 		let current = childNode
 

@@ -30,7 +30,7 @@ class Link extends InlineWidget {
 		}))
 	}
 
-	normalize(element, connectWithNormalize) {
+	normalize(element, builder) {
 		const fields = [ 'url' ]
 		let areEqualElements = true
 
@@ -45,11 +45,11 @@ class Link extends InlineWidget {
 			const last = this.first.getLastNode()
 
 			if (this.first) {
-				node.append(this.first)
+				builder.append(node, this.first)
 			}
 
 			if (element.first) {
-				connectWithNormalize(last, element.first)
+				builder.connectWithNormalize(last, element.first)
 			}
 
 			return node

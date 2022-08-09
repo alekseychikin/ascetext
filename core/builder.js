@@ -1,6 +1,7 @@
 const operationTypes = require('../core/timetravel').operationTypes
 
 const ignoreParsingElements = ['style', 'script']
+const nbsCode = '\u00A0'
 
 class Builder {
 	constructor(core) {
@@ -180,6 +181,11 @@ class Builder {
 	cutUntil(node, until) {
 		const last = node.getNodeUntil(until)
 		let current = node
+		let content
+
+		if (node.previous) {
+			this.core.editing.markDirty(node.previous)
+		}
 
 		if (node.parent || node.previous || last.next) {
 			this.core.onNodeChange({
@@ -193,6 +199,21 @@ class Builder {
 		}
 
 		if (current.previous) {
+			const firstChild = current.deepesetFirstNode()
+			const lastChild = current.previous.deepesetLastNode()
+
+			if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
+				content = nbsCode + firstChild.content.substr(1)
+				firstChild.content = content
+				firstChild.element.nodeValue = content
+			}
+
+			if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
+				content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsCode
+				lastChild.content = content
+				lastChild.element.nodeValue = content
+			}
+
 			if (current.parent && current.parent.last === last) {
 				current.parent.last = current.previous
 			}
@@ -357,7 +378,7 @@ class Builder {
 
 		if (
 			previous.type === current.type && previous.normalize &&
-			(normalized = previous.normalize(current, this.connectWithNormalize))
+			(normalized = previous.normalize(current, this))
 		) {
 			if (current.next) {
 				this.connect(normalized, current.next)
