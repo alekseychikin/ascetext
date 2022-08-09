@@ -43,16 +43,16 @@ class Image extends Widget {
 		console.log('onFocus')
 		super.onFocus(selection)
 
-		if (this.src.length) {
-			this.createControl(selection)
-			this.updateControlPosition()
-		}
+		// if (this.src.length) {
+		// 	this.createControl(selection)
+		// 	this.updateControlPosition()
+		// }
 	}
 
 	onBlur() {
 		super.onBlur()
 
-		this.removeControl()
+		// this.removeControl()
 	}
 
 	onDelete() {
