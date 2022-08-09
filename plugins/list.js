@@ -355,9 +355,12 @@ class ListPlugin extends PluginPlugin {
 
 	setNumberList(container) {
 		return (event, { builder, restoreSelection }) => {
-			const list = builder.create('list', { decor: 'number' })
+			const list = builder.create('list', { decor: 'numerable' })
 			const listItem = builder.create('list', 'item')
 
+			const content = builder.create('list', 'content')
+
+			builder.append(listItem, content)
 			builder.append(list, listItem)
 			builder.replace(container, list)
 			restoreSelection()
@@ -368,7 +371,9 @@ class ListPlugin extends PluginPlugin {
 		return (event, { builder, restoreSelection }) => {
 			const list = builder.create('list', { decor: 'marker' })
 			const listItem = builder.create('list', 'item')
+			const content = builder.create('list', 'content')
 
+			builder.append(listItem, content)
 			builder.append(list, listItem)
 			builder.replace(container, list)
 			restoreSelection()
