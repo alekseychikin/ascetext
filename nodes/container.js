@@ -71,19 +71,6 @@ class Container extends Node {
 		}
 	}
 
-	// handlePreviousForNormalizeOpportunity(element) {
-	// 	let normalized
-
-	// 	if (
-	// 		element.next && element.type === element.next.type && element.normalize &&
-	// 		(normalized = element.normalize(element.next))
-	// 	) {
-	// 		element.replaceUntil(normalized, element.next)
-
-	// 		return normalized
-	// 	}
-	// }
-
 	backspaceHandler(
 		event,
 		{

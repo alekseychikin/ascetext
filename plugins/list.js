@@ -222,6 +222,10 @@ class ListItemContent extends Container {
 
 		return duplicate
 	}
+
+	stringify(children) {
+		return children
+	}
 }
 
 class ListItem extends Group {
@@ -315,7 +319,6 @@ class ListPlugin extends PluginPlugin {
 		const nodeName = element.nodeName.toLowerCase()
 
 		if (element.nodeType === 1 && (nodeName === 'ul' || nodeName === 'ol')) {
-			const nodeName = element.nodeName.toLowerCase()
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
 			const list = builder.create('list', { decor })
 			let children

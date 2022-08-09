@@ -396,15 +396,6 @@ class Editing {
 				}
 
 				this.core.builder.append(container, content)
-
-				// if (
-				// 	!this.first ||
-				// 	this.last.type === 'breakLine' &&
-				// 	this.last.previous &&
-				// 	this.last.previous.type !== 'breakLine'
-				// ) {
-				// 	this.core.builder.push(this, this.core.builder.create('breakLine'))
-				// }
 			}
 
 			if (container.next && container.type === container.next.type && container.normalize) {
@@ -416,7 +407,6 @@ class Editing {
 					this.updatingContainers.push(normalized)
 				}
 			}
-			console.log('updated container', container.element)
 		}
 
 		if (this.core.selection.focused) {

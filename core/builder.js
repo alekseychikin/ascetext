@@ -3,6 +3,10 @@ const operationTypes = require('../core/timetravel').operationTypes
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'
 
+function isElementBr(element) {
+	return element.nodeType === 1 && element.nodeName.toLowerCase() === 'br'
+}
+
 class Builder {
 	constructor(core) {
 		this.core = core
@@ -55,10 +59,6 @@ class Builder {
 			target.previous = node.last
 		}
 
-		if (node.isContainer && node.hasOnlyBr) {
-			node.element.removeChild(node.element.firstChild)
-		}
-
 		while (current) {
 			current.parent = node
 			node.element.appendChild(current.element)
@@ -69,6 +69,10 @@ class Builder {
 	}
 
 	push(node, target) {
+		if (node.isContainer && node.isEmpty && node.first) {
+			this.cut(node.first)
+		}
+
 		this.cut(target)
 
 		this.core.onNodeChange({
@@ -87,10 +91,6 @@ class Builder {
 
 		node.last = target
 		target.parent = node
-
-		if (node.isContainer && node.hasOnlyBr) {
-			node.element.removeChild(node.element.firstChild)
-		}
 
 		node.element.appendChild(target.element)
 	}
@@ -172,6 +172,14 @@ class Builder {
 
 		node.next = target
 		target.previous = node
+
+		if (target.type === 'breakLine' && node.type !== 'breakLine' && !target.next) {
+			this.connect(target, this.create('breakLine'))
+		}
+
+		if (node.type === 'breakLine' && node.previous && node.previous.type === 'breakLine') {
+			this.cut(node)
+		}
 	}
 
 	cut(node) {
@@ -180,6 +188,8 @@ class Builder {
 
 	cutUntil(node, until) {
 		const last = node.getNodeUntil(until)
+		const parent = node.parent
+		const isContainer = parent && parent.isContainer
 		let current = node
 		let content
 
@@ -251,6 +261,10 @@ class Builder {
 
 			current = current.next
 		}
+
+		if (isContainer && !parent.first && node.type !== 'breakLine') {
+			this.append(parent, this.create('breakLine'))
+		}
 	}
 
 	replace(node, target) {
@@ -297,6 +311,7 @@ class Builder {
 		let previous
 		let current
 		let value
+		let removeLastBr
 
 		while (currentElement) {
 			// eslint-disable-next-line no-loop-func
@@ -319,18 +334,6 @@ class Builder {
 			if (current) {
 				value = this.handleParseNext(first, previous, current)
 
-				if (value.current && value.current.isContainer) {
-					if (!value.current.first) {
-						this.push(value.current, this.create('breakLine'))
-					} else if (
-						value.current.last.type === 'breakLine' &&
-						value.current.last.previous &&
-						value.current.last.previous.type !== 'breakLine'
-					) {
-						this.push(value.current, this.create('breakLine'))
-					}
-				}
-
 				previous = value.current
 				first = value.first
 			} else {
@@ -342,6 +345,10 @@ class Builder {
 			}
 
 			if (currentElement === lastElement) {
+				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+					this.cutUntil(previous.previous)
+				}
+
 				break
 			}
 
