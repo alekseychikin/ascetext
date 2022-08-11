@@ -97,6 +97,7 @@ class Selection {
 			? this.getSelectedElement(focusElement, selection.focusOffset)
 			: this.getSelectedElement(anchorElement, selection.anchorOffset)
 		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
+		// console.log(anchorOffset)
 		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
 		this.anchorIndex = isForwardDirection ? firstIndex : lastIndex
@@ -121,6 +122,7 @@ class Selection {
 			return false
 		}
 
+		// console.log('this.anchorIndex', this.anchorIndex)
 		this.focusedControl = false
 		this.forceUpdate = false
 		this.anchorContainer = anchorContainer
@@ -135,6 +137,11 @@ class Selection {
 
 	blur() {
 		this.focused = false
+
+		if (this.anchorContainer) {
+			this.core.editing.update(this.anchorContainer)
+		}
+
 		this.anchorContainer = null
 		this.focusContainer = null
 		this.anchorOffset = null
@@ -304,28 +311,28 @@ class Selection {
 		return this.getArrayRangeItems(head, tail)
 	}
 
-	cutRange() {
-		const focus = this.core.builder.split(
-			this.focusContainer,
-			this.focusOffset
-		)
-		const anchor = this.core.builder.split(
-			this.anchorContainer,
-			this.anchorOffset
-		)
-		const anchorNextContainer = this.anchorContainer.getNextSelectableNode()
-		const focusPreviousContainer = this.focusContainer.getPreviousSelectableNode()
+	cutRange(
+		anchorContainer = this.anchorContainer,
+		anchorOffset = this.anchorOffset,
+		focusContainer = this.focusContainer,
+		focusOffset = this.focusOffset
+	) {
+		// debugger
+		const focus = this.core.builder.split(focusContainer, focusOffset)
+		const anchor = this.core.builder.split(anchorContainer, anchorOffset)
+		const anchorNextContainer = anchorContainer.getNextSelectableNode()
+		const focusPreviousContainer = focusContainer.getPreviousSelectableNode()
 
 		return {
 			head: !anchor.head && !focus.head
-				? this.anchorContainer
+				? anchorContainer
 				: !anchor.tail
 					? anchorNextContainer
 					: anchor.tail,
 			tail: !focus.head && !anchor.head
 				? focusPreviousContainer.last || focusPreviousContainer
 				: !focus.head
-					? this.focusContainer
+					? focusContainer
 					: !focus.head.element.parentNode || focus.head === anchor.head
 						? anchor.tail.deepesetLastNode()
 						: focus.head.deepesetLastNode()

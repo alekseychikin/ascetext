@@ -5,6 +5,7 @@ const Selection = require('./selection')
 // const Navigation = require('./navigation')
 const Toolbar = require('./toolbar')
 const Editing = require('./editing')
+const Autocomplete = require('./autocomplete')
 const TimeTravel = require('./timetravel').TimeTravel
 const BreakLine = require('../plugins/break-line').BreakLine
 

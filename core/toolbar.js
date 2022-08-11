@@ -90,23 +90,19 @@ class Toolbar {
 
 		if (
 			!this.selection.isRange &&
-			this.selection.anchorAtFirstPositionInContainer &&
-			this.selection.anchorAtLastPositionInContainer &&
-			this.selection.anchorContainer.isContainer
+			this.selection.anchorContainer.isContainer &&
+			this.selection.anchorContainer.isEmpty
 		) {
 			this.renderInsertButton()
 		} else if (
 			!this.selection.isRange &&
 			this.selection.anchorContainer.isContainer &&
-			(
-				this.selection.anchorContainer.first !== 'breakLine' ||
-				this.selection.anchorContainer.first !== this.selection.anchorContainer.last
-			)
+			!this.selection.anchorContainer.isEmpty
 		) {
 			this.renderReplaceButton()
-		} else {
-			this.renderSelectedTooltip()
 		}
+
+		this.renderSelectedTooltip()
 	}
 
 	renderInsertButton() {
@@ -182,7 +178,7 @@ class Toolbar {
 			this.setPosition()
 		}
 
-		this.hideToggleButtonHolder()
+		// this.hideToggleButtonHolder()
 		this.lastFocusedRange = this.selection.isRange
 		this.focusedNodes = focusedNodes
 	}

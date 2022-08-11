@@ -40,7 +40,6 @@ class Image extends Widget {
 	}
 
 	onFocus(selection) {
-		console.log('onFocus')
 		super.onFocus(selection)
 
 		// if (this.src.length) {

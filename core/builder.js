@@ -36,6 +36,8 @@ class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
+		// console.log('append', node, target)
+
 		if (node.isContainer && node.isEmpty && node.first) {
 			this.cut(node.first)
 		}
@@ -48,6 +50,8 @@ class Builder {
 			target,
 			last
 		})
+
+		// console.groupEnd()
 
 		if (!node.first) {
 			node.first = target
@@ -66,6 +70,8 @@ class Builder {
 	}
 
 	push(node, target) {
+		// console.log('push', node, target)
+
 		if (node.isContainer && node.isEmpty && node.first) {
 			this.cut(node.first)
 		}
@@ -78,6 +84,8 @@ class Builder {
 			target,
 			last: target
 		})
+
+		// console.groupEnd()
 
 		if (node.last) {
 			node.last.next = target
@@ -96,6 +104,8 @@ class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
+		// console.log('preconnect', node, target)
+
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
@@ -104,6 +114,8 @@ class Builder {
 			target,
 			last
 		})
+
+		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -133,6 +145,8 @@ class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
+		// console.log('connect', node, target)
+
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
@@ -141,6 +155,8 @@ class Builder {
 			target,
 			last
 		})
+
+		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -269,7 +285,8 @@ class Builder {
 	}
 
 	replaceUntil(node, target, until) {
-		console.log('replaceUntil')
+		// console.groupCollapsed('replaceUntil', node, target)
+
 		if (node.previous) {
 			this.connect(node.previous, target)
 		} else {
@@ -277,6 +294,8 @@ class Builder {
 		}
 
 		this.cutUntil(node, until)
+
+		// console.groupEnd()
 	}
 
 	insert(container, node, offset) {

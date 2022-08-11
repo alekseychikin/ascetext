@@ -8,8 +8,10 @@ import { HeaderPlugin } from '../plugins/header'
 import { LinkPlugin } from '../plugins/link'
 import { ImagePlugin } from '../plugins/image'
 import { ListPlugin } from '../plugins/list'
+import { UserMentionPlugin } from '../plugins/user-mention'
 
 const plugins = {
+	userMention: new UserMentionPlugin(),
 	text: new TextPlugin(),
 	breakLine: new BreakLinePlugin(),
 	header: new HeaderPlugin(),
@@ -21,6 +23,8 @@ const plugins = {
 
 const editor = new Editor(document.getElementById('app'), plugins)
 const saveButton = document.getElementById('save').addEventListener('click', function (event) {
+	var data = [new ClipboardItem({ "text/html": new Blob(["<h3>no next</h3>"], { type: "text/html" }) })];
+	navigator.clipboard.write(data)
 	const content = editor.getContent()
 	console.log(content)
 })

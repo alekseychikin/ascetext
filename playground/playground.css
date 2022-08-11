@@ -161,3 +161,8 @@ body {
 .playground__button:hover {
 	opacity: 0.8;
 }
+
+.user-mention {
+	border-radius: 2px;
+	background: antiquewhite;
+}

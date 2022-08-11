@@ -80,6 +80,10 @@ class LinkPlugin extends PluginPlugin {
 		this.setLink = this.setLink.bind(this)
 	}
 
+	get autocompleteRule() {
+		return /(?:^|(?<=[^\S]))https?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
+	}
+
 	create(url) {
 		return new Link({ url })
 	}
@@ -203,6 +207,22 @@ class LinkPlugin extends PluginPlugin {
 			builder.connect(link, link.first)
 			builder.cut(link)
 			restoreSelection()
+		}
+	}
+
+	wrap(match, builder) {
+		const link = new Link({ url: match.content })
+
+		builder.preconnect(match, link)
+		builder.push(link, match)
+
+		return link
+	}
+
+	unwrap(node, builder) {
+		if (node.type === 'link') {
+			builder.connect(node, node.first)
+			builder.cut(node)
 		}
 	}
 }
