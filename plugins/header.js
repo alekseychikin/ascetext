@@ -1,7 +1,7 @@
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
 const Container = require('../nodes/container')
-const createElement = require('../core/create-element')
+const createElement = require('../utils/create-element')
 
 class Header extends Container {
 	constructor(attributes) {

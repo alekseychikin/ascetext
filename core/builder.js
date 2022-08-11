@@ -1,11 +1,8 @@
 const operationTypes = require('../core/timetravel').operationTypes
+const isElementBr = require('../utils/is-element-br').isElementBr
 
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'
-
-function isElementBr(element) {
-	return element.nodeType === 1 && element.nodeName.toLowerCase() === 'br'
-}
 
 class Builder {
 	constructor(core) {

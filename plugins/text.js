@@ -1,6 +1,7 @@
 const Node = require('../nodes/node')
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
+const isElementBr = require('../utils/is-element-br').isElementBr
 
 const nbsCode = '\u00A0'
 
@@ -129,11 +130,11 @@ class TextPlugin extends PluginPlugin {
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
 
-			if (element === firstChild || element.previousSibling && element.previousSibling.nodeType !== 3 && element.previousSibling.tagName.toLowerCase() === 'br') {
+			if (element === firstChild || element.previousSibling && element.previousSibling.nodeType !== 3 && isElementBr(element.previousSibling)) {
 				content = content.replace(/^[^\S\u00A0]+/, '')
 			}
 
-			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && element.nextSibling.tagName.toLowerCase() === 'br') {
+			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && isElementBr(element.nextSibling)) {
 				content = content.replace(/[^\S\u00A0]+$/, '')//.replace(/\s$/, nbsCode)
 			}
 

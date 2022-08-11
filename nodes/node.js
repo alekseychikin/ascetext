@@ -1,4 +1,5 @@
 const operationTypes = require('../core/timetravel').operationTypes
+const isElementBr = require('../utils/is-element-br').isElementBr
 
 const mapElementToNode = {}
 let id = 1
@@ -93,8 +94,7 @@ class Node {
 	get hasOnlyBr() {
 		return this.element.firstChild &&
 			this.element.firstChild === this.element.lastChild &&
-			this.element.firstChild.nodeType === 1 &&
-			this.element.firstChild.tagName.toLowerCase() === 'br'
+			isElementBr(this.element.firstChild)
 	}
 
 	getClosestContainer() {
@@ -179,9 +179,7 @@ class Node {
 
 			if (current.nodeType === 3) {
 				index += current.length
-			} else if (
-				current.nodeType === 1 && current.tagName.toLowerCase() === 'br'
-			) {
+			} else if (isElementBr(current)) {
 				if (current === this.element.lastChild) {
 					return true
 				}
@@ -207,10 +205,7 @@ class Node {
 				}
 
 				restOffset -= current.length
-			} else if (
-				current.nodeType === 1 &&
-				current.tagName.toLowerCase() === 'br'
-			) {
+			} else if (isElementBr(current)) {
 				if (restOffset === 0) {
 					return current
 				}

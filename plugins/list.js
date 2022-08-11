@@ -5,7 +5,7 @@ const Group = require('../nodes/group')
 const ControlButton = require('../controls/button')
 const Paragraph = require('./paragraph').Paragraph
 const BreakLine = require('./break-line').BreakLine
-const createElement = require('../core/create-element')
+const createElement = require('../utils/create-element')
 
 class List extends Group {
 	constructor(attributes = { decor: 'marker' }) {

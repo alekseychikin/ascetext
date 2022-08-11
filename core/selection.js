@@ -1,4 +1,5 @@
 const getNodeByElement = require('../nodes/node').getNodeByElement
+const isElementBr = require('../utils/is-element-br').isElementBr
 
 class Selection {
 	constructor(core) {
@@ -217,7 +218,7 @@ class Selection {
 	}
 
 	getSelectedElement(element, offset) {
-		if (element.nodeType === 3 || element.nodeType === 1 && element.tagName.toLowerCase() === 'br') {
+		if (element.nodeType === 3 || isElementBr(element)) {
 			return [ element, offset ]
 		}
 

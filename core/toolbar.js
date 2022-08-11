@@ -1,6 +1,6 @@
 const getStyle = require('../utils/getStyle')
 const getNodeByElement = require('../nodes/node').getNodeByElement
-const createElement = require('./create-element')
+const createElement = require('../utils/create-element')
 
 class Toolbar {
 	constructor(plugins, selection, builder, timeTravel) {

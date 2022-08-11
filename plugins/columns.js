@@ -3,7 +3,7 @@ const Section = require('../nodes/section')
 const Widget = require('../nodes/widget')
 const ControlButton = require('../controls/button')
 const Paragraph = require('./paragraph').Paragraph
-const createElement = require('../core/create-element')
+const createElement = require('../utils/create-element')
 
 class Columns extends Widget {
 	constructor(types, params) {

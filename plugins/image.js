@@ -5,7 +5,7 @@ const BreakLine = require('../plugins/break-line').BreakLine
 const PluginPlugin = require('./plugin')
 const ControlButton = require('../controls/button')
 const ControlFile = require('../controls/file')
-const createElement = require('../core/create-element')
+const createElement = require('../utils/create-element')
 const Toolbar = require('../core/toolbar')
 
 class Image extends Widget {

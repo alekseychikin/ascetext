@@ -1,7 +1,8 @@
 const InlineWidget = require('../nodes/inline-widget')
 const PluginPlugin = require('./plugin')
-const createElement = require('../core/create-element')
+const createElement = require('../utils/create-element')
 const Text = require('./text').Text
+const isElementBr = require('../utils/is-element-br').isElementBr
 
 class BreakLine extends InlineWidget {
 	constructor() {
@@ -28,7 +29,7 @@ class BreakLinePlugin extends PluginPlugin {
 	}
 
 	parse(element) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'br') {
+		if (isElementBr(element)) {
 			return new BreakLine()
 		}
 

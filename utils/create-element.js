@@ -8,6 +8,10 @@ function createElement(tagname, attributes = {}, children = []) {
 				for (dataField in attributes[field]) {
 					element.setAttribute(`data-${dataField}`, attributes[field][dataField])
 				}
+			} else if (field === 'style') {
+				for (dataField in attributes[field]) {
+					element.style[dataField] = attributes[field][dataField]
+				}
 			} else {
 				element.setAttribute(field, attributes[field])
 			}
