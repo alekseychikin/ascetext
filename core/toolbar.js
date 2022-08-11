@@ -34,16 +34,6 @@ class Toolbar {
 			'class': 'contenteditor__toggle-button-holder hidden'
 		})
 		this.toggleButton = null
-		this.containerAvatar = createElement('div')
-		this.containerAvatar.style.position = 'fixed'
-		this.containerAvatar.style.bottom = '0'
-		this.containerAvatar.style.right = '0'
-		this.containerAvatar.style.border = '1px solid #000'
-		this.containerAvatar.style.background = '#fff'
-		this.containerAvatar.style.opacity = '0'
-		this.containerAvatar.style.pointerEvents = 'none'
-
-		document.body.appendChild(this.containerAvatar)
 		document.body.appendChild(this.tooltip)
 		document.body.appendChild(this.toggleButtonHolder)
 		document.addEventListener('mousedown', this.onMouseDown)
@@ -187,7 +177,7 @@ class Toolbar {
 				this.hideTooltip()
 			}
 		} else {
-			this.renderTooltip()
+			this.setPosition()
 		}
 
 		this.hideToggleButtonHolder()
@@ -256,7 +246,7 @@ class Toolbar {
 			this.hideTooltip()
 		} else {
 			this.showTooltip('insert')
-			this.renderTooltip('begin')
+			this.setPosition('begin')
 		}
 	}
 
@@ -316,7 +306,7 @@ class Toolbar {
 		this.isShowTooltip = true
 		this.lastTooltipType = type
 		this.tooltip.classList.remove('hidden')
-		this.renderTooltip(type === 'settings' ? 'center' : 'caret')
+		this.setPosition(type === 'settings' ? 'center' : 'caret')
 	}
 
 	showToggleButtonHolder() {
@@ -328,57 +318,27 @@ class Toolbar {
 	}
 
 	renderToggleButtonHolder() {
-		const container = this.selection.anchorContainer
-		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
-		const containerBoundingClientRect = container.element.getBoundingClientRect()
-		const offsetTop = containerBoundingClientRect.top + scrollTop
-		const offsetLeft = containerBoundingClientRect.left
-
-		this.toggleButtonHolder.style.top = offsetTop + 'px'
-		this.toggleButtonHolder.style.left = offsetLeft + 'px'
+		this.toggleButtonHolder.style.top = this.selection.boundings.container.top + 'px'
+		this.toggleButtonHolder.style.left = this.selection.boundings.container.left + 'px'
 	}
 
-	renderTooltip(position = 'caret') {
+	setPosition(position = 'caret') {
 		if (!this.isShowTooltip) {
 			return null
 		}
 
-		const container = this.selection.anchorContainer
-		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
-		const containerBoundingClientRect = container.element.getBoundingClientRect()
-		const styles = getStyle(container.element)
-		let offsetTop = containerBoundingClientRect.top + scrollTop
-		let offsetLeft = containerBoundingClientRect.left
+		let offsetTop = this.selection.boundings.container.top
+		let offsetLeft = this.selection.boundings.container.left
 
 		if (position === 'caret') {
-			this.containerAvatar.style.width = container.element.offsetWidth + 'px'
-			this.containerAvatar.style.fontFamily = styles.fontFamily
-			this.containerAvatar.style.fontSize = styles.fontSize
-			this.containerAvatar.style.lineHeight = styles.lineHeight
-			this.containerAvatar.style.padding = styles.padding
-			this.containerAvatar.style.boxSizing = styles.boxSizing
-			this.containerAvatar.style.textAlign = styles.textAlign
-
-			const content = container.element.outerText
-			const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
-			const fakeContent = content.substr(0, this.selection.anchorOffset) +
-				'<span style="background: blue" data-selected-text>' +
-				content.substr(this.selection.anchorOffset, selectedLength) +
-				'</span>' +
-				content.substr(this.selection.focusOffset)
-
-			this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-
-			const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
-
-			offsetTop += selectedText.offsetTop - this.tooltip.offsetHeight
-			offsetLeft +=
-				selectedText.offsetLeft +
-				selectedText.offsetWidth / 2 -
+			offsetTop = this.selection.boundings.caret.top - this.tooltip.offsetHeight
+			offsetLeft =
+				this.selection.boundings.caret.left +
+				this.selection.boundings.caret.width / 2 -
 				this.tooltip.offsetWidth / 2
 		} else if (position === 'center') {
 			offsetTop -= this.tooltip.offsetHeight
-			offsetLeft += container.element.offsetWidth / 2 - this.tooltip.offsetWidth / 2
+			offsetLeft += this.selection.boundings.container.width / 2 - this.tooltip.offsetWidth / 2
 		} else {
 			offsetTop -= 40
 			offsetLeft -= 40
@@ -393,11 +353,9 @@ class Toolbar {
 		this.lastFocusedRange = false
 		this.focusedNodes = []
 		this.tooltip.classList.add('hidden')
-		this.containerAvatar.innerHTML = ''
 	}
 
 	destroy() {
-		document.body.removeChild(this.containerAvatar)
 		document.body.removeChild(this.tooltip)
 		document.body.removeChild(this.toggleButtonHolder)
 		document.removeEventListener('mousedown', this.onMouseDown)

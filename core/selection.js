@@ -1,5 +1,7 @@
 const getNodeByElement = require('../nodes/node').getNodeByElement
+const getStyle = require('../utils/getStyle')
 const isElementBr = require('../utils/is-element-br').isElementBr
+const createElement = require('../utils/create-element')
 
 class Selection {
 	constructor(core) {
@@ -21,7 +23,20 @@ class Selection {
 		this.renderedCustomControls = false
 		this.onUpdateHandlers = []
 		this.selectedItems = []
+		this.boundings = {}
+		this.containerAvatar = createElement('div', {
+			style: {
+				position: 'fixed',
+				bottom: '0',
+				right: '0',
+				border: '1px solid #000',
+				background: '#fff',
+				opacity: '0',
+				pointerEvents: 'none'
+			}
+		})
 
+		document.body.appendChild(this.containerAvatar)
 		document.addEventListener('focus', this.onFocus, true)
 		document.addEventListener('click', this.eventHandler)
 		document.addEventListener('keyup', this.eventHandler)
@@ -92,6 +107,7 @@ class Selection {
 		this.anchorAtLastPositionInContainer = anchorOffset === anchorContainerLength
 		this.focusAtFirstPositionInContainer = focusOffset === 0
 		this.focusAtLastPositionInContainer = focusOffset === focusContainerLength
+		this.anchorContainerUpdated = this.anchorContainer !== anchorContainer
 
 		if (
 			!this.forceUpdate &&
@@ -113,6 +129,7 @@ class Selection {
 		this.focusOffset = focusOffset
 
 		this.handleSelectedItems(anchorNode, focusNode)
+		this.updateBoundings()
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
 
@@ -383,7 +400,51 @@ class Selection {
 		this.selectedItems = selectedItems
 	}
 
+	updateBoundings() {
+		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
+		const selectedLength = this.focusOffset - this.anchorOffset
+		const content = this.anchorContainer.element.outerText
+		const fakeContent = content.substr(0, this.anchorOffset) +
+			'<span style="background: blue" data-selected-text>' +
+			content.substr(this.anchorOffset, selectedLength) +
+			'</span>' +
+			content.substr(this.focusOffset)
+
+		if (this.anchorContainerUpdated) {
+			const containerBoundingClientRect = this.anchorContainer.element.getBoundingClientRect()
+			const styles = getStyle(this.anchorContainer.element)
+
+			this.containerAvatar.style.width = this.anchorContainer.element.offsetWidth + 'px'
+			this.containerAvatar.style.fontFamily = styles.fontFamily
+			this.containerAvatar.style.fontSize = styles.fontSize
+			this.containerAvatar.style.lineHeight = styles.lineHeight
+			this.containerAvatar.style.padding = styles.padding
+			this.containerAvatar.style.boxSizing = styles.boxSizing
+			this.containerAvatar.style.textAlign = styles.textAlign
+			this.boundings.container = {
+				top: containerBoundingClientRect.top + scrollTop,
+				left: containerBoundingClientRect.left,
+				width: containerBoundingClientRect.width,
+				height: containerBoundingClientRect.height
+			}
+		}
+
+		if (this.anchorContainer.isWidget) {
+			this.boundings.caret = this.boundings.container
+		} else {
+			this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+			const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
+			this.boundings.caret = {
+				top: this.boundings.container.top + selectedText.offsetTop,
+				left: this.boundings.container.left + selectedText.offsetLeft,
+				width: selectedText.offsetWidth,
+				height: selectedText.offsetHeight
+			}
+		}
+	}
+
 	destroy() {
+		document.body.removeChild(this.containerAvatar)
 		document.removeEventListener('focus', this.onFocus, true)
 		document.removeEventListener('click', this.onClickHandler)
 		document.removeEventListener('keyup', this.update)
