@@ -40,6 +40,8 @@ class Toolbar {
 		document.addEventListener('mouseup', this.onMouseUp)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.onMouseUp)
+
+		this.selection.onUpdate(this.onSelectionChange)
 	}
 
 	onSelectionChange() {
