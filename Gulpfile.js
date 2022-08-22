@@ -1,8 +1,14 @@
+/* eslint-disable import/no-commonjs */
 const gulp = require('gulp')
 const Bundler = require('parcel-bundler')
 const browserSync = require('browser-sync').create()
 
-function watch(done) {
+function assets() {
+	return gulp.src(['./icons/*.svg', './*.css'], { base: './' })
+		.pipe(gulp.dest('playground/dist'))
+}
+
+function watch() {
 	const watchParams = { ignoreInitial: false }
 	browserSync.init({
 		server: {
@@ -11,16 +17,11 @@ function watch(done) {
 	})
 
 	gulp.watch([
-		'./*.js',
+		'./**/*.js',
 		'playground/*.html',
 		'playground/dist/**/*',
 	]).on('change', browserSync.reload)
 	gulp.watch(['./icons/*.svg', './*.css'], watchParams, assets)
-}
-
-function assets() {
-	return gulp.src(['./icons/*.svg', './*.css'], { base: './' })
-		.pipe(gulp.dest('playground/dist'))
 }
 
 function scripts(watch) {
@@ -37,7 +38,7 @@ function scripts(watch) {
 			contentHash: !watch
 		})
 
-		bundler.on('bundled', (bundle) => {
+		bundler.on('bundled', () => {
 			done()
 		})
 		bundler.bundle()
