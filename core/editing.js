@@ -40,7 +40,6 @@ export default class Editing {
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
 		this.node.addEventListener('cut', this.onCut)
-		this.node.addEventListener('node-change', this.onNodeTransform)
 	}
 
 	onKeyDown(event) {
@@ -517,6 +516,5 @@ export default class Editing {
 		this.node.removeEventListener('paste', this.onPaste)
 		this.node.removeEventListener('cut', this.onCut)
 		this.node.removeEventListener('keydown', this.onKeyDown)
-		this.node.removeEventListener('node-change', this.onNodeTransform)
 	}
 }
