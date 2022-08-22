@@ -341,7 +341,7 @@ export default class Builder {
 				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
 				currentElement.childNodes.length
 			) {
-				current = this.parse(currentElement.firstChild, currentElement.lastChild)
+				current = this.parse(currentElement.firstChild, currentElement.lastChild, context)
 			}
 
 			nextElement = currentElement.nextSibling

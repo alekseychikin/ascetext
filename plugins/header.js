@@ -22,7 +22,6 @@ export default class HeaderPlugin extends PluginPlugin {
 			allowLevels: [2, 3, 4]
 		}, params)
 		this.supportHeaders = this.params.allowLevels.map((level) => `h${level}`)
-		this.setHeader = this.setHeader.bind(this)
 	}
 
 	get icons() {
