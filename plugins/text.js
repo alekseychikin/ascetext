@@ -1,10 +1,17 @@
 import Node from '../nodes/node'
 import PluginPlugin from './plugin'
 import isElementBr from '../utils/is-element-br'
+import omit from '../utils/omit'
+
+const mapModifierToTag = {
+	bold: 'strong',
+	italic: 'em',
+	strike: 'strike',
+	underlined: 'u'
+}
 
 export class Text extends Node {
 	constructor(attributes = {}, content = '') {
-		let node
 		super('text', attributes)
 
 		this.content = content
@@ -13,23 +20,39 @@ export class Text extends Node {
 
 		if (attributes.weight) {
 			modifiers.push('bold')
-
-				italic.appendChild(element)
-				node.appendChild(italic)
-			} else {
-				node.appendChild(element)
-			}
-		} else if (attributes.style === 'italic') {
-			node = document.createElement('em')
-			const element = document.createTextNode(this.content)
-			node.appendChild(element)
 		}
 
-		this.setElement(node)
+		if (attributes.style) {
+			modifiers.push('italic')
+		}
+
+		if (attributes.decoration) {
+			modifiers.push('underlined')
+		}
+
+		if (attributes.strike) {
+			modifiers.push('strike')
+		}
+
+		this.setElement(this.create(modifiers))
+	}
+
+	create(modifiers) {
+		let modifier
+
+		if (modifier = modifiers.shift()) {
+			const node = document.createElement(mapModifierToTag[modifier])
+
+			node.appendChild(this.create(modifiers))
+
+			return node
+		}
+
+		return document.createTextNode(this.content)
 	}
 
 	normalize(element) {
-		const fields = [ 'weight', 'style' ]
+		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
 		let areEqualElements = true
 
 		fields.forEach((field) => {
@@ -73,6 +96,14 @@ export class Text extends Node {
 	stringify() {
 		let content = ''
 
+		if (this.attributes.decoration === 'strike') {
+			content += '<strike>'
+		}
+
+		if (this.attributes.decoration === 'underlined') {
+			content += '<u>'
+		}
+
 		if (this.attributes.weight === 'bold') {
 			content += '<strong>'
 		}
@@ -91,18 +122,26 @@ export class Text extends Node {
 			content += '</strong>'
 		}
 
+		if (this.attributes.decoration === 'underlined') {
+			content += '</u>'
+		}
+
+		if (this.attributes.decoration === 'strike') {
+			content += '</strike>'
+		}
+
 		return content.replace(/\u00A0/, '&nbsp;')
 	}
 }
 
 export default class TextPlugin extends PluginPlugin {
-	constructor() {
+	constructor(params = {}) {
 		super()
 
-		this.unsetBold = this.unsetBold.bind(this)
-		this.setBold = this.setBold.bind(this)
-		this.unsetItalic = this.unsetItalic.bind(this)
-		this.setItalic = this.setItalic.bind(this)
+		this.params = Object.assign({
+			allowModifiers: ['bold', 'italic', 'underlined', 'strike']
+		}, params)
+		this.supportTags = this.params.allowModifiers.map((modifier) => mapModifierToTag[modifier])
 	}
 
 	get icons() {
@@ -112,7 +151,9 @@ export default class TextPlugin extends PluginPlugin {
 </svg>',
 			italic: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
 <path d="M6.994 6.68595V6.33595C7.62395 6.08397 8 6 8.996 5.83195L9.248 5.99995L7.99999 12H8.99999V12.364C8.59111 12.6755 8.01544 13 7.49999 13C6.49245 13 6.75943 12.0406 6.91 11.3479L7.89 6.82595L6.994 6.68595ZM8.114 3.57795C8.114 3.09261 8.44067 2.79395 8.926 2.79395C9.44867 2.79395 9.766 3.09261 9.766 3.57795C9.766 4.04461 9.44867 4.31995 8.926 4.31995C8.44067 4.31995 8.114 4.04461 8.114 3.57795Z" fill="#fff"/>\
-</svg>'
+</svg>',
+			underlined: '<svg height="24" width="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 10V4h2v6a4 4 0 0 0 8 0V4h2v6a6 6 0 0 1-12 0ZM7 18a1 1 0 1 0 0 2h10a1 1 0 1 0 0-2H7Z" fill="currentColor"/></svg>',
+			strike: '<svg style="enable-background:new 0 0 32 32" viewBox="0 0 32 32" xml:space="preserve" xmlns="http://www.w3.org/2000/svg"><path d="M26 15h-9.5C14 15 12 13 12 10.5S14 6 16.5 6 21 8 21 10.5c0 .6.4 1 1 1s1-.4 1-1C23 6.9 20.1 4 16.5 4S10 6.9 10 10.5c0 1.7.7 3.3 1.8 4.5H7c-.6 0-1 .4-1 1s.4 1 1 1h9.5c2.5 0 4.5 2 4.5 4.5S19 26 16.5 26 12 24 12 21.5c0-.6-.4-1-1-1s-1 .4-1 1c0 3.6 2.9 6.5 6.5 6.5s6.5-2.9 6.5-6.5c0-1.7-.7-3.3-1.8-4.5H26c.6 0 1-.4 1-1s-.4-1-1-1z"/></svg>'
 		}
 	}
 
@@ -124,12 +165,12 @@ export default class TextPlugin extends PluginPlugin {
 	// Нужно понять в каких случаях нужно удалять пробелы, а в каких оставлять
 	// В каких случаях нужно множество пробелов схлопывать в один
 	parse(element, builder, context) {
-		if (element.nodeType !== 3 && (element.nodeType === 1 && ![ 'em', 'strong', 'span' ].includes(element.nodeName.toLowerCase()))) {
+		if (element.nodeType !== 3 && (element.nodeType === 1 && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
 			return false
 		}
 
 		if (element.nodeType === 3) {
-			const { weight, style } = context
+			const { weight, style, decoration, strike } = context
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
@@ -148,7 +189,7 @@ export default class TextPlugin extends PluginPlugin {
 				return false
 			}
 
-			return new Text({ weight, style }, content)
+			return new Text({ weight, style, decoration, strike }, content)
 		}
 
 		if (element.nodeName.toLowerCase() === 'em') {
@@ -171,6 +212,26 @@ export default class TextPlugin extends PluginPlugin {
 			return model
 		}
 
+		if (element.nodeName.toLowerCase() === 'strike') {
+			context.strike = 'horizontal'
+
+			const model = builder.parse(element.firstChild, element.lastChild, context)
+
+			delete context.strike
+
+			return model
+		}
+
+		if (element.nodeName.toLowerCase() === 'u') {
+			context.decoration = 'underlined'
+
+			const model = builder.parse(element.firstChild, element.lastChild, context)
+
+			delete context.decoration
+
+			return model
+		}
+
 		if (element.nodeName.toLowerCase() === 'span') {
 			return builder.parse(element.firstChild, element.lastChild, context)
 		}
@@ -179,6 +240,8 @@ export default class TextPlugin extends PluginPlugin {
 	getSelectControls(focusedNodes, isRange) {
 		let hasBold = false
 		let hasItalic = false
+		let hasDecoration = false
+		let hasStrike = false
 		const controls = []
 
 		if (!isRange) {
@@ -193,36 +256,82 @@ export default class TextPlugin extends PluginPlugin {
 			if (item.type === 'text' && item.attributes.style === 'italic') {
 				hasItalic = true
 			}
+
+			if (item.type === 'text' && item.attributes.decoration === 'underlined') {
+				hasDecoration = true
+			}
+
+			if (item.type === 'text' && item.attributes.strike === 'horizontal') {
+				hasStrike = true
+			}
 		})
 
-		if (hasBold) {
-			controls.push({
-				label: 'Сделать нежирным',
-				icon: 'bold',
-				selected: () => true,
-				action: this.unsetBold
-			})
-		} else {
-			controls.push({
-				label: 'Сделать жирным',
-				icon: 'bold',
-				action: this.setBold
-			})
+		if (this.params.allowModifiers.includes('bold')) {
+			if (hasBold) {
+				controls.push({
+					label: 'Сделать нежирным',
+					icon: 'bold',
+					selected: () => true,
+					action: this.unsetBold
+				})
+			} else {
+				controls.push({
+					label: 'Сделать жирным',
+					icon: 'bold',
+					action: this.setBold
+				})
+			}
 		}
 
-		if (hasItalic) {
-			controls.push({
-				label: 'Сделать некурсивом',
-				icon: 'italic',
-				selected: () => true,
-				action: this.unsetItalic
-			})
-		} else {
-			controls.push({
-				label: 'Сделать курсивом',
-				icon: 'italic',
-				action: this.setItalic
-			})
+		if (this.params.allowModifiers.includes('italic')) {
+			if (hasItalic) {
+				controls.push({
+					label: 'Сделать некурсивом',
+					icon: 'italic',
+					selected: () => true,
+					action: this.unsetItalic
+				})
+			} else {
+				controls.push({
+					label: 'Сделать курсивом',
+					icon: 'italic',
+					action: this.setItalic
+				})
+			}
+		}
+
+		if (this.params.allowModifiers.includes('underlined')) {
+			if (hasDecoration) {
+				controls.push({
+					label: 'Сделать неподчёркнутым',
+					icon: 'underlined',
+					selected: () => true,
+					action: this.unsetUnderline
+				})
+			} else {
+				controls.push({
+					label: 'Сделать подчёркнутым',
+					icon: 'underlined',
+					action: this.setUnderline
+				})
+			}
+		}
+
+		if (this.params.allowModifiers.includes('strike')) {
+			if (hasStrike) {
+				controls.push({
+					label: 'Сделать незачёркнутым',
+					icon: 'strike',
+					selected: () => true,
+					action: this.unsetStrike
+				})
+			} else {
+				controls.push({
+					label: 'Сделать зачёркнутым',
+					icon: 'strike',
+					action: this.setStrike
+				})
+			}
 		}
 
 		return controls
@@ -231,10 +340,7 @@ export default class TextPlugin extends PluginPlugin {
 	unsetBold(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text' && item.attributes.weight === 'bold') {
-				const { style } = item.attributes
-				const replacementItem = new Text({ style }, item.content)
-
-				builder.replace(item, replacementItem)
+				builder.replace(item, new Text(omit(item.attributes, 'weight'), item.content))
 			}
 		})
 		restoreSelection()
@@ -243,10 +349,7 @@ export default class TextPlugin extends PluginPlugin {
 	setBold(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				const { style } = item.attributes
-				const replacementItem = new Text({ style, weight: 'bold' }, item.content)
-
-				builder.replace(item, replacementItem)
+				builder.replace(item, new Text({ ...item.attributes, weight: 'bold' }, item.content))
 			}
 		})
 		restoreSelection()
@@ -257,10 +360,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.style === 'italic') {
-				const { weight } = item.attributes
-				const replacementItem = new Text({ weight }, item.content)
-
-				builder.replace(item, replacementItem)
+				builder.replace(item, new Text(omit(item.attributes, 'style'), item.content))
 			}
 		})
 		restoreSelection()
@@ -269,10 +369,47 @@ export default class TextPlugin extends PluginPlugin {
 	setItalic(event, { builder, getSelectedItems, restoreSelection }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				const { weight } = item.attributes
-				const replacementItem = new Text({ weight, style: 'italic' }, item.content)
+				builder.replace(item, new Text({ ...item.attributes, style: 'italic' }, item.content))
+			}
+		})
+		restoreSelection()
+	}
 
-				builder.replace(item, replacementItem)
+	unsetStrike(event, { builder, getSelectedItems, restoreSelection }) {
+		const selectedItems = getSelectedItems()
+
+		selectedItems.forEach((item) => {
+			if (item.type === 'text' && item.attributes.strike === 'horizontal') {
+				builder.replace(item, new Text(omit(item.attributes, 'strike'), item.content))
+			}
+		})
+		restoreSelection()
+	}
+
+	setStrike(event, { builder, getSelectedItems, restoreSelection }) {
+		getSelectedItems().forEach((item) => {
+			if (item.type === 'text') {
+				builder.replace(item, new Text({ ...item.attributes, strike: 'horizontal' }, item.content))
+			}
+		})
+		restoreSelection()
+	}
+
+	unsetUnderline(event, { builder, getSelectedItems, restoreSelection }) {
+		const selectedItems = getSelectedItems()
+
+		selectedItems.forEach((item) => {
+			if (item.type === 'text' && item.attributes.decoration === 'underlined') {
+				builder.replace(item, new Text(omit(item.attributes, 'decoration'), item.content))
+			}
+		})
+		restoreSelection()
+	}
+
+	setUnderline(event, { builder, getSelectedItems, restoreSelection }) {
+		getSelectedItems().forEach((item) => {
+			if (item.type === 'text') {
+				builder.replace(item, new Text({ ...item.attributes, decoration: 'underlined' }, item.content))
 			}
 		})
 		restoreSelection()
