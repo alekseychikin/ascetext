@@ -73,7 +73,6 @@ export default class RichEditor {
 
 		this.timeTravel.begin()
 		this.node.setAttribute('contenteditable', true)
-		this.node.addEventListener('node-change', this.onNodeChange)
 	}
 
 	stringify(first) {
@@ -115,7 +114,6 @@ export default class RichEditor {
 	destroy() {
 		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
 		this.node.setAttribute('contenteditable', false)
-		this.node.removeEventListener('node-change', this.onNodeChange)
 		this.editing.destroy()
 		this.selection.destroy()
 		this.toolbar.destroy()
