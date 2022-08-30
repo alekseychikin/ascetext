@@ -3,9 +3,17 @@ import Section from '../nodes/section'
 import Builder from './builder'
 import Selection from './selection'
 // import Navigation from './navigation'
-import Toolbar from './toolbar'
 import Editing from './editing'
 import TimeTravel from './timetravel'
+import ParagraphPlugin from '../plugins/paragraph'
+import BreakLinePlugin from '../plugins/break-line'
+import TextPlugin from '../plugins/text'
+import HeaderPlugin from '../plugins/header'
+import LinkPlugin from '../plugins/link'
+import ImagePlugin from '../plugins/image'
+import ListPlugin from '../plugins/list'
+import UserMentionPlugin from '../plugins/user-mention'
+import Toolbar from './toolbar'
 
 class Root extends Section {
 	constructor(core, element) {
@@ -16,23 +24,37 @@ class Root extends Section {
 }
 
 export default class RichEditor {
-	constructor(node, plugins) {
-		let children
-
+	constructor(node, params) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
 		this.onNodeChange = this.onNodeChange.bind(this)
 
 		this.node = node
 		this.onChangeHandlers = []
-		this.plugins = plugins
+		this.plugins = Object.assign({
+			text: new TextPlugin(),
+			breakLine: new BreakLinePlugin(),
+			paragraph: new ParagraphPlugin(),
+			header: new HeaderPlugin(),
+			userMention: new UserMentionPlugin(),
+			link: new LinkPlugin(),
+			image: new ImagePlugin(),
+			list: new ListPlugin()
+		}, params.plugins || {})
+		this.icons = Object.assign(Object.keys(this.plugins).reduce((icons, plugin) => {
+			if (this.plugins[plugin].icons) {
+				icons = Object.assign(icons, this.plugins[plugin].icons)
+			}
+
+			return icons
+		}, {}), params.icons || {})
 		this.model = new Root(this, node)
 		// this.navigation = new Navigation(this)
 		this.builder = new Builder(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
-		this.toolbar = new Toolbar(plugins, this.selection, this.builder, this.timeTravel)
+		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 
 		const container = document.createElement('div')
 
