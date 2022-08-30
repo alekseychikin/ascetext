@@ -116,60 +116,56 @@ export default class LinkPlugin extends PluginPlugin {
 
 		if (isRange) {
 			if (link) {
-				return [
-					{
-						label: 'Удалить ссылки',
-						icon: 'link',
-						selected: true,
-						action: this.removeLinks
-					}
-				]
+				return [{
+					slug: 'link.removeAll',
+					label: 'Удалить ссылки',
+					icon: 'link',
+					selected: true,
+					action: this.removeLinks
+				}]
 			}
 
 			return hasText
-				? [
-					{
-						label: 'Сделать ссылку',
-						icon: 'link',
-						action: this.openLinkControls
-					}
-				]
+				? [{
+					slug: 'link.create',
+					label: 'Сделать ссылку',
+					icon: 'link',
+					action: this.openLinkControls
+				}]
 				: []
 		}
 
 		return link
-			? [
-				{
-					type: 'link',
-					label: link.attributes.url,
-					url: link.attributes.url
-				},
-				{
-					label: 'Удалить',
-					icon: 'remove',
-					action: this.removeLink(link)
-				}
-			]
+			? [{
+				slug: 'link.open',
+				type: 'link',
+				label: link.attributes.url,
+				url: link.attributes.url
+			}, {
+				slug: 'link.remove',
+				label: 'Удалить',
+				icon: 'remove',
+				action: this.removeLink(link)
+			}]
 			: []
 	}
 
-	openLinkControls(event, { renderControls }) {
-		renderControls([
-			[
-				{
-					type: 'input',
-					placeholder: 'Введите адрес ссылки',
-					autofocus: true,
-					action: this.setLink,
-					cancel: (event, { restoreSelection }) => restoreSelection()
-				},
-				{
-					label: 'Отменить',
-					icon: 'cancel',
-					action: (event, { restoreSelection }) => restoreSelection()
-				}
-			]
-		])
+	openLinkControls() {
+		return [
+			[{
+				slug: 'link.input',
+				type: 'input',
+				placeholder: 'Введите адрес ссылки',
+				autofocus: true,
+				action: this.setLink,
+				cancel: (event, { restoreSelection }) => restoreSelection()
+			}, {
+				slug: 'link.cancel',
+				label: 'Отменить',
+				icon: 'cancel',
+				action: (event, { restoreSelection }) => restoreSelection()
+			}]
+		]
 	}
 
 	removeLinks(event, { builder, getSelectedItems }) {

@@ -61,6 +61,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 
 		return [{
+			slug: 'paragraph.create',
 			label: 'Сделать параграфом',
 			icon: 'paragraph',
 			action: this.setParagraph
@@ -73,6 +74,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 
 		return [{
+			slug: 'paragraph.create',
 			label: 'Сделать параграфом',
 			icon: 'paragraph',
 			action: this.setParagraph

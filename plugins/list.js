@@ -272,11 +272,13 @@ export default class ListPlugin extends PluginPlugin {
 		if (container.parent.isSection) {
 			return [
 				{
+					slug: 'list.createMarked',
 					label: 'Добавить маркированный спискок',
 					icon: 'marked',
 					action: this.setMarkerList(container)
 				},
 				{
+					slug: 'list.createNumerated',
 					label: 'Добавить нумерованный список',
 					icon: 'numerated',
 					action: this.setNumberList(container)
@@ -293,6 +295,7 @@ export default class ListPlugin extends PluginPlugin {
 		if (container.type === 'list-item-content') {
 			if (container.parent.parent.parent.type === 'list-item') {
 				controls.push({
+					slug: 'list.indentLeft',
 					label: 'На один уровень влево',
 					icon: 'indentLeft',
 					action: container.indentLeft
@@ -301,6 +304,7 @@ export default class ListPlugin extends PluginPlugin {
 
 			if (container.parent.previous) {
 				controls.push({
+					slug: 'list.indentRight',
 					label: 'На один уровень вправо',
 					icon: 'indentRight',
 					action: container.indentRight
