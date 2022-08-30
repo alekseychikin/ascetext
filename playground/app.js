@@ -21,8 +21,11 @@ const plugins = {
 	quote: new QuotePlugin()
 }
 
-const editor = new Editor(document.getElementById('app'), plugins)
-const saveButton = document.getElementById('save').addEventListener('click', function (event) {
+const editor = new Editor(document.getElementById('app'), { plugins })
+
+document.getElementById('save').addEventListener('click', () => {
+	const data = [new window.ClipboardItem({ "text/html": new Blob(["<h3>no next</h3>"], { type: "text/html" }) })];
+	navigator.clipboard.write(data)
 	const content = editor.getContent()
 	console.log(content)
 })
