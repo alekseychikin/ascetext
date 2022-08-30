@@ -411,6 +411,15 @@ export default class Builder {
 			if (typeof (callback) === 'function') {
 				callback(normalized)
 			}
+		} else if ((previous.isContainer || previous.isWidget) && (!current.isContainer && !current.isWidget && !current.isGroup)) {
+			const block = this.createBlock()
+
+			this.append(block, current)
+			this.connect(previous, block)
+
+			if (typeof (callback) === 'function') {
+				callback(block)
+			}
 		} else {
 			this.connect(previous, current)
 		}
