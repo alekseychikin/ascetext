@@ -18,6 +18,8 @@ class TimeTravel {
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
+
+		this.selection.onUpdate(this.onSelectionChange)
 	}
 
 	begin() {

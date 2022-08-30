@@ -34,8 +34,6 @@ class RichEditor {
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = new Toolbar(plugins, this.selection, this.builder, this.timeTravel)
-		this.selection.onUpdate(this.timeTravel.onSelectionChange)
-		this.selection.onUpdate(this.toolbar.onSelectionChange)
 
 		const container = document.createElement('div')
 
