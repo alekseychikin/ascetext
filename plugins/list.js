@@ -12,7 +12,6 @@ export class List extends Group {
 	}
 
 	normalize(element, builder) {
-		console.log('normilize')
 		if (this.attributes.decor === element.attributes.decor) {
 			const list = new List(this.attributes)
 
@@ -354,7 +353,7 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	setNumberList(container) {
-		return (event, { builder, restoreSelection }) => {
+		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'numerable' })
 			const listItem = builder.create('list', 'item')
 
@@ -363,12 +362,11 @@ export default class ListPlugin extends PluginPlugin {
 			builder.append(listItem, content)
 			builder.append(list, listItem)
 			builder.replace(container, list)
-			restoreSelection()
 		}
 	}
 
 	setMarkerList(container) {
-		return (event, { builder, restoreSelection }) => {
+		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'marker' })
 			const listItem = builder.create('list', 'item')
 			const content = builder.create('list', 'content')
@@ -376,7 +374,6 @@ export default class ListPlugin extends PluginPlugin {
 			builder.append(listItem, content)
 			builder.append(list, listItem)
 			builder.replace(container, list)
-			restoreSelection()
 		}
 	}
 }

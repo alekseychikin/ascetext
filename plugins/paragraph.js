@@ -46,13 +46,12 @@ export default class ParagraphPlugin extends PluginPlugin {
 		return false
 	}
 
-	setParagraph(event, { builder, anchorContainer, restoreSelection }) {
+	setParagraph(event, { builder, anchorContainer }) {
 		if (anchorContainer.type !== 'paragraph') {
 			const paragraph = new Paragraph()
 
 			builder.append(paragraph, anchorContainer.first)
 			builder.replace(anchorContainer, paragraph)
-			restoreSelection()
 		}
 	}
 
