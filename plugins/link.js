@@ -129,27 +129,27 @@ export default class LinkPlugin extends PluginPlugin {
 
 			return hasText
 				? [
-						new ControlButton({
-							label: 'Сделать ссылку',
-								icon: icons.create,
-							action: this.openLinkControls
-						})
-					]
+					new ControlButton({
+						label: 'Сделать ссылку',
+							icon: icons.create,
+						action: this.openLinkControls
+					})
+				]
 				: []
 		}
 
 		return link
 			? [
-					new ControlLink({
-						label: link.attributes.url,
-						url: link.attributes.url
-					}),
-					new ControlButton({
-						label: 'Удалить',
-						icon: icons.remove,
-						action: this.removeLink(link)
-					})
-				]
+				new ControlLink({
+					label: link.attributes.url,
+					url: link.attributes.url
+				}),
+				new ControlButton({
+					label: 'Удалить',
+					icon: icons.remove,
+					action: this.removeLink(link)
+				})
+			]
 			: []
 	}
 
