@@ -7,7 +7,6 @@ import Header from './plugins/header'
 import Link from './plugins/link'
 import Image from './plugins/image'
 import List from './plugins/list'
-import UserMention from './plugins/user-mention'
 
 export {
 	Paragraph,
@@ -16,8 +15,7 @@ export {
 	Header,
 	Link,
 	Image,
-	List,
-	UserMention
+	List
 }
 
 export default Ascetext
