@@ -32,4 +32,16 @@ export default class PluginPlugin {
 
 		return current
 	}
+
+	getInsertControls() {
+		return []
+	}
+
+	getReplaceControls() {
+		return []
+	}
+
+	getSelectControls() {
+		return []
+	}
 }

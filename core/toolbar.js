@@ -172,15 +172,13 @@ export default class Toolbar {
 			focusedNodes.filter((node, index) => this.focusedNodes[index] !== node).length
 		) {
 			Object.keys(this.plugins).forEach((type) => {
-				if (this.plugins[type].getSelectControls) {
-					const nodeControls = this.plugins[type].getSelectControls(
-						focusedNodes,
-						this.selection.isRange
-					)
+				const nodeControls = this.plugins[type].getSelectControls(
+					focusedNodes,
+					this.selection.isRange
+				)
 
-					if (nodeControls.length) {
-						controls.push(nodeControls)
-					}
+				if (nodeControls.length) {
+					controls.push(nodeControls)
 				}
 			})
 
@@ -207,14 +205,12 @@ export default class Toolbar {
 		const controls = []
 
 		Object.keys(this.plugins).forEach((type) => {
-			if (this.plugins[type].getInsertControls) {
-				const nodeControls = this.plugins[type].getInsertControls(
-					this.selection.anchorContainer
-				)
+			const nodeControls = this.plugins[type].getInsertControls(
+				this.selection.anchorContainer
+			)
 
-				if (nodeControls.length) {
-					controls.push(nodeControls)
-				}
+			if (nodeControls.length) {
+				controls.push(nodeControls)
 			}
 		})
 
@@ -235,14 +231,12 @@ export default class Toolbar {
 		const controls = []
 
 		Object.keys(this.plugins).forEach((type) => {
-			if (this.plugins[type].getReplaceControls) {
-				const nodeControls = this.plugins[type].getReplaceControls(
-					this.selection.anchorContainer
-				)
+			const nodeControls = this.plugins[type].getReplaceControls(
+				this.selection.anchorContainer
+			)
 
-				if (nodeControls.length) {
-					controls.push(nodeControls)
-				}
+			if (nodeControls.length) {
+				controls.push(nodeControls)
 			}
 		})
 
