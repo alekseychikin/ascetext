@@ -85,6 +85,7 @@ export default class HeaderPlugin extends PluginPlugin {
 			.filter((level) => level !== container.attributes.level)
 			.map((level) =>
 				({
+					slug: `header.h${level}`,
 					label: 'Сделать заголовком',
 					icon: `h${level}`,
 					action: this.setHeader(level)
@@ -103,6 +104,7 @@ export default class HeaderPlugin extends PluginPlugin {
 			.filter((level) => level !== container.attributes.level)
 			.map((level) =>
 				({
+					slug: `header.h${level}`,
 					label: 'Сделать заголовком',
 					icon: `h${level}`,
 					action: this.setHeader(level)

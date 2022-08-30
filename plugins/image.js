@@ -271,24 +271,28 @@ export default class ImagePlugin extends PluginPlugin {
 		if (image && !isRange) {
 			return [
 				{
+					slug: 'image.floatLeft',
 					label: 'Обтекание справа',
 					icon: 'floatLeft',
 					selected: image.attributes.float === 'left',
 					action: this.toggleFloatLeft(image)
 				},
 				{
+					slug: 'image.floatRight',
 					label: 'Обтекание слева',
 					icon: 'floatLeft',
 					selected: image.attributes.float === 'right',
 					action: this.toggleFloatRight(image)
 				},
 				{
+					slug: 'image.wide',
 					label: 'Широкая картинка',
 					icon: 'wide',
 					selected: image.attributes.size === 'wide',
 					action: this.toggleSizeWide(image)
 				},
 				{
+					slug: 'image.upload',
 					type: 'file',
 					label: 'Обновить картинку',
 					icon: 'image',
@@ -338,6 +342,7 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 
 		return [{
+			slug: 'image.upload',
 			type: 'file',
 			label: 'Вставить картинку',
 			icon: 'image',
