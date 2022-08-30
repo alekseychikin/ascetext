@@ -1,7 +1,23 @@
 import createElement from '../utils/create-element'
+import ControlButton from '../controls/button'
+import ControlFile from '../controls/file'
+import ControlInput from '../controls/input'
+import ControlLink from '../controls/link'
 
 export default class Toolbar {
-	constructor(plugins, selection, builder, timeTravel) {
+	get css() {
+		return {
+			container: 'contenteditor__tooltip',
+			containerHidden: 'contenteditor__tooltip hidden',
+			toggleButtonHolder: 'contenteditor__toggle-button-holder',
+			toggleButtonHolderHidden: 'contenteditor__toggle-button-holder hidden',
+			toggleButtonInsert: 'contenteditor__toggle-button contenteditor__toggle-button--insert',
+			toggleButtonReplace: 'contenteditor__toggle-button contenteditor__toggle-button--replace',
+			tooltipGroup: 'contenteditor__tooltip-group'
+		}
+	}
+
+	constructor(core) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showTooltip = this.showTooltip.bind(this)
@@ -13,23 +29,25 @@ export default class Toolbar {
 		this.onMouseDown = this.onMouseDown.bind(this)
 		this.onMouseUp = this.onMouseUp.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.wrapControls = this.wrapControls.bind(this)
 
 		this.lastTooltipType = ''
 		this.isShowTooltip = false
 		this.isKeepOpen = false
-		this.builder = builder
-		this.selection = selection
-		this.timeTravel = timeTravel
-		this.plugins = plugins
+		this.builder = core.builder
+		this.selection = core.selection
+		this.timeTravel = core.timeTravel
+		this.plugins = core.plugins
+		this.icons = core.icons
 		this.focusedNodes = []
 		this.lastFocusedRange = false
 		this.previousSelection = null
 
 		this.tooltip = createElement('div', {
-			'class': 'contenteditor__tooltip hidden'
+			'class': this.css.containerHidden
 		})
 		this.toggleButtonHolder = createElement('div', {
-			'class': 'contenteditor__toggle-button-holder hidden'
+			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
 		document.body.appendChild(this.tooltip)
@@ -108,7 +126,7 @@ export default class Toolbar {
 
 		if (this.renderInsertTooltip()) {
 			this.toggleButton = createElement('button', {
-				'class': 'contenteditor__toggle-button contenteditor__toggle-button--insert'
+				'class': this.css.toggleButtonInsert
 			})
 			this.toggleButtonHolder.appendChild(this.toggleButton)
 			this.toggleButton.addEventListener('click', this.toggleTooltip)
@@ -123,7 +141,7 @@ export default class Toolbar {
 
 		if (this.renderReplaceTooltip()) {
 			this.toggleButton = createElement('button', {
-				'class': 'contenteditor__toggle-button contenteditor__toggle-button--replace'
+				'class': this.css.toggleButtonReplace
 			})
 			this.toggleButtonHolder.appendChild(this.toggleButton)
 			this.toggleButton.addEventListener('click', this.toggleTooltip)
@@ -153,10 +171,10 @@ export default class Toolbar {
 		) {
 			Object.keys(this.plugins).forEach((type) => {
 				if (this.plugins[type].getSelectControls) {
-					const nodeControls = this.plugins[type].getSelectControls(
+					const nodeControls = this.wrapControls(this.plugins[type].getSelectControls(
 						focusedNodes,
 						this.selection.isRange
-					)
+					))
 
 					if (nodeControls.length) {
 						controls.push(nodeControls)
@@ -188,9 +206,9 @@ export default class Toolbar {
 
 		Object.keys(this.plugins).forEach((type) => {
 			if (this.plugins[type].getInsertControls) {
-				const nodeControls = this.plugins[type].getInsertControls(
+				const nodeControls = this.wrapControls(this.plugins[type].getInsertControls(
 					this.selection.anchorContainer
-				)
+				))
 
 				if (nodeControls.length) {
 					controls.push(nodeControls)
@@ -216,9 +234,9 @@ export default class Toolbar {
 
 		Object.keys(this.plugins).forEach((type) => {
 			if (this.plugins[type].getReplaceControls) {
-				const nodeControls = this.plugins[type].getReplaceControls(
+				const nodeControls = this.wrapControls(this.plugins[type].getReplaceControls(
 					this.selection.anchorContainer
-				)
+				))
 
 				if (nodeControls.length) {
 					controls.push(nodeControls)
@@ -253,7 +271,7 @@ export default class Toolbar {
 			const group = createElement(
 				'div',
 				{
-					className: 'contenteditor__tooltip-group'
+					'class': this.css.tooltipGroup
 				},
 				groupControls.map((control) => control.getElement())
 			)
@@ -349,6 +367,26 @@ export default class Toolbar {
 		this.lastFocusedRange = false
 		this.focusedNodes = []
 		this.tooltip.classList.add('hidden')
+	}
+
+	wrapControls(controls) {
+		return controls.map((rawControl) => {
+			const control = {
+				...rawControl,
+				icon: rawControl.icon ? this.icons[rawControl.icon] : ''
+			}
+
+			switch (control.type) {
+				case 'input':
+					return new ControlInput(control)
+				case 'file':
+					return new ControlFile(control)
+				case 'link':
+					return new ControlLink(control)
+				default:
+					return new ControlButton(control)
+			}
+		})
 	}
 
 	destroy() {

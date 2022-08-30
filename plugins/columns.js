@@ -4,7 +4,7 @@ import Widget from '../nodes/widget'
 import ControlButton from '../controls/button'
 import createElement from '../utils/create-element'
 
-class Columns extends Widget {
+export class Columns extends Widget {
 	constructor(types, params) {
 		super('columns')
 
@@ -39,7 +39,7 @@ class Columns extends Widget {
 			const columnData = new ColumnData()
 
 			this.types[1] = 'data'
-			builder.append(columnData, new Paragraph())
+			builder.append(columnData, builder.createBlock())
 			builder.replace(this.last, columnData)
 		}
 	}
@@ -58,7 +58,7 @@ class Columns extends Widget {
 	}
 }
 
-class ColumnData extends Section {
+export class ColumnData extends Section {
 	constructor() {
 		super('column-data')
 
@@ -73,7 +73,7 @@ class ColumnData extends Section {
 	}
 }
 
-class ColumnImage extends Widget {
+export class ColumnImage extends Widget {
 	constructor(src, params) {
 		super('column-image')
 
@@ -241,7 +241,7 @@ export default class ColumnsPlugin extends PluginPlugin {
 		const columnImage = new ColumnImage('', this.params)
 		const columnData = new ColumnData()
 
-		columnData.append(new Paragraph())
+		columnData.append(builder.createBlock())
 		columns.append(columnImage)
 		columns.append(columnData)
 		builder.replace(anchorContainer, columns)
