@@ -9,7 +9,7 @@
   "outputFormat": "esmodule",
   "scripts": {
     "start": "npx gulp watch",
-    "build": "npx parcel build ./index.js"
+    "build": "npx gulp --production && npx parcel build ./index.js"
   },
   "repository": {
     "type": "git",
