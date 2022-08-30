@@ -407,6 +407,8 @@ class Editing {
 					this.updatingContainers.push(normalized)
 				}
 			}
+
+			console.log('container update', container.element)
 		}
 
 		if (this.core.selection.focused) {
