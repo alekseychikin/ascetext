@@ -1,7 +1,7 @@
-const PluginPlugin = require('./plugin')
-const ControlButton = require('../controls/button')
-const Container = require('../nodes/container')
-const createElement = require('../utils/create-element')
+import PluginPlugin from './plugin'
+import ControlButton from '../controls/button'
+import Container from '../nodes/container'
+import createElement from '../utils/create-element'
 
 const icons = {
 	create: '<svg width="24" height="24" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
@@ -21,7 +21,7 @@ class Paragraph extends Container {
 	}
 }
 
-class ParagraphPlugin extends PluginPlugin {
+export default class ParagraphPlugin extends PluginPlugin {
 	create() {
 		return new Paragraph()
 	}
@@ -79,6 +79,3 @@ class ParagraphPlugin extends PluginPlugin {
 		}) ]
 	}
 }
-
-module.exports.ParagraphPlugin = ParagraphPlugin
-module.exports.Paragraph = Paragraph

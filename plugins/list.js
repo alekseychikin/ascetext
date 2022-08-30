@@ -1,11 +1,8 @@
-const PluginPlugin = require('./plugin')
-const getNodeByElement = require('../nodes/node').getNodeByElement
-const Container = require('../nodes/container')
-const Group = require('../nodes/group')
-const ControlButton = require('../controls/button')
-const Paragraph = require('./paragraph').Paragraph
-const BreakLine = require('./break-line').BreakLine
-const createElement = require('../utils/create-element')
+import PluginPlugin from './plugin'
+import Container from '../nodes/container'
+import Group from '../nodes/group'
+import ControlButton from '../controls/button'
+import createElement from '../utils/create-element'
 
 class List extends Group {
 	constructor(attributes = { decor: 'marker' }) {
@@ -248,7 +245,7 @@ class ListItem extends Group {
 	}
 }
 
-class ListPlugin extends PluginPlugin {
+export default class ListPlugin extends PluginPlugin {
 	create(params) {
 		if (params === 'item') {
 			return new ListItem()
@@ -383,7 +380,3 @@ class ListPlugin extends PluginPlugin {
 		}
 	}
 }
-
-module.exports.ListPlugin = ListPlugin
-module.exports.List = List
-module.exports.ListItem = ListItem

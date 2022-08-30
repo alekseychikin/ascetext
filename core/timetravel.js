@@ -1,11 +1,11 @@
-const operationTypes = {
+export const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
 	PRECONNECT: 'preconnect',
 	CONNECT: 'connect'
 }
 
-class TimeTravel {
+export default class TimeTravel {
 	constructor(selection, builder) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.commit = this.commit.bind(this)
@@ -141,9 +141,4 @@ class TimeTravel {
 			this.timeindex++
 		}
 	}
-}
-
-module.exports = {
-	TimeTravel,
-	operationTypes
 }

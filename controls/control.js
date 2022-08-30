@@ -1,4 +1,4 @@
-class ControlControl {
+export default class ControlControl {
 	constructor(params) {
 		this.params = params
 
@@ -15,8 +15,7 @@ class ControlControl {
 	}
 }
 
-module.exports = ControlControl
-module.exports.getIcon = function(iconSource) {
+export function getIcon(iconSource) {
 	if (iconSource.toLowerCase().indexOf('<svg') !== -1) {
 		const container = document.createElement('div')
 

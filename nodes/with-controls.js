@@ -1,4 +1,4 @@
-const Node = require('./node')
+import Node from './node'
 
 const listeners = []
 let isSetAnimationRequest = false
@@ -15,7 +15,7 @@ function windowResizeHandler() {
 	}
 }
 
-class WithControls extends Node {
+export default class WithControls extends Node {
 	constructor(type, attributes = {}) {
 		super(type, attributes)
 
@@ -112,5 +112,3 @@ class WithControls extends Node {
 		}
 	}
 }
-
-module.exports = WithControls

@@ -1,8 +1,6 @@
-const getStyle = require('../utils/getStyle')
-const getNodeByElement = require('../nodes/node').getNodeByElement
-const createElement = require('../utils/create-element')
+import createElement from '../utils/create-element'
 
-class Toolbar {
+export default class Toolbar {
 	constructor(plugins, selection, builder, timeTravel) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
@@ -362,5 +360,3 @@ class Toolbar {
 		document.removeEventListener('keyup', this.onMouseUp)
 	}
 }
-
-module.exports = Toolbar

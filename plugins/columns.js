@@ -1,9 +1,8 @@
-const PluginPlugin = require('./plugin')
-const Section = require('../nodes/section')
-const Widget = require('../nodes/widget')
-const ControlButton = require('../controls/button')
-const Paragraph = require('./paragraph').Paragraph
-const createElement = require('../utils/create-element')
+import PluginPlugin from './plugin'
+import Section from '../nodes/section'
+import Widget from '../nodes/widget'
+import ControlButton from '../controls/button'
+import createElement from '../utils/create-element'
 
 class Columns extends Widget {
 	constructor(types, params) {
@@ -174,7 +173,7 @@ class ColumnImage extends Widget {
 	}
 }
 
-class ColumnsPlugin extends PluginPlugin {
+export default class ColumnsPlugin extends PluginPlugin {
 	constructor(params) {
 		super()
 
@@ -249,5 +248,3 @@ class ColumnsPlugin extends PluginPlugin {
 		restoreSelection()
 	}
 }
-
-module.exports.ColumnsPlugin = ColumnsPlugin

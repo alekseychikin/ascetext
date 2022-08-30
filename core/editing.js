@@ -17,7 +17,7 @@ const spaceKey = 32
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
 
-class Editing {
+export default class Editing {
 	constructor(core) {
 		this.handleRemoveRange = this.handleRemoveRange.bind(this)
 		this.handleBackspace = this.handleBackspace.bind(this)
@@ -521,5 +521,3 @@ class Editing {
 		this.node.removeEventListener('node-change', this.onNodeTransform)
 	}
 }
-
-module.exports = Editing

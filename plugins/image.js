@@ -1,12 +1,10 @@
-const Widget = require('../nodes/widget')
-const Container = require('../nodes/container')
-const Paragraph = require('../plugins/paragraph').Paragraph
-const BreakLine = require('../plugins/break-line').BreakLine
-const PluginPlugin = require('./plugin')
-const ControlButton = require('../controls/button')
-const ControlFile = require('../controls/file')
-const createElement = require('../utils/create-element')
-const Toolbar = require('../core/toolbar')
+import Widget from '../nodes/widget'
+import Container from '../nodes/container'
+import PluginPlugin from './plugin'
+import ControlButton from '../controls/button'
+import ControlFile from '../controls/file'
+import createElement from '../utils/create-element'
+import Toolbar from '../core/toolbar'
 
 class Image extends Widget {
 	constructor(attributes) {
@@ -166,7 +164,7 @@ class ImageCaption extends Container {
 	}
 }
 
-class ImagePlugin extends PluginPlugin {
+export default class ImagePlugin extends PluginPlugin {
 	constructor(params) {
 		super()
 
@@ -377,5 +375,3 @@ class ImagePlugin extends PluginPlugin {
 		}
 	}
 }
-
-module.exports.ImagePlugin = ImagePlugin

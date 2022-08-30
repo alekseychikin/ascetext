@@ -1,7 +1,6 @@
-const ControlControl = require('./control')
-const getIcon = ControlControl.getIcon
+import ControlControl, { getIcon } from './control'
 
-class ControlFile extends ControlControl {
+export default class ControlFile extends ControlControl {
 	handleAction(event) {
 		this.handler(this.params.action, event)
 	}
@@ -44,5 +43,3 @@ class ControlFile extends ControlControl {
 		return this.element
 	}
 }
-
-module.exports = ControlFile

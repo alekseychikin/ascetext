@@ -1,12 +1,11 @@
 // import { debounce } from '../../libs/helpers'
-const Section = require('../nodes/section')
-const Builder = require('./builder')
-const Selection = require('./selection')
-// const Navigation = require('./navigation')
-const Toolbar = require('./toolbar')
-const Editing = require('./editing')
-const TimeTravel = require('./timetravel').TimeTravel
-const BreakLine = require('../plugins/break-line').BreakLine
+import Section from '../nodes/section'
+import Builder from './builder'
+import Selection from './selection'
+// import Navigation from './navigation'
+import Toolbar from './toolbar'
+import Editing from './editing'
+import TimeTravel from './timetravel'
 
 class Root extends Section {
 	constructor(core, element) {
@@ -16,7 +15,7 @@ class Root extends Section {
 	}
 }
 
-class RichEditor {
+export default class RichEditor {
 	constructor(node, plugins) {
 		let children
 
@@ -104,5 +103,3 @@ class RichEditor {
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
 }
-
-module.exports = RichEditor

@@ -2,9 +2,10 @@ const arrowLeftKey = 37
 const arrowUpKey = 38
 const arrowRightKey = 39
 const arrowDownKey = 40
-const arrowKeyCodes = [ arrowLeftKey, arrowUpKey, arrowRightKey, arrowDownKey ]
 
-class Navigation {
+export const arrowKeyCodes = [ arrowLeftKey, arrowUpKey, arrowRightKey, arrowDownKey ]
+
+export default class Navigation {
 	handleArrowLeftKeyDown(event) {
 		// const anchorAtFirstPositionInContainer = this.core.selection.anchorAtFirstPositionInContainer
 		// const anchoredSelectable = this.core.selection.anchorNode.isWidget
@@ -101,6 +102,3 @@ class Navigation {
 		this.core = core
 	}
 }
-
-module.exports = Navigation
-module.exports.arrowKeyCodes = arrowKeyCodes

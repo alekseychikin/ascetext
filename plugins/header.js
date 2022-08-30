@@ -1,7 +1,7 @@
-const PluginPlugin = require('./plugin')
-const ControlButton = require('../controls/button')
-const Container = require('../nodes/container')
-const createElement = require('../utils/create-element')
+import PluginPlugin from './plugin'
+import ControlButton from '../controls/button'
+import Container from '../nodes/container'
+import createElement from '../utils/create-element'
 
 class Header extends Container {
 	constructor(attributes) {
@@ -30,7 +30,7 @@ const icons = {
 </svg>'
 }
 
-class HeaderPlugin extends PluginPlugin {
+export default class HeaderPlugin extends PluginPlugin {
 	constructor(params = {}) {
 		super()
 
@@ -113,5 +113,3 @@ class HeaderPlugin extends PluginPlugin {
 		return controls
 	}
 }
-
-module.exports.HeaderPlugin = HeaderPlugin

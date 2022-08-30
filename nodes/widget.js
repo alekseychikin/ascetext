@@ -1,6 +1,6 @@
-const WithControls = require('./with-controls')
+import WithControls from './with-controls'
 
-class Widget extends WithControls {
+export default class Widget extends WithControls {
 	constructor(type, attributes) {
 		super(type, attributes)
 
@@ -85,5 +85,3 @@ class Widget extends WithControls {
 
 	update() {}
 }
-
-module.exports = Widget

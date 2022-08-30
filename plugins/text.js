@@ -1,9 +1,7 @@
-const Node = require('../nodes/node')
-const PluginPlugin = require('./plugin')
-const ControlButton = require('../controls/button')
-const isElementBr = require('../utils/is-element-br').isElementBr
-
-const nbsCode = '\u00A0'
+import Node from '../nodes/node'
+import PluginPlugin from './plugin'
+import ControlButton from '../controls/button'
+import isElementBr from '../utils/is-element-br'
 
 class Text extends Node {
 	constructor(attributes = {}, content = '') {
@@ -102,7 +100,7 @@ class Text extends Node {
 	}
 }
 
-class TextPlugin extends PluginPlugin {
+export default class TextPlugin extends PluginPlugin {
 	constructor() {
 		super()
 
@@ -282,6 +280,3 @@ class TextPlugin extends PluginPlugin {
 		restoreSelection()
 	}
 }
-
-module.exports.TextPlugin = TextPlugin
-module.exports.Text = Text

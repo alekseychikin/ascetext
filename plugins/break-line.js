@@ -1,8 +1,7 @@
-const InlineWidget = require('../nodes/inline-widget')
-const PluginPlugin = require('./plugin')
-const createElement = require('../utils/create-element')
-const Text = require('./text').Text
-const isElementBr = require('../utils/is-element-br').isElementBr
+import InlineWidget from '../nodes/inline-widget'
+import PluginPlugin from './plugin'
+import createElement from '../utils/create-element'
+import isElementBr from '../utils/is-element-br'
 
 class BreakLine extends InlineWidget {
 	constructor() {
@@ -23,7 +22,7 @@ class BreakLine extends InlineWidget {
 	}
 }
 
-class BreakLinePlugin extends PluginPlugin {
+export default class BreakLinePlugin extends PluginPlugin {
 	create() {
 		return new BreakLine()
 	}
@@ -36,5 +35,3 @@ class BreakLinePlugin extends PluginPlugin {
 		return false
 	}
 }
-
-module.exports.BreakLinePlugin = BreakLinePlugin

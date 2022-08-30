@@ -1,10 +1,10 @@
-const operationTypes = require('../core/timetravel').operationTypes
-const isElementBr = require('../utils/is-element-br').isElementBr
+import { operationTypes } from '../core/timetravel'
+import isElementBr from '../utils/is-element-br'
 
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'
 
-class Builder {
+export default class Builder {
 	constructor(core) {
 		this.core = core
 
@@ -417,5 +417,3 @@ class Builder {
 		}
 	}
 }
-
-module.exports = Builder

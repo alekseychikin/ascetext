@@ -1,9 +1,9 @@
-const getNodeByElement = require('../nodes/node').getNodeByElement
-const getStyle = require('../utils/getStyle')
-const isElementBr = require('../utils/is-element-br').isElementBr
-const createElement = require('../utils/create-element')
+import { getNodeByElement } from '../nodes/node'
+import getStyle from '../utils/getStyle'
+import isElementBr from '../utils/is-element-br'
+import createElement from '../utils/create-element'
 
-class Selection {
+export default class Selection {
 	constructor(core) {
 		this.onFocus = this.onFocus.bind(this)
 		this.update = this.update.bind(this)
@@ -466,5 +466,3 @@ class Selection {
 	// 	this.pluginControls.splice(this.pluginControls.indexOf(control), 1)
 	// }
 }
-
-module.exports = Selection

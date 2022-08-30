@@ -1,9 +1,9 @@
-const PluginPlugin = require('./plugin')
-const InlineWidget = require('../nodes/inline-widget')
-const ControlButton = require('../controls/button')
-const ControlInput = require('../controls/input')
-const ControlLink = require('../controls/link')
-const createElement = require('../utils/create-element')
+import PluginPlugin from './plugin'
+import InlineWidget from '../nodes/inline-widget'
+import ControlButton from '../controls/button'
+import ControlInput from '../controls/input'
+import ControlLink from '../controls/link'
+import createElement from '../utils/create-element'
 
 const icons = {
 	create: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
@@ -71,7 +71,7 @@ class Link extends InlineWidget {
 	}
 }
 
-class LinkPlugin extends PluginPlugin {
+export default class LinkPlugin extends PluginPlugin {
 	constructor() {
 		super()
 
@@ -206,5 +206,3 @@ class LinkPlugin extends PluginPlugin {
 		}
 	}
 }
-
-module.exports.LinkPlugin = LinkPlugin

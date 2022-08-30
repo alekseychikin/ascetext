@@ -1,9 +1,7 @@
-const Node = require('./node')
-const paragraphPackage = require('../plugins/paragraph')
-const BreakLine = require('../plugins/break-line').BreakLine
-const Toolbar = require('../core/toolbar')
+import Node from './node'
+import Toolbar from '../core/toolbar'
 
-class Container extends Node {
+export default class Container extends Node {
 	constructor(type, attributes = {}) {
 		super(type, attributes)
 
@@ -297,5 +295,3 @@ class Container extends Node {
 		this.toolbarInstance = new Toolbar(this.toolbar)
 	}
 }
-
-module.exports = Container

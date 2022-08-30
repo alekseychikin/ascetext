@@ -1,7 +1,6 @@
-const ControlControl = require('./control')
-const getIcon = ControlControl.getIcon
+import ControlControl, { getIcon } from './control'
 
-class ControlButton extends ControlControl {
+export default class ControlButton extends ControlControl {
 	handleAction(event) {
 		this.handler(this.params.action, event)
 	}
@@ -43,5 +42,3 @@ class ControlButton extends ControlControl {
 		return this.element
 	}
 }
-
-module.exports = ControlButton

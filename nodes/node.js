@@ -1,10 +1,9 @@
-const operationTypes = require('../core/timetravel').operationTypes
-const isElementBr = require('../utils/is-element-br').isElementBr
+import isElementBr from '../utils/is-element-br'
 
 const mapElementToNode = {}
 let id = 1
 
-function getNodeByElement(element) {
+export function getNodeByElement(element) {
 	let currentElement = element
 
 	while (currentElement) {
@@ -20,7 +19,7 @@ function getNodeByElement(element) {
 	return false
 }
 
-function walk(rootElement, callback) {
+export function walk(rootElement, callback) {
 	let returnValue
 	let current = rootElement.firstChild
 
@@ -59,7 +58,7 @@ function walk(rootElement, callback) {
 	}
 }
 
-class Node {
+export default class Node {
 	constructor(type, attributes = {}) {
 		this.id = id++
 		this.type = type
@@ -317,7 +316,3 @@ class Node {
 		return ''
 	}
 }
-
-module.exports = Node
-module.exports.getNodeByElement = getNodeByElement
-module.exports.walk = walk

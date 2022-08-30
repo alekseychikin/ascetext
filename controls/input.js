@@ -1,6 +1,6 @@
-const ControlControl = require('./control')
+import ControlControl from './control'
 
-class ControlInput extends ControlControl {
+export default class ControlInput extends ControlControl {
 	handleAction(event) {
 		this.handler(this.params.action, event)
 	}
@@ -44,5 +44,3 @@ class ControlInput extends ControlControl {
 		return this.element
 	}
 }
-
-module.exports = ControlInput

@@ -1,11 +1,9 @@
-const Node = require('./node')
+import Node from './node'
 
-class Group extends Node {
+export default class Group extends Node {
 	constructor(type, params = {}) {
 		super(type, params)
 
 		this.isGroup = true
 	}
 }
-
-module.exports = Group
