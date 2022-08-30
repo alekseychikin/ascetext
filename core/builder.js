@@ -305,11 +305,11 @@ export default class Builder {
 			this.connect(head, node)
 
 			return node
-		} else {
-			this.preconnect(tail, node)
-
-			return tail
 		}
+
+		this.preconnect(tail, node)
+
+		return tail
 	}
 
 	moveTail(container, target, offset) {
@@ -327,7 +327,6 @@ export default class Builder {
 		let previous
 		let current
 		let value
-		let removeLastBr
 
 		while (currentElement) {
 			// eslint-disable-next-line no-loop-func

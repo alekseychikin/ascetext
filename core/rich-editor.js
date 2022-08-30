@@ -76,7 +76,7 @@ export default class RichEditor {
 	onChange(callback) {
 		this.onChangeHandlers.push(callback)
 
-		return function () {
+		return () => {
 			this.onChangeHandlers.splice(this.onChangeHandlers.indexOf(callback), 1)
 		}
 	}

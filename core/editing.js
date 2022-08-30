@@ -1,5 +1,3 @@
-const getNodeByElement = require('../nodes/node').getNodeByElement
-
 const backspaceKey = 8
 const deletekey = 46
 const enterKey = 13
@@ -143,7 +141,6 @@ export default class Editing {
 		const selectedItems = this.core.selection.getSelectedItems()
 		const containersForRemove = []
 		let index
-		let duplicate
 		let firstContainer
 		let nextSelectableNode
 		let children
@@ -173,7 +170,7 @@ export default class Editing {
 		})
 
 		if (containersForRemove.length) {
-			let lastContainer = containersForRemove[containersForRemove.length - 1]
+			const lastContainer = containersForRemove[containersForRemove.length - 1]
 
 			nextSelectableNode = lastContainer.getNextSelectableNode()
 			index = selectedItems.indexOf(lastContainer)
@@ -379,6 +376,8 @@ export default class Editing {
 	update() {
 		clearTimeout(this.markDirtyTimer)
 		this.markDirtyTimer = null
+
+		let container
 
 		while (container = this.updatingContainers.pop()) {
 			if (container.isContainer) {

@@ -56,7 +56,6 @@ class ListItemContent extends Container {
 		builder,
 		anchorContainer,
 		anchorAtFirstPositionInContainer,
-		focusAtLastPositionInContainer,
 		setSelection
 	}) {
 		const item = this.parent
@@ -75,8 +74,6 @@ class ListItemContent extends Container {
 
 	enterHandler(event, {
 		builder,
-		focusAtLastPositionInContainer,
-		anchorAtFirstPositionInContainer,
 		setSelection,
 		anchorContainer,
 		anchorOffset
@@ -91,30 +88,25 @@ class ListItemContent extends Container {
 
 			builder.insert(this, builder.create('breakLine'), anchorOffset)
 			setSelection(anchorContainer, anchorOffset + 1)
-		} else {
-			if (anchorContainer.isEmpty) {
-				if (parent.parent.type === 'list-item') {
-					this.indentLeft(event, { anchorContainer, setSelection, builder })
-				} else if (parent.parent.isSection) {
-					this.putEmptyBlockInMiddle(builder, setSelection)
-				}
-			} else {
-				const nextItem = builder.create('list', 'item')
-				const content = builder.create('list', 'content')
-
-				builder.append(nextItem, content)
-				builder.connect(item, nextItem)
-				builder.moveTail(this, content, anchorOffset)
-
-				setSelection(nextItem)
+		} else if (anchorContainer.isEmpty) {
+			if (parent.parent.type === 'list-item') {
+				this.indentLeft(event, { anchorContainer, setSelection, builder })
+			} else if (parent.parent.isSection) {
+				this.putEmptyBlockInMiddle(builder, setSelection)
 			}
+		} else {
+			const nextItem = builder.create('list', 'item')
+			const content = builder.create('list', 'content')
+
+			builder.append(nextItem, content)
+			builder.connect(item, nextItem)
+			builder.moveTail(this, content, anchorOffset)
+
+			setSelection(nextItem)
 		}
 	}
 
 	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer, setSelection }) {
-		const item = this.parent
-		const parent = item.parent
-
 		if (focusAtLastPositionInContainer) {
 			event.preventDefault()
 
