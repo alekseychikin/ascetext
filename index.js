@@ -7,11 +7,20 @@ import HeaderPlugin, { Header } from './plugins/header'
 import LinkPlugin, { Link } from './plugins/link'
 import ImagePlugin, { Image, ImageCaption } from './plugins/image'
 import ListPlugin, { List, ListItem, ListItemContent } from './plugins/list'
+import QuotePlugin, { Quote } from './plugins/quote'
+import PluginPlugin from './plugins/plugin'
 import Toolbar from './core/toolbar'
+import ControlControl from './controls/control'
 import ControlButton from './controls/button'
 import ControlFile from './controls/file'
 import ControlLink from './controls/link'
 import ControlInput from './controls/input'
+import Container from './nodes/container'
+import Section from './nodes/section'
+import Group from './nodes/group'
+import InlineWidget from './nodes/inline-widget'
+import Widget from './nodes/widget'
+import Node from './nodes/node'
 
 export {
 	ParagraphPlugin,
@@ -29,11 +38,21 @@ export {
 	List,
 	ListItem,
 	ListItemContent,
+	QuotePlugin,
+	Quote,
+	PluginPlugin,
 	Toolbar,
+	ControlControl,
 	ControlButton,
 	ControlFile,
 	ControlLink,
-	ControlInput
+	ControlInput,
+	Container,
+	Section,
+	Group,
+	InlineWidget,
+	Widget,
+	Node
 }
 
 export default Ascetext

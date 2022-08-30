@@ -1,3 +1,4 @@
 .cache
+dist
 playground/dist
 node_modules

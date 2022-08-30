@@ -2,10 +2,14 @@
   "name": "ascetext",
   "version": "0.1.0",
   "description": "Editor for web",
-  "main": "src/index.js",
+  "source": "index.js",
+  "main": "index.js",
+  "module": "index.js",
+  "types": "./module.d.ts",
+  "outputFormat": "esmodule",
   "scripts": {
     "start": "npx gulp watch",
-    "build": "npx gulp --production"
+    "build": "npx parcel build ./index.js"
   },
   "repository": {
     "type": "git",
