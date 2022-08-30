@@ -79,6 +79,10 @@ export default class LinkPlugin extends PluginPlugin {
 		}
 	}
 
+	get autocompleteRule() {
+		return /(?:^|(?<=[^\S]))https?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
+	}
+
 	create(url) {
 		return new Link({ url })
 	}
@@ -197,6 +201,22 @@ export default class LinkPlugin extends PluginPlugin {
 		return function (event, { builder }) {
 			builder.connect(link, link.first)
 			builder.cut(link)
+		}
+	}
+
+	wrap(match, builder) {
+		const link = new Link({ url: match.content })
+
+		builder.preconnect(match, link)
+		builder.push(link, match)
+
+		return link
+	}
+
+	unwrap(node, builder) {
+		if (node.type === 'link') {
+			builder.connect(node, node.first)
+			builder.cut(node)
 		}
 	}
 }

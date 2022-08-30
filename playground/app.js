@@ -9,8 +9,10 @@ import LinkPlugin from '../plugins/link'
 import ImagePlugin from '../plugins/image'
 import ListPlugin from '../plugins/list'
 import QuotePlugin from '../plugins/quote'
+import UserMentionPlugin from '../plugins/user-mention'
 
 const plugins = {
+	userMention: new UserMentionPlugin(),
 	text: new TextPlugin(),
 	breakLine: new BreakLinePlugin(),
 	paragraph: new ParagraphPlugin(),

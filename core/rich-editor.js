@@ -4,6 +4,7 @@ import Builder from './builder'
 import Selection from './selection'
 // import Navigation from './navigation'
 import Editing from './editing'
+import Autocomplete from './autocomplete'
 import TimeTravel from './timetravel'
 import ParagraphPlugin from '../plugins/paragraph'
 import BreakLinePlugin from '../plugins/break-line'
@@ -57,6 +58,7 @@ export default class RichEditor {
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
+		this.autocomplete = new Autocomplete(this.plugins, this.selection, this.builder, this.editing)
 
 		const container = document.createElement('div')
 
