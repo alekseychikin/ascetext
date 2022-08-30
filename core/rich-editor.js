@@ -62,16 +62,11 @@ export default class RichEditor {
 			container.appendChild(node.childNodes[0])
 		}
 
-		if (children = this.builder.parse(
+		const children = this.builder.parse(
 			container.firstChild,
 			container.lastChild
-		)) {
-			console.log('children', children)
-			this.builder.append(this.model, children)
-			this.timeTravel.commit()
-		} else {
-			console.log('empty holder container')
-		}
+		) || this.builder.createBlock()
+		this.builder.append(this.model, children)
 
 		this.timeTravel.begin()
 		this.node.setAttribute('contenteditable', true)
