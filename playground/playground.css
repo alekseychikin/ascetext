@@ -52,20 +52,40 @@ body {
 	font-weight: bold;
 }
 
-.playground__editor * + h2 {
-	margin-top: 2.4rem;
+.playground__editor blockquote {
+	position: relative;
+	margin: 1.2rem 0;
+	padding-left: 2.4rem;
+	font-style: italic;
 }
 
+.playground__editor blockquote::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 20px;
+	height: 20px;
+	background: url(data:image/svg+xml,%3Csvg%20width%3D%2220%22%20height%3D%2220%22%20fill%3D%22none%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20clip-rule%3D%22evenodd%22%20d%3D%22M2.24%207.848c.106.323.288.62.542.887.265.28.614.498%201.047.654.431.155.987.235%201.673.235h.93c-.111%201.143-.519%202.117-1.223%202.922-.704.803-1.68%201.508-2.928%202.114l.756%201.173a11.374%2011.374%200%200%200%204.216-3.075C8.42%2011.406%209%2010.065%209%208.735c0-1.428-.336-2.548-1.016-3.357-.68-.809-1.652-1.21-2.92-1.21-.8%200-1.5.266-2.092.801-.593.536-.89%201.162-.89%201.877%200%20.343.053.678.157%201.002Zm8.5%200c.105.323.287.62.54.887.266.28.616.498%201.047.654.433.155.989.235%201.674.235h.929c-.11%201.143-.518%202.117-1.223%202.922-.704.803-1.679%201.508-2.927%202.114l.757%201.173a11.385%2011.385%200%200%200%204.215-3.075c1.167-1.352%201.748-2.693%201.748-4.023%200-1.428-.337-2.548-1.016-3.357-.679-.809-1.652-1.21-2.919-1.21-.803%200-1.5.266-2.093.801-.593.536-.89%201.162-.89%201.877%200%20.343.052.678.158%201.002Z%22%20fill%3D%22%23000%22%2F%3E%3C%2Fsvg%3E) top left / 16px no-repeat;
+}
+
+.playground__editor * + h2,
 .playground__editor * + h3,
 .playground__editor * + h4,
 .playground__editor * + p,
 .playground__editor * + ul,
 .playground__editor * + ol,
+.playground__editor * + blockquote,
+.playground__editor * + figure,
 .playground__editor ul ul,
 .playground__editor ul ol,
 .playground__editor ol ul,
 .playground__editor ol ol {
 	margin: 1.2rem 0;
+}
+
+.playground__editor * + h2 {
+	margin-top: 2.4rem;
 }
 
 .playground__editor ol {

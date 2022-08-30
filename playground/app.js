@@ -8,6 +8,7 @@ import HeaderPlugin from '../plugins/header'
 import LinkPlugin from '../plugins/link'
 import ImagePlugin from '../plugins/image'
 import ListPlugin from '../plugins/list'
+import QuotePlugin from '../plugins/quote'
 
 const plugins = {
 	text: new TextPlugin(),
@@ -16,7 +17,8 @@ const plugins = {
 	header: new HeaderPlugin(),
 	link: new LinkPlugin(),
 	image: new ImagePlugin(),
-	list: new ListPlugin()
+	list: new ListPlugin(),
+	quote: new QuotePlugin()
 }
 
 const editor = new Editor(document.getElementById('app'), plugins)

@@ -12,6 +12,7 @@ import HeaderPlugin from '../plugins/header'
 import LinkPlugin from '../plugins/link'
 import ImagePlugin from '../plugins/image'
 import ListPlugin from '../plugins/list'
+import QuotePlugin from '../plugins/quote'
 import Toolbar from './toolbar'
 
 class Root extends Section {
@@ -37,7 +38,8 @@ export default class RichEditor {
 			header: new HeaderPlugin(),
 			link: new LinkPlugin(),
 			image: new ImagePlugin(),
-			list: new ListPlugin()
+			list: new ListPlugin(),
+			quote: new QuotePlugin()
 		}, params.plugins || {})
 		this.icons = Object.assign(Object.keys(this.plugins).reduce((icons, plugin) => {
 			if (this.plugins[plugin].icons) {
