@@ -1,4 +1,5 @@
-import ControlControl, { getIcon } from './control'
+import ControlControl from './control'
+import getIcon from '../utils/get-icon'
 
 export default class ControlButton extends ControlControl {
 	handleAction(event) {
