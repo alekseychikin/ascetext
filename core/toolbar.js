@@ -334,7 +334,7 @@ export default class Toolbar {
 		this.isShowTooltip = true
 		this.lastTooltipType = type
 		this.tooltip.classList.remove('hidden')
-		this.setPosition(type === 'settings' ? 'center' : 'caret')
+		this.setPosition('caret')
 	}
 
 	showToggleButtonHolder() {
@@ -364,9 +364,6 @@ export default class Toolbar {
 				this.selection.boundings.caret.left +
 				this.selection.boundings.caret.width / 2 -
 				this.tooltip.offsetWidth / 2
-		} else if (position === 'center') {
-			offsetTop -= this.tooltip.offsetHeight
-			offsetLeft += this.selection.boundings.container.width / 2 - this.tooltip.offsetWidth / 2
 		} else {
 			offsetTop -= 40
 			offsetLeft -= 40
