@@ -173,10 +173,10 @@ export default class Toolbar {
 		) {
 			Object.keys(this.plugins).forEach((type) => {
 				if (this.plugins[type].getSelectControls) {
-					const nodeControls = this.wrapControls(this.plugins[type].getSelectControls(
+					const nodeControls = this.plugins[type].getSelectControls(
 						focusedNodes,
 						this.selection.isRange
-					))
+					)
 
 					if (nodeControls.length) {
 						controls.push(nodeControls)
@@ -208,9 +208,9 @@ export default class Toolbar {
 
 		Object.keys(this.plugins).forEach((type) => {
 			if (this.plugins[type].getInsertControls) {
-				const nodeControls = this.wrapControls(this.plugins[type].getInsertControls(
+				const nodeControls = this.plugins[type].getInsertControls(
 					this.selection.anchorContainer
-				))
+				)
 
 				if (nodeControls.length) {
 					controls.push(nodeControls)
@@ -236,9 +236,9 @@ export default class Toolbar {
 
 		Object.keys(this.plugins).forEach((type) => {
 			if (this.plugins[type].getReplaceControls) {
-				const nodeControls = this.wrapControls(this.plugins[type].getReplaceControls(
+				const nodeControls = this.plugins[type].getReplaceControls(
 					this.selection.anchorContainer
-				))
+				)
 
 				if (nodeControls.length) {
 					controls.push(nodeControls)
@@ -273,16 +273,17 @@ export default class Toolbar {
 
 		this.nextControlsToRender = null
 		controlsToRender.forEach((groupControls) => {
+			const controls = this.wrapControls(groupControls)
 			const group = createElement(
 				'div',
 				{
 					'class': this.css.tooltipGroup
 				},
-				groupControls.map((control) => control.getElement())
+				controls.map((control) => control.getElement())
 			)
 
 			this.tooltip.appendChild(group)
-			groupControls.forEach((control) =>
+			controls.forEach((control) =>
 				control.setEventListener(this.controlHandler)
 			)
 		})
