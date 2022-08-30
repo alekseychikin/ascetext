@@ -66,13 +66,12 @@ export default class HeaderPlugin extends PluginPlugin {
 	}
 
 	setHeader(level) {
-		return (event, { builder, restoreSelection, anchorContainer }) => {
+		return (event, { builder, anchorContainer }) => {
 			if (anchorContainer.type !== 'header' || anchorContainer.level !== level) {
 				const header = builder.create('header', { level })
 
 				builder.append(header, anchorContainer.first)
 				builder.replace(anchorContainer, header)
-				restoreSelection()
 			}
 		}
 	}

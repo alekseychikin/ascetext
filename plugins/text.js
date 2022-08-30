@@ -337,25 +337,23 @@ export default class TextPlugin extends PluginPlugin {
 		return controls
 	}
 
-	unsetBold(event, { builder, getSelectedItems, restoreSelection }) {
+	unsetBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text' && item.attributes.weight === 'bold') {
 				builder.replace(item, new Text(omit(item.attributes, 'weight'), item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	setBold(event, { builder, getSelectedItems, restoreSelection }) {
+	setBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				builder.replace(item, new Text({ ...item.attributes, weight: 'bold' }, item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	unsetItalic(event, { builder, getSelectedItems, restoreSelection }) {
+	unsetItalic(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
@@ -363,19 +361,17 @@ export default class TextPlugin extends PluginPlugin {
 				builder.replace(item, new Text(omit(item.attributes, 'style'), item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	setItalic(event, { builder, getSelectedItems, restoreSelection }) {
+	setItalic(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				builder.replace(item, new Text({ ...item.attributes, style: 'italic' }, item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	unsetStrike(event, { builder, getSelectedItems, restoreSelection }) {
+	unsetStrike(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
@@ -383,19 +379,17 @@ export default class TextPlugin extends PluginPlugin {
 				builder.replace(item, new Text(omit(item.attributes, 'strike'), item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	setStrike(event, { builder, getSelectedItems, restoreSelection }) {
+	setStrike(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				builder.replace(item, new Text({ ...item.attributes, strike: 'horizontal' }, item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	unsetUnderline(event, { builder, getSelectedItems, restoreSelection }) {
+	unsetUnderline(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
@@ -403,15 +397,13 @@ export default class TextPlugin extends PluginPlugin {
 				builder.replace(item, new Text(omit(item.attributes, 'decoration'), item.content))
 			}
 		})
-		restoreSelection()
 	}
 
-	setUnderline(event, { builder, getSelectedItems, restoreSelection }) {
+	setUnderline(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
 				builder.replace(item, new Text({ ...item.attributes, decoration: 'underlined' }, item.content))
 			}
 		})
-		restoreSelection()
 	}
 }

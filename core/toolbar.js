@@ -37,11 +37,13 @@ export default class Toolbar {
 		this.builder = core.builder
 		this.selection = core.selection
 		this.timeTravel = core.timeTravel
+		this.editing = core.editing
 		this.plugins = core.plugins
 		this.icons = core.icons
 		this.focusedNodes = []
 		this.lastFocusedRange = false
 		this.previousSelection = null
+		this.nextControlsToRender = null
 
 		this.tooltip = createElement('div', {
 			'class': this.css.containerHidden
@@ -264,10 +266,13 @@ export default class Toolbar {
 		}
 	}
 
-	renderControls(controls) {
+	renderControls(rawControls) {
 		this.emptyTooltip()
 
-		controls.forEach((groupControls) => {
+		const controlsToRender = this.nextControlsToRender ? this.nextControlsToRender : rawControls
+
+		this.nextControlsToRender = null
+		controlsToRender.forEach((groupControls) => {
 			const group = createElement(
 				'div',
 				{
@@ -285,7 +290,8 @@ export default class Toolbar {
 
 	controlHandler(action, event) {
 		this.timeTravel.preservePreviousSelection()
-		action(event, {
+
+		const controls = action(event, {
 			builder: this.builder,
 			anchorContainer: this.selection.anchorContainer,
 			focusContainer: this.selection.focusContainer,
@@ -294,15 +300,22 @@ export default class Toolbar {
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems
 		})
-		this.timeTravel.commit()
+
+		if (controls && controls.length) {
+			this.nextControlsToRender = controls
+			this.restoreSelection()
+		} else {
+			this.restoreSelection()
+			this.editing.update()
+		}
 	}
 
 	restoreSelection() {
 		if (this.previousSelection !== null) {
 			this.lastFocusedRange = false
 			this.focusedNodes = []
+			this.selection.forceUpdate = true
 			this.selection.setSelectionByIndexes(this.previousSelection)
-			this.updateTooltip()
 		}
 	}
 

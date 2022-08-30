@@ -172,7 +172,7 @@ export default class LinkPlugin extends PluginPlugin {
 		])
 	}
 
-	removeLinks(event, { builder, getSelectedItems, restoreSelection }) {
+	removeLinks(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
 
 		selectedItems.forEach((item) => {
@@ -181,10 +181,9 @@ export default class LinkPlugin extends PluginPlugin {
 				builder.cut(item)
 			}
 		})
-		restoreSelection()
 	}
 
-	setLink(event, { builder, getSelectedItems, restoreSelection }) {
+	setLink(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
 		const url = event.target.value
 		let link
@@ -196,14 +195,12 @@ export default class LinkPlugin extends PluginPlugin {
 				builder.push(link, item)
 			}
 		})
-		restoreSelection()
 	}
 
 	removeLink(link) {
-		return function (event, { builder, restoreSelection }) {
+		return function (event, { builder }) {
 			builder.connect(link, link.first)
 			builder.cut(link)
-			restoreSelection()
 		}
 	}
 }

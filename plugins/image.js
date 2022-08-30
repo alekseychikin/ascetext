@@ -301,38 +301,34 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	toggleFloatLeft(image) {
-		return (event, { restoreSelection }) => {
+		return () => {
 			image.attributes.size = ''
 			image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
 			image.element.className = image.getClassName()
-			restoreSelection()
 		}
 	}
 
 	toggleFloatRight(image) {
-		return (event, { restoreSelection }) => {
+		return () => {
 			image.attributes.size = ''
 			image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
 			image.element.className = image.getClassName()
-			restoreSelection()
 		}
 	}
 
 	toggleSizeWide(image) {
-		return (event, { restoreSelection }) => {
+		return () => {
 			image.attributes.float = 'none'
 			image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
 			image.element.className = image.getClassName()
-			restoreSelection()
 		}
 	}
 
 	toggleSizeBanner(image) {
-		return (event, { restoreSelection }) => {
+		return () => {
 			image.attributes.float = 'none'
 			image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
 			image.element.className = image.getClassName()
-			restoreSelection()
 		}
 	}
 
@@ -350,7 +346,7 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	insertImage(container) {
-		return async (event, { builder, restoreSelection }) => {
+		return async (event, { builder }) => {
 			const { files } = event.target
 
 			if (files.length) {
@@ -363,7 +359,6 @@ export default class ImagePlugin extends PluginPlugin {
 				builder.append(caption, builder.create('breakLine'))
 				builder.append(image, caption)
 				builder.replace(container, image)
-				restoreSelection()
 			}
 		}
 	}

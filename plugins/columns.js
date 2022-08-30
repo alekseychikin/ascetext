@@ -236,7 +236,7 @@ export default class ColumnsPlugin extends PluginPlugin {
 		return []
 	}
 
-	setColumns(event, { builder, anchorContainer, restoreSelection }) {
+	setColumns(event, { builder, anchorContainer }) {
 		const columns = new Columns([ 'image', 'data' ], this.params)
 		const columnImage = new ColumnImage('', this.params)
 		const columnData = new ColumnData()
@@ -245,6 +245,5 @@ export default class ColumnsPlugin extends PluginPlugin {
 		columns.append(columnImage)
 		columns.append(columnData)
 		builder.replace(anchorContainer, columns)
-		restoreSelection()
 	}
 }
