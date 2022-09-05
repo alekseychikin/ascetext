@@ -315,4 +315,17 @@ export default class Node {
 	stringify() {
 		return ''
 	}
+
+	json(children) {
+		if (children) {
+			return {
+				type: this.type,
+				body: children
+			}
+		}
+
+		return {
+			type: this.type
+		}
+	}
 }

@@ -68,7 +68,7 @@ export default class RichEditor {
 		) || this.builder.createBlock()
 		this.builder.append(this.model, children)
 
-		this.timeTravel.begin()
+		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
 	}
 
@@ -89,6 +89,23 @@ export default class RichEditor {
 		return content
 	}
 
+	json(first) {
+		const content = []
+		let children = []
+		let current = first
+
+		while (current) {
+			if (current.first) {
+				children = this.json(current.first)
+			}
+
+			content.push(current.json(children))
+			current = current.next
+		}
+
+		return content
+	}
+
 	onChange(callback) {
 		this.onChangeHandlers.push(callback)
 
@@ -102,10 +119,41 @@ export default class RichEditor {
 		this.onChangeHandlers.forEach((handler) => handler())
 	}
 
+	setContent(content) {
+		this.model = new Root(this, this.node)
+		this.node.innerHTML = ''
+
+		const container = document.createElement('div')
+
+		container.innerHTML = content
+
+		const children = this.builder.parse(
+			container.firstChild,
+			container.lastChild
+		) || this.builder.createBlock()
+		this.builder.append(this.model, children)
+		this.timeTravel.reset()
+	}
+
 	getContent() {
 		this.editing.save()
 
 		return this.stringify(this.model.first)
+	}
+
+	setJson(data) {
+		this.model = new Root(this, this.node)
+
+		const children = this.builder.parseJson(data) || this.builder.createBlock()
+		this.builder.append(this.model, children)
+
+		this.timeTravel.reset()
+	}
+
+	getJson() {
+		this.editing.save()
+
+		return this.json(this.model.first)
 	}
 
 	destroy() {

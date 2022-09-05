@@ -124,7 +124,6 @@ export class Image extends Widget {
 			classNames.push('image--with-caption')
 		}
 
-		console.log(this)
 		if (this.attributes.size.length) {
 			classNames.push(`image--size-${this.attributes.size}`)
 		}
@@ -134,6 +133,21 @@ export class Image extends Widget {
 		}
 
 		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.attributes.src + '" />' + children + '</figure>'
+	}
+
+	json(children) {
+		if (children) {
+			return {
+				type: this.type,
+				src: this.attributes.src,
+				figcaption: children[0]
+			}
+		}
+
+		return {
+			type: this.type,
+			src: this.attributes.src
+		}
 	}
 }
 
@@ -159,6 +173,15 @@ export class ImageCaption extends Container {
 		}
 
 		return ''
+	}
+
+	json(children) {
+		console.log(this)
+		if (children) {
+			return children
+		}
+
+		return null
 	}
 }
 
@@ -252,6 +275,24 @@ export default class ImagePlugin extends PluginPlugin {
 			}
 
 			builder.append(image, caption)
+
+			return image
+		}
+
+		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'image') {
+			const image = new Image({ src: element.src })
+
+			if (element.caption) {
+				const caption = new ImageCaption()
+				const children = builder.parseJson(element.caption) || builder.create('breakLine')
+
+				builder.append(caption, children)
+				builder.append(image, caption)
+			}
 
 			return image
 		}

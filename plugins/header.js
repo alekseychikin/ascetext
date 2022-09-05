@@ -12,6 +12,14 @@ export class Header extends Container {
 	stringify(children) {
 		return '<h' + this.attributes.level + '>' + children + '</h' + this.attributes.level + '>'
 	}
+
+	json(children) {
+		return {
+			type: this.type,
+			level: this.attributes.level,
+			body: children
+		}
+	}
 }
 
 export default class HeaderPlugin extends PluginPlugin {
@@ -59,6 +67,20 @@ export default class HeaderPlugin extends PluginPlugin {
 
 			context.parsingContainer = false
 
+			return node
+		}
+
+		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'header') {
+			const node = builder.create('header', { level: element.level })
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(node, children)
+			}
 			return node
 		}
 

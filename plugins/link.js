@@ -53,6 +53,14 @@ export class Link extends InlineWidget {
 	stringify(children) {
 		return '<a href="' + this.attributes.url + '">' + children + '</a>'
 	}
+
+	json(children) {
+		return {
+			type: this.type,
+			url: this.attributes.url,
+			body: children
+		}
+	}
 }
 
 export default class LinkPlugin extends PluginPlugin {
@@ -98,6 +106,19 @@ export default class LinkPlugin extends PluginPlugin {
 		}
 
 		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'link') {
+			const link = builder.create('link', element.url)
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(link, children)
+			}
+
+			return link
+		}
 	}
 
 	getSelectControls(focusedNodes, isRange) {

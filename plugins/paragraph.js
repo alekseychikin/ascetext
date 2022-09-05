@@ -46,6 +46,21 @@ export default class ParagraphPlugin extends PluginPlugin {
 		return false
 	}
 
+	parseJson(element, builder) {
+		if (element.type === 'paragraph') {
+			const node = builder.create('paragraph')
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(node, children)
+			}
+
+			return node
+		}
+
+		return false
+	}
+
 	setParagraph(event, { builder, anchorContainer }) {
 		if (anchorContainer.type !== 'paragraph') {
 			const paragraph = new Paragraph()

@@ -6,7 +6,7 @@ import omit from '../utils/omit'
 const mapModifierToTag = {
 	bold: 'strong',
 	italic: 'em',
-	strike: 'strike',
+	strike: 's',
 	underlined: 'u'
 }
 
@@ -16,25 +16,7 @@ export class Text extends Node {
 
 		this.content = content
 
-		const modifiers = []
-
-		if (attributes.weight) {
-			modifiers.push('bold')
-		}
-
-		if (attributes.style) {
-			modifiers.push('italic')
-		}
-
-		if (attributes.decoration) {
-			modifiers.push('underlined')
-		}
-
-		if (attributes.strike) {
-			modifiers.push('strike')
-		}
-
-		this.setElement(this.create(modifiers))
+		this.setElement(this.create(this.generateModifiers()))
 	}
 
 	create(modifiers) {
@@ -49,6 +31,28 @@ export class Text extends Node {
 		}
 
 		return document.createTextNode(this.content)
+	}
+
+	generateModifiers() {
+		const modifiers = []
+
+		if (this.attributes.weight) {
+			modifiers.push('bold')
+		}
+
+		if (this.attributes.style) {
+			modifiers.push('italic')
+		}
+
+		if (this.attributes.decoration) {
+			modifiers.push('underlined')
+		}
+
+		if (this.attributes.strike) {
+			modifiers.push('strike')
+		}
+
+		return modifiers
 	}
 
 	normalize(element) {
@@ -94,43 +98,25 @@ export class Text extends Node {
 	}
 
 	stringify() {
-		let content = ''
+		return this.stringifyWithModifiers(this.generateModifiers())
+	}
 
-		if (this.attributes.decoration === 'strike') {
-			content += '<strike>'
+	stringifyWithModifiers(modifiers) {
+		let modifier
+
+		if (modifier = modifiers.shift()) {
+			return '<' + mapModifierToTag[modifier] + '>' + this.stringifyWithModifiers(modifiers) + '</' + mapModifierToTag[modifier] + '>'
 		}
 
-		if (this.attributes.decoration === 'underlined') {
-			content += '<u>'
+		return this.content.replace(/\u00A0/, '&nbsp;')
+	}
+
+	json() {
+		return {
+			type: this.type,
+			modifiers: this.generateModifiers(),
+			content: this.content
 		}
-
-		if (this.attributes.weight === 'bold') {
-			content += '<strong>'
-		}
-
-		if (this.attributes.style === 'italic') {
-			content += '<em>'
-		}
-
-		content += this.content
-
-		if (this.attributes.style === 'italic') {
-			content += '</em>'
-		}
-
-		if (this.attributes.weight === 'bold') {
-			content += '</strong>'
-		}
-
-		if (this.attributes.decoration === 'underlined') {
-			content += '</u>'
-		}
-
-		if (this.attributes.decoration === 'strike') {
-			content += '</strike>'
-		}
-
-		return content.replace(/\u00A0/, '&nbsp;')
 	}
 }
 
@@ -212,7 +198,7 @@ export default class TextPlugin extends PluginPlugin {
 			return model
 		}
 
-		if (element.nodeName.toLowerCase() === 'strike') {
+		if (element.nodeName.toLowerCase() === 's') {
 			context.strike = 'horizontal'
 
 			const model = builder.parse(element.firstChild, element.lastChild, context)
@@ -235,6 +221,32 @@ export default class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'span') {
 			return builder.parse(element.firstChild, element.lastChild, context)
 		}
+	}
+
+	parseJson(element) {
+		if (element.type === 'text') {
+			const attributes = {}
+
+			if (element.modifiers.includes('bold')) {
+				attributes.weight = 'bold'
+			}
+
+			if (element.modifiers.includes('italic')) {
+				attributes.style = 'italic'
+			}
+
+			if (element.modifiers.includes('underlined')) {
+				attributes.decoration = 'underlined'
+			}
+
+			if (element.modifiers.includes('strike')) {
+				attributes.strike = 'horizontal'
+			}
+
+			return new Text(attributes, element.content)
+		}
+
+		return false
 	}
 
 	getSelectControls(focusedNodes, isRange) {

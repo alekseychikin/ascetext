@@ -424,4 +424,33 @@ export default class Builder {
 			this.connect(previous, current)
 		}
 	}
+
+	parseJson(body) {
+		let first
+		let previous
+		let current
+
+		body.forEach((element) => {
+			// eslint-disable-next-line no-loop-func
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parseJson(element, this)
+			}, false)
+
+			if (current) {
+				if (!first) {
+					first = current
+				} else {
+					this.connect(previous, current)
+				}
+
+				previous = current.getLastNode()
+			} else {
+				console.log('not matched', element)
+			}
+		})
+
+		return first
+	}
 }

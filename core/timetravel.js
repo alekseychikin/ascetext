@@ -22,7 +22,9 @@ export default class TimeTravel {
 		this.selection.onUpdate(this.onSelectionChange)
 	}
 
-	begin() {
+	reset() {
+		this.timeline = []
+		this.currentBunch = []
 		this.isLockPushChange = false
 	}
 

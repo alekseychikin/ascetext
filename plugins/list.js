@@ -27,6 +27,14 @@ export class List extends Group {
 
 		return '<' + tagName + '>' + children + '</' + tagName + '>'
 	}
+
+	json(children) {
+		return {
+			type: this.type,
+			decor: this.attributes.decor,
+			body: children
+		}
+	}
 }
 
 export class ListItemContent extends Container {
@@ -351,6 +359,43 @@ export default class ListPlugin extends PluginPlugin {
 			context.parsingContainer = false
 
 			return listItem
+		}
+
+		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'list') {
+			const list = builder.create('list', { decor: element.decor })
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(list, children)
+			}
+
+			return list
+		}
+
+		if (element.type === 'list-item') {
+			const item = builder.create('list', 'item')
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(item, children)
+			}
+
+			return item
+		}
+
+		if (element.type === 'list-item-content') {
+			const content = builder.create('list', 'content')
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(content, children)
+			}
+
+			return content
 		}
 
 		return false
