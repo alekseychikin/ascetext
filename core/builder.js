@@ -32,17 +32,16 @@ export default class Builder {
 		return firstLevelNode.split(offset - container.getOffset(firstLevelNode.element), this)
 	}
 
-	append(node, target) {
-		const last = target.getNodeUntil()
+	push(node, target) {
+		this.append(node, target, target)
+	}
+
+	append(node, target, last) {
 		let current = target
 
-		// console.log('append', node, target)
+		last = last || target.getNodeUntil()
 
-		if (node.isContainer && node.isEmpty && node.first) {
-			this.cut(node.first)
-		}
-
-		this.cutUntil(target)
+		this.cutUntil(target, last)
 
 		this.core.onNodeChange({
 			type: operationTypes.APPEND,
@@ -50,8 +49,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (!node.first) {
 			node.first = target
@@ -67,37 +64,6 @@ export default class Builder {
 		}
 
 		node.last = last
-	}
-
-	push(node, target) {
-		// console.log('push', node, target)
-
-		if (node.isContainer && node.isEmpty && node.first) {
-			this.cut(node.first)
-		}
-
-		this.cut(target)
-
-		this.core.onNodeChange({
-			type: operationTypes.APPEND,
-			container: node,
-			target,
-			last: target
-		})
-
-		// console.groupEnd()
-
-		if (node.last) {
-			node.last.next = target
-			target.previous = node.last
-		} else {
-			node.first = target
-		}
-
-		node.last = target
-		target.parent = node
-
-		node.element.appendChild(target.element)
 	}
 
 	preconnect(node, target) {
