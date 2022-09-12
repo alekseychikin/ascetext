@@ -201,12 +201,8 @@ export default class Editing {
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		})
 
-		for (index = containersForRemove.length - 1; index >=0; index--) {
-			if (containersForRemove[index].parent.isSection) {
-				this.core.builder.cut(containersForRemove[index])
-			} else if (typeof containersForRemove[index].delete === 'function') {
-				containersForRemove[index].delete({ builder: this.core.builder })
-			}
+		for (index = containersForRemove.length - 1; index >= 0; index--) {
+			this.core.builder.cut(containersForRemove[index])
 		}
 
 		if (firstContainer && firstContainer.isContainer) {
@@ -462,6 +458,7 @@ export default class Editing {
 		console.log(paste)
 
 		doc.innerHTML = paste
+		// debugger
 
 		const result = this.core.builder.parse(doc.firstChild, doc.lastChild)
 

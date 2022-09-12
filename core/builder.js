@@ -10,6 +10,7 @@ export default class Builder {
 
 		this.parse = this.parse.bind(this)
 		this.connectWithNormalize = this.connectWithNormalize.bind(this)
+		this.appendHandler = this.appendHandler.bind(this)
 	}
 
 	create(name, ...params) {
@@ -37,6 +38,14 @@ export default class Builder {
 	}
 
 	append(node, target, last) {
+		if (typeof node.append === 'function') {
+			node.append(target, last, { builder: this, appendDefault: this.appendHandler })
+		} else {
+			this.appendHandler(node, target, last)
+		}
+	}
+
+	appendHandler(node, target, last) {
 		let current = target
 
 		last = last || target.getNodeUntil()
@@ -151,18 +160,18 @@ export default class Builder {
 
 		node.next = target
 		target.previous = node
-
-		if (target.type === 'breakLine' && node.type !== 'breakLine' && !target.next) {
-			this.connect(target, this.create('breakLine'))
-		}
-
-		if (node.type === 'breakLine' && node.previous && node.previous.type === 'breakLine') {
-			this.cut(node)
-		}
 	}
 
 	cut(node) {
-		return this.cutUntil(node, node)
+		if (typeof node.cut === 'function') {
+			node.cut({ builder: this })
+		} else if (node.isContainer || node.isWidget) {
+			if (node.parent.isSection) {
+				this.cutUntil(node, node)
+			}
+		} else {
+			this.cutUntil(node, node)
+		}
 	}
 
 	cutUntil(node, until) {
@@ -327,7 +336,7 @@ export default class Builder {
 
 			if (currentElement === lastElement) {
 				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-					this.cutUntil(previous.previous)
+					this.cut(previous)
 				}
 
 				break

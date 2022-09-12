@@ -44,7 +44,7 @@ export class ListItemContent extends Container {
 		this.setElement(createElement('div'))
 	}
 
-	delete({ builder }) {
+	cut({ builder }) {
 		const list = this.parent.parent
 
 		if (this.next && this.next.type === 'list') {
@@ -129,11 +129,7 @@ export class ListItemContent extends Container {
 					builder.append(anchorContainer, nextSelectableNode.first)
 				}
 
-				if (nextSelectableNode.parent.isSection) {
-					builder.cut(nextSelectableNode)
-				} else if (typeof nextSelectableNode.delete === 'function') {
-					nextSelectableNode.delete({ builder })
-				}
+				builder.cut(nextSelectableNode)
 
 				setSelection(anchorContainer, offset)
 			} else if (nextSelectableNode.isWidget) {

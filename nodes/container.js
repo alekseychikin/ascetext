@@ -22,6 +22,14 @@ export default class Container extends Node {
 		return !this.first || this.first === this.last && this.first.type === 'breakLine'
 	}
 
+	append(target, last, { builder, appendDefault }) {
+		if (this.isEmpty && this.first) {
+			builder.cut(this.first)
+		}
+
+		appendDefault(this, target, last)
+	}
+
 	onMouseDown() {
 		this.selection.focusedControl = true
 	}
@@ -37,11 +45,18 @@ export default class Container extends Node {
 			anchorAtFirstPositionInContainer,
 		}
 	) {
-		// debugger
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			builder.insert(this, builder.create('breakLine'), anchorOffset)
+			if (focusAtLastPositionInContainer && this.last.type !== 'breakLine') {
+				const br = builder.create('breakLine')
+
+				builder.connect(br, builder.create('breakLine'))
+				builder.append(this, br)
+			} else {
+				builder.insert(this, builder.create('breakLine'), anchorOffset)
+			}
+
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
 			let newBlock
@@ -164,11 +179,7 @@ export default class Container extends Node {
 					builder.append(container, nextSelectableNode.first)
 				}
 
-				if (nextSelectableNode.parent.isSection) {
-					builder.cut(nextSelectableNode)
-				} else if (typeof nextSelectableNode.delete === 'function') {
-					nextSelectableNode.delete({ builder })
-				}
+				builder.cut(nextSelectableNode)
 
 				setSelection(container, offset)
 			} else if (nextSelectableNode.isWidget) {
