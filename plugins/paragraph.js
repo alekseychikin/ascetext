@@ -34,7 +34,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 
 			context.parsingContainer = true
 
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
 

@@ -98,7 +98,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 			const node = new Link({ url })
 
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
 

@@ -295,8 +295,9 @@ export default class Builder {
 		}
 	}
 
-	parse(firstElement, lastElement, context = { selection: this.selection }) {
-		let currentElement = firstElement
+	parse(element, context = { selection: this.selection }) {
+		const lastElement = element.lastChild
+		let currentElement = element.firstChild
 		let nextElement
 		let first
 		let previous
@@ -316,7 +317,7 @@ export default class Builder {
 				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
 				currentElement.childNodes.length
 			) {
-				current = this.parse(currentElement.firstChild, currentElement.lastChild, context)
+				current = this.parse(currentElement, context)
 			}
 
 			nextElement = currentElement.nextSibling

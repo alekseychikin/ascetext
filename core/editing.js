@@ -376,7 +376,7 @@ export default class Editing {
 
 		while (container = this.updatingContainers.pop()) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element.firstChild, container.element.lastChild, {
+				const content = this.core.builder.parse(container.element, {
 					parsingContainer: true
 				}) || this.core.builder.create('breakLine')
 
@@ -460,7 +460,7 @@ export default class Editing {
 		doc.innerHTML = paste
 		// debugger
 
-		const result = this.core.builder.parse(doc.firstChild, doc.lastChild)
+		const result = this.core.builder.parse(doc)
 
 		this.handleRemoveRange()
 		this.core.timeTravel.preservePreviousSelection()

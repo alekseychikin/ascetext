@@ -265,7 +265,7 @@ export default class ImagePlugin extends PluginPlugin {
 			const imgElement = element.querySelector('img')
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
-				? builder.parse(captionElement.firstChild, captionElement.lastChild, context)
+				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
 			const image = new Image({ src: imgElement.src, size, float})
 			const caption = new ImageCaption()

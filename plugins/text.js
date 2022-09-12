@@ -181,7 +181,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'em') {
 			context.style = 'italic'
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.style
 
@@ -191,7 +191,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'strong') {
 			context.weight = 'bold'
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.weight
 
@@ -201,7 +201,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 's') {
 			context.strike = 'horizontal'
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.strike
 
@@ -211,7 +211,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (element.nodeName.toLowerCase() === 'u') {
 			context.decoration = 'underlined'
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.decoration
 
@@ -219,7 +219,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'span') {
-			return builder.parse(element.firstChild, element.lastChild, context)
+			return builder.parse(element, context)
 		}
 	}
 

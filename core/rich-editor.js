@@ -62,10 +62,7 @@ export default class RichEditor {
 			container.appendChild(node.childNodes[0])
 		}
 
-		const children = this.builder.parse(
-			container.firstChild,
-			container.lastChild
-		) || this.builder.createBlock()
+		const children = this.builder.parse(container) || this.builder.createBlock()
 		this.builder.append(this.model, children)
 
 		this.timeTravel.reset()
@@ -127,10 +124,7 @@ export default class RichEditor {
 
 		container.innerHTML = content
 
-		const children = this.builder.parse(
-			container.firstChild,
-			container.lastChild
-		) || this.builder.createBlock()
+		const children = this.builder.parse(container) || this.builder.createBlock()
 		this.builder.append(this.model, children)
 		this.timeTravel.reset()
 	}

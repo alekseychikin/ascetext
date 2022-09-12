@@ -205,11 +205,7 @@ export default class ColumnsPlugin extends PluginPlugin {
 
 					builder.append(columns, columnImage)
 				} else if (
-					children = builder.parse(
-						columnElement.firstChild,
-						columnElement.lastChild,
-						context
-					)
+					children = builder.parse(columnElement, context)
 				) {
 					const columnData = new ColumnData()
 
