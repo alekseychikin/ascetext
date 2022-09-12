@@ -302,7 +302,7 @@ export default class Builder {
 		let first
 		let previous
 		let current
-		let value
+		let normalized
 
 		while (currentElement) {
 			// eslint-disable-next-line no-loop-func
@@ -311,6 +311,7 @@ export default class Builder {
 
 				return this.core.plugins[pluginName].parse(currentElement, this, context)
 			}, false)
+			nextElement = currentElement.nextSibling
 
 			if (
 				!current &&
@@ -320,13 +321,24 @@ export default class Builder {
 				current = this.parse(currentElement, context)
 			}
 
-			nextElement = currentElement.nextSibling
-
 			if (current) {
-				value = this.handleParseNext(first, previous, current)
+				if (current.isDeleteEmpty && !current.first) {
+					current = previous
+				} else {
+					if (!first) {
+						first = current
+					}
 
-				previous = value.current
-				first = value.first
+					if (previous && (normalized = this.connectWithNormalize(previous, current))) {
+						if (first === previous) {
+							first = normalized
+						}
+
+						current = normalized
+					}
+				}
+
+				previous = current.getLastNode()
 			} else {
 				console.log('not matched', currentElement)
 
@@ -349,33 +361,12 @@ export default class Builder {
 		return first
 	}
 
-	handleParseNext(first, previous, current) {
-		if (current.isDeleteEmpty && !current.first) {
-			return { first, current: previous }
-		}
-
-		if (!first) {
-			first = current
-		}
-
-		if (previous) {
-			this.connectWithNormalize(previous, current, (normalized) => {
-				if (first === previous) {
-					first = normalized
-				}
-
-				current = normalized
-			})
-		}
-
-		return { first, current: current.getLastNode() }
-	}
-
-	connectWithNormalize(previous, current, callback) {
+	connectWithNormalize(previous, current) {
 		let normalized
 
 		if (
-			previous.type === current.type && previous.normalize &&
+			previous.type === current.type &&
+			typeof previous.normalize === 'function' &&
 			(normalized = previous.normalize(current, this))
 		) {
 			if (current.next) {
@@ -384,21 +375,26 @@ export default class Builder {
 
 			this.replaceUntil(previous, normalized)
 
-			if (typeof (callback) === 'function') {
-				callback(normalized)
-			}
-		} else if ((previous.isContainer || previous.isWidget) && (!current.isContainer && !current.isWidget && !current.isGroup)) {
-			const block = this.createBlock()
+			return normalized
 
-			this.append(block, current)
-			this.connect(previous, block)
+		// это уникальное поведение внутри секции, чтобы нельзя было просто вставить текст без контейнера
+		// у секции должен быть свой append и там внутриреализована эта логика
+		// но не здесь
 
-			if (typeof (callback) === 'function') {
-				callback(block)
-			}
-		} else {
-			this.connect(previous, current)
+		// } else if ((previous.isContainer || previous.isWidget) && (!current.isContainer && !current.isWidget && !current.isGroup)) {
+		// 	const block = this.createBlock()
+
+		// 	this.append(block, current)
+		// 	this.connect(previous, block)
+
+		// 	if (typeof (callback) === 'function') {
+		// 		callback(block)
+		// 	}
 		}
+
+		this.connect(previous, current)
+
+		return false
 	}
 
 	parseJson(body) {
