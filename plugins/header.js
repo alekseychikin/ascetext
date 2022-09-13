@@ -59,13 +59,9 @@ export default class HeaderPlugin extends PluginPlugin {
 			const node = builder.create('header', { level: Number(matches.groups.level) })
 			let children
 
-			context.parsingContainer = true
-
 			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
-
-			context.parsingContainer = false
 
 			return node
 		}

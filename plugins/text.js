@@ -149,9 +149,6 @@ export default class TextPlugin extends PluginPlugin {
 		return new Text(params, text)
 	}
 
-	// Нужно придумать нормальные правила как парсить текст
-	// Нужно понять в каких случаях нужно удалять пробелы, а в каких оставлять
-	// В каких случаях нужно множество пробелов схлопывать в один
 	parse(element, builder, context) {
 		if (!isTextElement(element) && (isHtmlElement(element) && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
 			return false
@@ -168,12 +165,12 @@ export default class TextPlugin extends PluginPlugin {
 			}
 
 			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && isElementBr(element.nextSibling)) {
-				content = content.replace(/[^\S\u00A0]+$/, '')//.replace(/\s$/, nbsCode)
+				content = content.replace(/[^\S\u00A0]+$/, '')
 			}
 
 			content = content.replace(/[^\S\u00A0]+/g, ' ')
 
-			if (!content.length || !context.parsingContainer && content.match(/^[^\S\u00A0]+$/)) {
+			if (!content.length || content.match(/^[^\S\u00A0]+$/)) {
 				return false
 			}
 

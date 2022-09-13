@@ -33,13 +33,9 @@ export default class QuotePlugin extends PluginPlugin {
 			const node = builder.create('quote')
 			let children
 
-			context.parsingContainer = true
-
 			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
-
-			context.parsingContainer = false
 
 			return node
 		}

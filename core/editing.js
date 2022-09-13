@@ -376,9 +376,7 @@ export default class Editing {
 
 		while (container = this.updatingContainers.pop()) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element, {
-					parsingContainer: true
-				}) || this.core.builder.create('breakLine')
+				const content = this.core.builder.parse(container.element) || this.core.builder.create('breakLine')
 
 				if (container.first) {
 					this.handleTextInRemoveNodes(container.first)

@@ -340,8 +340,6 @@ export default class ListPlugin extends PluginPlugin {
 			const content = builder.create('list', 'content')
 			let children
 
-			context.parsingContainer = true
-
 			if (children = builder.parse(element, context)) {
 				const last = children.getLastNode()
 
@@ -352,8 +350,6 @@ export default class ListPlugin extends PluginPlugin {
 					builder.connect(content, last)
 				}
 			}
-
-			context.parsingContainer = false
 
 			return listItem
 		}
