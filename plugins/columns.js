@@ -3,6 +3,7 @@ import Section from '../nodes/section'
 import Widget from '../nodes/widget'
 import ControlButton from '../controls/button'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Columns extends Widget {
 	constructor(types, params) {
@@ -187,9 +188,9 @@ export default class ColumnsPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'div' && element.className === 'columns') {
+		if (isHtmlElement(element) && element.matches('div.columns')) {
 			const columnElements = Array.from(element.childNodes).filter((child) =>
-				child.nodeType === 1 && child.nodeName.toLowerCase() === 'div' && child.classList.contains('column')
+				isHtmlElement(child) && child.matches('div.column')
 			)
 			const types = columnElements.map((element) =>
 				element.classList.contains('column--image') ? 'image' : 'data'

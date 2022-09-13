@@ -1,6 +1,7 @@
 import PluginPlugin from './plugin'
 import Container from '../nodes/container'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Quote extends Container {
 	constructor() {
@@ -28,7 +29,7 @@ export default class QuotePlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'blockquote') {
+		if (isHtmlElement(element) && element.matches('blockquote')) {
 			const node = builder.create('quote')
 			let children
 

@@ -3,6 +3,7 @@ import Container from '../nodes/container'
 import PluginPlugin from './plugin'
 import createElement from '../utils/create-element'
 import Toolbar from '../core/toolbar'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
 	constructor(attributes) {
@@ -235,16 +236,8 @@ export default class ImagePlugin extends PluginPlugin {
 		return new Image(params)
 	}
 
-	match(element) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
-			return true
-		}
-
-		return false
-	}
-
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
+		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
 			let float = 'none'

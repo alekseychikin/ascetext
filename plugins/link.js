@@ -1,6 +1,7 @@
 import PluginPlugin from './plugin'
 import InlineWidget from '../nodes/inline-widget'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Link extends InlineWidget {
 	constructor(attributes) {
@@ -92,7 +93,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'a') {
+		if (isHtmlElement(element) && element.matches('a')) {
 			const url = element.getAttribute('href')
 			let children
 

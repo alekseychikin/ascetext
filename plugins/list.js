@@ -2,6 +2,7 @@ import PluginPlugin from './plugin'
 import Container from '../nodes/container'
 import Group from '../nodes/group'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class List extends Group {
 	constructor(attributes = { decor: 'marker' }) {
@@ -322,7 +323,7 @@ export default class ListPlugin extends PluginPlugin {
 	parse(element, builder, context) {
 		const nodeName = element.nodeName.toLowerCase()
 
-		if (element.nodeType === 1 && (nodeName === 'ul' || nodeName === 'ol')) {
+		if (isHtmlElement(element) && (nodeName === 'ul' || nodeName === 'ol')) {
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
 			const list = builder.create('list', { decor })
 			let children
@@ -334,7 +335,7 @@ export default class ListPlugin extends PluginPlugin {
 			return list
 		}
 
-		if (element.nodeType === 1 && nodeName === 'li') {
+		if (isHtmlElement(element) && nodeName === 'li') {
 			const listItem = builder.create('list', 'item')
 			const content = builder.create('list', 'content')
 			let children

@@ -1,6 +1,8 @@
 import Node from '../nodes/node'
 import PluginPlugin from './plugin'
 import isElementBr from '../utils/is-element-br'
+import isTextElement from '../utils/is-text-element'
+import isHtmlElement from '../utils/is-html-element'
 import omit from '../utils/omit'
 
 const mapModifierToTag = {
@@ -151,11 +153,11 @@ export default class TextPlugin extends PluginPlugin {
 	// Нужно понять в каких случаях нужно удалять пробелы, а в каких оставлять
 	// В каких случаях нужно множество пробелов схлопывать в один
 	parse(element, builder, context) {
-		if (element.nodeType !== 3 && (element.nodeType === 1 && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
+		if (!isTextElement(element) && (isHtmlElement(element) && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
 			return false
 		}
 
-		if (element.nodeType === 3) {
+		if (isTextElement(element)) {
 			const { weight, style, decoration, strike } = context
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild

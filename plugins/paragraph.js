@@ -1,6 +1,7 @@
 import PluginPlugin from './plugin'
 import Container from '../nodes/container'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Paragraph extends Container {
 	constructor() {
@@ -28,7 +29,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
+		if (isHtmlElement(element) && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
 			const node = new Paragraph()
 			let children
 
