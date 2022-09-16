@@ -176,7 +176,6 @@ export class ImageCaption extends Container {
 	}
 
 	json(children) {
-		console.log(this)
 		if (children) {
 			return children
 		}

@@ -55,6 +55,7 @@ export default class RichEditor {
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
+		this.onChangeTimer = null
 
 		const container = document.createElement('div')
 
@@ -116,7 +117,11 @@ export default class RichEditor {
 
 	onNodeChange(changes) {
 		this.timeTravel.pushChange(changes)
-		this.onChangeHandlers.forEach((handler) => handler())
+
+		clearTimeout(this.onChangeTimer)
+		this.onChangeTimer = setTimeout(() => {
+			this.onChangeHandlers.forEach((handler) => handler())
+		}, 0)
 	}
 
 	setContent(content) {
