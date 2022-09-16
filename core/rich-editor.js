@@ -148,6 +148,7 @@ export default class RichEditor {
 
 	setJson(data) {
 		this.model = new Root(this, this.node)
+		this.node.innerHTML = ''
 
 		const children = this.builder.parseJson(data) || this.builder.createBlock()
 		this.builder.append(this.model, children)
