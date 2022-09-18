@@ -6,4 +6,8 @@ export default class InlineWidget extends WithControls {
 
 		this.isInlineWidget = true
 	}
+
+	accept(node) {
+		return node.isContainer
+	}
 }

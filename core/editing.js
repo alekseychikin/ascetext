@@ -456,40 +456,13 @@ export default class Editing {
 		console.log(paste)
 
 		doc.innerHTML = paste
-		// debugger
 
 		const result = this.core.builder.parse(doc)
 
 		this.handleRemoveRange()
 		this.core.timeTravel.preservePreviousSelection()
 
-		if (result.isContainer) {
-			const lastNode = result.getLastNode()
-
-			if (this.core.selection.anchorContainer.isEmpty) {
-				this.core.builder.replace(this.core.selection.anchorContainer, result)
-				this.core.selection.setSelection(lastNode, -1)
-			} else {
-				if (result.next) {
-					this.core.builder.connect(this.core.selection.anchorContainer, result.next)
-					this.core.builder.moveTail(this.core.selection.anchorContainer, lastNode, this.core.selection.anchorOffset)
-				}
-
-				this.core.builder.insert(
-					this.core.selection.anchorContainer,
-					result.first,
-					this.core.selection.anchorOffset
-				)
-			}
-		} else if (result.isWidget || result.isGroup) {
-			if (this.core.selection.anchorContainer.isEmpty) {
-				this.core.builder.replace(this.core.selection.anchorContainer, result)
-			} else {
-				this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
-			}
-		} else {
-			this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
-		}
+		this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 
 		this.core.timeTravel.commit()
 		event.preventDefault()

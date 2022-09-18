@@ -12,6 +12,10 @@ export class List extends Group {
 		this.setElement(createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul'))
 	}
 
+	accept(node) {
+		return node.isSection
+	}
+
 	normalize(element, builder) {
 		if (this.attributes.decor === element.attributes.decor) {
 			const list = new List(this.attributes)
@@ -38,11 +42,49 @@ export class List extends Group {
 	}
 }
 
+
+export class ListItem extends Group {
+	constructor() {
+		super('list-item')
+
+		this.setElement(createElement('li'))
+	}
+
+	append(target, last, { builder, appendDefault }) {
+		if (!this.first && target.type === 'list' && target.first && target.first.first) {
+			appendDefault(this, target.first.first)
+			builder.cut(target)
+		} else {
+			appendDefault(this, target, last)
+		}
+	}
+
+	accept(node) {
+		return node.type === 'list'
+	}
+
+	duplicate(builder) {
+		const duplicate = builder.create('list', 'item')
+
+		builder.connect(this, duplicate)
+
+		return duplicate
+	}
+
+	stringify(children) {
+		return '<li>' + children + '</li>'
+	}
+}
+
 export class ListItemContent extends Container {
 	constructor() {
 		super('list-item-content')
 
 		this.setElement(createElement('div'))
+	}
+
+	accept(node) {
+		return node.type === 'list-item'
 	}
 
 	cut({ builder }) {
@@ -217,26 +259,6 @@ export class ListItemContent extends Container {
 
 	stringify(children) {
 		return children
-	}
-}
-
-export class ListItem extends Group {
-	constructor() {
-		super('list-item')
-
-		this.setElement(createElement('li'))
-	}
-
-	duplicate(builder) {
-		const duplicate = builder.create('list', 'item')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
-	}
-
-	stringify(children) {
-		return '<li>' + children + '</li>'
 	}
 }
 

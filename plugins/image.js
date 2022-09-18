@@ -161,6 +161,10 @@ export class ImageCaption extends Container {
 		}))
 	}
 
+	accept(node) {
+		return node.type === 'image'
+	}
+
 	enterHandler(event, { builder, setSelection }) {
 		const emptyParagraph = builder.createBlock()
 

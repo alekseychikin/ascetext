@@ -79,8 +79,6 @@ export default class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
-		// console.log('preconnect', node, target)
-
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
@@ -89,8 +87,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -120,8 +116,6 @@ export default class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
-		// console.log('connect', node, target)
-
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
@@ -130,8 +124,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -166,7 +158,7 @@ export default class Builder {
 		if (typeof node.cut === 'function') {
 			node.cut({ builder: this })
 		} else if (node.isContainer || node.isWidget) {
-			if (node.parent.isSection) {
+			if (node.parent && node.parent.isSection) {
 				this.cutUntil(node, node)
 			}
 		} else {
@@ -273,18 +265,66 @@ export default class Builder {
 		// console.groupEnd()
 	}
 
-	insert(container, node, offset) {
-		const { head, tail } = this.split(container, offset)
-
-		if (head) {
-			this.connect(head, node)
-
-			return node
+	canAccept(container, current) {
+		if (current.accept(container)) {
+			return container
 		}
 
-		this.preconnect(tail, node)
+		if (container.parent) {
+			return this.canAccept(container.parent, current)
+		}
 
-		return tail
+		return false
+	}
+
+	insert(node, target, offset) {
+		let { head, tail } = this.split(node, offset)
+		let current = target
+		let next
+		let container = node
+		let duplicate
+
+		while (current) {
+			next = current.next
+
+			if (this.canAccept(container, current)) {
+				while (!current.accept(container)) {
+					if (tail) {
+						duplicate = container.duplicate(this)
+						this.append(duplicate, tail)
+					}
+
+					head = container
+					tail = head.next
+					container = container.parent
+				}
+
+				if (current.isContainer && node === head) {
+					this.append(head, current.first)
+					node = null
+				} else {
+					this.cut(current)
+
+					if (head) {
+						this.connect(head, current)
+					} else {
+						this.append(container, current)
+					}
+					head = current
+				}
+			} else {
+				console.log('can not accept', container, current)
+			}
+
+			if (current.next === tail && current.isContainer && tail.isContainer) {
+				this.preconnect(tail.first, current.first)
+				this.cut(current)
+
+				break
+			}
+
+			current = next
+		}
 	}
 
 	moveTail(container, target, offset) {
@@ -305,21 +345,19 @@ export default class Builder {
 		let normalized
 
 		while (currentElement) {
+			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+				currentElement = currentElement.nextSibling
+
+				continue
+			}
+
 			// eslint-disable-next-line no-loop-func
 			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
 				return this.core.plugins[pluginName].parse(currentElement, this, context)
-			}, false)
+			}, false) || this.parse(currentElement, context)
 			nextElement = currentElement.nextSibling
-
-			if (
-				!current &&
-				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
-				currentElement.childNodes.length
-			) {
-				current = this.parse(currentElement, context)
-			}
 
 			if (current) {
 				if (current.isDeleteEmpty && !current.first) {

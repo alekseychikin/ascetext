@@ -63,8 +63,8 @@ export default class RichEditor {
 		}
 
 		const children = this.builder.parse(container) || this.builder.createBlock()
-		this.builder.append(this.model, children)
 
+		this.builder.append(this.model, children)
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
 	}
@@ -139,8 +139,8 @@ export default class RichEditor {
 		this.model = new Root(this, this.node)
 
 		const children = this.builder.parseJson(data) || this.builder.createBlock()
-		this.builder.append(this.model, children)
 
+		this.builder.append(this.model, children)
 		this.timeTravel.reset()
 	}
 

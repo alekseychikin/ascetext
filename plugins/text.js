@@ -57,6 +57,10 @@ export class Text extends Node {
 		return modifiers
 	}
 
+	accept(node) {
+		return node.isContainer || node.isInlineWidget || node.isSection
+	}
+
 	normalize(element) {
 		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
 		let areEqualElements = true
@@ -150,7 +154,9 @@ export default class TextPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (!isTextElement(element) && (isHtmlElement(element) && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
+		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
+
+		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
 			return false
 		}
 
@@ -178,7 +184,9 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'em') {
-			context.style = 'italic'
+			if (this.params.allowModifiers.includes('italic')) {
+				context.style = 'italic'
+			}
 
 			const model = builder.parse(element, context)
 
@@ -188,7 +196,9 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'strong') {
-			context.weight = 'bold'
+			if (this.params.allowModifiers.includes('bold')) {
+				context.weight = 'bold'
+			}
 
 			const model = builder.parse(element, context)
 
@@ -198,7 +208,9 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 's') {
-			context.strike = 'horizontal'
+			if (this.params.allowModifiers.includes('horizontal')) {
+				context.strike = 'horizontal'
+			}
 
 			const model = builder.parse(element, context)
 
@@ -208,7 +220,9 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'u') {
-			context.decoration = 'underlined'
+			if (this.params.allowModifiers.includes('underlined')) {
+				context.decoration = 'underlined'
+			}
 
 			const model = builder.parse(element, context)
 
@@ -218,7 +232,38 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'span') {
-			return builder.parse(element, context)
+			console.log(element.style)
+			if (
+				(
+					element.style['font-weight'] === 'bold' ||
+					element.style['font-weight'] === '600' ||
+					element.style['font-weight'] === '500' ||
+					element.style['font-weight'] === '700'
+				) && this.params.allowModifiers.includes('bold')
+			) {
+				context.weight = 'bold'
+			}
+
+			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
+				context.style = 'italic'
+			}
+
+			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
+				context.strike = 'horizontal'
+			}
+
+			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
+				context.decoration = 'underline'
+			}
+
+			const result = builder.parse(element, context)
+
+			delete context.weight
+			delete context.style
+			delete context.strike
+			delete context.decoration
+
+			return result
 		}
 	}
 

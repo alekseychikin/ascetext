@@ -22,12 +22,21 @@ export default class Container extends Node {
 		return !this.first || this.first === this.last && this.first.type === 'breakLine'
 	}
 
+	accept(node) {
+		return node.isSection
+	}
+
 	append(target, last, { builder, appendDefault }) {
-		if (this.isEmpty && this.first) {
-			builder.cut(this.first)
+		if (target.isContainer) {
+			builder.append(this, target.first)
+		} else {
+			if (this.isEmpty && this.first) {
+				builder.cut(this.first)
+			}
+
+			appendDefault(this, target, last)
 		}
 
-		appendDefault(this, target, last)
 	}
 
 	onMouseDown() {

@@ -77,6 +77,10 @@ export default class Node {
 		mapElementToNode[this.id] = this
 	}
 
+	accept() {
+		return false
+	}
+
 	getNodeUntil(nodeUntil) {
 		let current = this
 
@@ -265,14 +269,12 @@ export default class Node {
 				tail: duplicate
 			}
 		} else if (head) {
-			// debugger
 			return {
 				head: this,
 				tail: this.next
 			}
 		}
 
-		// debugger
 		return {
 			head: null,
 			tail: this
