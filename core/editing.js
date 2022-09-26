@@ -44,7 +44,7 @@ export default class Editing {
 
 	onKeyDown(event) {
 		if (this.core.selection.focused) {
-			const undoRepeat = event.keyCode === zKey && event.metaKey
+			const undoRepeat = event.keyCode === zKey && (event.metaKey || event.ctrlKey)
 			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
 
@@ -227,12 +227,12 @@ export default class Editing {
 		let index = startIndex
 
 		for (; index < items.length; index++) {
-			if (items[index].isWidget || items[index].isContainer) {
+			if (items[index].isWidget || items[index].isContainer || items[index].isGroup) {
 				break
 			}
 
 			if (items[index].parent && (
-				items[index].parent.isWidget || items[index].parent.isContainer
+				items[index].parent.isWidget || items[index].parent.isContainer || items[index].parent.isGroup
 			)) {
 				until = items[index]
 			}
@@ -464,6 +464,7 @@ export default class Editing {
 
 		this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 
+		this.core.selection.restoreSelection()
 		this.core.timeTravel.commit()
 		event.preventDefault()
 	}
