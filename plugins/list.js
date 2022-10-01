@@ -17,6 +17,10 @@ export class List extends Group {
 	}
 
 	normalize(element, builder) {
+		if (element.type !== 'list') {
+			return false
+		}
+
 		if (this.attributes.decor === element.attributes.decor) {
 			const list = new List(this.attributes)
 

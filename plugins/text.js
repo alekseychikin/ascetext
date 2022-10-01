@@ -61,21 +61,41 @@ export class Text extends Node {
 		return node.isContainer || node.isInlineWidget || node.isSection
 	}
 
-	normalize(element) {
+	normalize(target, builder) {
+		if (target.isContainer) {
+			if (target.first && target.first.type === 'text' && this.isEqual(target.first)) {
+				return new Text(this.attributes, this.content + target.first.content)
+			}
+
+			const duplicate = new Text({ ...this.attributes }, this.content)
+
+			builder.connect(duplicate, target.first)
+
+			return duplicate
+		}
+
+		if (target.type !== 'text') {
+			return false
+		}
+
+		if (this.isEqual(target)) {
+			return new Text(this.attributes, this.content + target.content)
+		}
+
+		return false
+	}
+
+	isEqual(target) {
 		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
 		let areEqualElements = true
 
 		fields.forEach((field) => {
-			if (this.attributes[field] !== element.attributes[field]) {
+			if (this.attributes[field] !== target.attributes[field]) {
 				areEqualElements = false
 			}
 		})
 
-		if (areEqualElements) {
-			return new Text(this.attributes, this.content + element.content)
-		}
-
-		return false
+		return areEqualElements
 	}
 
 	split(position, builder) {
@@ -102,6 +122,14 @@ export class Text extends Node {
 			tail
 		}
 	}
+
+	// connect(target, { builder, connectDefault }) {
+	// 	if (target.isContainer) {
+	// 		builder.connect(this, target.first)
+	// 	} else {
+	// 		connectDefault(this, target)
+	// 	}
+	// }
 
 	stringify() {
 		return this.stringifyWithModifiers(this.generateModifiers())
@@ -166,11 +194,11 @@ export default class TextPlugin extends PluginPlugin {
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
 
-			if (element === firstChild || element.previousSibling && element.previousSibling.nodeType !== 3 && isElementBr(element.previousSibling)) {
+			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
 				content = content.replace(/^[^\S\u00A0]+/, '')
 			}
 
-			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && isElementBr(element.nextSibling)) {
+			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
 				content = content.replace(/[^\S\u00A0]+$/, '')
 			}
 

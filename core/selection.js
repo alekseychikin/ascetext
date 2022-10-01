@@ -109,7 +109,7 @@ export default class Selection {
 		this.anchorAtLastPositionInContainer = anchorOffset === anchorContainerLength
 		this.focusAtFirstPositionInContainer = focusOffset === 0
 		this.focusAtLastPositionInContainer = focusOffset === focusContainerLength
-		this.anchorContainerUpdated = this.anchorContainer !== anchorContainer
+		this.anchorContainerUpdated = this.anchorContainer !== anchorContainer || this.forceUpdate
 
 		if (
 			!this.forceUpdate &&
@@ -213,12 +213,7 @@ export default class Selection {
 	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
 	restoreSelection(forceUpdate = true) {
 		this.forceUpdate = forceUpdate
-		this.setSelection(
-			this.anchorContainer,
-			this.anchorOffset,
-			this.focusContainer,
-			this.focusOffset
-		)
+		this.setSelectionByIndexes(this.getSelectionInIndexes())
 	}
 
 	getSelectionInIndexes() {

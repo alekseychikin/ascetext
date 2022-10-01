@@ -36,7 +36,6 @@ export default class Container extends Node {
 
 			appendDefault(this, target, last)
 		}
-
 	}
 
 	onMouseDown() {

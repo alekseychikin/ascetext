@@ -390,7 +390,7 @@ export default class Editing {
 				this.core.builder.append(container, content)
 			}
 
-			if (container.next && container.type === container.next.type && container.normalize) {
+			if (container.next && typeof container.normalize === 'function') {
 				const normalized = container.normalize(container.next, this.core.builder)
 
 				if (normalized) {

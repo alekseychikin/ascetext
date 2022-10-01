@@ -403,7 +403,6 @@ export default class Builder {
 		let normalized
 
 		if (
-			previous.type === current.type &&
 			typeof previous.normalize === 'function' &&
 			(normalized = previous.normalize(current, this))
 		) {
@@ -414,20 +413,6 @@ export default class Builder {
 			this.replaceUntil(previous, normalized)
 
 			return normalized
-
-		// это уникальное поведение внутри секции, чтобы нельзя было просто вставить текст без контейнера
-		// у секции должен быть свой append и там внутриреализована эта логика
-		// но не здесь
-
-		// } else if ((previous.isContainer || previous.isWidget) && (!current.isContainer && !current.isWidget && !current.isGroup)) {
-		// 	const block = this.createBlock()
-
-		// 	this.append(block, current)
-		// 	this.connect(previous, block)
-
-		// 	if (typeof (callback) === 'function') {
-		// 		callback(block)
-		// 	}
 		}
 
 		this.connect(previous, current)

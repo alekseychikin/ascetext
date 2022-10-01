@@ -16,6 +16,10 @@ export class Link extends InlineWidget {
 	}
 
 	normalize(element, builder) {
+		if (element.type !== 'link') {
+			return false
+		}
+
 		const fields = [ 'url' ]
 		let areEqualElements = true
 
