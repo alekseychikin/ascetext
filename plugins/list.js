@@ -2,6 +2,7 @@ import PluginPlugin from './plugin'
 import Container from '../nodes/container'
 import Group from '../nodes/group'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class List extends Group {
 	constructor(attributes = { decor: 'marker' }) {
@@ -11,7 +12,15 @@ export class List extends Group {
 		this.setElement(createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul'))
 	}
 
+	accept(node) {
+		return node.isSection
+	}
+
 	normalize(element, builder) {
+		if (element.type !== 'list') {
+			return false
+		}
+
 		if (this.attributes.decor === element.attributes.decor) {
 			const list = new List(this.attributes)
 
@@ -37,6 +46,40 @@ export class List extends Group {
 	}
 }
 
+
+export class ListItem extends Group {
+	constructor() {
+		super('list-item')
+
+		this.setElement(createElement('li'))
+	}
+
+	append(target, last, { builder, appendDefault }) {
+		if (!this.first && target.type === 'list' && target.first && target.first.first) {
+			appendDefault(this, target.first.first)
+			builder.cut(target)
+		} else {
+			appendDefault(this, target, last)
+		}
+	}
+
+	accept(node) {
+		return node.type === 'list'
+	}
+
+	duplicate(builder) {
+		const duplicate = builder.create('list', 'item')
+
+		builder.connect(this, duplicate)
+
+		return duplicate
+	}
+
+	stringify(children) {
+		return '<li>' + children + '</li>'
+	}
+}
+
 export class ListItemContent extends Container {
 	constructor() {
 		super('list-item-content')
@@ -44,7 +87,11 @@ export class ListItemContent extends Container {
 		this.setElement(createElement('div'))
 	}
 
-	delete({ builder }) {
+	accept(node) {
+		return node.type === 'list-item'
+	}
+
+	cut({ builder }) {
 		const list = this.parent.parent
 
 		if (this.next && this.next.type === 'list') {
@@ -129,11 +176,7 @@ export class ListItemContent extends Container {
 					builder.append(anchorContainer, nextSelectableNode.first)
 				}
 
-				if (nextSelectableNode.parent.isSection) {
-					builder.cut(nextSelectableNode)
-				} else if (typeof nextSelectableNode.delete === 'function') {
-					nextSelectableNode.delete({ builder })
-				}
+				builder.cut(nextSelectableNode)
 
 				setSelection(anchorContainer, offset)
 			} else if (nextSelectableNode.isWidget) {
@@ -223,26 +266,6 @@ export class ListItemContent extends Container {
 	}
 }
 
-export class ListItem extends Group {
-	constructor() {
-		super('list-item')
-
-		this.setElement(createElement('li'))
-	}
-
-	duplicate(builder) {
-		const duplicate = builder.create('list', 'item')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
-	}
-
-	stringify(children) {
-		return '<li>' + children + '</li>'
-	}
-}
-
 export default class ListPlugin extends PluginPlugin {
 	create(params) {
 		if (params === 'item') {
@@ -326,26 +349,24 @@ export default class ListPlugin extends PluginPlugin {
 	parse(element, builder, context) {
 		const nodeName = element.nodeName.toLowerCase()
 
-		if (element.nodeType === 1 && (nodeName === 'ul' || nodeName === 'ol')) {
+		if (isHtmlElement(element) && (nodeName === 'ul' || nodeName === 'ol')) {
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
 			const list = builder.create('list', { decor })
 			let children
 
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(list, children)
 			}
 
 			return list
 		}
 
-		if (element.nodeType === 1 && nodeName === 'li') {
+		if (isHtmlElement(element) && nodeName === 'li') {
 			const listItem = builder.create('list', 'item')
 			const content = builder.create('list', 'content')
 			let children
 
-			context.parsingContainer = true
-
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				const last = children.getLastNode()
 
 				builder.append(listItem, content)
@@ -355,8 +376,6 @@ export default class ListPlugin extends PluginPlugin {
 					builder.connect(content, last)
 				}
 			}
-
-			context.parsingContainer = false
 
 			return listItem
 		}

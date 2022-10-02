@@ -10,6 +10,10 @@ class BreakLine extends InlineWidget {
 		this.setElement(createElement('br'))
 	}
 
+	accept(node) {
+		return node.isContainer || node.isInlineWidget
+	}
+
 	split() {
 		return {
 			head: this.previous,

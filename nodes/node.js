@@ -1,4 +1,5 @@
 import isElementBr from '../utils/is-element-br'
+import isTextElement from '../utils/is-text-element'
 
 const mapElementToNode = {}
 let id = 1
@@ -74,6 +75,10 @@ export default class Node {
 		this.element = element
 		this.element.nodeId = this.id
 		mapElementToNode[this.id] = this
+	}
+
+	accept() {
+		return false
 	}
 
 	getNodeUntil(nodeUntil) {
@@ -176,7 +181,7 @@ export default class Node {
 				return true
 			}
 
-			if (current.nodeType === 3) {
+			if (isTextElement(current)) {
 				index += current.length
 			} else if (isElementBr(current)) {
 				if (current === this.element.lastChild) {
@@ -198,7 +203,7 @@ export default class Node {
 		}
 
 		const element = walk(this.element, (current) => {
-			if (current.nodeType === 3) {
+			if (isTextElement(current)) {
 				if (current.length >= restOffset) {
 					return current
 				}
@@ -264,14 +269,12 @@ export default class Node {
 				tail: duplicate
 			}
 		} else if (head) {
-			// debugger
 			return {
 				head: this,
 				tail: this.next
 			}
 		}
 
-		// debugger
 		return {
 			head: null,
 			tail: this

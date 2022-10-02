@@ -44,7 +44,7 @@ export default class Editing {
 
 	onKeyDown(event) {
 		if (this.core.selection.focused) {
-			const undoRepeat = event.keyCode === zKey && event.metaKey
+			const undoRepeat = event.keyCode === zKey && (event.metaKey || event.ctrlKey)
 			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
 
@@ -201,12 +201,8 @@ export default class Editing {
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
 		})
 
-		for (index = containersForRemove.length - 1; index >=0; index--) {
-			if (containersForRemove[index].parent.isSection) {
-				this.core.builder.cut(containersForRemove[index])
-			} else if (typeof containersForRemove[index].delete === 'function') {
-				containersForRemove[index].delete({ builder: this.core.builder })
-			}
+		for (index = containersForRemove.length - 1; index >= 0; index--) {
+			this.core.builder.cut(containersForRemove[index])
 		}
 
 		if (firstContainer && firstContainer.isContainer) {
@@ -231,12 +227,12 @@ export default class Editing {
 		let index = startIndex
 
 		for (; index < items.length; index++) {
-			if (items[index].isWidget || items[index].isContainer) {
+			if (items[index].isWidget || items[index].isContainer || items[index].isGroup) {
 				break
 			}
 
 			if (items[index].parent && (
-				items[index].parent.isWidget || items[index].parent.isContainer
+				items[index].parent.isWidget || items[index].parent.isContainer || items[index].parent.isGroup
 			)) {
 				until = items[index]
 			}
@@ -380,9 +376,7 @@ export default class Editing {
 
 		while (container = this.updatingContainers.pop()) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element.firstChild, container.element.lastChild, {
-					parsingContainer: true
-				}) || this.core.builder.create('breakLine')
+				const content = this.core.builder.parse(container.element) || this.core.builder.create('breakLine')
 
 				if (container.first) {
 					this.handleTextInRemoveNodes(container.first)
@@ -396,7 +390,7 @@ export default class Editing {
 				this.core.builder.append(container, content)
 			}
 
-			if (container.next && container.type === container.next.type && container.normalize) {
+			if (container.next && typeof container.normalize === 'function') {
 				const normalized = container.normalize(container.next, this.core.builder)
 
 				if (normalized) {
@@ -463,39 +457,14 @@ export default class Editing {
 
 		doc.innerHTML = paste
 
-		const result = this.core.builder.parse(doc.firstChild, doc.lastChild)
+		const result = this.core.builder.parse(doc)
 
 		this.handleRemoveRange()
 		this.core.timeTravel.preservePreviousSelection()
 
-		if (result.isContainer) {
-			const lastNode = result.getLastNode()
+		this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
 
-			if (this.core.selection.anchorContainer.isEmpty) {
-				this.core.builder.replace(this.core.selection.anchorContainer, result)
-				this.core.selection.setSelection(lastNode, -1)
-			} else {
-				if (result.next) {
-					this.core.builder.connect(this.core.selection.anchorContainer, result.next)
-					this.core.builder.moveTail(this.core.selection.anchorContainer, lastNode, this.core.selection.anchorOffset)
-				}
-
-				this.core.builder.insert(
-					this.core.selection.anchorContainer,
-					result.first,
-					this.core.selection.anchorOffset
-				)
-			}
-		} else if (result.isWidget || result.isGroup) {
-			if (this.core.selection.anchorContainer.isEmpty) {
-				this.core.builder.replace(this.core.selection.anchorContainer, result)
-			} else {
-				this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
-			}
-		} else {
-			this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
-		}
-
+		this.core.selection.restoreSelection()
 		this.core.timeTravel.commit()
 		event.preventDefault()
 	}

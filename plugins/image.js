@@ -3,6 +3,7 @@ import Container from '../nodes/container'
 import PluginPlugin from './plugin'
 import createElement from '../utils/create-element'
 import Toolbar from '../core/toolbar'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
 	constructor(attributes) {
@@ -160,6 +161,10 @@ export class ImageCaption extends Container {
 		}))
 	}
 
+	accept(node) {
+		return node.type === 'image'
+	}
+
 	enterHandler(event, { builder, setSelection }) {
 		const emptyParagraph = builder.createBlock()
 
@@ -234,16 +239,8 @@ export default class ImagePlugin extends PluginPlugin {
 		return new Image(params)
 	}
 
-	match(element) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
-			return true
-		}
-
-		return false
-	}
-
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
+		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
 			let float = 'none'
@@ -264,7 +261,7 @@ export default class ImagePlugin extends PluginPlugin {
 			const imgElement = element.querySelector('img')
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
-				? builder.parse(captionElement.firstChild, captionElement.lastChild, context)
+				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
 			const image = new Image({ src: imgElement.src, size, float})
 			const caption = new ImageCaption()

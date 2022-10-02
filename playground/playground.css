@@ -162,6 +162,10 @@ body {
 	text-align: center;
 }
 
+.playground__actions {
+	margin-top: 50px;
+}
+
 .playground__action {
 	margin-top: 50px;
 	text-align: center;

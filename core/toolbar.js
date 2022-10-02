@@ -190,9 +190,9 @@ export default class Toolbar {
 			} else {
 				this.hideTooltip()
 			}
-		} else {
-			this.setPosition()
 		}
+
+		this.setPosition()
 
 		// this.hideToggleButtonHolder()
 		this.lastFocusedRange = this.selection.isRange
@@ -309,8 +309,7 @@ export default class Toolbar {
 		if (this.previousSelection !== null) {
 			this.lastFocusedRange = false
 			this.focusedNodes = []
-			this.selection.forceUpdate = true
-			this.selection.setSelectionByIndexes(this.previousSelection)
+			this.selection.restoreSelection()
 		}
 	}
 
