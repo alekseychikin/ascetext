@@ -156,6 +156,10 @@ export default class RichEditor {
 		return this.json(this.model.first)
 	}
 
+	focus() {
+		this.selection.setSelection(this.model.first, 0)
+	}
+
 	destroy() {
 		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
 		this.node.setAttribute('contenteditable', false)
