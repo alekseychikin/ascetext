@@ -293,7 +293,8 @@ export default class Toolbar {
 			restoreSelection: this.restoreSelection,
 			setSelection: this.selection.setSelection,
 			renderControls: this.renderControls,
-			getSelectedItems: this.getSelectedItems
+			getSelectedItems: this.getSelectedItems,
+			focusedNodes: this.selection.selectedItems
 		})
 
 		if (controls && controls.length) {

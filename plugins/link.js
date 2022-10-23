@@ -175,7 +175,7 @@ export default class LinkPlugin extends PluginPlugin {
 				slug: 'link.remove',
 				label: 'Удалить',
 				icon: 'remove',
-				action: this.removeLink(link)
+				action: this.removeLink
 			}]
 			: []
 	}
@@ -223,11 +223,13 @@ export default class LinkPlugin extends PluginPlugin {
 		})
 	}
 
-	removeLink(link) {
-		return function (event, { builder }) {
-			builder.connect(link, link.first)
-			builder.cut(link)
-		}
+	removeLink(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((node) => {
+			if (node.type === 'link') {
+				builder.connect(node, node.first)
+				builder.cut(node)
+			}
+		})
 	}
 
 	wrap(match, builder) {

@@ -1,22 +1,24 @@
 export default class Autocomplete {
-	constructor(plugins, selection, builder, editing) {
-		this.onSelectionChange = this.onSelectionChange.bind(this)
+	constructor(core) {
+		this.onEdit = this.onEdit.bind(this)
 
-		this.plugins = plugins
-		this.selection = selection
-		this.builder = builder
-		this.editing = editing
-		this.patterns = Object.keys(plugins).map((plugin) =>
-			plugins[plugin].autocompleteRule ? { plugin, rule: plugins[plugin].autocompleteRule } : null
+		this.node = core.node
+		this.plugins = core.plugins
+		this.selection = core.selection
+		this.builder = core.builder
+		this.editing = core.editing
+		this.patterns = Object.keys(this.plugins).map((plugin) =>
+			this.plugins[plugin].autocompleteRule ? { plugin, rule: this.plugins[plugin].autocompleteRule } : null
 		).filter(Boolean)
 		this.lastAnchorContainer = null
 		this.lastAnchorOffset = null
-		console.log('this.patterns', this.patterns)
 
-		this.selection.onUpdate(this.onSelectionChange)
+		this.selection.onUpdate(this.onEdit)
 	}
 
-	onSelectionChange(selection) {
+	onEdit() {
+		const { selection, editing } = this
+
 		if (
 			!selection.focused ||
 			selection.isRange ||
@@ -44,15 +46,14 @@ export default class Autocomplete {
 				itemContent = itemContent.substr(match.index + match[0].length)
 
 				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset - 1) {
-					console.log('match')
-					this.editing.update()
+					editing.update()
 					plugin = this.plugins[this.patterns[index].plugin]
 					plugin.unwrap(selection.anchorContainer.getChildByOffset(start + 1).node, this.builder)
 
 					const textNode = this.builder.create('text', {}, match[0])
 					const { head, tail } = selection.cutRange(selection.anchorContainer, start, selection.anchorContainer, start + match[0].length)
 					const selectedItems = selection.getArrayRangeItems(head, tail)
-					const { since, until } = this.editing.captureSinceAndUntil(selectedItems, 0)
+					const { since, until } = editing.captureSinceAndUntil(selectedItems, 0)
 					const node = plugin.wrap(textNode, this.builder)
 
 					this.builder.replaceUntil(since, node, until)

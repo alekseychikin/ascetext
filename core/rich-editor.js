@@ -56,7 +56,7 @@ export default class RichEditor {
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
-		this.autocomplete = new Autocomplete(this.plugins, this.selection, this.builder, this.editing)
+		this.autocomplete = new Autocomplete(this)
 		this.onChangeTimer = null
 
 		const container = document.createElement('div')

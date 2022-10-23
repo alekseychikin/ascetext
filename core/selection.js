@@ -118,12 +118,12 @@ export default class Selection {
 			this.anchorOffset === anchorOffset &&
 			this.focusOffset === focusOffset
 		) {
+			this.handleSelectedItems(anchorNode, focusNode)
 			this.onUpdateHandlers.forEach((handler) => handler(this))
 
 			return false
 		}
 
-		// console.log('this.anchorIndex', this.anchorIndex)
 		this.focusedControl = false
 		this.forceUpdate = false
 		this.anchorContainer = anchorContainer
