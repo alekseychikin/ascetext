@@ -46,7 +46,6 @@ export class List extends Group {
 	}
 }
 
-
 export class ListItem extends Group {
 	constructor() {
 		super('list-item')

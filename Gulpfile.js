@@ -8,7 +8,6 @@ function assets() {
 		.pipe(gulp.dest('playground/dist'))
 }
 
-
 function scripts(watch) {
 	return function (done) {
 		esbuild.buildSync({
