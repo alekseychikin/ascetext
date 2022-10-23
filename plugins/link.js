@@ -93,7 +93,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	get autocompleteRule() {
-		return /(?:^|(?<=[^\S]))https?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
+		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
 	}
 
 	create(url) {
