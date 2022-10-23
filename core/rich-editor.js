@@ -59,6 +59,7 @@ export default class RichEditor {
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this.plugins, this.selection, this.builder, this.editing)
+		this.onChangeTimer = null
 
 		const container = document.createElement('div')
 
@@ -66,13 +67,10 @@ export default class RichEditor {
 			container.appendChild(node.childNodes[0])
 		}
 
-		const children = this.builder.parse(
-			container.firstChild,
-			container.lastChild
-		) || this.builder.createBlock()
-		this.builder.append(this.model, children)
+		const children = this.builder.parse(container) || this.builder.createBlock()
 
-		this.timeTravel.begin()
+		this.builder.append(this.model, children)
+		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
 	}
 
@@ -93,6 +91,23 @@ export default class RichEditor {
 		return content
 	}
 
+	json(first) {
+		const content = []
+		let children = []
+		let current = first
+
+		while (current) {
+			if (current.first) {
+				children = this.json(current.first)
+			}
+
+			content.push(current.json(children))
+			current = current.next
+		}
+
+		return content
+	}
+
 	onChange(callback) {
 		this.onChangeHandlers.push(callback)
 
@@ -103,13 +118,50 @@ export default class RichEditor {
 
 	onNodeChange(changes) {
 		this.timeTravel.pushChange(changes)
-		this.onChangeHandlers.forEach((handler) => handler())
+
+		clearTimeout(this.onChangeTimer)
+		this.onChangeTimer = setTimeout(() => {
+			this.onChangeHandlers.forEach((handler) => handler())
+		}, 0)
+	}
+
+	setContent(content) {
+		this.model = new Root(this, this.node)
+		this.node.innerHTML = ''
+
+		const container = document.createElement('div')
+
+		container.innerHTML = content
+
+		const children = this.builder.parse(container) || this.builder.createBlock()
+		this.builder.append(this.model, children)
+		this.timeTravel.reset()
 	}
 
 	getContent() {
 		this.editing.save()
 
 		return this.stringify(this.model.first)
+	}
+
+	setJson(data) {
+		this.model = new Root(this, this.node)
+		this.node.innerHTML = ''
+
+		const children = this.builder.parseJson(data) || this.builder.createBlock()
+
+		this.builder.append(this.model, children)
+		this.timeTravel.reset()
+	}
+
+	getJson() {
+		this.editing.save()
+
+		return this.json(this.model.first)
+	}
+
+	focus() {
+		this.selection.setSelection(this.model.first, 0)
 	}
 
 	destroy() {

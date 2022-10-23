@@ -1,11 +1,25 @@
 /* eslint-disable import/no-commonjs */
 const gulp = require('gulp')
-const Bundler = require('parcel-bundler')
+const esbuild = require('esbuild')
 const browserSync = require('browser-sync').create()
 
 function assets() {
 	return gulp.src(['./icons/*.svg', './*.css'], { base: './' })
 		.pipe(gulp.dest('playground/dist'))
+}
+
+function scripts(watch) {
+	return function (done) {
+		esbuild.buildSync({
+			entryPoints: [ './playground/app.js' ],
+			bundle: true,
+			minify: !watch,
+			sourcemap: watch,
+			target: [ 'es6' ],
+			outfile: './playground/dist/app.js'
+		})
+		done()
+	}
 }
 
 function watch() {
@@ -22,27 +36,11 @@ function watch() {
 		'playground/dist/**/*',
 	]).on('change', browserSync.reload)
 	gulp.watch(['./icons/*.svg', './*.css'], watchParams, assets)
-}
 
-function scripts(watch) {
-	return function (done) {
-		const bundler = new Bundler('./playground/app.js', {
-			publicUrl: '/dist',
-			outDir: './playground/dist',
-			logLevel: 4,
-			watch,
-			cache: watch,
-			hmr: false,
-			minify: !watch,
-			sourceMaps: false,
-			contentHash: !watch
-		})
-
-		bundler.on('bundled', () => {
-			done()
-		})
-		bundler.bundle()
-	}
+	gulp.watch([
+		'./playground/app.js',
+		'./{controls,core,nodes,plugins,utils}/*.js'
+	], watchParams, scripts(true))
 }
 
 module.exports.scripts = scripts(false)

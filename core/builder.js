@@ -10,6 +10,7 @@ export default class Builder {
 
 		this.parse = this.parse.bind(this)
 		this.connectWithNormalize = this.connectWithNormalize.bind(this)
+		this.appendHandler = this.appendHandler.bind(this)
 	}
 
 	create(name, ...params) {
@@ -32,17 +33,24 @@ export default class Builder {
 		return firstLevelNode.split(offset - container.getOffset(firstLevelNode.element), this)
 	}
 
-	append(node, target) {
-		const last = target.getNodeUntil()
+	push(node, target) {
+		this.append(node, target, target)
+	}
+
+	append(node, target, last) {
+		if (typeof node.append === 'function') {
+			node.append(target, last, { builder: this, appendDefault: this.appendHandler })
+		} else {
+			this.appendHandler(node, target, last)
+		}
+	}
+
+	appendHandler(node, target, last) {
 		let current = target
 
-		// console.log('append', node, target)
+		last = last || target.getNodeUntil()
 
-		if (node.isContainer && node.isEmpty && node.first) {
-			this.cut(node.first)
-		}
-
-		this.cutUntil(target)
+		this.cutUntil(target, last)
 
 		this.core.onNodeChange({
 			type: operationTypes.APPEND,
@@ -50,8 +58,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (!node.first) {
 			node.first = target
@@ -69,42 +75,9 @@ export default class Builder {
 		node.last = last
 	}
 
-	push(node, target) {
-		// console.log('push', node, target)
-
-		if (node.isContainer && node.isEmpty && node.first) {
-			this.cut(node.first)
-		}
-
-		this.cut(target)
-
-		this.core.onNodeChange({
-			type: operationTypes.APPEND,
-			container: node,
-			target,
-			last: target
-		})
-
-		// console.groupEnd()
-
-		if (node.last) {
-			node.last.next = target
-			target.previous = node.last
-		} else {
-			node.first = target
-		}
-
-		node.last = target
-		target.parent = node
-
-		node.element.appendChild(target.element)
-	}
-
 	preconnect(node, target) {
 		const last = target.getNodeUntil()
 		let current = target
-
-		// console.log('preconnect', node, target)
 
 		this.cutUntil(target)
 
@@ -114,8 +87,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -145,8 +116,6 @@ export default class Builder {
 		const last = target.getNodeUntil()
 		let current = target
 
-		// console.log('connect', node, target)
-
 		this.cutUntil(target)
 
 		this.core.onNodeChange({
@@ -155,8 +124,6 @@ export default class Builder {
 			target,
 			last
 		})
-
-		// console.groupEnd()
 
 		if (node.parent) {
 			do {
@@ -185,18 +152,18 @@ export default class Builder {
 
 		node.next = target
 		target.previous = node
-
-		if (target.type === 'breakLine' && node.type !== 'breakLine' && !target.next) {
-			this.connect(target, this.create('breakLine'))
-		}
-
-		if (node.type === 'breakLine' && node.previous && node.previous.type === 'breakLine') {
-			this.cut(node)
-		}
 	}
 
 	cut(node) {
-		return this.cutUntil(node, node)
+		if (typeof node.cut === 'function') {
+			node.cut({ builder: this })
+		} else if (node.isContainer || node.isWidget) {
+			if (node.parent && node.parent.isSection) {
+				this.cutUntil(node, node)
+			}
+		} else {
+			this.cutUntil(node, node)
+		}
 	}
 
 	cutUntil(node, until) {
@@ -298,13 +265,65 @@ export default class Builder {
 		// console.groupEnd()
 	}
 
-	insert(container, node, offset) {
-		const { head, tail } = this.split(container, offset)
+	canAccept(container, current) {
+		if (current.accept(container)) {
+			return container
+		}
 
-		if (head) {
-			this.connect(head, node)
+		if (container.parent) {
+			return this.canAccept(container.parent, current)
+		}
 
-			return node
+		return false
+	}
+
+	insert(node, target, offset) {
+		let { head, tail } = this.split(node, offset)
+		let current = target
+		let next
+		let container = node
+		let duplicate
+
+		while (current) {
+			next = current.next
+
+			if (this.canAccept(container, current)) {
+				while (!current.accept(container)) {
+					if (tail) {
+						duplicate = container.duplicate(this)
+						this.append(duplicate, tail)
+					}
+
+					head = container
+					tail = head.next
+					container = container.parent
+				}
+
+				if (current.isContainer && node === head) {
+					this.append(head, current.first)
+					node = null
+				} else {
+					this.cut(current)
+
+					if (head) {
+						this.connect(head, current)
+					} else {
+						this.append(container, current)
+					}
+					head = current
+				}
+			} else {
+				console.log('can not accept', container, current)
+			}
+
+			if (current.next === tail && current.isContainer && tail.isContainer) {
+				this.preconnect(tail.first, current.first)
+				this.cut(current)
+
+				break
+			}
+
+			current = next
 		}
 
 		this.preconnect(tail, node)
@@ -320,37 +339,48 @@ export default class Builder {
 		}
 	}
 
-	parse(firstElement, lastElement, context = { selection: this.selection }) {
-		let currentElement = firstElement
+	parse(element, context = { selection: this.selection }) {
+		const lastElement = element.lastChild
+		let currentElement = element.firstChild
 		let nextElement
 		let first
 		let previous
 		let current
-		let value
+		let normalized
 
 		while (currentElement) {
+			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+				currentElement = currentElement.nextSibling
+
+				continue
+			}
+
 			// eslint-disable-next-line no-loop-func
 			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
 				return this.core.plugins[pluginName].parse(currentElement, this, context)
-			}, false)
-
-			if (
-				!current &&
-				!ignoreParsingElements.includes(currentElement.nodeName.toLowerCase()) &&
-				currentElement.childNodes.length
-			) {
-				current = this.parse(currentElement.firstChild, currentElement.lastChild, context)
-			}
-
+			}, false) || this.parse(currentElement, context)
 			nextElement = currentElement.nextSibling
 
 			if (current) {
-				value = this.handleParseNext(first, previous, current)
+				if (current.isDeleteEmpty && !current.first) {
+					current = previous
+				} else {
+					if (!first) {
+						first = current
+					}
 
-				previous = value.current
-				first = value.first
+					if (previous && (normalized = this.connectWithNormalize(previous, current))) {
+						if (first === previous) {
+							first = normalized
+						}
+
+						current = normalized
+					}
+				}
+
+				previous = current.getLastNode()
 			} else {
 				console.log('not matched', currentElement)
 
@@ -361,7 +391,7 @@ export default class Builder {
 
 			if (currentElement === lastElement) {
 				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-					this.cutUntil(previous.previous)
+					this.cut(previous)
 				}
 
 				break
@@ -373,33 +403,11 @@ export default class Builder {
 		return first
 	}
 
-	handleParseNext(first, previous, current) {
-		if (current.isDeleteEmpty && !current.first) {
-			return { first, current: previous }
-		}
-
-		if (!first) {
-			first = current
-		}
-
-		if (previous) {
-			this.connectWithNormalize(previous, current, (normalized) => {
-				if (first === previous) {
-					first = normalized
-				}
-
-				current = normalized
-			})
-		}
-
-		return { first, current: current.getLastNode() }
-	}
-
-	connectWithNormalize(previous, current, callback) {
+	connectWithNormalize(previous, current) {
 		let normalized
 
 		if (
-			previous.type === current.type && previous.normalize &&
+			typeof previous.normalize === 'function' &&
 			(normalized = previous.normalize(current, this))
 		) {
 			if (current.next) {
@@ -408,20 +416,40 @@ export default class Builder {
 
 			this.replaceUntil(previous, normalized)
 
-			if (typeof (callback) === 'function') {
-				callback(normalized)
-			}
-		} else if ((previous.isContainer || previous.isWidget) && (!current.isContainer && !current.isWidget && !current.isGroup)) {
-			const block = this.createBlock()
-
-			this.append(block, current)
-			this.connect(previous, block)
-
-			if (typeof (callback) === 'function') {
-				callback(block)
-			}
-		} else {
-			this.connect(previous, current)
+			return normalized
 		}
+
+		this.connect(previous, current)
+
+		return false
+	}
+
+	parseJson(body) {
+		let first
+		let previous
+		let current
+
+		body.forEach((element) => {
+			// eslint-disable-next-line no-loop-func
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parseJson(element, this)
+			}, false)
+
+			if (current) {
+				if (!first) {
+					first = current
+				} else {
+					this.connect(previous, current)
+				}
+
+				previous = current.getLastNode()
+			} else {
+				console.log('not matched', element)
+			}
+		})
+
+		return first
 	}
 }

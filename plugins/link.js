@@ -1,6 +1,7 @@
 import PluginPlugin from './plugin'
 import InlineWidget from '../nodes/inline-widget'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Link extends InlineWidget {
 	constructor(attributes) {
@@ -15,6 +16,10 @@ export class Link extends InlineWidget {
 	}
 
 	normalize(element, builder) {
+		if (element.type !== 'link') {
+			return false
+		}
+
 		const fields = [ 'url' ]
 		let areEqualElements = true
 
@@ -53,6 +58,14 @@ export class Link extends InlineWidget {
 	stringify(children) {
 		return '<a href="' + this.attributes.url + '">' + children + '</a>'
 	}
+
+	json(children) {
+		return {
+			type: this.type,
+			url: this.attributes.url,
+			body: children
+		}
+	}
 }
 
 export default class LinkPlugin extends PluginPlugin {
@@ -88,13 +101,13 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'a') {
+		if (isHtmlElement(element) && element.matches('a')) {
 			const url = element.getAttribute('href')
 			let children
 
 			const node = new Link({ url })
 
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
 
@@ -102,6 +115,19 @@ export default class LinkPlugin extends PluginPlugin {
 		}
 
 		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'link') {
+			const link = builder.create('link', element.url)
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(link, children)
+			}
+
+			return link
+		}
 	}
 
 	getSelectControls(focusedNodes, isRange) {

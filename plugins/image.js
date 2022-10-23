@@ -3,6 +3,7 @@ import Container from '../nodes/container'
 import PluginPlugin from './plugin'
 import createElement from '../utils/create-element'
 import Toolbar from '../core/toolbar'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
 	constructor(attributes) {
@@ -124,7 +125,6 @@ export class Image extends Widget {
 			classNames.push('image--with-caption')
 		}
 
-		console.log(this)
 		if (this.attributes.size.length) {
 			classNames.push(`image--size-${this.attributes.size}`)
 		}
@@ -135,6 +135,21 @@ export class Image extends Widget {
 
 		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.attributes.src + '" />' + children + '</figure>'
 	}
+
+	json(children) {
+		if (children) {
+			return {
+				type: this.type,
+				src: this.attributes.src,
+				figcaption: children[0]
+			}
+		}
+
+		return {
+			type: this.type,
+			src: this.attributes.src
+		}
+	}
 }
 
 export class ImageCaption extends Container {
@@ -144,6 +159,10 @@ export class ImageCaption extends Container {
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
+	}
+
+	accept(node) {
+		return node.type === 'image'
 	}
 
 	enterHandler(event, { builder, setSelection }) {
@@ -159,6 +178,14 @@ export class ImageCaption extends Container {
 		}
 
 		return ''
+	}
+
+	json(children) {
+		if (children) {
+			return children
+		}
+
+		return null
 	}
 }
 
@@ -212,16 +239,8 @@ export default class ImagePlugin extends PluginPlugin {
 		return new Image(params)
 	}
 
-	match(element) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
-			return true
-		}
-
-		return false
-	}
-
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.nodeName.toLowerCase() === 'figure' && element.className.indexOf('image') > -1) {
+		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
 			let float = 'none'
@@ -242,7 +261,7 @@ export default class ImagePlugin extends PluginPlugin {
 			const imgElement = element.querySelector('img')
 			const captionElement = element.querySelector('figcaption')
 			const captionChildren = captionElement
-				? builder.parse(captionElement.firstChild, captionElement.lastChild, context)
+				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
 			const image = new Image({ src: imgElement.src, size, float})
 			const caption = new ImageCaption()
@@ -252,6 +271,24 @@ export default class ImagePlugin extends PluginPlugin {
 			}
 
 			builder.append(image, caption)
+
+			return image
+		}
+
+		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'image') {
+			const image = new Image({ src: element.src })
+
+			if (element.caption) {
+				const caption = new ImageCaption()
+				const children = builder.parseJson(element.caption) || builder.create('breakLine')
+
+				builder.append(caption, children)
+				builder.append(image, caption)
+			}
 
 			return image
 		}

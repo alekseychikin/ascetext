@@ -1,6 +1,7 @@
 import PluginPlugin from './plugin'
 import Container from '../nodes/container'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 export class Paragraph extends Container {
 	constructor() {
@@ -28,17 +29,28 @@ export default class ParagraphPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
+		if (isHtmlElement(element) && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
 			const node = new Paragraph()
 			let children
 
-			context.parsingContainer = true
-
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(node, children)
 			}
 
-			context.parsingContainer = false
+			return node
+		}
+
+		return false
+	}
+
+	parseJson(element, builder) {
+		if (element.type === 'paragraph') {
+			const node = builder.create('paragraph')
+			let children
+
+			if (children = builder.parseJson(element.body)) {
+				builder.append(node, children)
+			}
 
 			return node
 		}

@@ -13,6 +13,10 @@ export default class Widget extends WithControls {
 		this.element.setAttribute('data-widget', '')
 	}
 
+	accept(node) {
+		return node.isSection
+	}
+
 	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 

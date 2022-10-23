@@ -1,6 +1,7 @@
 import { getNodeByElement } from '../nodes/node'
 import getStyle from '../utils/getStyle'
 import isElementBr from '../utils/is-element-br'
+import isTextElement from '../utils/is-text-element'
 import createElement from '../utils/create-element'
 
 export default class Selection {
@@ -108,7 +109,7 @@ export default class Selection {
 		this.anchorAtLastPositionInContainer = anchorOffset === anchorContainerLength
 		this.focusAtFirstPositionInContainer = focusOffset === 0
 		this.focusAtLastPositionInContainer = focusOffset === focusContainerLength
-		this.anchorContainerUpdated = this.anchorContainer !== anchorContainer
+		this.anchorContainerUpdated = this.anchorContainer !== anchorContainer || this.forceUpdate
 
 		if (
 			!this.forceUpdate &&
@@ -189,7 +190,7 @@ export default class Selection {
 
 		if (node.isWidget && offset === 0) {
 			return { element: node.element, index: 0 }
-		} else if (childByOffset.nodeType === 3) {
+		} else if (isTextElement(childByOffset)) {
 			element = childByOffset
 			index -= node.getOffset(childByOffset)
 		} else {
@@ -212,12 +213,7 @@ export default class Selection {
 	// TODO: forceUpdate выглядит как костыль. Хочется чтобы восстановление выделения было без него
 	restoreSelection(forceUpdate = true) {
 		this.forceUpdate = forceUpdate
-		this.setSelection(
-			this.anchorContainer,
-			this.anchorOffset,
-			this.focusContainer,
-			this.focusOffset
-		)
+		this.setSelectionByIndexes(this.getSelectionInIndexes())
 	}
 
 	getSelectionInIndexes() {
@@ -242,7 +238,7 @@ export default class Selection {
 	}
 
 	getSelectedElement(element, offset) {
-		if (element.nodeType === 3 || isElementBr(element)) {
+		if (isTextElement(element) || isElementBr(element)) {
 			return [ element, offset ]
 		}
 
@@ -288,7 +284,7 @@ export default class Selection {
 			element = container.element.childNodes[offset]
 			indexes.push(container.getOffset(element))
 		} else {
-			indexes.push(container.getOffset(element) + (element.nodeType === 3 ? offset : 0))
+			indexes.push(container.getOffset(element) + (isTextElement(element) ? offset : 0))
 		}
 
 		return indexes

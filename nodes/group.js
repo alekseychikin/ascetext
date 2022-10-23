@@ -6,4 +6,8 @@ export default class Group extends Node {
 
 		this.isGroup = true
 	}
+
+	accept() {
+		return true
+	}
 }

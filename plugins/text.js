@@ -1,12 +1,14 @@
 import Node from '../nodes/node'
 import PluginPlugin from './plugin'
 import isElementBr from '../utils/is-element-br'
+import isTextElement from '../utils/is-text-element'
+import isHtmlElement from '../utils/is-html-element'
 import omit from '../utils/omit'
 
 const mapModifierToTag = {
 	bold: 'strong',
 	italic: 'em',
-	strike: 'strike',
+	strike: 's',
 	underlined: 'u'
 }
 
@@ -16,25 +18,7 @@ export class Text extends Node {
 
 		this.content = content
 
-		const modifiers = []
-
-		if (attributes.weight) {
-			modifiers.push('bold')
-		}
-
-		if (attributes.style) {
-			modifiers.push('italic')
-		}
-
-		if (attributes.decoration) {
-			modifiers.push('underlined')
-		}
-
-		if (attributes.strike) {
-			modifiers.push('strike')
-		}
-
-		this.setElement(this.create(modifiers))
+		this.setElement(this.create(this.generateModifiers()))
 	}
 
 	create(modifiers) {
@@ -51,21 +35,67 @@ export class Text extends Node {
 		return document.createTextNode(this.content)
 	}
 
-	normalize(element) {
+	generateModifiers() {
+		const modifiers = []
+
+		if (this.attributes.weight) {
+			modifiers.push('bold')
+		}
+
+		if (this.attributes.style) {
+			modifiers.push('italic')
+		}
+
+		if (this.attributes.decoration) {
+			modifiers.push('underlined')
+		}
+
+		if (this.attributes.strike) {
+			modifiers.push('strike')
+		}
+
+		return modifiers
+	}
+
+	accept(node) {
+		return node.isContainer || node.isInlineWidget || node.isSection
+	}
+
+	normalize(target, builder) {
+		if (target.isContainer) {
+			if (target.first && target.first.type === 'text' && this.isEqual(target.first)) {
+				return new Text(this.attributes, this.content + target.first.content)
+			}
+
+			const duplicate = new Text({ ...this.attributes }, this.content)
+
+			builder.connect(duplicate, target.first)
+
+			return duplicate
+		}
+
+		if (target.type !== 'text') {
+			return false
+		}
+
+		if (this.isEqual(target)) {
+			return new Text(this.attributes, this.content + target.content)
+		}
+
+		return false
+	}
+
+	isEqual(target) {
 		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
 		let areEqualElements = true
 
 		fields.forEach((field) => {
-			if (this.attributes[field] !== element.attributes[field]) {
+			if (this.attributes[field] !== target.attributes[field]) {
 				areEqualElements = false
 			}
 		})
 
-		if (areEqualElements) {
-			return new Text(this.attributes, this.content + element.content)
-		}
-
-		return false
+		return areEqualElements
 	}
 
 	split(position, builder) {
@@ -93,44 +123,34 @@ export class Text extends Node {
 		}
 	}
 
+	// connect(target, { builder, connectDefault }) {
+	// 	if (target.isContainer) {
+	// 		builder.connect(this, target.first)
+	// 	} else {
+	// 		connectDefault(this, target)
+	// 	}
+	// }
+
 	stringify() {
-		let content = ''
+		return this.stringifyWithModifiers(this.generateModifiers())
+	}
 
-		if (this.attributes.decoration === 'strike') {
-			content += '<strike>'
+	stringifyWithModifiers(modifiers) {
+		let modifier
+
+		if (modifier = modifiers.shift()) {
+			return '<' + mapModifierToTag[modifier] + '>' + this.stringifyWithModifiers(modifiers) + '</' + mapModifierToTag[modifier] + '>'
 		}
 
-		if (this.attributes.decoration === 'underlined') {
-			content += '<u>'
+		return this.content.replace(/\u00A0/, '&nbsp;')
+	}
+
+	json() {
+		return {
+			type: this.type,
+			modifiers: this.generateModifiers(),
+			content: this.content
 		}
-
-		if (this.attributes.weight === 'bold') {
-			content += '<strong>'
-		}
-
-		if (this.attributes.style === 'italic') {
-			content += '<em>'
-		}
-
-		content += this.content
-
-		if (this.attributes.style === 'italic') {
-			content += '</em>'
-		}
-
-		if (this.attributes.weight === 'bold') {
-			content += '</strong>'
-		}
-
-		if (this.attributes.decoration === 'underlined') {
-			content += '</u>'
-		}
-
-		if (this.attributes.decoration === 'strike') {
-			content += '</strike>'
-		}
-
-		return content.replace(/\u00A0/, '&nbsp;')
 	}
 }
 
@@ -161,31 +181,30 @@ export default class TextPlugin extends PluginPlugin {
 		return new Text(params, text)
 	}
 
-	// Нужно придумать нормальные правила как парсить текст
-	// Нужно понять в каких случаях нужно удалять пробелы, а в каких оставлять
-	// В каких случаях нужно множество пробелов схлопывать в один
 	parse(element, builder, context) {
-		if (element.nodeType !== 3 && (element.nodeType === 1 && !this.supportTags.includes(element.nodeName.toLowerCase()))) {
+		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
+
+		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
 			return false
 		}
 
-		if (element.nodeType === 3) {
+		if (isTextElement(element)) {
 			const { weight, style, decoration, strike } = context
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
 
-			if (element === firstChild || element.previousSibling && element.previousSibling.nodeType !== 3 && isElementBr(element.previousSibling)) {
+			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
 				content = content.replace(/^[^\S\u00A0]+/, '')
 			}
 
-			if (element === lastChild || element.nextSibling && element.nextSibling.nodeType !== 3 && isElementBr(element.nextSibling)) {
-				content = content.replace(/[^\S\u00A0]+$/, '')//.replace(/\s$/, nbsCode)
+			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
+				content = content.replace(/[^\S\u00A0]+$/, '')
 			}
 
 			content = content.replace(/[^\S\u00A0]+/g, ' ')
 
-			if (!content.length || !context.parsingContainer && content.match(/^[^\S\u00A0]+$/)) {
+			if (!content.length || content.match(/^[^\S\u00A0]+$/)) {
 				return false
 			}
 
@@ -193,9 +212,11 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'em') {
-			context.style = 'italic'
+			if (this.params.allowModifiers.includes('italic')) {
+				context.style = 'italic'
+			}
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.style
 
@@ -203,19 +224,23 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'strong') {
-			context.weight = 'bold'
+			if (this.params.allowModifiers.includes('bold')) {
+				context.weight = 'bold'
+			}
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.weight
 
 			return model
 		}
 
-		if (element.nodeName.toLowerCase() === 'strike') {
-			context.strike = 'horizontal'
+		if (element.nodeName.toLowerCase() === 's') {
+			if (this.params.allowModifiers.includes('horizontal')) {
+				context.strike = 'horizontal'
+			}
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.strike
 
@@ -223,9 +248,11 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'u') {
-			context.decoration = 'underlined'
+			if (this.params.allowModifiers.includes('underlined')) {
+				context.decoration = 'underlined'
+			}
 
-			const model = builder.parse(element.firstChild, element.lastChild, context)
+			const model = builder.parse(element, context)
 
 			delete context.decoration
 
@@ -233,8 +260,65 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'span') {
-			return builder.parse(element.firstChild, element.lastChild, context)
+			console.log(element.style)
+			if (
+				(
+					element.style['font-weight'] === 'bold' ||
+					element.style['font-weight'] === '600' ||
+					element.style['font-weight'] === '500' ||
+					element.style['font-weight'] === '700'
+				) && this.params.allowModifiers.includes('bold')
+			) {
+				context.weight = 'bold'
+			}
+
+			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
+				context.style = 'italic'
+			}
+
+			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
+				context.strike = 'horizontal'
+			}
+
+			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
+				context.decoration = 'underline'
+			}
+
+			const result = builder.parse(element, context)
+
+			delete context.weight
+			delete context.style
+			delete context.strike
+			delete context.decoration
+
+			return result
 		}
+	}
+
+	parseJson(element) {
+		if (element.type === 'text') {
+			const attributes = {}
+
+			if (element.modifiers.includes('bold')) {
+				attributes.weight = 'bold'
+			}
+
+			if (element.modifiers.includes('italic')) {
+				attributes.style = 'italic'
+			}
+
+			if (element.modifiers.includes('underlined')) {
+				attributes.decoration = 'underlined'
+			}
+
+			if (element.modifiers.includes('strike')) {
+				attributes.strike = 'horizontal'
+			}
+
+			return new Text(attributes, element.content)
+		}
+
+		return false
 	}
 
 	getSelectControls(focusedNodes, isRange) {

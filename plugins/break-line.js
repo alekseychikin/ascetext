@@ -10,6 +10,10 @@ class BreakLine extends InlineWidget {
 		this.setElement(createElement('br'))
 	}
 
+	accept(node) {
+		return node.isContainer || node.isInlineWidget
+	}
+
 	split() {
 		return {
 			head: this.previous,
@@ -20,6 +24,10 @@ class BreakLine extends InlineWidget {
 	stringify() {
 		return '<br />'
 	}
+
+	json() {
+		return { type: this.type }
+	}
 }
 
 export default class BreakLinePlugin extends PluginPlugin {
@@ -29,6 +37,14 @@ export default class BreakLinePlugin extends PluginPlugin {
 
 	parse(element) {
 		if (isElementBr(element)) {
+			return new BreakLine()
+		}
+
+		return false
+	}
+
+	parseJson(element) {
+		if (element.type === 'breakLine') {
 			return new BreakLine()
 		}
 
