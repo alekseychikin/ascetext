@@ -400,7 +400,7 @@ export default class Editing {
 				}
 			}
 
-			console.log('container update', container.element)
+			// console.log('container update', container.element)
 		}
 
 		if (this.core.selection.focused) {

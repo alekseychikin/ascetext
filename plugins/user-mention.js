@@ -2,6 +2,7 @@ import InlineWidget from '../nodes/inline-widget'
 import PluginPlugin from './plugin'
 import SuggestBar from '../utils/suggest-bar'
 import createElement from '../utils/create-element'
+import isHtmlElement from '../utils/is-html-element'
 
 const suggests = [{
 	id: 1,
@@ -18,7 +19,7 @@ class UserMention extends InlineWidget {
 	constructor(params = {}) {
 		super('user-mention', params)
 
-		this.setElement(createElement('span', { 'class': 'user-mention' }))
+		this.setElement(createElement('mark', { 'class': 'user-mention' }))
 	}
 }
 
@@ -40,11 +41,11 @@ export default class UserMentionPlugin extends PluginPlugin {
 	}
 
 	parse(element, builder, context) {
-		if (element.nodeType === 1 && element.matches('span.user-mention')) {
+		if (isHtmlElement(element) && element.matches('mark.user-mention')) {
 			const userMention = new UserMention()
 			let children
 
-			if (children = builder.parse(element.firstChild, element.lastChild, context)) {
+			if (children = builder.parse(element, context)) {
 				builder.append(userMention, children)
 			}
 
@@ -77,9 +78,17 @@ export default class UserMentionPlugin extends PluginPlugin {
 	}
 
 	unwrap(node, builder) {
-		if (node.type === 'user-mention') {
-			builder.connect(node, node.first)
-			builder.cut(node)
+		let current = node
+
+		while (current) {
+			if (current.type === 'user-mention') {
+				builder.connect(current, current.first)
+				builder.cut(current)
+
+				return
+			}
+
+			current = current.parent
 		}
 	}
 }

@@ -240,9 +240,15 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	unwrap(node, builder) {
-		if (node.type === 'link') {
-			builder.connect(node, node.first)
-			builder.cut(node)
+		let current = node
+
+		while (current) {
+			if (current.type === 'link') {
+				builder.connect(current, current.first)
+				builder.cut(current)
+			}
+
+			current = current.parent
 		}
 	}
 }

@@ -40,19 +40,16 @@ export default class Autocomplete {
 			itemContent = content
 
 			while (match = itemContent.match(this.patterns[index].rule)) {
-				console.log('match', match[0])
 				start += match.index
 				itemContent = itemContent.substr(match.index + match[0].length)
 
-				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset) {
+				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset - 1) {
+					console.log('match')
 					this.editing.update()
 					plugin = this.plugins[this.patterns[index].plugin]
+					plugin.unwrap(selection.anchorContainer.getChildByOffset(start + 1).node, this.builder)
 
-					// debugger
 					const textNode = this.builder.create('text', {}, match[0])
-
-					plugin.unwrap(selection.anchorContainer.getChildByOffset(start).node, this.builder)
-
 					const { head, tail } = selection.cutRange(selection.anchorContainer, start, selection.anchorContainer, start + match[0].length)
 					const selectedItems = selection.getArrayRangeItems(head, tail)
 					const { since, until } = this.editing.captureSinceAndUntil(selectedItems, 0)
@@ -60,17 +57,12 @@ export default class Autocomplete {
 
 					this.builder.replaceUntil(since, node, until)
 					selection.setSelection(selection.anchorContainer, selection.anchorOffset)
-					// this.plugins[this.patterns[index].plugin].autocomplete(match[0], selection, this.getRangeOffsets(selection, start, start + match[0].length))
 
 					return
 				}
 
 				start += match[0].length
 			}
-		}
-
-		for (index = 0; index < this.patterns.length; index++) {
-			// this.plugins[this.patterns[index].plugin].autocomplete(null)
 		}
 	}
 
