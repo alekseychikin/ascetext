@@ -325,10 +325,6 @@ export default class Builder {
 
 			current = next
 		}
-
-		this.preconnect(tail, node)
-
-		return tail
 	}
 
 	moveTail(container, target, offset) {
