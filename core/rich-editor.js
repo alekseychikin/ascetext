@@ -14,7 +14,6 @@ import LinkPlugin from '../plugins/link'
 import ImagePlugin from '../plugins/image'
 import ListPlugin from '../plugins/list'
 import QuotePlugin from '../plugins/quote'
-import UserMentionPlugin from '../plugins/user-mention'
 import Toolbar from './toolbar'
 
 class Root extends Section {
@@ -38,7 +37,6 @@ export default class RichEditor {
 			breakLine: new BreakLinePlugin(),
 			paragraph: new ParagraphPlugin(),
 			header: new HeaderPlugin(),
-			userMention: new UserMentionPlugin(),
 			link: new LinkPlugin(),
 			image: new ImagePlugin(),
 			list: new ListPlugin(),

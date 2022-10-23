@@ -8,7 +8,6 @@ import LinkPlugin, { Link } from './plugins/link'
 import ImagePlugin, { Image, ImageCaption } from './plugins/image'
 import ListPlugin, { List, ListItem, ListItemContent } from './plugins/list'
 import QuotePlugin, { Quote } from './plugins/quote'
-import UserMentionPlugin from './plugins/user-mention'
 import PluginPlugin from './plugins/plugin'
 import Toolbar from './core/toolbar'
 import ControlControl from './controls/control'
@@ -41,7 +40,6 @@ export {
 	ListItemContent,
 	QuotePlugin,
 	Quote,
-	UserMentionPlugin,
 	PluginPlugin,
 	Toolbar,
 	ControlControl,
