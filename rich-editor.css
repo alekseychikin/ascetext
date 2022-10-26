@@ -142,31 +142,10 @@
 	font: 16px/26px 'PT Sans', sans-serif;
 }
 
-.contenteditor__control path,
-.contenteditor__control circle {
-	fill: #000;
-}
-
-.contenteditor__control:hover,
-.contenteditor__control.selected {
-	color: #fff;
-}
-
-.contenteditor__control:hover path,
-.contenteditor__control:hover circle,
-.contenteditor__control--selected path,
-.contenteditor__control--selected circle {
-	fill: #fff;
-}
-
-.contenteditor__control:hover rect,
-.contenteditor__control--selected rect {
-	stroke: #fff;
-}
-
 .contenteditor__control:hover,
 .contenteditor__control--selected {
 	background: #ff18a4;
+	color: #fff;
 }
 
 .contenteditor__control-input {
