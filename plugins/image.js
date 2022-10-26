@@ -22,6 +22,11 @@ export class Image extends Widget {
 		}, [ this.image ]))
 	}
 
+	setSrc(src) {
+		this.attributes.src = src
+		this.image.src = src
+	}
+
 	getClassName() {
 		const classNames = [ 'image' ]
 
@@ -236,6 +241,10 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	create(params) {
+		if (params === 'caption') {
+			return new ImageCaption()
+		}
+
 		return new Image(params)
 	}
 
@@ -263,8 +272,8 @@ export default class ImagePlugin extends PluginPlugin {
 			const captionChildren = captionElement
 				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
-			const image = new Image({ src: imgElement.src, size, float})
-			const caption = new ImageCaption()
+			const image = this.create({ src: imgElement.src, size, float})
+			const caption = this.create('caption')
 
 			if (captionChildren) {
 				builder.append(caption, captionChildren)
@@ -280,10 +289,10 @@ export default class ImagePlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'image') {
-			const image = new Image({ src: element.src })
+			const image = this.create({ src: element.src })
 
 			if (element.caption) {
-				const caption = new ImageCaption()
+				const caption = this.create('caption')
 				const children = builder.parseJson(element.caption) || builder.create('breakLine')
 
 				builder.append(caption, children)
@@ -392,12 +401,11 @@ export default class ImagePlugin extends PluginPlugin {
 			const { files } = event.target
 
 			if (files.length) {
-				const src = await this.params.onSelectFile(files[0])
-				const image = new Image({
-					src: (this.params.dir || '') + src
-				})
-				const caption = new ImageCaption()
+				const image = this.create({ src: '' })
+				const src = await this.params.onSelectFile(files[0], image)
+				const caption = this.create('caption')
 
+				image.setSrc(src)
 				builder.append(caption, builder.create('breakLine'))
 				builder.append(image, caption)
 				builder.replace(container, image)
@@ -410,9 +418,9 @@ export default class ImagePlugin extends PluginPlugin {
 			const { files } = event.target
 
 			if (files.length) {
-				const src = await this.params.onSelectFile(files[0])
+				const src = await this.params.onSelectFile(files[0], image)
 
-				image.image.src = src
+				image.setSrc(src)
 			}
 		}
 	}
