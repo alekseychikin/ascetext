@@ -1,4 +1,4 @@
-import { getNodeByElement } from '../nodes/node'
+import { getNodeByElement } from '../utils/map-element-to-node'
 import getStyle from '../utils/getStyle'
 import isElementBr from '../utils/is-element-br'
 import isTextElement from '../utils/is-text-element'

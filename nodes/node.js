@@ -1,63 +1,9 @@
 import isElementBr from '../utils/is-element-br'
 import isTextElement from '../utils/is-text-element'
+import { setNode, getNodeByElement } from '../utils/map-element-to-node'
+import walk from '../utils/walk'
 
-const mapElementToNode = {}
 let id = 1
-
-export function getNodeByElement(element) {
-	let currentElement = element
-
-	while (currentElement) {
-		if (mapElementToNode[currentElement.nodeId]) {
-			return mapElementToNode[currentElement.nodeId]
-		}
-
-		currentElement = currentElement.parentNode
-	}
-
-	// debugger
-
-	return false
-}
-
-export function walk(rootElement, callback) {
-	let returnValue
-	let current = rootElement.firstChild
-
-	while (current && current !== rootElement) {
-		returnValue = callback(current)
-
-		if (typeof returnValue !== 'undefined') {
-			return returnValue
-		}
-
-		if (current.firstChild) {
-			current = current.firstChild
-
-			continue
-		}
-
-		if (current.nextSibling) {
-			current = current.nextSibling
-
-			continue
-		}
-
-		if (current.parentNode) {
-			current = current.parentNode
-
-			while (current && current !== rootElement) {
-				if (current.nextSibling) {
-					current = current.nextSibling
-
-					break
-				}
-
-				current = current.parentNode
-			}
-		}
-	}
-}
 
 export default class Node {
 	constructor(type, attributes = {}) {
@@ -74,7 +20,7 @@ export default class Node {
 	setElement(element) {
 		this.element = element
 		this.element.nodeId = this.id
-		mapElementToNode[this.id] = this
+		setNode(this)
 	}
 
 	accept() {
