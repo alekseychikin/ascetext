@@ -104,10 +104,6 @@ export class ColumnImage extends Widget {
 		}
 	}
 
-	onDelete() {
-		this.removeControl()
-	}
-
 	async onInputFileChange(event) {
 		const { files } = event.target
 

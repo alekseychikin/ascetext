@@ -2,15 +2,11 @@ import Widget from '../nodes/widget'
 import Container from '../nodes/container'
 import PluginPlugin from './plugin'
 import createElement from '../utils/create-element'
-import Toolbar from '../core/toolbar'
 import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
 	constructor(attributes) {
 		super('image', Object.assign({ size: '', float: 'none' }, attributes))
-
-		this.onInputFileChange = this.onInputFileChange.bind(this)
-		this.updateControlPosition = this.updateControlPosition.bind(this)
 
 		this.image = createElement('img', {
 			src: attributes.src
@@ -39,88 +35,6 @@ export class Image extends Widget {
 		}
 
 		return classNames.join(' ')
-	}
-
-	onFocus(selection) {
-		super.onFocus(selection)
-
-		// if (this.src.length) {
-		// 	this.createControl(selection)
-		// 	this.updateControlPosition()
-		// }
-	}
-
-	onBlur() {
-		super.onBlur()
-
-		// this.removeControl()
-	}
-
-	onDelete() {
-		super.onDelete()
-
-		this.removeControl()
-	}
-
-	async onInputFileChange(event) {
-		const { files } = event.target
-
-		if (files.length) {
-			const src = await this.params.onSelectFile(files[0])
-
-			this.image.src = (this.params.dir || '') + src
-			this.src = (this.params.dir || '') + src
-			this.updateControlPosition()
-
-			if (!this.isFocused) {
-				this.removeControl()
-			}
-		}
-	}
-
-	createControl(selection) {
-		const content = document.createElement('span')
-
-		this.selection = selection
-		this.input = document.createElement('input')
-		this.control = document.createElement('label')
-		this.control.className = 'contenteditor__image-control'
-		this.input.type = 'file'
-		this.input.className = 'contenteditor__image-control-input'
-		content.appendChild(document.createTextNode('Загрузить фотографию'))
-		this.control.appendChild(content)
-		this.control.appendChild(this.input)
-		document.body.appendChild(this.control)
-		this.input.addEventListener('change', this.onInputFileChange)
-		this.addResizeEventListener(this.updateControlPosition)
-		this.toolbar = new Toolbar(this.control)
-	}
-
-	removeControl() {
-		if (this.control) {
-			this.input.removeEventListener('change', this.onInputFileChange)
-			this.control.parentNode.removeChild(this.control)
-			this.toolbar.destroy()
-
-			delete this.input
-			delete this.control
-		}
-
-		this.removeResizeEventListener(this.updateControlPosition)
-	}
-
-	updateControlPosition() {
-		setTimeout(() => {
-			if (this.control) {
-				const scrollTop = document.body.scrollTop || document.documentElement.scrollTop
-				const imageBoundingClientRect = this.element.getBoundingClientRect()
-
-				this.control.style.top = imageBoundingClientRect.top + scrollTop + 'px'
-				this.control.style.left = imageBoundingClientRect.left + 'px'
-				this.control.style.width = this.element.offsetWidth + 'px'
-				this.control.style.height = this.element.offsetHeight + 'px'
-			}
-		}, 1)
 	}
 
 	stringify(children) {
@@ -158,12 +72,39 @@ export class Image extends Widget {
 }
 
 export class ImageCaption extends Container {
-	constructor() {
-		super('image-caption')
+	constructor(params) {
+		super('image-caption', params)
 
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
+	}
+
+	onMount({ controls }) {
+		this.placeholder = createElement('div', {
+			contenteditable: false,
+			style: {
+				'position': 'absolute',
+				'pointer-events': 'none'
+			},
+			class: 'contenteditor__image-placeholder'
+		})
+		this.placeholder.appendChild(document.createTextNode(this.attributes.placeholder))
+
+		controls.registerControl(this.placeholder, () => {
+			this.placeholder.style.top = `${this.element.offsetTop}px`
+			this.placeholder.style.left = `${this.element.offsetLeft}px`
+			this.placeholder.style.width = `${this.element.offsetWidth}px`
+		})
+		this.inputHandler()
+	}
+
+	layoutControls() {
+		const boundings = this.element.getBoundingClientRect()
+
+		this.placeholder.style.width = `${boundings.width}px`
+		this.placeholder.style.top = `${boundings.top}px`
+		this.placeholder.style.left = `${boundings.left}px`
 	}
 
 	accept(node) {
@@ -175,6 +116,10 @@ export class ImageCaption extends Container {
 
 		builder.connect(this.parent, emptyParagraph)
 		setSelection(emptyParagraph)
+	}
+
+	inputHandler() {
+		this.placeholder.style.display = this.element.innerText.trim() ? 'none' : ''
 	}
 
 	stringify(children) {
@@ -195,7 +140,7 @@ export class ImageCaption extends Container {
 }
 
 export default class ImagePlugin extends PluginPlugin {
-	constructor(params) {
+	constructor(params = {}) {
 		super()
 
 		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
@@ -214,7 +159,8 @@ export default class ImagePlugin extends PluginPlugin {
 				}
 
 				reader.readAsDataURL(file)
-			})
+			}),
+			placeholder: 'Add image caption (optional)'
 		}, params)
 	}
 
@@ -241,11 +187,13 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	create(params) {
-		if (params === 'caption') {
-			return new ImageCaption()
+		const { type, ...attributes } = params
+
+		if (type === 'caption') {
+			return new ImageCaption(attributes)
 		}
 
-		return new Image(params)
+		return new Image(attributes)
 	}
 
 	parse(element, builder, context) {
@@ -272,8 +220,11 @@ export default class ImagePlugin extends PluginPlugin {
 			const captionChildren = captionElement
 				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
-			const image = this.create({ src: imgElement.src, size, float})
-			const caption = this.create('caption')
+			const image = builder.create('image', { src: imgElement.src, size, float})
+			const caption = builder.create('image', {
+				type: 'caption',
+				placeholder: this.params.placeholder
+			})
 
 			if (captionChildren) {
 				builder.append(caption, captionChildren)
@@ -289,10 +240,13 @@ export default class ImagePlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'image') {
-			const image = this.create({ src: element.src })
+			const image = builder.create('image', { src: element.src })
 
 			if (element.caption) {
-				const caption = this.create('caption')
+				const caption = builder.create('image', {
+					type: 'caption',
+					placeholder: this.params.placeholder
+				})
 				const children = builder.parseJson(element.caption) || builder.create('breakLine')
 
 				builder.append(caption, children)
@@ -401,9 +355,12 @@ export default class ImagePlugin extends PluginPlugin {
 			const { files } = event.target
 
 			if (files.length) {
-				const image = this.create({ src: '' })
+				const image = builder.create('image', { src: '' })
 				const src = await this.params.onSelectFile(files[0], image)
-				const caption = this.create('caption')
+				const caption = builder.create('image', {
+					type: 'caption',
+					placeholder: this.params.placeholder
+				})
 
 				image.setSrc(src)
 				builder.append(caption, builder.create('breakLine'))

@@ -124,7 +124,6 @@ export default class Selection {
 			return false
 		}
 
-		this.focusedControl = false
 		this.forceUpdate = false
 		this.anchorContainer = anchorContainer
 		this.focusContainer = focusContainer

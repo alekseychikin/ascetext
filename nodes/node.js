@@ -15,6 +15,7 @@ export default class Node {
 		this.isSection = false
 		this.isGroup = false
 		this.isDeleteEmpty = false
+		this.isMount = false
 	}
 
 	setElement(element) {

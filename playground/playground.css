@@ -136,7 +136,11 @@ body {
 
 .playground__editor figure.image[data-focus] {
 	border-radius: 8px;
-	box-shadow: 0 0 0 3px #fff, 0 0 0 5px #ff18a4;
+	box-shadow: 0 0 0 3px #fff, 0 0 0 5px #662fcc;
+}
+
+.playground__editor figcaption {
+	outline: none;
 }
 
 .playground__editor img {
@@ -177,7 +181,7 @@ body {
 	padding: 5px 20px;
 	font-size: 2rem;
 	line-height: 2.4rem;
-	background: #ff18a4;
+	background: #662fcc;
 	color: #fff;
 	cursor: pointer;
 }
