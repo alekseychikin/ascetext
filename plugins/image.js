@@ -99,6 +99,10 @@ export class ImageCaption extends Container {
 		this.inputHandler()
 	}
 
+	onUnmount({ controls }) {
+		controls.unregisterControl(this.placeholder)
+	}
+
 	accept(node) {
 		return node.type === 'image'
 	}

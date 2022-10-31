@@ -264,7 +264,7 @@ export default class Builder {
 
 		if (node.isMount) {
 			if (typeof node.onUnmount === 'function') {
-				node.onUnmount()
+				node.onUnmount(this.core)
 			}
 
 			node.isMount = false

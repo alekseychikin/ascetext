@@ -30,6 +30,14 @@ export default class Controls {
 		updatePosition()
 	}
 
+	unregisterControl(control) {
+		const index = this.controls.indexOf(control)
+
+		control.parentNode.removeChild(control)
+		this.controls.splice(index, 1)
+		this.updateHandlers.splice(index, 1)
+	}
+
 	onResize() {
 		this.onScroll()
 	}
