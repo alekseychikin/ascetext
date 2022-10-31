@@ -99,14 +99,6 @@ export class ImageCaption extends Container {
 		this.inputHandler()
 	}
 
-	layoutControls() {
-		const boundings = this.element.getBoundingClientRect()
-
-		this.placeholder.style.width = `${boundings.width}px`
-		this.placeholder.style.top = `${boundings.top}px`
-		this.placeholder.style.left = `${boundings.left}px`
-	}
-
 	accept(node) {
 		return node.type === 'image'
 	}
