@@ -126,7 +126,7 @@ export default class RichEditor {
 	}
 
 	setContent(content) {
-		this.model = new Root(this, this.node)
+		this.model = new Root(this.node)
 		this.node.innerHTML = ''
 
 		const container = document.createElement('div')
@@ -145,7 +145,7 @@ export default class RichEditor {
 	}
 
 	setJson(data) {
-		this.model = new Root(this, this.node)
+		this.model = new Root(this.node)
 		this.node.innerHTML = ''
 
 		const children = this.builder.parseJson(data) || this.builder.createBlock()
