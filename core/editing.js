@@ -28,6 +28,7 @@ export default class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
 
@@ -39,6 +40,7 @@ export default class Editing {
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
+		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
 	}
 
@@ -187,6 +189,10 @@ export default class Editing {
 
 					if (firstContainer.isContainer) {
 						this.core.builder.append(firstContainer, since)
+
+						if (firstContainer.inputHandler) {
+							firstContainer.inputHandler()
+						}
 					}
 				}
 			}
@@ -329,6 +335,15 @@ export default class Editing {
 		} else {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
+		}
+	}
+
+	onInput(event) {
+		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
+			this.core.selection.anchorContainer.inputHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
 		}
 	}
 

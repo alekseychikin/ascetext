@@ -11,6 +11,8 @@ export default class Builder {
 		this.parse = this.parse.bind(this)
 		this.connectWithNormalize = this.connectWithNormalize.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
+		this.handleMount = this.handleMount.bind(this)
+		this.handleUnmount = this.handleUnmount.bind(this)
 	}
 
 	create(name, ...params) {
@@ -66,11 +68,12 @@ export default class Builder {
 			target.previous = node.last
 		}
 
-		while (current) {
+		do {
 			current.parent = node
 			node.element.appendChild(current.element)
+			this.handleMount(current)
 			current = current.next
-		}
+		} while (current)
 
 		node.last = last
 	}
@@ -92,13 +95,9 @@ export default class Builder {
 			do {
 				current.parent = node.parent
 				node.parent.element.insertBefore(current.element, node.element)
-
-				if (!current.next) {
-					break
-				}
-
+				this.handleMount(current)
 				current = current.next
-			} while (true) // eslint-disable-line no-constant-condition
+			} while (current)
 		}
 
 		if (node.previous) {
@@ -135,12 +134,9 @@ export default class Builder {
 					node.parent.element.appendChild(current.element)
 				}
 
-				if (!current.next) {
-					break
-				}
-
+				this.handleMount(current)
 				current = current.next
-			} while (true) // eslint-disable-line no-constant-condition
+			} while (current)
 		}
 
 		if (node.next) {
@@ -171,7 +167,6 @@ export default class Builder {
 		const parent = node.parent
 		const isContainer = parent && parent.isContainer
 		let current = node
-		let content
 
 		if (node.previous) {
 			this.core.editing.markDirty(node.previous)
@@ -189,20 +184,7 @@ export default class Builder {
 		}
 
 		if (current.previous) {
-			const firstChild = current.deepesetFirstNode()
-			const lastChild = current.previous.deepesetLastNode()
-
-			if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
-				content = nbsCode + firstChild.content.substr(1)
-				firstChild.content = content
-				firstChild.element.nodeValue = content
-			}
-
-			if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
-				content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsCode
-				lastChild.content = content
-				lastChild.element.nodeValue = content
-			}
+			this.handleText(current)
 
 			if (current.parent && current.parent.last === last) {
 				current.parent.last = current.previous
@@ -233,6 +215,7 @@ export default class Builder {
 				current.element.parentNode.removeChild(current.element)
 			}
 
+			this.handleUnmount(current)
 			delete current.parent
 
 			if (current === last) {
@@ -244,6 +227,68 @@ export default class Builder {
 
 		if (isContainer && !parent.first && node.type !== 'breakLine') {
 			this.append(parent, this.create('breakLine'))
+		}
+	}
+
+	handleMount(node) {
+		let current = node
+		let hasRoot = false
+
+		do {
+			if (current.type === 'root') {
+				hasRoot = true
+				break
+			}
+
+			current = current.parent
+		} while (current)
+
+		if (hasRoot && !node.isMount) {
+			node.isMount = true
+
+			if (typeof node.onMount === 'function') {
+				node.onMount(this.core)
+			}
+
+			current = node.first
+
+			while (current) {
+				this.handleMount(current)
+				current = current.next
+			}
+		}
+	}
+
+	handleUnmount(node) {
+		let current
+
+		if (node.isMount) {
+			if (typeof node.onUnmount === 'function') {
+				node.onUnmount()
+			}
+
+			node.isMount = false
+			current = node.first
+
+			while (current) {
+				this.handleUnmount(current)
+				current = current.next
+			}
+		}
+	}
+
+	handleText(current) {
+		const firstChild = current.deepesetFirstNode()
+		const lastChild = current.previous.deepesetLastNode()
+
+		if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
+			firstChild.content = nbsCode + firstChild.content.substr(1)
+			firstChild.element.nodeValue = firstChild.content
+		}
+
+		if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
+			lastChild.content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsCode
+			lastChild.element.nodeValue = lastChild.content
 		}
 	}
 

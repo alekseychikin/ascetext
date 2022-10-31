@@ -15,10 +15,11 @@ import ImagePlugin from '../plugins/image'
 import ListPlugin from '../plugins/list'
 import QuotePlugin from '../plugins/quote'
 import Toolbar from './toolbar'
+import Controls from './controls'
 
 class Root extends Section {
-	constructor(core, element) {
-		super(core, 'root')
+	constructor(element) {
+		super('root')
 
 		this.element = element
 	}
@@ -49,13 +50,14 @@ export default class RichEditor {
 
 			return icons
 		}, {}), params.icons || {})
-		this.model = new Root(this, node)
+		this.model = new Root(node)
 		// this.navigation = new Navigation(this)
 		this.builder = new Builder(this)
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
+		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.autocomplete = new Autocomplete(this)
 		this.onChangeTimer = null
 

@@ -101,7 +101,7 @@
 	pointer-events: none;
 }
 
-.rich-editor__controls&::before {
+.rich-editor__controls::before {
 	content: '';
 	position: absolute;
 	bottom: -5px;
@@ -144,7 +144,7 @@
 
 .contenteditor__control:hover,
 .contenteditor__control--selected {
-	background: #ff18a4;
+	background: #662fcc;
 	color: #fff;
 }
 
@@ -167,7 +167,7 @@
 }
 
 [data-widget][data-selected] {
-	box-shadow: 0 0 0 2px #2C276A;
+	box-shadow: 0 0 0 2px #662fcc;
 }
 
 .rich-editor__image-control {
@@ -184,4 +184,10 @@
 	left: 0;
 	opacity: 0;
 	cursor: pointer;
+}
+
+.contenteditor__image-placeholder {
+	text-align: center;
+	font-style: italic;
+	color: #ddd;
 }
