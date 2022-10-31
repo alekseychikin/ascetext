@@ -189,6 +189,10 @@ export default class Editing {
 
 					if (firstContainer.isContainer) {
 						this.core.builder.append(firstContainer, since)
+
+						if (firstContainer.inputHandler) {
+							firstContainer.inputHandler()
+						}
 					}
 				}
 			}
