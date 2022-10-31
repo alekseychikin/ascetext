@@ -47,7 +47,7 @@ export default class Editing {
 	onKeyDown(event) {
 		if (this.core.selection.focused) {
 			const undoRepeat = event.keyCode === zKey && (event.metaKey || event.ctrlKey)
-			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey
+			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey && !event.ctrlKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
 
 			if (undoRepeat) {
