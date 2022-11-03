@@ -216,7 +216,7 @@ export default class ImagePlugin extends PluginPlugin {
 			const captionChildren = captionElement
 				? builder.parse(captionElement, context)
 				: builder.create('breakLine')
-			const image = builder.create('image', { src: imgElement.src, size, float})
+			const image = builder.create('image', { src: imgElement.src, size, float })
 			const caption = builder.create('image', {
 				type: 'caption',
 				placeholder: this.params.placeholder
@@ -237,17 +237,14 @@ export default class ImagePlugin extends PluginPlugin {
 	parseJson(element, builder) {
 		if (element.type === 'image') {
 			const image = builder.create('image', { src: element.src })
+			const caption = builder.create('image', {
+				type: 'caption',
+				placeholder: this.params.placeholder
+			})
+			const children = element.figcaption ? builder.parseJson(element.figcaption) : builder.create('breakLine')
 
-			if (element.caption) {
-				const caption = builder.create('image', {
-					type: 'caption',
-					placeholder: this.params.placeholder
-				})
-				const children = builder.parseJson(element.caption) || builder.create('breakLine')
-
-				builder.append(caption, children)
-				builder.append(image, caption)
-			}
+			builder.append(caption, children)
+			builder.append(image, caption)
 
 			return image
 		}

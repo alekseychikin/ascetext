@@ -263,7 +263,6 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (element.nodeName.toLowerCase() === 'span') {
-			console.log(element.style)
 			if (
 				(
 					element.style['font-weight'] === 'bold' ||

@@ -24,6 +24,7 @@ export default class Selection {
 		this.renderedCustomControls = false
 		this.onUpdateHandlers = []
 		this.selectedItems = []
+		this.focusedNodes = []
 		this.boundings = {}
 		this.containerAvatar = createElement('div', {
 			style: {
@@ -387,6 +388,8 @@ export default class Selection {
 
 	handleSelectedItems(anchorNode, focusNode) {
 		const selectedItems = this.getArrayRangeItems(anchorNode, focusNode)
+		const focusedNodes = selectedItems.slice(0)
+		let firstNode = focusedNodes[0]
 
 		selectedItems.forEach((item) => {
 			if (item.isWidget && this.selectedItems.indexOf(item) === -1) {
@@ -399,7 +402,13 @@ export default class Selection {
 			}
 		})
 
+		while (firstNode && firstNode !== this.anchorContainer.parent) {
+			focusedNodes.unshift(firstNode)
+			firstNode = firstNode.parent
+		}
+
 		this.selectedItems = selectedItems
+		this.focusedNodes = focusedNodes.filter((node, index, self) => self.indexOf(node) === index)
 	}
 
 	updateBoundings() {

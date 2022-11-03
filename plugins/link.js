@@ -30,7 +30,7 @@ export class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			const node = new Link(this.attributes)
+			const node = builder.create('link', this.attributes.url)
 			const last = this.first.getLastNode()
 
 			if (this.first) {
@@ -216,7 +216,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = new Link({ url })
+				link = this.create(url)
 				builder.connect(item, link)
 				builder.push(link, item)
 			}
@@ -233,7 +233,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	wrap(match, builder) {
-		const link = new Link({ url: match.content })
+		const link = this.create(match.content)
 
 		builder.preconnect(match, link)
 		builder.push(link, match)

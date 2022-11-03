@@ -155,15 +155,7 @@ export default class Toolbar {
 
 	renderSelectedTooltip() {
 		const controls = []
-		let focusedNodes = this.selection.selectedItems
-		let firstNode = focusedNodes[0]
-
-		while (firstNode && firstNode !== this.selection.anchorContainer.parent) {
-			focusedNodes.push(firstNode)
-			firstNode = firstNode.parent
-		}
-
-		focusedNodes = focusedNodes.filter((node, index, self) => self.indexOf(node) === index)
+		const focusedNodes = this.selection.focusedNodes
 
 		if (
 			focusedNodes.length !== this.focusedNodes.length ||
@@ -294,7 +286,7 @@ export default class Toolbar {
 			setSelection: this.selection.setSelection,
 			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems,
-			focusedNodes: this.selection.selectedItems
+			focusedNodes: this.selection.focusedNodes
 		})
 
 		if (controls && controls.length) {
