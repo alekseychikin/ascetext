@@ -334,7 +334,7 @@ export default class Builder {
 
 			if (this.canAccept(container, current)) {
 				while (!current.accept(container)) {
-					if (tail) {
+					if (tail && (!container.isContainer || !container.isEmpty)) {
 						duplicate = container.duplicate(this)
 						this.append(duplicate, tail)
 					}
