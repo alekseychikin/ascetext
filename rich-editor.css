@@ -53,6 +53,14 @@
 	background: url('./icons/replace.svg') center no-repeat;
 }
 
+.contenteditor__toggle-button--move {
+	cursor: grab;
+}
+
+.contenteditor__tooltip-group {
+	display: flex;
+}
+
 .rich-editor__toolbar .rich-editor__controls {
 	top: 0;
 	left: 50px;

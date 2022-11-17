@@ -114,7 +114,7 @@ export default class HeaderPlugin extends PluginPlugin {
 	}
 
 	getReplaceControls(container) {
-		if (!container.parent.isSection) {
+		if (!container.parent.isSection || !container.isContainer) {
 			return []
 		}
 
