@@ -16,6 +16,7 @@ import ListPlugin from '../plugins/list'
 import QuotePlugin from '../plugins/quote'
 import Toolbar from './toolbar'
 import Controls from './controls'
+import Dragndrop from './drag-n-drop'
 
 class Root extends Section {
 	constructor(element) {
@@ -59,6 +60,7 @@ export default class RichEditor {
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.autocomplete = new Autocomplete(this)
+		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 
 		const container = document.createElement('div')
@@ -170,6 +172,7 @@ export default class RichEditor {
 		this.editing.destroy()
 		this.selection.destroy()
 		this.toolbar.destroy()
+		this.dragndrop.destroy()
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
