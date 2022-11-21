@@ -5,9 +5,11 @@ export default class SizeObserver {
 		this.update = this.update.bind(this)
 		this.updateHandler = this.updateHandler.bind(this)
 
+		this.id = 0
+		this.ids = []
 		this.observedElements = []
 		this.handlers = []
-		this.locked = false
+		this.timer = null
 
 		this.bindEvents()
 	}
@@ -17,40 +19,43 @@ export default class SizeObserver {
 	}
 
 	observe(element, handler) {
+		const id = ++this.id
+
+		this.ids.push(id)
 		this.observedElements.push(element)
 		this.handlers.push(handler)
 		this.update()
 
 		return () => {
-			const index = this.observedElements.indexOf(element)
+			const index = this.ids.indexOf(id)
 
+			this.ids.splice(index, 1)
 			this.observedElements.splice(index, 1)
 			this.handlers.splice(index, 1)
 		}
 	}
 
 	update() {
-		if (this.locked) {
+		if (this.timer) {
 			return null
 		}
 
-		this.locked = true
-		requestAnimationFrame(this.updateHandler)
+		this.timer = setTimeout(this.updateHandler, 16)
 	}
 
 	updateHandler() {
 		this.observedElements.forEach((element, index) => {
 			this.handlers[index](this.calculateBoundings(element))
 		})
-		this.locked = false
+		this.timer = null
 	}
 
 	calculateBoundings(element) {
 		return {
-			offsetLeft: element.offsetLeft,
-			offsetTop: element.offsetTop,
-			offsetWidth: element.offsetWidth,
-			offsetHeight: element.offsetHeight
+			scrollTop: document.body.scrollTop || document.documentElement.scrollTop || 0,
+			scrollLeft: document.body.scrollLeft || document.documentElement.scrollLeft || 0,
+			element: element.getBoundingClientRect(),
+			root: this.core.node.getBoundingClientRect()
 		}
 	}
 }

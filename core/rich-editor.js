@@ -76,6 +76,8 @@ export default class RichEditor {
 		this.builder.append(this.model, children)
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
+		window.addEventListener('load', this.sizeObserver.update)
+		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
 	}
 
 	stringify(first) {

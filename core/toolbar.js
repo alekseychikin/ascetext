@@ -1,4 +1,5 @@
 import createElement from '../utils/create-element'
+import getStyle from '../utils/getStyle'
 import ControlButton from '../controls/button'
 import ControlFile from '../controls/file'
 import ControlInput from '../controls/input'
@@ -33,9 +34,10 @@ export default class Toolbar {
 		this.onMouseUp = this.onMouseUp.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.wrapControls = this.wrapControls.bind(this)
+		this.updateBoundings = this.updateBoundings.bind(this)
 
 		this.isShowSideToolbar = false
-		this.isCenteredToolbar = false
+		this.isShowCenteredToolbar = false
 		this.isKeepOpen = false
 		this.builder = core.builder
 		this.selection = core.selection
@@ -43,10 +45,24 @@ export default class Toolbar {
 		this.editing = core.editing
 		this.plugins = core.plugins
 		this.icons = core.icons
+		this.sizeObserver = core.sizeObserver
 		this.focusedNodes = []
 		this.lastRangeFocused = false
 		this.previousSelection = null
 		this.nextControlsToRender = null
+		this.cancelObserver = null
+		this.previousContainer = null
+		this.containerAvatar = createElement('div', {
+			style: {
+				position: 'fixed',
+				bottom: '0',
+				right: '0',
+				border: '1px solid #000',
+				background: '#fff',
+				opacity: '0',
+				pointerEvents: 'none'
+			}
+		})
 
 		this.sideToolbar = createElement('div', {
 			'class': this.css.containerHidden
@@ -58,9 +74,10 @@ export default class Toolbar {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
+		document.body.appendChild(this.toggleButtonHolder)
 		document.body.appendChild(this.sideToolbar)
 		document.body.appendChild(this.centeredToolbar)
-		document.body.appendChild(this.toggleButtonHolder)
+		document.body.appendChild(this.containerAvatar)
 		document.addEventListener('mousedown', this.onMouseDown)
 		document.addEventListener('mouseup', this.onMouseUp)
 		document.addEventListener('keydown', this.onKeyDown)
@@ -75,6 +92,7 @@ export default class Toolbar {
 		} else {
 			this.updateSideToolbar()
 			this.updateCenteredToolbar()
+			this.updateBoundings()
 		}
 	}
 
@@ -86,7 +104,7 @@ export default class Toolbar {
 				this.hideSideToolbar()
 			}
 
-			if (this.isCenteredToolbar) {
+			if (this.isShowCenteredToolbar) {
 				this.hideCenteredToolbar()
 			}
 		}
@@ -176,7 +194,7 @@ export default class Toolbar {
 		})
 		this.toggleButtonHolder.appendChild(this.toggleButton)
 		this.toggleButton.addEventListener('click', this.toggleSideToolbar)
-		this.setPositionToggleButtonHolder()
+		this.sizeObserver.update()
 		this.showToggleButtonHolder()
 	}
 
@@ -190,7 +208,7 @@ export default class Toolbar {
 				: this.css.toggleButtonReplace
 		})
 		this.toggleButtonHolder.appendChild(this.toggleButton)
-		this.setPositionToggleButtonHolder()
+		this.sizeObserver.update()
 		this.showToggleButtonHolder()
 
 		if (hasControls) {
@@ -229,8 +247,7 @@ export default class Toolbar {
 			}
 		}
 
-		this.setPositionCenteredToolbar()
-
+		this.sizeObserver.update()
 		this.lastRangeFocused = this.selection.isRange
 		this.focusedNodes = focusedNodes
 	}
@@ -371,13 +388,13 @@ export default class Toolbar {
 	showSideToolbar() {
 		this.isShowSideToolbar = true
 		this.sideToolbar.classList.remove('hidden')
-		this.setPositionSideToolbar()
+		this.sizeObserver.update()
 	}
 
 	showCenteredToolbar() {
-		this.isCenteredToolbar = true
+		this.isShowCenteredToolbar = true
 		this.centeredToolbar.classList.remove('hidden')
-		this.setPositionCenteredToolbar()
+		this.sizeObserver.update()
 	}
 
 	showToggleButtonHolder() {
@@ -386,45 +403,6 @@ export default class Toolbar {
 
 	hideToggleButtonHolder() {
 		this.toggleButtonHolder.classList.add('hidden')
-	}
-
-	setPositionToggleButtonHolder() {
-		if (this.selection.boundings.container) {
-			this.toggleButtonHolder.style.top = this.selection.boundings.container.top + 'px'
-			this.toggleButtonHolder.style.left = this.selection.boundings.container.left + 'px'
-		}
-	}
-
-	setPositionSideToolbar() {
-		if (!this.isShowSideToolbar) {
-			return null
-		}
-
-		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
-		const offsetTop = this.selection.boundings.container.top - scrollTop - 40 < toolbarIndent
-			? this.selection.boundings.container.top + 40
-			: this.selection.boundings.container.top - 40
-		const offsetLeft = Math.max(this.selection.boundings.container.left - 40, toolbarIndent)
-
-		this.sideToolbar.style.top = offsetTop + 'px'
-		this.sideToolbar.style.left = Math.max(10, offsetLeft) + 'px'
-	}
-
-	setPositionCenteredToolbar() {
-		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
-		const offsetTop = this.selection.boundings.caret.top - this.centeredToolbar.offsetHeight - scrollTop < toolbarIndent
-			? this.selection.boundings.caret.top + this.selection.boundings.caret.height + 20
-			: this.selection.boundings.caret.top - this.centeredToolbar.offsetHeight
-		const offsetLeft =
-			this.selection.boundings.caret.left +
-			this.selection.boundings.caret.width / 2 -
-			this.centeredToolbar.offsetWidth / 2
-
-		this.centeredToolbar.style.top = offsetTop + 'px'
-		this.centeredToolbar.style.left = Math.max(
-			toolbarIndent,
-			Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
-		) + 'px'
 	}
 
 	hideSideToolbar() {
@@ -473,9 +451,71 @@ export default class Toolbar {
 		return false
 	}
 
+	updateBoundings() {
+		if (this.previousContainer !== this.selection.anchorContainer) {
+			if (this.cancelObserver) {
+				this.cancelObserver()
+			}
+
+			this.cancelObserver = this.sizeObserver.observe(this.selection.anchorContainer.element, (entry) => {
+				const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
+				const content = this.selection.anchorContainer.element.outerText
+				const styles = getStyle(this.selection.anchorContainer.element)
+				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
+					? entry.element.top + entry.scrollTop + 40
+					: entry.element.top + entry.scrollTop - 40
+				const sideOffsetLeft = Math.max(entry.element.left - 40, toolbarIndent)
+
+				this.toggleButtonHolder.style.top = entry.element.top + entry.scrollTop + 'px'
+				this.toggleButtonHolder.style.left = entry.element.left + 'px'
+
+				if (this.isShowSideToolbar) {
+					this.sideToolbar.style.top = sideOffsetTop + 'px'
+					this.sideToolbar.style.left = Math.max(10, sideOffsetLeft) + 'px'
+				}
+
+				if (this.isShowCenteredToolbar) {
+					this.containerAvatar.style.width = entry.element.width + 'px'
+					this.containerAvatar.style.fontFamily = styles.fontFamily
+					this.containerAvatar.style.fontSize = styles.fontSize
+					this.containerAvatar.style.lineHeight = styles.lineHeight
+					this.containerAvatar.style.padding = styles.padding
+					this.containerAvatar.style.boxSizing = styles.boxSizing
+					this.containerAvatar.style.textAlign = styles.textAlign
+
+					const fakeContent = content.substr(0, this.selection.anchorOffset) +
+						'<span style="background: blue" data-selected-text>' +
+						content.substr(this.selection.anchorOffset, selectedLength) +
+						'</span>' +
+					content.substr(this.selection.focusOffset)
+					this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+					const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
+					const centeredOffsetTop = entry.element.top + selectedText.offsetTop + entry.scrollTop
+					const offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
+						? centeredOffsetTop + selectedText.offsetHeight + 20
+						: centeredOffsetTop - this.centeredToolbar.offsetHeight
+					const offsetLeft =
+						entry.element.left + selectedText.offsetLeft +
+						selectedText.offsetWidth / 2 -
+						this.centeredToolbar.offsetWidth / 2
+
+					this.centeredToolbar.style.top = offsetTop + 'px'
+					this.centeredToolbar.style.left = Math.max(
+						toolbarIndent,
+						Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
+					) + 'px'
+				}
+			})
+
+			this.previousContainer = this.selection.anchorContainer
+		}
+	}
+
 	destroy() {
-		document.body.removeChild(this.tooltip)
 		document.body.removeChild(this.toggleButtonHolder)
+		document.body.removeChild(this.containerAvatar)
+		document.body.removeChild(this.sideToolbar)
+		document.body.removeChild(this.centeredToolbar)
 		document.removeEventListener('mousedown', this.onMouseDown)
 		document.removeEventListener('mouseup', this.onMouseUp)
 		document.removeEventListener('keydown', this.onKeyDown)
