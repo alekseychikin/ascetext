@@ -34,6 +34,11 @@ body {
 	outline: none;
 }
 
+.playground__editor [contenteditable],
+.playground__editor [tabindex] {
+	outline: none;
+}
+
 .playground__editor h2 {
 	font-weight: 700;
 	font-size: 2rem;

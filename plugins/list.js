@@ -83,7 +83,9 @@ export class ListItemContent extends Container {
 	constructor() {
 		super('list-item-content')
 
-		this.setElement(createElement('div'))
+		this.setElement(createElement('div', {
+			tabIndex: 0
+		}))
 	}
 
 	accept(node) {
