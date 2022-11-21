@@ -16,6 +16,8 @@ import ListPlugin from '../plugins/list'
 import QuotePlugin from '../plugins/quote'
 import Toolbar from './toolbar'
 import Controls from './controls'
+import Dragndrop from './drag-n-drop'
+import SizeObserver from './size-observer'
 
 class Root extends Section {
 	constructor(element) {
@@ -56,9 +58,11 @@ export default class RichEditor {
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
-		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
+		this.sizeObserver = params.sizeObserver ? params.sizeObserver(this) : new SizeObserver(this)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
+		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)
+		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 
 		const container = document.createElement('div')
@@ -72,6 +76,8 @@ export default class RichEditor {
 		this.builder.append(this.model, children)
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
+		window.addEventListener('load', this.sizeObserver.update)
+		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
 	}
 
 	stringify(first) {
@@ -118,6 +124,7 @@ export default class RichEditor {
 
 	onNodeChange(changes) {
 		this.timeTravel.pushChange(changes)
+		this.sizeObserver.update()
 
 		clearTimeout(this.onChangeTimer)
 		this.onChangeTimer = setTimeout(() => {
@@ -170,6 +177,7 @@ export default class RichEditor {
 		this.editing.destroy()
 		this.selection.destroy()
 		this.toolbar.destroy()
+		this.dragndrop.destroy()
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}

@@ -81,7 +81,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 	}
 
 	getReplaceControls(container) {
-		if (container.type === 'paragraph' || !container.parent.isSection) {
+		if (container.type === 'paragraph' || !container.parent.isSection || !container.isContainer) {
 			return []
 		}
 

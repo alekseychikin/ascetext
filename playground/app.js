@@ -16,7 +16,9 @@ const plugins = {
 	paragraph: new ParagraphPlugin(),
 	header: new HeaderPlugin(),
 	link: new LinkPlugin(),
-	image: new ImagePlugin(),
+	image: new ImagePlugin({
+		placeholder: 'Add image caption'
+	}),
 	list: new ListPlugin(),
 	quote: new QuotePlugin()
 }

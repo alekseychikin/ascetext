@@ -1,8 +1,11 @@
 import createElement from '../utils/create-element'
+import getStyle from '../utils/getStyle'
 import ControlButton from '../controls/button'
 import ControlFile from '../controls/file'
 import ControlInput from '../controls/input'
 import ControlLink from '../controls/link'
+
+const toolbarIndent = 10
 
 export default class Toolbar {
 	get css() {
@@ -13,6 +16,7 @@ export default class Toolbar {
 			toggleButtonHolderHidden: 'contenteditor__toggle-button-holder hidden',
 			toggleButtonInsert: 'contenteditor__toggle-button contenteditor__toggle-button--insert',
 			toggleButtonReplace: 'contenteditor__toggle-button contenteditor__toggle-button--replace',
+			toggleButtonGrab: 'contenteditor__toggle-button contenteditor__toggle-button--replace contenteditor__toggle-button--move',
 			tooltipGroup: 'contenteditor__tooltip-group'
 		}
 	}
@@ -20,19 +24,20 @@ export default class Toolbar {
 	constructor(core) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
-		this.showTooltip = this.showTooltip.bind(this)
-		this.hideTooltip = this.hideTooltip.bind(this)
-		this.renderControls = this.renderControls.bind(this)
+		this.showSideToolbar = this.showSideToolbar.bind(this)
+		this.hideSideToolbar = this.hideSideToolbar.bind(this)
+		this.renderSideControls = this.renderSideControls.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
 		this.getSelectedItems = this.getSelectedItems.bind(this)
-		this.toggleTooltip = this.toggleTooltip.bind(this)
+		this.toggleSideToolbar = this.toggleSideToolbar.bind(this)
 		this.onMouseDown = this.onMouseDown.bind(this)
 		this.onMouseUp = this.onMouseUp.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.wrapControls = this.wrapControls.bind(this)
+		this.updateBoundings = this.updateBoundings.bind(this)
 
-		this.lastTooltipType = ''
-		this.isShowTooltip = false
+		this.isShowSideToolbar = false
+		this.isShowCenteredToolbar = false
 		this.isKeepOpen = false
 		this.builder = core.builder
 		this.selection = core.selection
@@ -40,20 +45,39 @@ export default class Toolbar {
 		this.editing = core.editing
 		this.plugins = core.plugins
 		this.icons = core.icons
+		this.sizeObserver = core.sizeObserver
 		this.focusedNodes = []
-		this.lastFocusedRange = false
+		this.lastRangeFocused = false
 		this.previousSelection = null
 		this.nextControlsToRender = null
+		this.cancelObserver = null
+		this.previousContainer = null
+		this.containerAvatar = createElement('div', {
+			style: {
+				position: 'fixed',
+				bottom: '0',
+				right: '0',
+				border: '1px solid #000',
+				background: '#fff',
+				opacity: '0',
+				pointerEvents: 'none'
+			}
+		})
 
-		this.tooltip = createElement('div', {
+		this.sideToolbar = createElement('div', {
+			'class': this.css.containerHidden
+		})
+		this.centeredToolbar = createElement('div', {
 			'class': this.css.containerHidden
 		})
 		this.toggleButtonHolder = createElement('div', {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
-		document.body.appendChild(this.tooltip)
 		document.body.appendChild(this.toggleButtonHolder)
+		document.body.appendChild(this.sideToolbar)
+		document.body.appendChild(this.centeredToolbar)
+		document.body.appendChild(this.containerAvatar)
 		document.addEventListener('mousedown', this.onMouseDown)
 		document.addEventListener('mouseup', this.onMouseUp)
 		document.addEventListener('keydown', this.onKeyDown)
@@ -66,22 +90,31 @@ export default class Toolbar {
 		if (this.isKeepOpen) {
 			this.isKeepOpen = false
 		} else {
-			this.updateTooltip()
+			this.updateSideToolbar()
+			this.updateCenteredToolbar()
+			this.updateBoundings()
 		}
 	}
 
 	onMouseDown(event) {
-		if (this.tooltip.contains(event.target) || this.toggleButtonHolder.contains(event.target)) {
+		if (this.isTargetInsideToolbar(event.target)) {
 			this.isKeepOpen = true
-		} else if (this.lastTooltipType !== 'selection' && this.isShowTooltip) {
-			this.hideTooltip()
+		} else {
+			if (this.isShowSideToolbar) {
+				this.hideSideToolbar()
+			}
+
+			if (this.isShowCenteredToolbar) {
+				this.hideCenteredToolbar()
+			}
 		}
 	}
 
 	onKeyDown(event) {
-		if (event.keyCode === 27) {
-			this.hideTooltip()
-		} else if (this.tooltip.contains(event.target) || this.toggleButtonHolder.contains(event.target)) {
+		if (event.key === 'Escape') {
+			this.hideSideToolbar()
+			this.hideCenteredToolbar()
+		} else if (this.isTargetInsideToolbar(event.target)) {
 			this.isKeepOpen = true
 		}
 	}
@@ -90,77 +123,107 @@ export default class Toolbar {
 		setTimeout(() => this.isKeepOpen = false, 100)
 	}
 
-	blurFocusedNodes() {
-		this.focusedNodes.forEach((node) => {
-			if (typeof node.onBlur === 'function') {
-				node.onBlur()
-			}
-		})
-	}
+	updateSideToolbar() {
+		const { anchorContainer, isRange, focused } = this.selection
 
-	updateTooltip() {
-		if (!this.selection.focused) {
-			this.hideTooltip()
+		if (!focused) {
+			this.hideSideToolbar()
 			this.hideToggleButtonHolder()
 
-			return
+			return null
 		}
 
 		if (
-			!this.selection.isRange &&
-			this.selection.anchorContainer.isContainer &&
-			this.selection.anchorContainer.isEmpty
+			!isRange &&
+			anchorContainer.isContainer &&
+			anchorContainer.isEmpty &&
+			anchorContainer.parent.isSection
 		) {
-			this.renderInsertButton()
-		} else if (
-			!this.selection.isRange &&
-			this.selection.anchorContainer.isContainer &&
-			!this.selection.anchorContainer.isEmpty
-		) {
-			this.renderReplaceButton()
+			this.renderInsertToolbar()
+		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
+			this.renderReplaceToolbar()
+		} else {
+			this.hideSideToolbar()
+			this.hideToggleButtonHolder()
+		}
+	}
+
+	updateCenteredToolbar() {
+		const { focused } = this.selection
+
+		if (!focused) {
+			console.log('hide centered toolbar')
+			this.hideCenteredToolbar()
+
+			return null
 		}
 
-		this.renderSelectedTooltip()
+		this.renderSelectedToolbar()
+	}
+
+	renderInsertToolbar() {
+		const controls = this.getInsertControls()
+
+		this.hideSideToolbar()
+		this.previousSelection = this.selection.getSelectionInIndexes()
+
+		if (controls.length) {
+			this.emptySideToolbar()
+			this.renderInsertButton()
+			this.renderSideControls(controls)
+		}
+	}
+
+	renderReplaceToolbar() {
+		const controls = this.getReplaceControls()
+
+		this.hideSideToolbar()
+		this.emptySideToolbar()
+		this.renderReplaceButton(controls.length > 0)
+		this.previousSelection = this.selection.getSelectionInIndexes()
+
+		if (controls.length) {
+			this.renderSideControls(controls)
+		}
 	}
 
 	renderInsertButton() {
-		this.toggleButtonHolder.innerHTML = ''
+		this.emptyToggleButtonHolder()
+		this.toggleButton = createElement('button', {
+			'class': this.css.toggleButtonInsert
+		})
+		this.toggleButtonHolder.appendChild(this.toggleButton)
+		this.toggleButton.addEventListener('click', this.toggleSideToolbar)
+		this.sizeObserver.update()
+		this.showToggleButtonHolder()
+	}
 
-		if (this.renderInsertTooltip()) {
-			this.toggleButton = createElement('button', {
-				'class': this.css.toggleButtonInsert
-			})
-			this.toggleButtonHolder.appendChild(this.toggleButton)
-			this.toggleButton.addEventListener('click', this.toggleTooltip)
-			this.hideTooltip()
-			this.renderToggleButtonHolder()
-			this.showToggleButtonHolder()
+	renderReplaceButton(hasControls) {
+		const { anchorContainer } = this.selection
+
+		this.emptyToggleButtonHolder()
+		this.toggleButton = createElement('button', {
+			'class': !hasControls && anchorContainer.parent.isSection
+				? this.css.toggleButtonGrab
+				: this.css.toggleButtonReplace
+		})
+		this.toggleButtonHolder.appendChild(this.toggleButton)
+		this.sizeObserver.update()
+		this.showToggleButtonHolder()
+
+		if (hasControls) {
+			this.toggleButton.addEventListener('click', this.toggleSideToolbar)
 		}
 	}
 
-	renderReplaceButton() {
-		this.toggleButtonHolder.innerHTML = ''
-
-		if (this.renderReplaceTooltip()) {
-			this.toggleButton = createElement('button', {
-				'class': this.css.toggleButtonReplace
-			})
-			this.toggleButtonHolder.appendChild(this.toggleButton)
-			this.toggleButton.addEventListener('click', this.toggleTooltip)
-			this.hideTooltip()
-			this.renderToggleButtonHolder()
-			this.showToggleButtonHolder()
-		}
-	}
-
-	renderSelectedTooltip() {
+	renderSelectedToolbar() {
 		const controls = []
 		const focusedNodes = this.selection.focusedNodes
 
 		if (
 			focusedNodes.length !== this.focusedNodes.length ||
 			this.selection.isRange ||
-			this.lastFocusedRange && !this.selection.isRange ||
+			this.lastRangeFocused && !this.selection.isRange ||
 			focusedNodes.filter((node, index) => this.focusedNodes[index] !== node).length
 		) {
 			Object.keys(this.plugins).forEach((type) => {
@@ -177,23 +240,19 @@ export default class Toolbar {
 			this.previousSelection = this.selection.getSelectionInIndexes()
 
 			if (controls.length) {
-				this.renderControls(controls)
-				this.showTooltip(focusedNodes.length === 1 && focusedNodes[0].isWidget ? 'settings' : 'selection')
+				this.renderCenteredControls(controls)
+				this.showCenteredToolbar()
 			} else {
-				this.hideTooltip()
+				this.hideCenteredToolbar()
 			}
 		}
 
-		this.setPosition()
-
-		// this.hideToggleButtonHolder()
-		this.lastFocusedRange = this.selection.isRange
+		this.sizeObserver.update()
+		this.lastRangeFocused = this.selection.isRange
 		this.focusedNodes = focusedNodes
 	}
 
-	renderInsertTooltip() {
-		this.emptyTooltip()
-
+	getInsertControls() {
 		const controls = []
 
 		Object.keys(this.plugins).forEach((type) => {
@@ -206,19 +265,11 @@ export default class Toolbar {
 			}
 		})
 
-		this.previousSelection = this.selection.getSelectionInIndexes()
-
-		if (controls.length) {
-			this.renderControls(controls)
-
-			return true
-		}
-
-		return false
+		return controls
 	}
 
-	renderReplaceTooltip() {
-		this.emptyTooltip()
+	getReplaceControls() {
+		this.emptySideToolbar()
 
 		const controls = []
 
@@ -232,32 +283,43 @@ export default class Toolbar {
 			}
 		})
 
-		this.previousSelection = this.selection.getSelectionInIndexes()
-
-		if (controls.length) {
-			this.renderControls(controls)
-
-			return true
-		}
-
-		return false
+		return controls
 	}
 
-	toggleTooltip() {
-		if (this.isShowTooltip) {
-			this.hideTooltip()
+	toggleSideToolbar() {
+		if (this.isShowSideToolbar) {
+			this.hideSideToolbar()
 		} else {
-			this.showTooltip('insert')
-			this.setPosition('begin')
+			this.showSideToolbar()
 		}
 	}
 
-	renderControls(rawControls) {
-		this.emptyTooltip()
+	renderSideControls(nextControls) {
+		this.emptySideToolbar()
 
+		nextControls.forEach((groupControls) => {
+			const controls = this.wrapControls(groupControls)
+			const group = createElement(
+				'div',
+				{
+					'class': this.css.tooltipGroup
+				},
+				controls.map((control) => control.getElement())
+			)
+
+			this.sideToolbar.appendChild(group)
+			controls.forEach((control) =>
+				control.setEventListener(this.controlHandler)
+			)
+		})
+	}
+
+	renderCenteredControls(rawControls) {
 		const controlsToRender = this.nextControlsToRender ? this.nextControlsToRender : rawControls
 
+		this.emptyCenteredControls()
 		this.nextControlsToRender = null
+
 		controlsToRender.forEach((groupControls) => {
 			const controls = this.wrapControls(groupControls)
 			const group = createElement(
@@ -268,7 +330,7 @@ export default class Toolbar {
 				controls.map((control) => control.getElement())
 			)
 
-			this.tooltip.appendChild(group)
+			this.centeredToolbar.appendChild(group)
 			controls.forEach((control) =>
 				control.setEventListener(this.controlHandler)
 			)
@@ -284,7 +346,6 @@ export default class Toolbar {
 			focusContainer: this.selection.focusContainer,
 			restoreSelection: this.restoreSelection,
 			setSelection: this.selection.setSelection,
-			renderControls: this.renderControls,
 			getSelectedItems: this.getSelectedItems,
 			focusedNodes: this.selection.focusedNodes
 		})
@@ -300,7 +361,7 @@ export default class Toolbar {
 
 	restoreSelection() {
 		if (this.previousSelection !== null) {
-			this.lastFocusedRange = false
+			this.lastRangeFocused = false
 			this.focusedNodes = []
 			this.selection.restoreSelection()
 		}
@@ -312,15 +373,28 @@ export default class Toolbar {
 		return this.selection.getSelectedItems()
 	}
 
-	emptyTooltip() {
-		this.tooltip.innerHTML = ''
+	emptySideToolbar() {
+		this.sideToolbar.innerHTML = ''
 	}
 
-	showTooltip(type) {
-		this.isShowTooltip = true
-		this.lastTooltipType = type
-		this.tooltip.classList.remove('hidden')
-		this.setPosition('caret')
+	emptyCenteredControls() {
+		this.centeredToolbar.innerHTML = ''
+	}
+
+	emptyToggleButtonHolder() {
+		this.toggleButtonHolder.innerHTML = ''
+	}
+
+	showSideToolbar() {
+		this.isShowSideToolbar = true
+		this.sideToolbar.classList.remove('hidden')
+		this.sizeObserver.update()
+	}
+
+	showCenteredToolbar() {
+		this.isShowCenteredToolbar = true
+		this.centeredToolbar.classList.remove('hidden')
+		this.sizeObserver.update()
 	}
 
 	showToggleButtonHolder() {
@@ -331,39 +405,18 @@ export default class Toolbar {
 		this.toggleButtonHolder.classList.add('hidden')
 	}
 
-	renderToggleButtonHolder() {
-		this.toggleButtonHolder.style.top = this.selection.boundings.container.top + 'px'
-		this.toggleButtonHolder.style.left = this.selection.boundings.container.left + 'px'
-	}
-
-	setPosition(position = 'caret') {
-		if (!this.isShowTooltip) {
-			return null
-		}
-
-		let offsetTop = this.selection.boundings.container.top
-		let offsetLeft = this.selection.boundings.container.left
-
-		if (position === 'caret') {
-			offsetTop = this.selection.boundings.caret.top - this.tooltip.offsetHeight
-			offsetLeft =
-				this.selection.boundings.caret.left +
-				this.selection.boundings.caret.width / 2 -
-				this.tooltip.offsetWidth / 2
-		} else {
-			offsetTop -= 40
-			offsetLeft -= 40
-		}
-
-		this.tooltip.style.top = offsetTop + 'px'
-		this.tooltip.style.left = Math.max(10, offsetLeft) + 'px'
-	}
-
-	hideTooltip() {
-		this.isShowTooltip = false
-		this.lastFocusedRange = false
+	hideSideToolbar() {
+		this.isShowSideToolbar = false
+		this.lastRangeFocused = false
 		this.focusedNodes = []
-		this.tooltip.classList.add('hidden')
+		this.sideToolbar.classList.add('hidden')
+	}
+
+	hideCenteredToolbar() {
+		this.isShowCenteredToolbar = false
+		this.lastRangeFocused = false
+		this.focusedNodes = []
+		this.centeredToolbar.classList.add('hidden')
 	}
 
 	wrapControls(controls) {
@@ -386,9 +439,83 @@ export default class Toolbar {
 		})
 	}
 
+	isTargetInsideToolbar(target) {
+		if (
+			this.sideToolbar.contains(target) ||
+			this.centeredToolbar.contains(target) ||
+			this.toggleButtonHolder.contains(target)
+		) {
+			return true
+		}
+
+		return false
+	}
+
+	updateBoundings() {
+		if (this.previousContainer !== this.selection.anchorContainer) {
+			if (this.cancelObserver) {
+				this.cancelObserver()
+			}
+
+			this.cancelObserver = this.sizeObserver.observe(this.selection.anchorContainer.element, (entry) => {
+				const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
+				const content = this.selection.anchorContainer.element.outerText
+				const styles = getStyle(this.selection.anchorContainer.element)
+				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
+					? entry.element.top + entry.scrollTop + 40
+					: entry.element.top + entry.scrollTop - 40
+				const sideOffsetLeft = Math.max(entry.element.left - 40, toolbarIndent)
+
+				this.toggleButtonHolder.style.top = `${entry.element.top + entry.scrollTop}px`
+				this.toggleButtonHolder.style.left = `${entry.element.left}px`
+
+				if (this.isShowSideToolbar) {
+					this.sideToolbar.style.top = `${sideOffsetTop}px`
+					this.sideToolbar.style.left = `${Math.max(10, sideOffsetLeft)}px`
+				}
+
+				if (this.isShowCenteredToolbar) {
+					this.containerAvatar.style.width = `${entry.element.width}px`
+					this.containerAvatar.style.fontFamily = styles.fontFamily
+					this.containerAvatar.style.fontSize = styles.fontSize
+					this.containerAvatar.style.lineHeight = styles.lineHeight
+					this.containerAvatar.style.padding = styles.padding
+					this.containerAvatar.style.boxSizing = styles.boxSizing
+					this.containerAvatar.style.textAlign = styles.textAlign
+
+					const fakeContent = content.substr(0, this.selection.anchorOffset) +
+						'<span style="background: blue" data-selected-text>' +
+						content.substr(this.selection.anchorOffset, selectedLength) +
+						'</span>' +
+					content.substr(this.selection.focusOffset)
+					this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+					const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
+					const centeredOffsetTop = entry.element.top + selectedText.offsetTop + entry.scrollTop
+					const offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
+						? centeredOffsetTop + selectedText.offsetHeight + 20
+						: centeredOffsetTop - this.centeredToolbar.offsetHeight
+					const offsetLeft =
+						entry.element.left + selectedText.offsetLeft +
+						selectedText.offsetWidth / 2 -
+						this.centeredToolbar.offsetWidth / 2
+
+					this.centeredToolbar.style.top = `${offsetTop}px`
+					this.centeredToolbar.style.left = `${Math.max(
+						toolbarIndent,
+						Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
+					)}px`
+				}
+			})
+
+			this.previousContainer = this.selection.anchorContainer
+		}
+	}
+
 	destroy() {
-		document.body.removeChild(this.tooltip)
 		document.body.removeChild(this.toggleButtonHolder)
+		document.body.removeChild(this.containerAvatar)
+		document.body.removeChild(this.sideToolbar)
+		document.body.removeChild(this.centeredToolbar)
 		document.removeEventListener('mousedown', this.onMouseDown)
 		document.removeEventListener('mouseup', this.onMouseUp)
 		document.removeEventListener('keydown', this.onKeyDown)

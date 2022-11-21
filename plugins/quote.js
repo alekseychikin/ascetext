@@ -70,7 +70,7 @@ export default class QuotePlugin extends PluginPlugin {
 	}
 
 	getReplaceControls(container) {
-		if (container.type === 'quote' || !container.parent.isSection) {
+		if (container.type === 'quote' || !container.parent.isSection || !container.isContainer) {
 			return []
 		}
 

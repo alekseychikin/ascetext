@@ -73,7 +73,6 @@ export class Toolbar {
 	setPosition(position?: 'caret' | 'center'): void;
 	showTooltip(type: string): void;
 	hideTooltip(): void;
-	renderControls(controls: Array<Array<Control>>): void;
 	controlHandler(action: () => void, event: Event): void;
 	destroy(): void;
 }

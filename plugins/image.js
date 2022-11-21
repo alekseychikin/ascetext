@@ -75,31 +75,34 @@ export class ImageCaption extends Container {
 	constructor(params) {
 		super('image-caption', params)
 
+		this.removeObserver = null
 		this.setElement(createElement('figcaption', {
 			contenteditable: true
 		}))
 	}
 
-	onMount({ controls }) {
+	onMount({ controls, sizeObserver }) {
 		this.placeholder = createElement('div', {
-			contenteditable: false,
 			style: {
 				'position': 'absolute',
-				'pointer-events': 'none'
+				'pointer-events': 'none',
+				'top': '0',
+				'left': '0'
 			},
 			class: 'contenteditor__image-placeholder'
 		})
 		this.placeholder.appendChild(document.createTextNode(this.attributes.placeholder))
 
-		controls.registerControl(this.placeholder, () => {
-			this.placeholder.style.top = `${this.element.offsetTop}px`
-			this.placeholder.style.left = `${this.element.offsetLeft}px`
-			this.placeholder.style.width = `${this.element.offsetWidth}px`
+		this.removeObserver = sizeObserver.observe(this.element, (entry) => {
+			this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+			this.placeholder.style.width = `${entry.element.width}px`
 		})
+		controls.registerControl(this.placeholder)
 		this.inputHandler()
 	}
 
 	onUnmount({ controls }) {
+		this.removeObserver()
 		controls.unregisterControl(this.placeholder)
 	}
 
