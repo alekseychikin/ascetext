@@ -17,6 +17,7 @@ import QuotePlugin from '../plugins/quote'
 import Toolbar from './toolbar'
 import Controls from './controls'
 import Dragndrop from './drag-n-drop'
+import SizeObserver from './size-observer'
 
 class Root extends Section {
 	constructor(element) {
@@ -57,8 +58,9 @@ export default class RichEditor {
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
-		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
+		this.sizeObserver = new SizeObserver(this)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
+		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
@@ -120,6 +122,7 @@ export default class RichEditor {
 
 	onNodeChange(changes) {
 		this.timeTravel.pushChange(changes)
+		this.sizeObserver.update()
 
 		clearTimeout(this.onChangeTimer)
 		this.onChangeTimer = setTimeout(() => {

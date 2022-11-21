@@ -389,8 +389,10 @@ export default class Toolbar {
 	}
 
 	setPositionToggleButtonHolder() {
-		this.toggleButtonHolder.style.top = this.selection.boundings.container.top + 'px'
-		this.toggleButtonHolder.style.left = this.selection.boundings.container.left + 'px'
+		if (this.selection.boundings.container) {
+			this.toggleButtonHolder.style.top = this.selection.boundings.container.top + 'px'
+			this.toggleButtonHolder.style.left = this.selection.boundings.container.left + 'px'
+		}
 	}
 
 	setPositionSideToolbar() {

@@ -80,22 +80,23 @@ export class ImageCaption extends Container {
 		}))
 	}
 
-	onMount({ controls }) {
+	onMount({ controls, sizeObserver }) {
 		this.placeholder = createElement('div', {
-			contenteditable: false,
 			style: {
 				'position': 'absolute',
-				'pointer-events': 'none'
+				'pointer-events': 'none',
+				'top': '0',
+				'left': '0'
 			},
 			class: 'contenteditor__image-placeholder'
 		})
 		this.placeholder.appendChild(document.createTextNode(this.attributes.placeholder))
 
-		controls.registerControl(this.placeholder, () => {
-			this.placeholder.style.top = `${this.element.offsetTop}px`
-			this.placeholder.style.left = `${this.element.offsetLeft}px`
-			this.placeholder.style.width = `${this.element.offsetWidth}px`
+		sizeObserver.observe(this.element, (entry) => {
+			this.placeholder.style.transform = `translate(${entry.offsetLeft}px, ${entry.offsetTop}px)`
+			this.placeholder.style.width = `${entry.offsetWidth}px`
 		})
+		controls.registerControl(this.placeholder)
 		this.inputHandler()
 	}
 
