@@ -466,16 +466,16 @@ export default class Toolbar {
 					: entry.element.top + entry.scrollTop - 40
 				const sideOffsetLeft = Math.max(entry.element.left - 40, toolbarIndent)
 
-				this.toggleButtonHolder.style.top = entry.element.top + entry.scrollTop + 'px'
-				this.toggleButtonHolder.style.left = entry.element.left + 'px'
+				this.toggleButtonHolder.style.top = `${entry.element.top + entry.scrollTop}px`
+				this.toggleButtonHolder.style.left = `${entry.element.left}px`
 
 				if (this.isShowSideToolbar) {
-					this.sideToolbar.style.top = sideOffsetTop + 'px'
-					this.sideToolbar.style.left = Math.max(10, sideOffsetLeft) + 'px'
+					this.sideToolbar.style.top = `${sideOffsetTop}px`
+					this.sideToolbar.style.left = `${Math.max(10, sideOffsetLeft)}px`
 				}
 
 				if (this.isShowCenteredToolbar) {
-					this.containerAvatar.style.width = entry.element.width + 'px'
+					this.containerAvatar.style.width = `${entry.element.width}px`
 					this.containerAvatar.style.fontFamily = styles.fontFamily
 					this.containerAvatar.style.fontSize = styles.fontSize
 					this.containerAvatar.style.lineHeight = styles.lineHeight
@@ -499,11 +499,11 @@ export default class Toolbar {
 						selectedText.offsetWidth / 2 -
 						this.centeredToolbar.offsetWidth / 2
 
-					this.centeredToolbar.style.top = offsetTop + 'px'
-					this.centeredToolbar.style.left = Math.max(
+					this.centeredToolbar.style.top = `${offsetTop}px`
+					this.centeredToolbar.style.left = `${Math.max(
 						toolbarIndent,
 						Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
-					) + 'px'
+					)}px`
 				}
 			})
 

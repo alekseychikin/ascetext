@@ -58,7 +58,7 @@ export default class RichEditor {
 		this.editing = new Editing(this)
 		this.selection = new Selection(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
-		this.sizeObserver = new SizeObserver(this)
+		this.sizeObserver = params.sizeObserver ? params.sizeObserver(this) : new SizeObserver(this)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)
