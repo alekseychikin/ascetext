@@ -130,6 +130,11 @@ export default class Toolbar {
 			this.hideSideToolbar()
 			this.hideToggleButtonHolder()
 
+			if (this.cancelObserver) {
+				this.cancelObserver()
+				this.cancelObserver = null
+			}
+
 			return null
 		}
 
@@ -457,10 +462,11 @@ export default class Toolbar {
 				this.cancelObserver()
 			}
 
+			if (!this.selection.anchorContainer) {
+				return null
+			}
+
 			this.cancelObserver = this.sizeObserver.observe(this.selection.anchorContainer.element, (entry) => {
-				const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
-				const content = this.selection.anchorContainer.element.outerText
-				const styles = getStyle(this.selection.anchorContainer.element)
 				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
 					? entry.element.top + entry.scrollTop + 40
 					: entry.element.top + entry.scrollTop - 40
@@ -475,21 +481,7 @@ export default class Toolbar {
 				}
 
 				if (this.isShowCenteredToolbar) {
-					this.containerAvatar.style.width = `${entry.element.width}px`
-					this.containerAvatar.style.fontFamily = styles.fontFamily
-					this.containerAvatar.style.fontSize = styles.fontSize
-					this.containerAvatar.style.lineHeight = styles.lineHeight
-					this.containerAvatar.style.padding = styles.padding
-					this.containerAvatar.style.boxSizing = styles.boxSizing
-					this.containerAvatar.style.textAlign = styles.textAlign
-
-					const fakeContent = content.substr(0, this.selection.anchorOffset) +
-						'<span style="background: blue" data-selected-text>' +
-						content.substr(this.selection.anchorOffset, selectedLength) +
-						'</span>' +
-					content.substr(this.selection.focusOffset)
-					this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-					const selectedText = this.containerAvatar.querySelector('span[data-selected-text]')
+					const selectedText = this.setAvatar(entry)
 					const centeredOffsetTop = entry.element.top + selectedText.offsetTop + entry.scrollTop
 					const offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
 						? centeredOffsetTop + selectedText.offsetHeight + 20
@@ -511,6 +503,29 @@ export default class Toolbar {
 		}
 	}
 
+	setAvatar(entry) {
+		const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
+		const content = this.selection.anchorContainer.element.outerText
+		const styles = getStyle(this.selection.anchorContainer.element)
+
+		this.containerAvatar.style.width = `${entry.element.width}px`
+		this.containerAvatar.style.fontFamily = styles.fontFamily
+		this.containerAvatar.style.fontSize = styles.fontSize
+		this.containerAvatar.style.lineHeight = styles.lineHeight
+		this.containerAvatar.style.padding = styles.padding
+		this.containerAvatar.style.boxSizing = styles.boxSizing
+		this.containerAvatar.style.textAlign = styles.textAlign
+
+		const fakeContent = content.substr(0, this.selection.anchorOffset) +
+			'<span style="background: blue" data-selected-text>' +
+			content.substr(this.selection.anchorOffset, selectedLength) +
+			'</span>' +
+		content.substr(this.selection.focusOffset)
+		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+
+		return this.containerAvatar.querySelector('span[data-selected-text]')
+	}
+
 	destroy() {
 		document.body.removeChild(this.toggleButtonHolder)
 		document.body.removeChild(this.containerAvatar)
@@ -520,5 +535,9 @@ export default class Toolbar {
 		document.removeEventListener('mouseup', this.onMouseUp)
 		document.removeEventListener('keydown', this.onKeyDown)
 		document.removeEventListener('keyup', this.onMouseUp)
+
+		if (this.cancelObserver) {
+			this.cancelObserver()
+		}
 	}
 }
