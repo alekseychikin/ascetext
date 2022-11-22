@@ -11,10 +11,6 @@ export default class SizeObserver {
 		this.handlers = []
 		this.timer = null
 
-		this.bindEvents()
-	}
-
-	bindEvents() {
 		window.addEventListener('resize', this.update)
 	}
 
@@ -57,5 +53,9 @@ export default class SizeObserver {
 			element: element.getBoundingClientRect(),
 			root: this.core.node.getBoundingClientRect()
 		}
+	}
+
+	destroy() {
+		window.removeEventListener('resize', this.update)
 	}
 }

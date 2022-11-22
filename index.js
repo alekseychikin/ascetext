@@ -10,6 +10,7 @@ import ListPlugin, { List, ListItem, ListItemContent } from './plugins/list'
 import QuotePlugin, { Quote } from './plugins/quote'
 import PluginPlugin from './plugins/plugin'
 import Toolbar from './core/toolbar'
+import SizeObserver from './core/size-observer'
 import ControlControl from './controls/control'
 import ControlButton from './controls/button'
 import ControlFile from './controls/file'
@@ -42,6 +43,7 @@ export {
 	Quote,
 	PluginPlugin,
 	Toolbar,
+	SizeObserver,
 	ControlControl,
 	ControlButton,
 	ControlFile,

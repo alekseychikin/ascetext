@@ -78,6 +78,7 @@ export default class RichEditor {
 		this.node.setAttribute('contenteditable', true)
 		window.addEventListener('load', this.sizeObserver.update)
 		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
+		this.node.addEventListener('load', this.sizeObserver.update, true)
 	}
 
 	stringify(first) {
@@ -178,6 +179,7 @@ export default class RichEditor {
 		this.selection.destroy()
 		this.toolbar.destroy()
 		this.dragndrop.destroy()
+		this.sizeObserver.destroy()
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
