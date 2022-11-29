@@ -17,8 +17,10 @@ export class Text extends Node {
 		super('text', attributes)
 
 		this.content = content
+	}
 
-		this.setElement(this.create(this.generateModifiers()))
+	render() {
+		return this.create(this.generateModifiers())
 	}
 
 	create(modifiers) {
@@ -184,15 +186,14 @@ export default class TextPlugin extends PluginPlugin {
 		return new Text(params, text)
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder, children) {
 		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
 
 		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
-			return false
+			return null
 		}
 
 		if (isTextElement(element)) {
-			const { weight, style, decoration, strike } = context
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
@@ -211,58 +212,26 @@ export default class TextPlugin extends PluginPlugin {
 				return false
 			}
 
-			return new Text({ weight, style, decoration, strike }, content)
+			return builder.create('text', {}, content)
 		}
 
-		if (element.nodeName.toLowerCase() === 'em') {
-			if (this.params.allowModifiers.includes('italic')) {
-				context.style = 'italic'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.style
-
-			return model
+		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
+			builder.setAttribute(children.first, 'weight', 'bold')
 		}
 
-		if (element.nodeName.toLowerCase() === 'strong') {
-			if (this.params.allowModifiers.includes('bold')) {
-				context.weight = 'bold'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.weight
-
-			return model
+		if (tagName === 'em' && this.params.allowModifiers.includes('italic')) {
+			builder.setAttribute(children.first, 'style', 'italic')
 		}
 
-		if (element.nodeName.toLowerCase() === 's') {
-			if (this.params.allowModifiers.includes('horizontal')) {
-				context.strike = 'horizontal'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.strike
-
-			return model
+		if (tagName === 's' && this.params.allowModifiers.includes('horizontal')) {
+			builder.setAttribute(children.first, 'strike', 'horizontal')
 		}
 
-		if (element.nodeName.toLowerCase() === 'u') {
-			if (this.params.allowModifiers.includes('underlined')) {
-				context.decoration = 'underlined'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.decoration
-
-			return model
+		if (tagName === 'u' && this.params.allowModifiers.includes('underlined')) {
+			builder.setAttribute(children.first, 'decoration', 'underlined')
 		}
 
-		if (element.nodeName.toLowerCase() === 'span') {
+		if (tagName === 'span') {
 			if (
 				(
 					element.style['font-weight'] === 'bold' ||
@@ -271,29 +240,20 @@ export default class TextPlugin extends PluginPlugin {
 					element.style['font-weight'] === '700'
 				) && this.params.allowModifiers.includes('bold')
 			) {
-				context.weight = 'bold'
+				builder.setAttribute(children.first, 'weight', 'bold')
 			}
 
 			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
-				context.style = 'italic'
+				builder.setAttribute(children.first, 'style', 'italic')
 			}
 
 			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
-				context.strike = 'horizontal'
+				builder.setAttribute(children.first, 'strike', 'horizontal')
 			}
 
 			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
-				context.decoration = 'underline'
+				builder.setAttribute(children.first, 'decoration', 'underlined')
 			}
-
-			const result = builder.parse(element, context)
-
-			delete context.weight
-			delete context.style
-			delete context.strike
-			delete context.decoration
-
-			return result
 		}
 	}
 

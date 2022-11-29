@@ -1,5 +1,7 @@
 import { operationTypes } from '../core/timetravel'
 import isElementBr from '../utils/is-element-br'
+import isHtmlElement from '../utils/is-html-element'
+import Fragment from '../nodes/fragment'
 
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'
@@ -17,6 +19,9 @@ export default class Builder {
 
 	create(name, ...params) {
 		const node = this.core.plugins[name].create(...params)
+		const element = node.render()
+
+		node.setElement(element)
 
 		if (node.isContainer) {
 			this.append(node, this.create('breakLine'))
@@ -29,6 +34,19 @@ export default class Builder {
 		return this.create('paragraph')
 	}
 
+	createFragment() {
+		return new Fragment()
+	}
+
+	setAttribute(node, name, value) {
+		node.attributes[name] = value
+
+		const element = node.render()
+
+		node.element.parentNode.insertBefore(element, node.element)
+		node.setElement(element)
+	}
+
 	split(container, offset) {
 		const firstLevelNode = container.getFirstLevelNode(offset)
 
@@ -36,21 +54,23 @@ export default class Builder {
 	}
 
 	push(node, target) {
-		this.append(node, target, target)
+		this.cut(target)
+		this.append(node, target)
 	}
 
-	append(node, target, last) {
-		if (typeof node.append === 'function') {
-			node.append(target, last, { builder: this, appendDefault: this.appendHandler })
+	append(node, target, anchor) {
+		if (target.type === 'fragment') {
+			this.append(node, target.first)
+		} else if (typeof node.append === 'function') {
+			node.append(target, anchor, { builder: this, appendDefault: this.appendHandler })
 		} else {
-			this.appendHandler(node, target, last)
+			this.appendHandler(node, target, anchor)
 		}
 	}
 
-	appendHandler(node, target, last) {
+	appendHandler(node, target, anchor) {
+		const last = target.getNodeUntil()
 		let current = target
-
-		last = last || target.getNodeUntil()
 
 		this.cutUntil(target, last)
 
@@ -79,6 +99,7 @@ export default class Builder {
 	}
 
 	preconnect(node, target) {
+		console.log('used preconnect')
 		const last = target.getNodeUntil()
 		let current = target
 
@@ -112,6 +133,7 @@ export default class Builder {
 	}
 
 	connect(node, target) {
+		console.log('used connect')
 		const last = target.getNodeUntil()
 		let current = target
 
@@ -380,14 +402,12 @@ export default class Builder {
 		}
 	}
 
-	parse(element, context = { selection: this.selection }) {
-		const lastElement = element.lastChild
+	parse(element) {
+		const container = this.createFragment()
 		let currentElement = element.firstChild
 		let nextElement
-		let first
-		let previous
+		let children = null
 		let current
-		let normalized
 
 		while (currentElement) {
 			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
@@ -396,52 +416,63 @@ export default class Builder {
 				continue
 			}
 
-			// eslint-disable-next-line no-loop-func
+			nextElement = currentElement.nextSibling
+			children = null
+
+			if (isHtmlElement(currentElement) && currentElement.childNodes.length) {
+				children = this.parse(currentElement)
+			}
+
 			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
-				return this.core.plugins[pluginName].parse(currentElement, this, context)
-			}, false) || this.parse(currentElement, context)
-			nextElement = currentElement.nextSibling
+				return this.core.plugins[pluginName].parse(currentElement, this, children)
+			}, null)
 
 			if (current) {
-				if (current.isDeleteEmpty && !current.first) {
-					current = previous
-				} else {
-					if (!first) {
-						first = current
-					}
-
-					if (previous && (normalized = this.connectWithNormalize(previous, current))) {
-						if (first === previous) {
-							first = normalized
-						}
-
-						current = normalized
-					}
+				if (children && children.first) {
+					this.append(current, children)
 				}
 
-				previous = current.getLastNode()
-			} else {
-				console.log('not matched', currentElement)
-
-				if (currentElement.parentNode) {
-					currentElement.parentNode.removeChild(currentElement)
-				}
+				this.append(container, current)
+			} else if (children && children.first) {
+				this.append(container, children)
 			}
 
-			if (currentElement === lastElement) {
-				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-					this.cut(previous)
-				}
+			// if (current) {
+			// 	if (current.isDeleteEmpty && !current.first) {
+			// 		current = previous
+			// 	} else {
+			// 		if (!first) {
+			// 			first = current
+			// 		}
 
-				break
-			}
+			// 		if (previous && (normalized = this.connectWithNormalize(previous, current))) {
+			// 			if (first === previous) {
+			// 				first = normalized
+			// 			}
+
+			// 			current = normalized
+			// 		}
+			// 	}
+
+			// 	previous = current.getLastNode()
+			// } else if (currentElement.parentNode) {
+			// 	currentElement.parentNode.removeChild(currentElement)
+			// }
+
+			// if (currentElement === lastElement) {
+			// 	if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+			// 		this.cut(previous)
+			// 	}
+
+			// 	break
+			// }
 
 			currentElement = nextElement
 		}
 
-		return first
+		return container
 	}
 
 	connectWithNormalize(previous, current) {

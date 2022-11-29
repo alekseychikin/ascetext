@@ -6,8 +6,10 @@ import isHtmlElement from '../utils/is-html-element'
 export class Quote extends Container {
 	constructor() {
 		super('quote')
+	}
 
-		this.setElement(createElement('blockquote'))
+	render() {
+		return createElement('blockquote')
 	}
 
 	stringify(children) {
@@ -28,16 +30,9 @@ export default class QuotePlugin extends PluginPlugin {
 		return new Quote()
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('blockquote')) {
-			const node = builder.create('quote')
-			let children
-
-			if (children = builder.parse(element, context)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('quote')
 		}
 	}
 

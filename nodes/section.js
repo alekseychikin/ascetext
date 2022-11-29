@@ -7,13 +7,13 @@ export default class Section extends Node {
 		this.isSection = true
 	}
 
-	append(node, last, { builder, appendDefault }) {
+	append(node, anchor, { builder, appendDefault }) {
 		if (node.type === 'text' || node.isInlineWidget || node.type === 'breakLine') {
 			const container = builder.createBlock()
 
-			builder.append(container, node, last)
+			builder.append(container, node, anchor)
 		} else {
-			appendDefault(this, node, last)
+			appendDefault(this, node, anchor)
 		}
 	}
 

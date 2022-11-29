@@ -5,22 +5,20 @@ import createElement from '../utils/create-element'
 import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
-	constructor(attributes) {
+	constructor(attributes = {}) {
 		super('image', Object.assign({ size: '', float: 'none' }, attributes))
+	}
 
+	render() {
 		this.image = createElement('img', {
-			src: attributes.src
+			src: this.attributes.src
 		})
-		this.setElement(createElement('figure', {
+
+		return createElement('figure', {
 			'class': this.getClassName(),
 			contenteditable: false,
 			tabIndex: 0
-		}, [ this.image ]))
-	}
-
-	setSrc(src) {
-		this.attributes.src = src
-		this.image.src = src
+		}, [ this.image ])
 	}
 
 	getClassName() {
@@ -76,9 +74,12 @@ export class ImageCaption extends Container {
 		super('image-caption', params)
 
 		this.removeObserver = null
-		this.setElement(createElement('figcaption', {
+	}
+
+	render() {
+		return createElement('figcaption', {
 			contenteditable: true
-		}))
+		})
 	}
 
 	onMount({ controls, sizeObserver }) {
@@ -195,7 +196,7 @@ export default class ImagePlugin extends PluginPlugin {
 		return new Image(attributes)
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
@@ -214,27 +215,15 @@ export default class ImagePlugin extends PluginPlugin {
 				}
 			})
 
-			const imgElement = element.querySelector('img')
-			const captionElement = element.querySelector('figcaption')
-			const captionChildren = captionElement
-				? builder.parse(captionElement, context)
-				: builder.create('breakLine')
-			const image = builder.create('image', { src: imgElement.src, size, float })
-			const caption = builder.create('image', {
+			return builder.create('image', { src: element.querySelector('img').src, size, float })
+		}
+
+		if (isHtmlElement(element) && element.matches('figcaption')) {
+			return builder.create('image', {
 				type: 'caption',
 				placeholder: this.params.placeholder
 			})
-
-			if (captionChildren) {
-				builder.append(caption, captionChildren)
-			}
-
-			builder.append(image, caption)
-
-			return image
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
@@ -358,7 +347,7 @@ export default class ImagePlugin extends PluginPlugin {
 					placeholder: this.params.placeholder
 				})
 
-				image.setSrc(src)
+				builder.setAttribute(image, 'src', src)
 				builder.append(caption, builder.create('breakLine'))
 				builder.append(image, caption)
 				builder.replace(container, image)

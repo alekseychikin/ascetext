@@ -15,15 +15,15 @@ export default class Container extends Node {
 		return node.isSection
 	}
 
-	append(target, last, { builder, appendDefault }) {
+	append(target, anchor, { builder, appendDefault }) {
 		if (target.isContainer) {
-			builder.append(this, target.first)
+			builder.append(this, target.first, anchor)
 		} else {
 			if (this.isEmpty && this.first) {
 				builder.cut(this.first)
 			}
 
-			appendDefault(this, target, last)
+			appendDefault(this, target, anchor)
 		}
 	}
 

@@ -9,7 +9,10 @@ export class List extends Group {
 		super('list', attributes)
 
 		this.isDeleteEmpty = true
-		this.setElement(createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul'))
+	}
+
+	render() {
+		return createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
 	}
 
 	accept(node) {
@@ -49,16 +52,18 @@ export class List extends Group {
 export class ListItem extends Group {
 	constructor() {
 		super('list-item')
-
-		this.setElement(createElement('li'))
 	}
 
-	append(target, last, { builder, appendDefault }) {
+	render() {
+		return createElement('li')
+	}
+
+	append(target, anchor, { builder, appendDefault }) {
 		if (!this.first && target.type === 'list' && target.first && target.first.first) {
-			appendDefault(this, target.first.first)
+			appendDefault(this, target.first.first, anchor)
 			builder.cut(target)
 		} else {
-			appendDefault(this, target, last)
+			appendDefault(this, target, anchor)
 		}
 	}
 
@@ -82,10 +87,12 @@ export class ListItem extends Group {
 export class ListItemContent extends Container {
 	constructor() {
 		super('list-item-content')
+	}
 
-		this.setElement(createElement('div', {
+	render() {
+		return createElement('div', {
 			tabIndex: 0
-		}))
+		})
 	}
 
 	accept(node) {
@@ -347,41 +354,27 @@ export default class ListPlugin extends PluginPlugin {
 		return controls
 	}
 
-	parse(element, builder, context) {
-		const nodeName = element.nodeName.toLowerCase()
+	parse(element, builder, children) {
+		const nodeName = isHtmlElement(element) ? element.nodeName.toLowerCase() : ''
 
-		if (isHtmlElement(element) && (nodeName === 'ul' || nodeName === 'ol')) {
+		if (nodeName === 'ul' || nodeName === 'ol') {
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
-			const list = builder.create('list', { decor })
-			let children
 
-			if (children = builder.parse(element, context)) {
-				builder.append(list, children)
-			}
-
-			return list
+			return builder.create('list', { decor })
 		}
 
-		if (isHtmlElement(element) && nodeName === 'li') {
+		if (nodeName === 'li') {
 			const listItem = builder.create('list', 'item')
 			const content = builder.create('list', 'content')
-			let children
 
-			if (children = builder.parse(element, context)) {
-				const last = children.getLastNode()
+			builder.append(listItem, content)
 
-				builder.append(listItem, content)
+			if (children) {
 				builder.append(content, children)
-
-				if (last.type === 'list') {
-					builder.connect(content, last)
-				}
 			}
 
 			return listItem
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {

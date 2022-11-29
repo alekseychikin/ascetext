@@ -8,11 +8,12 @@ export class Link extends InlineWidget {
 		super('link', attributes)
 
 		this.isDeleteEmpty = true
-		this.controls = []
+	}
 
-		this.setElement(createElement('a', {
-			href: attributes.url
-		}))
+	render() {
+		return createElement('a', {
+			href: this.attributes.url
+		})
 	}
 
 	normalize(element, builder) {
@@ -100,21 +101,10 @@ export default class LinkPlugin extends PluginPlugin {
 		return new Link({ url })
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('a')) {
-			const url = element.getAttribute('href')
-			let children
-
-			const node = new Link({ url })
-
-			if (children = builder.parse(element, context)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('link', element.getAttribute('href'))
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
