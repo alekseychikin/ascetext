@@ -39,12 +39,13 @@ export default class Builder {
 	}
 
 	setAttribute(node, name, value) {
+		const previous = { ...node.attributes }
+
 		node.attributes[name] = value
 
-		const element = node.render()
-
-		node.element.parentNode.insertBefore(element, node.element)
-		node.setElement(element)
+		if (typeof node.update === 'function') {
+			node.update(previous)
+		}
 	}
 
 	split(container, offset) {

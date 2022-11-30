@@ -49,7 +49,7 @@ export class Link extends InlineWidget {
 	}
 
 	duplicate(builder) {
-		const duplicate = new Link(this.attributes)
+		const duplicate = builder.create('link', this.attributes.url)
 
 		builder.connect(this, duplicate)
 
@@ -193,8 +193,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'link') {
-				builder.connect(item, item.first)
-				builder.cut(item)
+				builder.replace(item, item.first)
 			}
 		})
 	}
@@ -206,8 +205,8 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = this.create(url)
-				builder.connect(item, link)
+				link = builder.create('link', url)
+				builder.replace(item, link)
 				builder.push(link, item)
 			}
 		})
@@ -216,16 +215,15 @@ export default class LinkPlugin extends PluginPlugin {
 	removeLink(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((node) => {
 			if (node.type === 'link') {
-				builder.connect(node, node.first)
-				builder.cut(node)
+				builder.replace(node, node.first)
 			}
 		})
 	}
 
 	wrap(match, builder) {
-		const link = this.create(match.content)
+		const link = builder.create('link', match.content)
 
-		builder.preconnect(match, link)
+		builder.replace(match, link)
 		builder.push(link, match)
 
 		return link

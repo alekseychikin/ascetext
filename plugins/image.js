@@ -16,9 +16,17 @@ export class Image extends Widget {
 
 		return createElement('figure', {
 			'class': this.getClassName(),
-			contenteditable: false,
-			tabIndex: 0
+			'contenteditable': false,
+			'tabIndex': 0
 		}, [ this.image ])
+	}
+
+	update(previous) {
+		if (previous.src !== this.attributes.src) {
+			this.image.src = this.attributes.src
+		}
+
+		this.element.className = this.getClassName()
 	}
 
 	getClassName() {
@@ -290,34 +298,30 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	toggleFloatLeft(image) {
-		return () => {
-			image.attributes.size = ''
-			image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'size', '')
+			builder.setAttribute(image, 'float', image.attributes.float === 'left' ? 'none' : 'left')
 		}
 	}
 
 	toggleFloatRight(image) {
-		return () => {
-			image.attributes.size = ''
-			image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'size', '')
+			builder.setAttribute(image, 'float', image.attributes.float === 'right' ? 'none' : 'right')
 		}
 	}
 
 	toggleSizeWide(image) {
-		return () => {
-			image.attributes.float = 'none'
-			image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'float', 'none')
+			builder.setAttribute(image, 'size', image.attributes.size === 'wide' ? '' : 'wide')
 		}
 	}
 
 	toggleSizeBanner(image) {
-		return () => {
-			image.attributes.float = 'none'
-			image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'float', 'none')
+			builder.setAttribute(image, 'size', image.attributes.size === 'banner' ? '' : 'banner')
 		}
 	}
 

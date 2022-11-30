@@ -23,6 +23,14 @@ export class Text extends Node {
 		return this.create(this.generateModifiers())
 	}
 
+	update() {
+		const element = this.render()
+
+		this.element.parentNode.insertBefore(element, this.element)
+		this.element.parentNode.removeChild(this.element)
+		this.setElement(element)
+	}
+
 	create(modifiers) {
 		let modifier
 
@@ -66,10 +74,10 @@ export class Text extends Node {
 	normalize(target, builder) {
 		if (target.isContainer) {
 			if (target.first && target.first.type === 'text' && this.isEqual(target.first)) {
-				return new Text(this.attributes, this.content + target.first.content)
+				return builder.create('text', { ...this.attributes }, this.content + target.first.content)
 			}
 
-			const duplicate = new Text({ ...this.attributes }, this.content)
+			const duplicate = builder.create('text', { ...this.attributes }, this.content)
 
 			builder.connect(duplicate, target.first)
 
@@ -81,7 +89,7 @@ export class Text extends Node {
 		}
 
 		if (this.isEqual(target)) {
-			return new Text(this.attributes, this.content + target.content)
+			return builder.create('text', { ...this.attributes }, this.content + target.content)
 		}
 
 		return false
@@ -113,8 +121,8 @@ export class Text extends Node {
 			}
 		}
 
-		const head = new Text(this.attributes, this.content.substr(0, position))
-		const tail = new Text(this.attributes, this.content.substr(position))
+		const head = builder.create('text', { ...this.attributes }, this.content.substr(0, position))
+		const tail = builder.create('text', { ...this.attributes }, this.content.substr(position))
 
 		builder.connect(head, tail)
 		builder.replace(this, head)
@@ -386,7 +394,7 @@ export default class TextPlugin extends PluginPlugin {
 	unsetBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text' && item.attributes.weight === 'bold') {
-				builder.replace(item, new Text(omit(item.attributes, 'weight'), item.content))
+				builder.setAttribute(item, 'weight', '')
 			}
 		})
 	}
@@ -394,7 +402,7 @@ export default class TextPlugin extends PluginPlugin {
 	setBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, weight: 'bold' }, item.content))
+				builder.setAttribute(item, 'weight', 'bold')
 			}
 		})
 	}
@@ -404,7 +412,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.style === 'italic') {
-				builder.replace(item, new Text(omit(item.attributes, 'style'), item.content))
+				builder.setAttribute(item, 'style', '')
 			}
 		})
 	}
@@ -412,7 +420,7 @@ export default class TextPlugin extends PluginPlugin {
 	setItalic(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, style: 'italic' }, item.content))
+				builder.setAttribute(item, 'style', 'italic')
 			}
 		})
 	}
@@ -422,7 +430,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.strike === 'horizontal') {
-				builder.replace(item, new Text(omit(item.attributes, 'strike'), item.content))
+				builder.setAttribute(item, 'strike', '')
 			}
 		})
 	}
@@ -430,7 +438,7 @@ export default class TextPlugin extends PluginPlugin {
 	setStrike(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, strike: 'horizontal' }, item.content))
+				builder.setAttribute(item, 'strike', 'horizontal')
 			}
 		})
 	}
@@ -440,7 +448,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.decoration === 'underlined') {
-				builder.replace(item, new Text(omit(item.attributes, 'decoration'), item.content))
+				builder.setAttribute(item, 'decoration', '')
 			}
 		})
 	}
@@ -448,7 +456,7 @@ export default class TextPlugin extends PluginPlugin {
 	setUnderline(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, decoration: 'underlined' }, item.content))
+				builder.setAttribute(item, 'decoration', 'underlined')
 			}
 		})
 	}
