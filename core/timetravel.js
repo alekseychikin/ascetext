@@ -2,7 +2,8 @@ export const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
 	PRECONNECT: 'preconnect',
-	CONNECT: 'connect'
+	CONNECT: 'connect',
+	ATTRIBUTE: 'attribute'
 }
 
 export default class TimeTravel {
@@ -84,20 +85,16 @@ export default class TimeTravel {
 
 				switch (previousEvent.type) {
 					case operationTypes.CUT:
-						if (previousEvent.next) {
-							this.builder.preconnect(previousEvent.next, previousEvent.target)
-						} else if (previousEvent.previous) {
-							this.builder.connect(previousEvent.previous, previousEvent.target)
-						} else if (previousEvent.container) {
-							this.builder.append(previousEvent.container, previousEvent.target)
-						}
+						this.builder.append(previousEvent.container, previousEvent.target, previousEvent.anchor)
 
 						break
 					case operationTypes.APPEND:
 					case operationTypes.PRECONNECT:
 					case operationTypes.CONNECT:
 						this.builder.cutUntil(previousEvent.target, previousEvent.last)
-
+						break
+					case operationTypes.ATTRIBUTE:
+						this.builder.setAttributes(previousEvent.target, previousEvent.previous)
 						break
 				}
 			}
@@ -127,13 +124,12 @@ export default class TimeTravel {
 						this.builder.cutUntil(nextEvent.target, nextEvent.until)
 						break
 					case operationTypes.APPEND:
-						this.builder.append(nextEvent.container, nextEvent.target)
-						break
 					case operationTypes.PRECONNECT:
-						this.builder.preconnect(nextEvent.next, nextEvent.target)
-						break
 					case operationTypes.CONNECT:
-						this.builder.connect(nextEvent.previous, nextEvent.target)
+						this.builder.append(nextEvent.container, nextEvent.target, nextEvent.anchor)
+						break
+					case operationTypes.ATTRIBUTE:
+						this.builder.setAttributes(nextEvent.target, nextEvent.next)
 						break
 				}
 			}

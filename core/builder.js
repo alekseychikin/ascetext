@@ -42,9 +42,26 @@ export default class Builder {
 		const previous = { ...node.attributes }
 
 		node.attributes[name] = value
+		this.handleAttributes(node, previous, node.attributes)
+	}
 
-		if (typeof node.update === 'function') {
-			node.update(previous)
+	setAttributes(node, attributes) {
+		const previous = { ...node.attributes }
+
+		node.attributes = attributes
+		this.handleAttributes(node, previous, attributes)
+	}
+
+	handleAttributes(target, previous, next) {
+		this.core.onNodeChange({
+			type: operationTypes.ATTRIBUTE,
+			target,
+			previous,
+			next
+		})
+
+		if (typeof target.update === 'function') {
+			target.update(previous)
 		}
 	}
 
