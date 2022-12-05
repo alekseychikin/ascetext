@@ -53,7 +53,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 
 	setParagraph(event, { builder, anchorContainer }) {
 		if (anchorContainer.type !== 'paragraph') {
-			const paragraph = new Paragraph()
+			const paragraph = builder.create('paragraph')
 
 			builder.append(paragraph, anchorContainer.first)
 			builder.replace(anchorContainer, paragraph)

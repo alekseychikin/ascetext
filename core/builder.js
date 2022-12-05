@@ -65,6 +65,104 @@ export default class Builder {
 		}
 	}
 
+	parse(element) {
+		// debugger
+		const container = this.createFragment()
+		let currentElement = element.firstChild
+		let nextElement
+		let children = null
+		let current
+
+		while (currentElement) {
+			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+				currentElement = currentElement.nextSibling
+
+				continue
+			}
+
+			nextElement = currentElement.nextSibling
+			children = null
+
+			if (isHtmlElement(currentElement) && currentElement.childNodes.length) {
+				children = this.parse(currentElement)
+			}
+
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parse(currentElement, this, children)
+			}, null)
+
+			if (current) {
+				this.append(container, current)
+
+				if (children && children.first) {
+					this.append(current, children)
+				}
+
+				if (current.isDeleteEmpty && !current.first) {
+					this.cut(current)
+				}
+			} else if (children && children.first) {
+				this.append(container, children)
+			}
+
+			// if (current) {
+			// 	if (current.isDeleteEmpty && !current.first) {
+			// 		current = previous
+			// 	} else {
+			// 		if (!first) {
+			// 			first = current
+			// 		}
+
+			// 		if (previous && (normalized = this.connectWithNormalize(previous, current))) {
+			// 			if (first === previous) {
+			// 				first = normalized
+			// 			}
+
+			// 			current = normalized
+			// 		}
+			// 	}
+
+			// 	previous = current.getLastNode()
+			// } else if (currentElement.parentNode) {
+			// 	currentElement.parentNode.removeChild(currentElement)
+			// }
+
+			// if (currentElement === lastElement) {
+			// 	if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+			// 		this.cut(previous)
+			// 	}
+
+			// 	break
+			// }
+
+			currentElement = nextElement
+		}
+
+		return container
+	}
+
+	connectWithNormalize(previous, current) {
+		let normalized
+
+		if (
+			typeof previous.normalize === 'function' &&
+			(normalized = previous.normalize(current, this))
+		) {
+			if (current.next) {
+				this.connect(normalized, current.next)
+			}
+
+			this.replaceUntil(previous, normalized)
+
+			return normalized
+		}
+
+		this.connect(previous, current)
+
+		return false
+	}
 	split(container, offset) {
 		const firstLevelNode = container.getFirstLevelNode(offset)
 
@@ -77,12 +175,63 @@ export default class Builder {
 	}
 
 	append(node, target, anchor) {
+		let container = node
+		let current = target
+		let next
+		let tail
+
 		if (target.type === 'fragment') {
-			this.append(node, target.first)
-		} else if (typeof node.append === 'function') {
-			node.append(target, anchor, { builder: this, appendDefault: this.appendHandler })
+			this.append(node, target.first, anchor)
 		} else {
-			this.appendHandler(node, target, anchor)
+			// console.log('append', node, target)
+			// Нужно добавлять по одному. Проверять, можно ли воткнуть в текущий контейнер
+			// логику взять из insert
+			while (current) {
+				next = current.next
+
+				if (!this.canAccept(container, current)) {
+					debugger
+				}
+
+				if (current.type === 'paragraph') {
+					// debugger
+				}
+
+				// debugger
+				if (this.canAccept(container, current)) {
+					while (!container.accept(current)) {
+						// if (tail && (!container.isContainer || !container.isEmpty)) {
+						// 	duplicate = container.duplicate(this)
+						// 	this.append(duplicate, tail)
+						// }
+
+						tail = container.next
+						container = container.parent
+					}
+
+					this.cut(current)
+				// 	this.append(container, current, tail)
+
+					if (typeof container.append === 'function') {
+						container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
+					} else {
+						this.appendHandler(container, current, tail)
+					}
+				} else {
+					this.cut(current)
+					console.log('can not accept', container, current)
+				}
+
+				// if (current.next === tail && current.isContainer && tail.isContainer) {
+				// 	this.append(tail.parent, current.first, tail.first)
+				// 	this.cut(current)
+
+				// 	break
+				// }
+
+				current = next
+			}
+
 		}
 	}
 
@@ -96,28 +245,47 @@ export default class Builder {
 			type: operationTypes.APPEND,
 			container: node,
 			target,
-			last
+			last,
+			anchor
 		})
+
+		do {
+			current.parent = node
+
+			if (anchor) {
+				node.element.insertBefore(current.element, anchor.element)
+			} else {
+				node.element.appendChild(current.element)
+			}
+
+			this.handleMount(current)
+			current = current.next
+		} while (current)
 
 		if (!node.first) {
 			node.first = target
+		} else if (anchor) {
+			if (anchor.previous) {
+				target.previous = anchor.previous
+				anchor.previous.next = target
+			} else {
+				node.first = target
+			}
+
+			last.next = anchor
+			anchor.previous = last
 		} else {
 			node.last.next = target
 			target.previous = node.last
 		}
 
-		do {
-			current.parent = node
-			node.element.appendChild(current.element)
-			this.handleMount(current)
-			current = current.next
-		} while (current)
-
-		node.last = last
+		if (!anchor) {
+			node.last = last
+		}
 	}
 
 	preconnect(node, target) {
-		console.log('used preconnect')
+		console.error('used preconnect')
 		const last = target.getNodeUntil()
 		let current = target
 
@@ -151,7 +319,7 @@ export default class Builder {
 	}
 
 	connect(node, target) {
-		console.log('used connect')
+		console.error('used connect')
 		const last = target.getNodeUntil()
 		let current = target
 
@@ -193,10 +361,10 @@ export default class Builder {
 	cut(node) {
 		if (typeof node.cut === 'function') {
 			node.cut({ builder: this })
-		} else if (node.isContainer || node.isWidget) {
-			if (node.parent && node.parent.isSection) {
-				this.cutUntil(node, node)
-			}
+		// } else if (node.isContainer || node.isWidget) {
+		// 	if (node.parent && node.parent.isSection) {
+		// 		this.cutUntil(node, node)
+		// 	}
 		} else {
 			this.cutUntil(node, node)
 		}
@@ -217,6 +385,7 @@ export default class Builder {
 				type: operationTypes.CUT,
 				container: node.parent,
 				until: last,
+				anchor: last.next,
 				previous: node.previous,
 				next: last.next,
 				target: node
@@ -339,19 +508,14 @@ export default class Builder {
 	replaceUntil(node, target, until) {
 		// console.groupCollapsed('replaceUntil', node, target)
 
-		if (node.previous) {
-			this.connect(node.previous, target)
-		} else {
-			this.preconnect(node, target)
-		}
-
+		this.append(node.parent, target, node.next)
 		this.cutUntil(node, until)
 
 		// console.groupEnd()
 	}
 
 	canAccept(container, current) {
-		if (current.accept(container)) {
+		if (container.accept(current)) {
 			return container
 		}
 
@@ -363,53 +527,49 @@ export default class Builder {
 	}
 
 	insert(node, target, offset) {
-		let { head, tail } = this.split(node, offset)
-		let current = target
-		let next
-		let container = node
-		let duplicate
+		const { tail } = this.split(node, offset)
+		// let current = target
+		// let next
+		// let container = node
+		// let duplicate
 
-		while (current) {
-			next = current.next
+		this.append(node, target, tail)
+		// while (current) {
+		// 	next = current.next
 
-			if (this.canAccept(container, current)) {
-				while (!current.accept(container)) {
-					if (tail && (!container.isContainer || !container.isEmpty)) {
-						duplicate = container.duplicate(this)
-						this.append(duplicate, tail)
-					}
+		// 	if (this.canAccept(container, current)) {
+		// 		while (!current.accept(container)) {
+		// 			if (tail && (!container.isContainer || !container.isEmpty)) {
+		// 				duplicate = container.duplicate(this)
+		// 				this.append(duplicate, tail)
+		// 			}
 
-					head = container
-					tail = head.next
-					container = container.parent
-				}
+		// 			head = container
+		// 			tail = head.next
+		// 			container = container.parent
+		// 		}
 
-				if (current.isContainer && node === head) {
-					this.append(head, current.first)
-					node = null
-				} else {
-					this.cut(current)
+		// 		if (current.isContainer && node === head) {
+		// 			this.append(head, current.first)
+		// 			node = null
+		// 		} else {
+		// 			this.cut(current)
+		// 			this.append(container, current, head ? head.next : null)
+		// 			head = current
+		// 		}
+		// 	} else {
+		// 		console.log('can not accept', container, current)
+		// 	}
 
-					if (head) {
-						this.connect(head, current)
-					} else {
-						this.append(container, current)
-					}
-					head = current
-				}
-			} else {
-				console.log('can not accept', container, current)
-			}
+		// 	if (current.next === tail && current.isContainer && tail.isContainer) {
+		// 		this.append(tail.parent, current.first, tail.first)
+		// 		this.cut(current)
 
-			if (current.next === tail && current.isContainer && tail.isContainer) {
-				this.preconnect(tail.first, current.first)
-				this.cut(current)
+		// 		break
+		// 	}
 
-				break
-			}
-
-			current = next
-		}
+		// 	current = next
+		// }
 	}
 
 	moveTail(container, target, offset) {
@@ -418,100 +578,6 @@ export default class Builder {
 		if (tail) {
 			this.append(target, tail)
 		}
-	}
-
-	parse(element) {
-		const container = this.createFragment()
-		let currentElement = element.firstChild
-		let nextElement
-		let children = null
-		let current
-
-		while (currentElement) {
-			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-				currentElement = currentElement.nextSibling
-
-				continue
-			}
-
-			nextElement = currentElement.nextSibling
-			children = null
-
-			if (isHtmlElement(currentElement) && currentElement.childNodes.length) {
-				children = this.parse(currentElement)
-			}
-
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.core.plugins[pluginName].parse(currentElement, this, children)
-			}, null)
-
-			if (current) {
-				if (children && children.first) {
-					this.append(current, children)
-				}
-
-				this.append(container, current)
-			} else if (children && children.first) {
-				this.append(container, children)
-			}
-
-			// if (current) {
-			// 	if (current.isDeleteEmpty && !current.first) {
-			// 		current = previous
-			// 	} else {
-			// 		if (!first) {
-			// 			first = current
-			// 		}
-
-			// 		if (previous && (normalized = this.connectWithNormalize(previous, current))) {
-			// 			if (first === previous) {
-			// 				first = normalized
-			// 			}
-
-			// 			current = normalized
-			// 		}
-			// 	}
-
-			// 	previous = current.getLastNode()
-			// } else if (currentElement.parentNode) {
-			// 	currentElement.parentNode.removeChild(currentElement)
-			// }
-
-			// if (currentElement === lastElement) {
-			// 	if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-			// 		this.cut(previous)
-			// 	}
-
-			// 	break
-			// }
-
-			currentElement = nextElement
-		}
-
-		return container
-	}
-
-	connectWithNormalize(previous, current) {
-		let normalized
-
-		if (
-			typeof previous.normalize === 'function' &&
-			(normalized = previous.normalize(current, this))
-		) {
-			if (current.next) {
-				this.connect(normalized, current.next)
-			}
-
-			this.replaceUntil(previous, normalized)
-
-			return normalized
-		}
-
-		this.connect(previous, current)
-
-		return false
 	}
 
 	parseJson(body) {

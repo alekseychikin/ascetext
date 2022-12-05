@@ -16,7 +16,7 @@ export class List extends Group {
 	}
 
 	accept(node) {
-		return node.isSection
+		return node.type === 'list-item'
 	}
 
 	normalize(element, builder) {
@@ -59,7 +59,9 @@ export class ListItem extends Group {
 	}
 
 	append(target, anchor, { builder, appendDefault }) {
-		if (!this.first && target.type === 'list' && target.first && target.first.first) {
+		if (target.type === 'text' || target.isInlineWidget) {
+			builder.append(this.first, target)
+		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
 			appendDefault(this, target.first.first, anchor)
 			builder.cut(target)
 		} else {
@@ -68,7 +70,11 @@ export class ListItem extends Group {
 	}
 
 	accept(node) {
-		return node.type === 'list'
+		if (node.type === 'list' && this.last && this.last.type === 'list-item-content') {
+			return true
+		}
+
+		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
 	}
 
 	duplicate(builder) {
@@ -95,23 +101,19 @@ export class ListItemContent extends Container {
 		})
 	}
 
-	accept(node) {
-		return node.type === 'list-item'
-	}
+	// cut({ builder }) {
+	// 	const list = this.parent.parent
 
-	cut({ builder }) {
-		const list = this.parent.parent
+	// 	if (this.next && this.next.type === 'list') {
+	// 		builder.connect(this.parent, this.next.first)
+	// 	}
 
-		if (this.next && this.next.type === 'list') {
-			builder.connect(this.parent, this.next.first)
-		}
+	// 	builder.cut(this.parent)
 
-		builder.cut(this.parent)
-
-		if (list.type === 'list' && !list.first) {
-			builder.cut(list)
-		}
-	}
+	// 	if (list.type === 'list' && !list.first) {
+	// 		builder.cut(list)
+	// 	}
+	// }
 
 	backspaceHandler(event, {
 		builder,
@@ -354,7 +356,7 @@ export default class ListPlugin extends PluginPlugin {
 		return controls
 	}
 
-	parse(element, builder, children) {
+	parse(element, builder) {
 		const nodeName = isHtmlElement(element) ? element.nodeName.toLowerCase() : ''
 
 		if (nodeName === 'ul' || nodeName === 'ol') {
@@ -368,10 +370,6 @@ export default class ListPlugin extends PluginPlugin {
 			const content = builder.create('list', 'content')
 
 			builder.append(listItem, content)
-
-			if (children) {
-				builder.append(content, children)
-			}
 
 			return listItem
 		}

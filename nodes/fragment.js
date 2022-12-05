@@ -7,4 +7,8 @@ export default class Fragment extends Node {
 		this.isFragment = true
 		this.setElement(new DocumentFragment())
 	}
+
+	accept() {
+		return true
+	}
 }

@@ -11,13 +11,14 @@ export default class Section extends Node {
 		if (node.type === 'text' || node.isInlineWidget || node.type === 'breakLine') {
 			const container = builder.createBlock()
 
-			builder.append(container, node, anchor)
+			builder.append(container, node)
+			builder.append(this, container, anchor)
 		} else {
 			appendDefault(this, node, anchor)
 		}
 	}
 
 	accept(node) {
-		return node.type === 'root'
+		return node.isWidget || node.isContainer || node.isGroup || node.isInlineWidget || node.type === 'text'
 	}
 }

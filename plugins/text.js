@@ -3,7 +3,6 @@ import PluginPlugin from './plugin'
 import isElementBr from '../utils/is-element-br'
 import isTextElement from '../utils/is-text-element'
 import isHtmlElement from '../utils/is-html-element'
-import omit from '../utils/omit'
 
 const mapModifierToTag = {
 	bold: 'strong',
@@ -67,8 +66,8 @@ export class Text extends Node {
 		return modifiers
 	}
 
-	accept(node) {
-		return node.isContainer || node.isInlineWidget || node.isSection
+	accept() {
+		return false
 	}
 
 	normalize(target, builder) {
@@ -123,9 +122,11 @@ export class Text extends Node {
 
 		const head = builder.create('text', { ...this.attributes }, this.content.substr(0, position))
 		const tail = builder.create('text', { ...this.attributes }, this.content.substr(position))
+		const fragment = builder.createFragment()
 
-		builder.connect(head, tail)
-		builder.replace(this, head)
+		builder.append(fragment, head)
+		builder.append(fragment, tail)
+		builder.replace(this, fragment)
 
 		return {
 			head,
@@ -223,25 +224,25 @@ export default class TextPlugin extends PluginPlugin {
 			return builder.create('text', {}, content)
 		}
 
-		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
+		if (tagName === 'strong' && children && this.params.allowModifiers.includes('bold')) {
 			builder.setAttribute(children.first, 'weight', 'bold')
 		}
 
-		if (tagName === 'em' && this.params.allowModifiers.includes('italic')) {
+		if (tagName === 'em' && children && this.params.allowModifiers.includes('italic')) {
 			builder.setAttribute(children.first, 'style', 'italic')
 		}
 
-		if (tagName === 's' && this.params.allowModifiers.includes('horizontal')) {
+		if (tagName === 's' && children && this.params.allowModifiers.includes('horizontal')) {
 			builder.setAttribute(children.first, 'strike', 'horizontal')
 		}
 
-		if (tagName === 'u' && this.params.allowModifiers.includes('underlined')) {
+		if (tagName === 'u' && children && this.params.allowModifiers.includes('underlined')) {
 			builder.setAttribute(children.first, 'decoration', 'underlined')
 		}
 
 		if (tagName === 'span') {
 			if (
-				(
+				children && (
 					element.style['font-weight'] === 'bold' ||
 					element.style['font-weight'] === '600' ||
 					element.style['font-weight'] === '500' ||
