@@ -65,13 +65,7 @@ export default class HeaderPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'header') {
-			const node = builder.create('header', { level: element.level })
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(node, children)
-			}
-			return node
+			return builder.create('header', { level: element.level })
 		}
 
 		return false

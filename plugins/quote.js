@@ -38,17 +38,8 @@ export default class QuotePlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'quote') {
-			const node = builder.create('quote')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('quote')
 		}
-
-		return false
 	}
 
 	getInsertControls(container) {

@@ -94,14 +94,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'link') {
-			const link = builder.create('link', element.url)
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(link, children)
-			}
-
-			return link
+			return builder.create('link', element.url)
 		}
 	}
 

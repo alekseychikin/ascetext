@@ -242,7 +242,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	parseJson(element) {
+	parseJson(element, builder) {
 		if (element.type === 'text') {
 			const attributes = {}
 
@@ -262,10 +262,8 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.strike = 'horizontal'
 			}
 
-			return new Text(attributes, element.content)
+			return builder.create('text', attributes, element.content)
 		}
-
-		return false
 	}
 
 	getSelectControls(focusedNodes, isRange) {

@@ -90,7 +90,7 @@ export default class Builder {
 			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
-				return this.core.plugins[pluginName].parse(currentElement, this, children)
+				return this.core.plugins[pluginName].parse(currentElement, this)
 			}, null)
 
 			if (current) {
@@ -148,6 +148,38 @@ export default class Builder {
 
 			current = next
 		}
+	}
+
+	parseJson(body) {
+		const container = this.createFragment()
+		let current
+		let children
+
+		body.forEach((element) => {
+			children = null
+
+			if (element.body) {
+				children = this.parseJson(element.body)
+			}
+
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parseJson(element, this)
+			}, false)
+
+			if (current) {
+				this.append(container, current)
+
+				if (children && children.first) {
+					this.append(current, children)
+				}
+			} else if (children && children.first) {
+				this.append(container, children)
+			}
+		})
+
+		return container
 	}
 
 	split(container, offset) {
@@ -425,33 +457,5 @@ export default class Builder {
 		if (tail) {
 			this.append(target, tail)
 		}
-	}
-
-	parseJson(body) {
-		let first
-		let previous
-		let current
-
-		body.forEach((element) => {
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.core.plugins[pluginName].parseJson(element, this)
-			}, false)
-
-			if (current) {
-				if (!first) {
-					first = current
-				} else {
-					this.connect(previous, current)
-				}
-
-				previous = current.getLastNode()
-			} else {
-				console.log('not matched', element)
-			}
-		})
-
-		return first
 	}
 }

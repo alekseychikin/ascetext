@@ -43,11 +43,9 @@ export default class BreakLinePlugin extends PluginPlugin {
 		}
 	}
 
-	parseJson(element) {
+	parseJson(element, builder) {
 		if (element.type === 'breakLine') {
-			return new BreakLine()
+			return builder.create('breakLine')
 		}
-
-		return false
 	}
 }

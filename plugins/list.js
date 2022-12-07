@@ -369,39 +369,16 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'list') {
-			const list = builder.create('list', { decor: element.decor })
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(list, children)
-			}
-
-			return list
+			return builder.create('list', { decor: element.decor })
 		}
 
 		if (element.type === 'list-item') {
-			const item = builder.create('list', 'item')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(item, children)
-			}
-
-			return item
+			return builder.create('list', 'item')
 		}
 
 		if (element.type === 'list-item-content') {
-			const content = builder.create('list', 'content')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(content, children)
-			}
-
-			return content
+			return builder.create('list', 'content')
 		}
-
-		return false
 	}
 
 	setNumberList(container) {
