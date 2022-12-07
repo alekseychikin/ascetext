@@ -1,8 +1,6 @@
 export const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
-	PRECONNECT: 'preconnect',
-	CONNECT: 'connect',
 	ATTRIBUTE: 'attribute'
 }
 
@@ -69,7 +67,6 @@ export default class TimeTravel {
 	}
 
 	goBack() {
-		// debugger
 		if (this.timeindex > -1) {
 			const {
 				bunch: previousEvents,
@@ -89,8 +86,6 @@ export default class TimeTravel {
 
 						break
 					case operationTypes.APPEND:
-					case operationTypes.PRECONNECT:
-					case operationTypes.CONNECT:
 						this.builder.cutUntil(previousEvent.target, previousEvent.last)
 						break
 					case operationTypes.ATTRIBUTE:
@@ -124,8 +119,6 @@ export default class TimeTravel {
 						this.builder.cutUntil(nextEvent.target, nextEvent.until)
 						break
 					case operationTypes.APPEND:
-					case operationTypes.PRECONNECT:
-					case operationTypes.CONNECT:
 						this.builder.append(nextEvent.container, nextEvent.target, nextEvent.anchor)
 						break
 					case operationTypes.ATTRIBUTE:

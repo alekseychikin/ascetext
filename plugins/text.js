@@ -71,23 +71,7 @@ export class Text extends Node {
 	}
 
 	normalize(target, builder) {
-		if (target.isContainer) {
-			if (target.first && target.first.type === 'text' && this.isEqual(target.first)) {
-				return builder.create('text', { ...this.attributes }, this.content + target.first.content)
-			}
-
-			const duplicate = builder.create('text', { ...this.attributes }, this.content)
-
-			builder.connect(duplicate, target.first)
-
-			return duplicate
-		}
-
-		if (target.type !== 'text') {
-			return false
-		}
-
-		if (this.isEqual(target)) {
+		if (target.type === 'text' && this.isEqual(target)) {
 			return builder.create('text', { ...this.attributes }, this.content + target.content)
 		}
 
@@ -133,14 +117,6 @@ export class Text extends Node {
 			tail
 		}
 	}
-
-	// connect(target, { builder, connectDefault }) {
-	// 	if (target.isContainer) {
-	// 		builder.connect(this, target.first)
-	// 	} else {
-	// 		connectDefault(this, target)
-	// 	}
-	// }
 
 	stringify() {
 		return this.stringifyWithModifiers(this.generateModifiers())

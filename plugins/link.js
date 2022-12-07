@@ -31,29 +31,14 @@ export class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			const node = builder.create('link', this.attributes.url)
-			const last = this.first.getLastNode()
-
-			if (this.first) {
-				builder.append(node, this.first)
-			}
-
-			if (element.first) {
-				builder.connectWithNormalize(last, element.first)
-			}
-
-			return node
+			return builder.create('link', this.attributes.url)
 		}
 
 		return false
 	}
 
 	duplicate(builder) {
-		const duplicate = builder.create('link', this.attributes.url)
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('link', this.attributes.url)
 	}
 
 	stringify(children) {
@@ -223,8 +208,7 @@ export default class LinkPlugin extends PluginPlugin {
 	wrap(match, builder) {
 		const link = builder.create('link', match.content)
 
-		builder.replace(match, link)
-		builder.push(link, match)
+		builder.append(link, match)
 
 		return link
 	}
@@ -234,8 +218,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		while (current) {
 			if (current.type === 'link') {
-				builder.connect(current, current.first)
-				builder.cut(current)
+				builder.replace(current, current.first)
 			}
 
 			current = current.parent

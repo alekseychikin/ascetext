@@ -9,6 +9,10 @@ export class Image extends Widget {
 		super('image', Object.assign({ size: '', float: 'none' }, attributes))
 	}
 
+	accept(node) {
+		return node.type === 'image-caption'
+	}
+
 	render() {
 		this.image = createElement('img', {
 			src: this.attributes.src
@@ -115,14 +119,10 @@ export class ImageCaption extends Container {
 		controls.unregisterControl(this.placeholder)
 	}
 
-	accept(node) {
-		return node.type === 'image'
-	}
-
 	enterHandler(event, { builder, setSelection }) {
 		const emptyParagraph = builder.createBlock()
 
-		builder.connect(this.parent, emptyParagraph)
+		builder.append(this.parent.parent, emptyParagraph, this.parent.next)
 		setSelection(emptyParagraph)
 	}
 

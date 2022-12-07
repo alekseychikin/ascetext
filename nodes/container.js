@@ -19,11 +19,13 @@ export default class Container extends Node {
 		if (target.isContainer) {
 			builder.append(this, target.first, anchor)
 		} else {
-			if (this.isEmpty && this.first) {
+			const isEmpty = this.isEmpty && this.first
+
+			if (isEmpty) {
 				builder.cut(this.first)
 			}
 
-			appendDefault(this, target, anchor)
+			appendDefault(this, target, isEmpty ? null : anchor)
 		}
 	}
 
@@ -62,16 +64,16 @@ export default class Container extends Node {
 			event.preventDefault()
 
 			if (anchorAtFirstPositionInContainer) {
-				builder.preconnect(this, builder.createBlock())
+				builder.append(this.parent, builder.createBlock(), this)
 				setSelection(this)
 			} else {
 				if (focusAtLastPositionInContainer) {
 					newBlock = builder.createBlock()
-					builder.connect(this, newBlock)
 				} else {
 					newBlock = this.duplicate(builder)
 				}
 
+				builder.append(this.parent, newBlock, this.next)
 				builder.moveTail(this, newBlock, anchorOffset)
 				setSelection(newBlock)
 			}

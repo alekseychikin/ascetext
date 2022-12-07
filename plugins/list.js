@@ -25,12 +25,7 @@ export class List extends Group {
 		}
 
 		if (this.attributes.decor === element.attributes.decor) {
-			const list = new List(this.attributes)
-
-			builder.append(list, this.first)
-			builder.append(list, element.first)
-
-			return list
+			return builder.create('list', { decor: this.attributes.decor })
 		}
 	}
 
@@ -78,11 +73,7 @@ export class ListItem extends Group {
 	}
 
 	duplicate(builder) {
-		const duplicate = builder.create('list', 'item')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('list', 'item')
 	}
 
 	stringify(children) {
@@ -101,19 +92,23 @@ export class ListItemContent extends Container {
 		})
 	}
 
-	// cut({ builder }) {
-	// 	const list = this.parent.parent
+	cut({ builder }) {
+		if (this.parent && this.parent.parent) {
+			const list = this.parent.parent
 
-	// 	if (this.next && this.next.type === 'list') {
-	// 		builder.connect(this.parent, this.next.first)
-	// 	}
+			if (this.next && this.next.type === 'list') {
+				builder.append(list, this.next.first, this.parent.next)
+			}
 
-	// 	builder.cut(this.parent)
+			builder.cut(this.parent)
 
-	// 	if (list.type === 'list' && !list.first) {
-	// 		builder.cut(list)
-	// 	}
-	// }
+			if (list.type === 'list' && !list.first) {
+				builder.cut(list)
+			}
+		} else {
+			builder.cutUntil(this, this)
+		}
+	}
 
 	backspaceHandler(event, {
 		builder,
@@ -162,7 +157,7 @@ export class ListItemContent extends Container {
 			const content = builder.create('list', 'content')
 
 			builder.append(nextItem, content)
-			builder.connect(item, nextItem)
+			builder.append(item.parent, nextItem, item.next)
 			builder.moveTail(this, content, anchorOffset)
 
 			setSelection(nextItem)
@@ -197,6 +192,7 @@ export class ListItemContent extends Container {
 
 	indentLeft(event, { builder, anchorContainer, setSelection }) {
 		const item = anchorContainer.parent
+		const parentList = item.parent
 
 		if (item.next) {
 			const list = builder.create('list', { decor: item.parent.attributes.decor })
@@ -205,11 +201,10 @@ export class ListItemContent extends Container {
 			builder.append(item, list)
 		}
 
-		const parent = item.parent
-		builder.connect(parent.parent, item)
+		builder.append(parentList.parent.parent, item, parentList.parent.next)
 
-		if (!parent.first) {
-			builder.cut(parent)
+		if (!parentList.first) {
+			builder.cut(parentList)
 		}
 
 		setSelection(anchorContainer)
@@ -221,23 +216,24 @@ export class ListItemContent extends Container {
 
 		if (item.previous.last.type === 'list') {
 			list = item.previous.last
+			builder.push(list, item)
 		} else {
 			list = builder.create('list', { decor: item.parent.attributes.decor })
+			builder.append(item.previous, list)
+			builder.push(list, item)
 		}
 
-		builder.append(item.previous, list)
-		builder.push(list, item)
 		setSelection(anchorContainer)
 	}
 
 	putEmptyBlockInMiddle(builder, setSelection) {
 		const item = this.parent
-		const parent = item.parent
+		const parentList = item.parent
 		const newBlock = builder.createBlock()
 		const last = item.last
 		const next = item.next
 
-		builder.connect(parent, newBlock)
+		builder.append(parentList.parent, newBlock, parentList.next)
 
 		if (this.first) {
 			builder.append(newBlock, this.first)
@@ -249,26 +245,22 @@ export class ListItemContent extends Container {
 			const ul = builder.create('list', parent.attributes)
 
 			builder.append(ul, next)
-			builder.connect(newBlock, ul)
+			builder.append(newBlock.parent, ul, newBlock.next)
 		}
 
-		if (!parent.first) {
-			builder.cut(parent)
+		if (!parentList.first) {
+			builder.cut(parentList)
 		}
 
 		if (last && last.type === 'list') {
-			builder.connect(newBlock, last)
+			builder.append(newBlock.parent, last, newBlock.next)
 		}
 
 		setSelection(newBlock)
 	}
 
 	duplicate(builder) {
-		const duplicate = builder.create('list', 'content')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('list', 'content')
 	}
 
 	stringify(children) {
