@@ -12,18 +12,20 @@ export default class Container extends Node {
 	}
 
 	accept(node) {
-		return node.isSection
+		return node.type === 'text' || node.isInlineWidget
 	}
 
-	append(target, last, { builder, appendDefault }) {
+	append(target, anchor, { builder, appendDefault }) {
 		if (target.isContainer) {
-			builder.append(this, target.first)
+			builder.append(this, target.first, anchor)
 		} else {
-			if (this.isEmpty && this.first) {
+			const isEmpty = this.isEmpty && this.first
+
+			if (isEmpty) {
 				builder.cut(this.first)
 			}
 
-			appendDefault(this, target, last)
+			appendDefault(this, target, isEmpty ? null : anchor)
 		}
 	}
 
@@ -42,9 +44,10 @@ export default class Container extends Node {
 			event.preventDefault()
 
 			if (focusAtLastPositionInContainer && this.last.type !== 'breakLine') {
-				const br = builder.create('breakLine')
+				const br = builder.createFragment()
 
-				builder.connect(br, builder.create('breakLine'))
+				builder.append(br, builder.create('breakLine'))
+				builder.append(br, builder.create('breakLine'))
 				builder.append(this, br)
 			} else {
 				builder.insert(this, builder.create('breakLine'), anchorOffset)
@@ -61,16 +64,16 @@ export default class Container extends Node {
 			event.preventDefault()
 
 			if (anchorAtFirstPositionInContainer) {
-				builder.preconnect(this, builder.createBlock())
+				builder.append(this.parent, builder.createBlock(), this)
 				setSelection(this)
 			} else {
 				if (focusAtLastPositionInContainer) {
 					newBlock = builder.createBlock()
-					builder.connect(this, newBlock)
 				} else {
 					newBlock = this.duplicate(builder)
 				}
 
+				builder.append(this.parent, newBlock, this.next)
 				builder.moveTail(this, newBlock, anchorOffset)
 				setSelection(newBlock)
 			}

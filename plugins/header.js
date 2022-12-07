@@ -5,8 +5,10 @@ import createElement from '../utils/create-element'
 export class Header extends Container {
 	constructor(attributes) {
 		super('header', attributes)
+	}
 
-		this.setElement(createElement(`h${attributes.level}`))
+	render() {
+		return createElement(`h${this.attributes.level}`)
 	}
 
 	stringify(children) {
@@ -53,31 +55,17 @@ export default class HeaderPlugin extends PluginPlugin {
 		return new Header({ level })
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (element.nodeType === 1 && this.supportHeaders.includes(element.nodeName.toLowerCase())) {
 			const matches = element.nodeName.toLowerCase().match(/(?<level>\d)+/)
-			const node = builder.create('header', { level: Number(matches.groups.level) })
-			let children
 
-			if (children = builder.parse(element, context)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('header', { level: Number(matches.groups.level) })
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
 		if (element.type === 'header') {
-			const node = builder.create('header', { level: element.level })
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(node, children)
-			}
-			return node
+			return builder.create('header', { level: element.level })
 		}
 
 		return false

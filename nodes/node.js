@@ -189,12 +189,7 @@ export default class Node {
 	}
 
 	duplicate(builder) {
-		// eslint-disable-next-line no-proto
-		const duplicate = builder.create(this.type, this.attributes)
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create(this.type, this.attributes)
 	}
 
 	split(offset, builder) {
@@ -209,6 +204,7 @@ export default class Node {
 		if (head && tail) {
 			const duplicate = this.duplicate(builder)
 
+			builder.append(this.parent, duplicate, this.next)
 			builder.append(duplicate, tail)
 
 			return {

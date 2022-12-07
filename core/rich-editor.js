@@ -134,6 +134,7 @@ export default class RichEditor {
 	}
 
 	setContent(content) {
+		this.unmountAll()
 		this.model = new Root(this.node)
 		this.node.innerHTML = ''
 
@@ -153,6 +154,7 @@ export default class RichEditor {
 	}
 
 	setJson(data) {
+		this.unmountAll()
 		this.model = new Root(this.node)
 		this.node.innerHTML = ''
 
@@ -166,6 +168,16 @@ export default class RichEditor {
 		this.editing.save()
 
 		return this.json(this.model.first)
+	}
+
+	unmountAll() {
+		let current = this.model.first
+
+		while (current) {
+			this.builder.handleUnmount(current)
+
+			current = current.next
+		}
 	}
 
 	focus() {

@@ -9,11 +9,14 @@ export class List extends Group {
 		super('list', attributes)
 
 		this.isDeleteEmpty = true
-		this.setElement(createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul'))
+	}
+
+	render() {
+		return createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
 	}
 
 	accept(node) {
-		return node.isSection
+		return node.type === 'list-item'
 	}
 
 	normalize(element, builder) {
@@ -22,12 +25,7 @@ export class List extends Group {
 		}
 
 		if (this.attributes.decor === element.attributes.decor) {
-			const list = new List(this.attributes)
-
-			builder.append(list, this.first)
-			builder.append(list, element.first)
-
-			return list
+			return builder.create('list', { decor: this.attributes.decor })
 		}
 	}
 
@@ -49,29 +47,33 @@ export class List extends Group {
 export class ListItem extends Group {
 	constructor() {
 		super('list-item')
-
-		this.setElement(createElement('li'))
 	}
 
-	append(target, last, { builder, appendDefault }) {
-		if (!this.first && target.type === 'list' && target.first && target.first.first) {
-			appendDefault(this, target.first.first)
+	render() {
+		return createElement('li')
+	}
+
+	append(target, anchor, { builder, appendDefault }) {
+		if (target.type === 'text' || target.isInlineWidget) {
+			builder.append(this.first, target)
+		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
+			appendDefault(this, target.first.first, anchor)
 			builder.cut(target)
 		} else {
-			appendDefault(this, target, last)
+			appendDefault(this, target, anchor)
 		}
 	}
 
 	accept(node) {
-		return node.type === 'list'
+		if (node.type === 'list' && this.last && this.last.type === 'list-item-content') {
+			return true
+		}
+
+		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
 	}
 
 	duplicate(builder) {
-		const duplicate = builder.create('list', 'item')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('list', 'item')
 	}
 
 	stringify(children) {
@@ -82,27 +84,29 @@ export class ListItem extends Group {
 export class ListItemContent extends Container {
 	constructor() {
 		super('list-item-content')
-
-		this.setElement(createElement('div', {
-			tabIndex: 0
-		}))
 	}
 
-	accept(node) {
-		return node.type === 'list-item'
+	render() {
+		return createElement('div', {
+			tabIndex: 0
+		})
 	}
 
 	cut({ builder }) {
-		const list = this.parent.parent
+		if (this.parent && this.parent.parent) {
+			const list = this.parent.parent
 
-		if (this.next && this.next.type === 'list') {
-			builder.connect(this.parent, this.next.first)
-		}
+			if (this.next && this.next.type === 'list') {
+				builder.append(list, this.next.first, this.parent.next)
+			}
 
-		builder.cut(this.parent)
+			builder.cut(this.parent)
 
-		if (list.type === 'list' && !list.first) {
-			builder.cut(list)
+			if (list.type === 'list' && !list.first) {
+				builder.cut(list)
+			}
+		} else {
+			builder.cutUntil(this, this)
 		}
 	}
 
@@ -153,7 +157,7 @@ export class ListItemContent extends Container {
 			const content = builder.create('list', 'content')
 
 			builder.append(nextItem, content)
-			builder.connect(item, nextItem)
+			builder.append(item.parent, nextItem, item.next)
 			builder.moveTail(this, content, anchorOffset)
 
 			setSelection(nextItem)
@@ -188,6 +192,7 @@ export class ListItemContent extends Container {
 
 	indentLeft(event, { builder, anchorContainer, setSelection }) {
 		const item = anchorContainer.parent
+		const parentList = item.parent
 
 		if (item.next) {
 			const list = builder.create('list', { decor: item.parent.attributes.decor })
@@ -196,11 +201,10 @@ export class ListItemContent extends Container {
 			builder.append(item, list)
 		}
 
-		const parent = item.parent
-		builder.connect(parent.parent, item)
+		builder.append(parentList.parent.parent, item, parentList.parent.next)
 
-		if (!parent.first) {
-			builder.cut(parent)
+		if (!parentList.first) {
+			builder.cut(parentList)
 		}
 
 		setSelection(anchorContainer)
@@ -212,23 +216,24 @@ export class ListItemContent extends Container {
 
 		if (item.previous.last.type === 'list') {
 			list = item.previous.last
+			builder.push(list, item)
 		} else {
 			list = builder.create('list', { decor: item.parent.attributes.decor })
+			builder.append(item.previous, list)
+			builder.push(list, item)
 		}
 
-		builder.append(item.previous, list)
-		builder.push(list, item)
 		setSelection(anchorContainer)
 	}
 
 	putEmptyBlockInMiddle(builder, setSelection) {
 		const item = this.parent
-		const parent = item.parent
+		const parentList = item.parent
 		const newBlock = builder.createBlock()
 		const last = item.last
 		const next = item.next
 
-		builder.connect(parent, newBlock)
+		builder.append(parentList.parent, newBlock, parentList.next)
 
 		if (this.first) {
 			builder.append(newBlock, this.first)
@@ -240,26 +245,22 @@ export class ListItemContent extends Container {
 			const ul = builder.create('list', parent.attributes)
 
 			builder.append(ul, next)
-			builder.connect(newBlock, ul)
+			builder.append(newBlock.parent, ul, newBlock.next)
 		}
 
-		if (!parent.first) {
-			builder.cut(parent)
+		if (!parentList.first) {
+			builder.cut(parentList)
 		}
 
 		if (last && last.type === 'list') {
-			builder.connect(newBlock, last)
+			builder.append(newBlock.parent, last, newBlock.next)
 		}
 
 		setSelection(newBlock)
 	}
 
 	duplicate(builder) {
-		const duplicate = builder.create('list', 'content')
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('list', 'content')
 	}
 
 	stringify(children) {
@@ -347,78 +348,37 @@ export default class ListPlugin extends PluginPlugin {
 		return controls
 	}
 
-	parse(element, builder, context) {
-		const nodeName = element.nodeName.toLowerCase()
+	parse(element, builder) {
+		const nodeName = isHtmlElement(element) ? element.nodeName.toLowerCase() : ''
 
-		if (isHtmlElement(element) && (nodeName === 'ul' || nodeName === 'ol')) {
+		if (nodeName === 'ul' || nodeName === 'ol') {
 			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
-			const list = builder.create('list', { decor })
-			let children
 
-			if (children = builder.parse(element, context)) {
-				builder.append(list, children)
-			}
-
-			return list
+			return builder.create('list', { decor })
 		}
 
-		if (isHtmlElement(element) && nodeName === 'li') {
+		if (nodeName === 'li') {
 			const listItem = builder.create('list', 'item')
 			const content = builder.create('list', 'content')
-			let children
 
-			if (children = builder.parse(element, context)) {
-				const last = children.getLastNode()
-
-				builder.append(listItem, content)
-				builder.append(content, children)
-
-				if (last.type === 'list') {
-					builder.connect(content, last)
-				}
-			}
+			builder.append(listItem, content)
 
 			return listItem
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
 		if (element.type === 'list') {
-			const list = builder.create('list', { decor: element.decor })
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(list, children)
-			}
-
-			return list
+			return builder.create('list', { decor: element.decor })
 		}
 
 		if (element.type === 'list-item') {
-			const item = builder.create('list', 'item')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(item, children)
-			}
-
-			return item
+			return builder.create('list', 'item')
 		}
 
 		if (element.type === 'list-item-content') {
-			const content = builder.create('list', 'content')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(content, children)
-			}
-
-			return content
+			return builder.create('list', 'content')
 		}
-
-		return false
 	}
 
 	setNumberList(container) {

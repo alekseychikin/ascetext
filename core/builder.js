@@ -1,5 +1,8 @@
 import { operationTypes } from '../core/timetravel'
 import isElementBr from '../utils/is-element-br'
+import isHtmlElement from '../utils/is-html-element'
+import isFunction from '../utils/is-function'
+import Fragment from '../nodes/fragment'
 
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'
@@ -9,7 +12,6 @@ export default class Builder {
 		this.core = core
 
 		this.parse = this.parse.bind(this)
-		this.connectWithNormalize = this.connectWithNormalize.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
 		this.handleMount = this.handleMount.bind(this)
 		this.handleUnmount = this.handleUnmount.bind(this)
@@ -17,6 +19,9 @@ export default class Builder {
 
 	create(name, ...params) {
 		const node = this.core.plugins[name].create(...params)
+		const element = node.render()
+
+		node.setElement(element)
 
 		if (node.isContainer) {
 			this.append(node, this.create('breakLine'))
@@ -29,6 +34,154 @@ export default class Builder {
 		return this.create('paragraph')
 	}
 
+	createFragment() {
+		return new Fragment()
+	}
+
+	setAttribute(node, name, value) {
+		const previous = { ...node.attributes }
+
+		node.attributes[name] = value
+		this.handleAttributes(node, previous, node.attributes)
+	}
+
+	setAttributes(node, attributes) {
+		const previous = { ...node.attributes }
+
+		node.attributes = attributes
+		this.handleAttributes(node, previous, attributes)
+	}
+
+	handleAttributes(target, previous, next) {
+		this.core.onNodeChange({
+			type: operationTypes.ATTRIBUTE,
+			target,
+			previous,
+			next
+		})
+
+		if (isFunction(target.update)) {
+			target.update(previous)
+		}
+	}
+
+	parse(element) {
+		const container = this.createFragment()
+		const lastElement = element.lastChild
+		let currentElement = element.firstChild
+		let nextElement
+		let children = null
+		let current
+
+		while (currentElement) {
+			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+				currentElement = currentElement.nextSibling
+
+				continue
+			}
+
+			nextElement = currentElement.nextSibling
+			children = null
+
+			if (isHtmlElement(currentElement) && currentElement.childNodes.length) {
+				children = this.parse(currentElement)
+			}
+
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parse(currentElement, this)
+			}, null)
+
+			if (current) {
+				this.append(container, current)
+
+				if (children && children.first) {
+					this.append(current, children)
+				}
+
+				if (current.isDeleteEmpty && !current.first) {
+					this.cut(current)
+				}
+			} else if (children && children.first) {
+				this.append(container, children)
+			}
+
+			if (currentElement === lastElement) {
+				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+					this.cut(current)
+				}
+
+				break
+			}
+
+			currentElement = nextElement
+		}
+
+		this.normalize(container)
+
+		return container
+	}
+
+	normalize(node) {
+		let current = node.first
+		let next
+		let normalized
+
+		while (current) {
+			next = current.next
+
+			if (current.previous && isFunction(current.previous.normalize)) {
+				if (normalized = current.previous.normalize(current, this)) {
+					if (current.previous.first) {
+						this.append(normalized, current.previous.first)
+					}
+
+					if (current.first) {
+						this.append(normalized, current.first)
+					}
+
+					this.replaceUntil(current.previous, normalized, current)
+					this.normalize(normalized)
+				}
+			}
+
+			current = next
+		}
+	}
+
+	parseJson(body) {
+		const container = this.createFragment()
+		let current
+		let children
+
+		body.forEach((element) => {
+			children = null
+
+			if (element.body) {
+				children = this.parseJson(element.body)
+			}
+
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parseJson(element, this)
+			}, false)
+
+			if (current) {
+				this.append(container, current)
+
+				if (children && children.first) {
+					this.append(current, children)
+				}
+			} else if (children && children.first) {
+				this.append(container, children)
+			}
+		})
+
+		return container
+	}
+
 	split(container, offset) {
 		const firstLevelNode = container.getFirstLevelNode(offset)
 
@@ -36,21 +189,53 @@ export default class Builder {
 	}
 
 	push(node, target) {
-		this.append(node, target, target)
+		this.cut(target)
+		this.append(node, target)
 	}
 
-	append(node, target, last) {
-		if (typeof node.append === 'function') {
-			node.append(target, last, { builder: this, appendDefault: this.appendHandler })
+	append(node, target, anchor) {
+		let container = node
+		let current = target
+		let next
+		let tail = anchor
+
+		if (target.type === 'fragment') {
+			this.append(node, target.first, anchor)
 		} else {
-			this.appendHandler(node, target, last)
+			while (current) {
+				next = current.next
+
+				if (this.canAccept(container, current)) {
+					while (!container.accept(current)) {
+						// if (tail && (!container.isContainer || !container.isEmpty)) {
+						// 	duplicate = container.duplicate(this)
+						// 	this.append(duplicate, tail)
+						// }
+
+						tail = container.next
+						container = container.parent
+					}
+
+					this.cut(current)
+
+					if (isFunction(container.append)) {
+						container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
+					} else {
+						this.appendHandler(container, current, tail)
+					}
+				} else {
+					this.cut(current)
+					console.log('can not accept', container, current)
+				}
+
+				current = next
+			}
 		}
 	}
 
-	appendHandler(node, target, last) {
+	appendHandler(node, target, anchor) {
+		const last = target.getNodeUntil()
 		let current = target
-
-		last = last || target.getNodeUntil()
 
 		this.cutUntil(target, last)
 
@@ -58,105 +243,48 @@ export default class Builder {
 			type: operationTypes.APPEND,
 			container: node,
 			target,
-			last
+			last,
+			anchor
 		})
+
+		do {
+			current.parent = node
+
+			if (anchor) {
+				node.element.insertBefore(current.element, anchor.element)
+			} else {
+				node.element.appendChild(current.element)
+			}
+
+			this.handleMount(current)
+			current = current.next
+		} while (current)
 
 		if (!node.first) {
 			node.first = target
+		} else if (anchor) {
+			if (anchor.previous) {
+				target.previous = anchor.previous
+				anchor.previous.next = target
+			} else {
+				node.first = target
+			}
+
+			last.next = anchor
+			anchor.previous = last
 		} else {
 			node.last.next = target
 			target.previous = node.last
 		}
 
-		do {
-			current.parent = node
-			node.element.appendChild(current.element)
-			this.handleMount(current)
-			current = current.next
-		} while (current)
-
-		node.last = last
-	}
-
-	preconnect(node, target) {
-		const last = target.getNodeUntil()
-		let current = target
-
-		this.cutUntil(target)
-
-		this.core.onNodeChange({
-			type: operationTypes.PRECONNECT,
-			next: node,
-			target,
-			last
-		})
-
-		if (node.parent) {
-			do {
-				current.parent = node.parent
-				node.parent.element.insertBefore(current.element, node.element)
-				this.handleMount(current)
-				current = current.next
-			} while (current)
+		if (!anchor) {
+			node.last = last
 		}
-
-		if (node.previous) {
-			node.previous.next = target
-			target.previous = node.previous
-		} else if (node.parent) {
-			node.parent.first = target
-		}
-
-		last.next = node
-		node.previous = last
-	}
-
-	connect(node, target) {
-		const last = target.getNodeUntil()
-		let current = target
-
-		this.cutUntil(target)
-
-		this.core.onNodeChange({
-			type: operationTypes.CONNECT,
-			previous: node,
-			target,
-			last
-		})
-
-		if (node.parent) {
-			do {
-				current.parent = node.parent
-
-				if (node.next) {
-					node.parent.element.insertBefore(current.element, node.next.element)
-				} else {
-					node.parent.element.appendChild(current.element)
-				}
-
-				this.handleMount(current)
-				current = current.next
-			} while (current)
-		}
-
-		if (node.next) {
-			node.next.previous = last
-			last.next = node.next
-		} else if (node.parent) {
-			node.parent.last = last
-		}
-
-		node.next = target
-		target.previous = node
 	}
 
 	cut(node) {
-		if (typeof node.cut === 'function') {
+		if (isFunction(node.cut)) {
 			node.cut({ builder: this })
-		} else if (node.isContainer || node.isWidget) {
-			if (node.parent && node.parent.isSection) {
-				this.cutUntil(node, node)
-			}
 		} else {
 			this.cutUntil(node, node)
 		}
@@ -177,6 +305,7 @@ export default class Builder {
 				type: operationTypes.CUT,
 				container: node.parent,
 				until: last,
+				anchor: last.next,
 				previous: node.previous,
 				next: last.next,
 				target: node
@@ -246,7 +375,7 @@ export default class Builder {
 		if (hasRoot && !node.isMount) {
 			node.isMount = true
 
-			if (typeof node.onMount === 'function') {
+			if (isFunction(node.onMount)) {
 				node.onMount(this.core)
 			}
 
@@ -263,7 +392,7 @@ export default class Builder {
 		let current
 
 		if (node.isMount) {
-			if (typeof node.onUnmount === 'function') {
+			if (isFunction(node.onUnmount)) {
 				node.onUnmount(this.core)
 			}
 
@@ -297,21 +426,15 @@ export default class Builder {
 	}
 
 	replaceUntil(node, target, until) {
-		// console.groupCollapsed('replaceUntil', node, target)
-
-		if (node.previous) {
-			this.connect(node.previous, target)
-		} else {
-			this.preconnect(node, target)
-		}
+		const parent = node.parent
+		const next = until.next
 
 		this.cutUntil(node, until)
-
-		// console.groupEnd()
+		this.append(parent, target, next)
 	}
 
 	canAccept(container, current) {
-		if (current.accept(container)) {
+		if (container.accept(current)) {
 			return container
 		}
 
@@ -323,53 +446,9 @@ export default class Builder {
 	}
 
 	insert(node, target, offset) {
-		let { head, tail } = this.split(node, offset)
-		let current = target
-		let next
-		let container = node
-		let duplicate
+		const { tail } = this.split(node, offset)
 
-		while (current) {
-			next = current.next
-
-			if (this.canAccept(container, current)) {
-				while (!current.accept(container)) {
-					if (tail && (!container.isContainer || !container.isEmpty)) {
-						duplicate = container.duplicate(this)
-						this.append(duplicate, tail)
-					}
-
-					head = container
-					tail = head.next
-					container = container.parent
-				}
-
-				if (current.isContainer && node === head) {
-					this.append(head, current.first)
-					node = null
-				} else {
-					this.cut(current)
-
-					if (head) {
-						this.connect(head, current)
-					} else {
-						this.append(container, current)
-					}
-					head = current
-				}
-			} else {
-				console.log('can not accept', container, current)
-			}
-
-			if (current.next === tail && current.isContainer && tail.isContainer) {
-				this.preconnect(tail.first, current.first)
-				this.cut(current)
-
-				break
-			}
-
-			current = next
-		}
+		this.append(node, target, tail)
 	}
 
 	moveTail(container, target, offset) {
@@ -378,119 +457,5 @@ export default class Builder {
 		if (tail) {
 			this.append(target, tail)
 		}
-	}
-
-	parse(element, context = { selection: this.selection }) {
-		const lastElement = element.lastChild
-		let currentElement = element.firstChild
-		let nextElement
-		let first
-		let previous
-		let current
-		let normalized
-
-		while (currentElement) {
-			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-				currentElement = currentElement.nextSibling
-
-				continue
-			}
-
-			// eslint-disable-next-line no-loop-func
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.core.plugins[pluginName].parse(currentElement, this, context)
-			}, false) || this.parse(currentElement, context)
-			nextElement = currentElement.nextSibling
-
-			if (current) {
-				if (current.isDeleteEmpty && !current.first) {
-					current = previous
-				} else {
-					if (!first) {
-						first = current
-					}
-
-					if (previous && (normalized = this.connectWithNormalize(previous, current))) {
-						if (first === previous) {
-							first = normalized
-						}
-
-						current = normalized
-					}
-				}
-
-				previous = current.getLastNode()
-			} else {
-				console.log('not matched', currentElement)
-
-				if (currentElement.parentNode) {
-					currentElement.parentNode.removeChild(currentElement)
-				}
-			}
-
-			if (currentElement === lastElement) {
-				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-					this.cut(previous)
-				}
-
-				break
-			}
-
-			currentElement = nextElement
-		}
-
-		return first
-	}
-
-	connectWithNormalize(previous, current) {
-		let normalized
-
-		if (
-			typeof previous.normalize === 'function' &&
-			(normalized = previous.normalize(current, this))
-		) {
-			if (current.next) {
-				this.connect(normalized, current.next)
-			}
-
-			this.replaceUntil(previous, normalized)
-
-			return normalized
-		}
-
-		this.connect(previous, current)
-
-		return false
-	}
-
-	parseJson(body) {
-		let first
-		let previous
-		let current
-
-		body.forEach((element) => {
-			// eslint-disable-next-line no-loop-func
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.core.plugins[pluginName].parseJson(element, this)
-			}, false)
-
-			if (current) {
-				if (!first) {
-					first = current
-				} else {
-					this.connect(previous, current)
-				}
-
-				previous = current.getLastNode()
-			} else {
-				console.log('not matched', element)
-			}
-		})
-
-		return first
 	}
 }

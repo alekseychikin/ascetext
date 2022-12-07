@@ -8,6 +8,6 @@ export default class InlineWidget extends WithControls {
 	}
 
 	accept(node) {
-		return node.isContainer
+		return node.type === 'text'
 	}
 }

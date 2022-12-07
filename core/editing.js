@@ -1,3 +1,5 @@
+import isFunction from '../utils/is-function'
+
 const backspaceKey = 8
 const deletekey = 46
 const enterKey = 13
@@ -388,10 +390,11 @@ export default class Editing {
 		this.markDirtyTimer = null
 
 		let container
+		let normalized
 
 		while (container = this.updatingContainers.pop()) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element) || this.core.builder.create('breakLine')
+				const content = this.core.builder.parse(container.element)
 
 				if (container.first) {
 					this.handleTextInRemoveNodes(container.first)
@@ -402,16 +405,12 @@ export default class Editing {
 					container.element.removeChild(container.element.firstChild)
 				}
 
-				this.core.builder.append(container, content)
+				this.core.builder.append(container, content.first || this.core.builder.create('breakLine'))
 			}
 
-			if (container.next && typeof container.normalize === 'function') {
-				const normalized = container.normalize(container.next, this.core.builder)
-
-				if (normalized) {
-					this.core.builder.connect(container.next, normalized)
-					this.core.builder.cutUntil(container, container.next)
-					this.updatingContainers.push(normalized)
+			if (container.previous && isFunction(container.previous.normalize)) {
+				if (normalized = container.previous.normalize(container, this.core.builder)) {
+					this.core.builder.replaceUntil(container.previous, normalized, container)
 				}
 			}
 

@@ -13,10 +13,6 @@ export default class Widget extends WithControls {
 		this.element.setAttribute('data-widget', '')
 	}
 
-	accept(node) {
-		return node.isSection
-	}
-
 	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 
@@ -29,7 +25,7 @@ export default class Widget extends WithControls {
 		if (!previousNode) {
 			const newBlock = builder.createBlock()
 
-			builder.preconnect(anchorContainer, newBlock)
+			builder.append(anchorContainer.parent, newBlock, anchorContainer)
 			setSelection(newBlock)
 		}
 
@@ -56,7 +52,7 @@ export default class Widget extends WithControls {
 		if (!nextNode) {
 			const newBlock = builder.createBlock()
 
-			builder.preconnect(anchorContainer, newBlock)
+			builder.append(anchorContainer.parent, newBlock, anchorContainer)
 			setSelection(newBlock)
 		}
 
@@ -76,12 +72,7 @@ export default class Widget extends WithControls {
 
 		const newBlock = builder.createBlock()
 
-		if (event.shiftKey) {
-			builder.preconnect(anchorContainer, newBlock)
-		} else {
-			builder.connect(anchorContainer, newBlock)
-		}
-
+		builder.append(anchorContainer.parent, newBlock, event.shiftKey ? anchorContainer : anchorContainer.next)
 		setSelection(newBlock)
 	}
 

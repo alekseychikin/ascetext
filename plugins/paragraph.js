@@ -6,8 +6,10 @@ import isHtmlElement from '../utils/is-html-element'
 export class Paragraph extends Container {
 	constructor() {
 		super('paragraph')
+	}
 
-		this.setElement(createElement('p'))
+	render() {
+		return createElement('p')
 	}
 
 	stringify(children) {
@@ -28,39 +30,21 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
-			const node = new Paragraph()
-			let children
-
-			if (children = builder.parse(element, context)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('paragraph')
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
 		if (element.type === 'paragraph') {
-			const node = builder.create('paragraph')
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('paragraph')
 		}
-
-		return false
 	}
 
 	setParagraph(event, { builder, anchorContainer }) {
 		if (anchorContainer.type !== 'paragraph') {
-			const paragraph = new Paragraph()
+			const paragraph = builder.create('paragraph')
 
 			builder.append(paragraph, anchorContainer.first)
 			builder.replace(anchorContainer, paragraph)

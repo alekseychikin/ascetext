@@ -3,7 +3,6 @@ import PluginPlugin from './plugin'
 import isElementBr from '../utils/is-element-br'
 import isTextElement from '../utils/is-text-element'
 import isHtmlElement from '../utils/is-html-element'
-import omit from '../utils/omit'
 
 const mapModifierToTag = {
 	bold: 'strong',
@@ -17,8 +16,18 @@ export class Text extends Node {
 		super('text', attributes)
 
 		this.content = content
+	}
 
-		this.setElement(this.create(this.generateModifiers()))
+	render() {
+		return this.create(this.generateModifiers())
+	}
+
+	update() {
+		const element = this.render()
+
+		this.element.parentNode.insertBefore(element, this.element)
+		this.element.parentNode.removeChild(this.element)
+		this.setElement(element)
 	}
 
 	create(modifiers) {
@@ -57,29 +66,13 @@ export class Text extends Node {
 		return modifiers
 	}
 
-	accept(node) {
-		return node.isContainer || node.isInlineWidget || node.isSection
+	accept() {
+		return false
 	}
 
 	normalize(target, builder) {
-		if (target.isContainer) {
-			if (target.first && target.first.type === 'text' && this.isEqual(target.first)) {
-				return new Text(this.attributes, this.content + target.first.content)
-			}
-
-			const duplicate = new Text({ ...this.attributes }, this.content)
-
-			builder.connect(duplicate, target.first)
-
-			return duplicate
-		}
-
-		if (target.type !== 'text') {
-			return false
-		}
-
-		if (this.isEqual(target)) {
-			return new Text(this.attributes, this.content + target.content)
+		if (target.type === 'text' && this.isEqual(target)) {
+			return builder.create('text', { ...this.attributes }, this.content + target.content)
 		}
 
 		return false
@@ -111,25 +104,19 @@ export class Text extends Node {
 			}
 		}
 
-		const head = new Text(this.attributes, this.content.substr(0, position))
-		const tail = new Text(this.attributes, this.content.substr(position))
+		const head = builder.create('text', { ...this.attributes }, this.content.substr(0, position))
+		const tail = builder.create('text', { ...this.attributes }, this.content.substr(position))
+		const fragment = builder.createFragment()
 
-		builder.connect(head, tail)
-		builder.replace(this, head)
+		builder.append(fragment, head)
+		builder.append(fragment, tail)
+		builder.replace(this, fragment)
 
 		return {
 			head,
 			tail
 		}
 	}
-
-	// connect(target, { builder, connectDefault }) {
-	// 	if (target.isContainer) {
-	// 		builder.connect(this, target.first)
-	// 	} else {
-	// 		connectDefault(this, target)
-	// 	}
-	// }
 
 	stringify() {
 		return this.stringifyWithModifiers(this.generateModifiers())
@@ -184,15 +171,14 @@ export default class TextPlugin extends PluginPlugin {
 		return new Text(params, text)
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder, children) {
 		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
 
 		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
-			return false
+			return null
 		}
 
 		if (isTextElement(element)) {
-			const { weight, style, decoration, strike } = context
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild
 			let content = element.nodeValue
@@ -211,93 +197,52 @@ export default class TextPlugin extends PluginPlugin {
 				return false
 			}
 
-			return new Text({ weight, style, decoration, strike }, content)
+			return builder.create('text', {}, content)
 		}
 
-		if (element.nodeName.toLowerCase() === 'em') {
-			if (this.params.allowModifiers.includes('italic')) {
-				context.style = 'italic'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.style
-
-			return model
+		if (tagName === 'strong' && children && this.params.allowModifiers.includes('bold')) {
+			builder.setAttribute(children.first, 'weight', 'bold')
 		}
 
-		if (element.nodeName.toLowerCase() === 'strong') {
-			if (this.params.allowModifiers.includes('bold')) {
-				context.weight = 'bold'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.weight
-
-			return model
+		if (tagName === 'em' && children && this.params.allowModifiers.includes('italic')) {
+			builder.setAttribute(children.first, 'style', 'italic')
 		}
 
-		if (element.nodeName.toLowerCase() === 's') {
-			if (this.params.allowModifiers.includes('horizontal')) {
-				context.strike = 'horizontal'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.strike
-
-			return model
+		if (tagName === 's' && children && this.params.allowModifiers.includes('horizontal')) {
+			builder.setAttribute(children.first, 'strike', 'horizontal')
 		}
 
-		if (element.nodeName.toLowerCase() === 'u') {
-			if (this.params.allowModifiers.includes('underlined')) {
-				context.decoration = 'underlined'
-			}
-
-			const model = builder.parse(element, context)
-
-			delete context.decoration
-
-			return model
+		if (tagName === 'u' && children && this.params.allowModifiers.includes('underlined')) {
+			builder.setAttribute(children.first, 'decoration', 'underlined')
 		}
 
-		if (element.nodeName.toLowerCase() === 'span') {
+		if (tagName === 'span') {
 			if (
-				(
+				children && (
 					element.style['font-weight'] === 'bold' ||
 					element.style['font-weight'] === '600' ||
 					element.style['font-weight'] === '500' ||
 					element.style['font-weight'] === '700'
 				) && this.params.allowModifiers.includes('bold')
 			) {
-				context.weight = 'bold'
+				builder.setAttribute(children.first, 'weight', 'bold')
 			}
 
 			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
-				context.style = 'italic'
+				builder.setAttribute(children.first, 'style', 'italic')
 			}
 
 			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
-				context.strike = 'horizontal'
+				builder.setAttribute(children.first, 'strike', 'horizontal')
 			}
 
 			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
-				context.decoration = 'underline'
+				builder.setAttribute(children.first, 'decoration', 'underlined')
 			}
-
-			const result = builder.parse(element, context)
-
-			delete context.weight
-			delete context.style
-			delete context.strike
-			delete context.decoration
-
-			return result
 		}
 	}
 
-	parseJson(element) {
+	parseJson(element, builder) {
 		if (element.type === 'text') {
 			const attributes = {}
 
@@ -317,10 +262,8 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.strike = 'horizontal'
 			}
 
-			return new Text(attributes, element.content)
+			return builder.create('text', attributes, element.content)
 		}
-
-		return false
 	}
 
 	getSelectControls(focusedNodes, isRange) {
@@ -426,7 +369,7 @@ export default class TextPlugin extends PluginPlugin {
 	unsetBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text' && item.attributes.weight === 'bold') {
-				builder.replace(item, new Text(omit(item.attributes, 'weight'), item.content))
+				builder.setAttribute(item, 'weight', '')
 			}
 		})
 	}
@@ -434,7 +377,7 @@ export default class TextPlugin extends PluginPlugin {
 	setBold(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, weight: 'bold' }, item.content))
+				builder.setAttribute(item, 'weight', 'bold')
 			}
 		})
 	}
@@ -444,7 +387,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.style === 'italic') {
-				builder.replace(item, new Text(omit(item.attributes, 'style'), item.content))
+				builder.setAttribute(item, 'style', '')
 			}
 		})
 	}
@@ -452,7 +395,7 @@ export default class TextPlugin extends PluginPlugin {
 	setItalic(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, style: 'italic' }, item.content))
+				builder.setAttribute(item, 'style', 'italic')
 			}
 		})
 	}
@@ -462,7 +405,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.strike === 'horizontal') {
-				builder.replace(item, new Text(omit(item.attributes, 'strike'), item.content))
+				builder.setAttribute(item, 'strike', '')
 			}
 		})
 	}
@@ -470,7 +413,7 @@ export default class TextPlugin extends PluginPlugin {
 	setStrike(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, strike: 'horizontal' }, item.content))
+				builder.setAttribute(item, 'strike', 'horizontal')
 			}
 		})
 	}
@@ -480,7 +423,7 @@ export default class TextPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text' && item.attributes.decoration === 'underlined') {
-				builder.replace(item, new Text(omit(item.attributes, 'decoration'), item.content))
+				builder.setAttribute(item, 'decoration', '')
 			}
 		})
 	}
@@ -488,7 +431,7 @@ export default class TextPlugin extends PluginPlugin {
 	setUnderline(event, { builder, getSelectedItems }) {
 		getSelectedItems().forEach((item) => {
 			if (item.type === 'text') {
-				builder.replace(item, new Text({ ...item.attributes, decoration: 'underlined' }, item.content))
+				builder.setAttribute(item, 'decoration', 'underlined')
 			}
 		})
 	}

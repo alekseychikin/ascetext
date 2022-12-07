@@ -1,5 +1,6 @@
 import ControlControl from './control'
 import getIcon from '../utils/get-icon'
+import isFunction from '../utils/is-function'
 
 export default class ControlFile extends ControlControl {
 	handleAction(event) {
@@ -31,11 +32,11 @@ export default class ControlFile extends ControlControl {
 			'contenteditor__control'
 		]
 
-		if (this.params.selected && (typeof this.params.selected === 'function' && this.params.selected(this.node) || this.params.selected === true)) {
+		if (this.params.selected && (isFunction(this.params.selected) && this.params.selected(this.node) || this.params.selected === true)) {
 			classNames.push('contenteditor__control--selected')
 		}
 
-		if (this.params.disabled && (typeof this.params.disabled === 'function' && this.params.disabled(this.node) || this.params.disabled === true)) {
+		if (this.params.disabled && (isFunction(this.params.disabled) && this.params.disabled(this.node) || this.params.disabled === true)) {
 			classNames.push('contenteditor__control--disabled')
 		}
 

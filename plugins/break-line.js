@@ -6,8 +6,10 @@ import isElementBr from '../utils/is-element-br'
 class BreakLine extends InlineWidget {
 	constructor() {
 		super('breakLine')
+	}
 
-		this.setElement(createElement('br'))
+	render() {
+		return createElement('br')
 	}
 
 	accept(node) {
@@ -35,19 +37,15 @@ export default class BreakLinePlugin extends PluginPlugin {
 		return new BreakLine()
 	}
 
-	parse(element) {
+	parse(element, builder) {
 		if (isElementBr(element)) {
-			return new BreakLine()
+			return builder.create('breakLine')
 		}
-
-		return false
 	}
 
-	parseJson(element) {
+	parseJson(element, builder) {
 		if (element.type === 'breakLine') {
-			return new BreakLine()
+			return builder.create('breakLine')
 		}
-
-		return false
 	}
 }

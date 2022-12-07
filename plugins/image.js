@@ -5,22 +5,32 @@ import createElement from '../utils/create-element'
 import isHtmlElement from '../utils/is-html-element'
 
 export class Image extends Widget {
-	constructor(attributes) {
+	constructor(attributes = {}) {
 		super('image', Object.assign({ size: '', float: 'none' }, attributes))
-
-		this.image = createElement('img', {
-			src: attributes.src
-		})
-		this.setElement(createElement('figure', {
-			'class': this.getClassName(),
-			contenteditable: false,
-			tabIndex: 0
-		}, [ this.image ]))
 	}
 
-	setSrc(src) {
-		this.attributes.src = src
-		this.image.src = src
+	accept(node) {
+		return node.type === 'image-caption'
+	}
+
+	render() {
+		this.image = createElement('img', {
+			src: this.attributes.src
+		})
+
+		return createElement('figure', {
+			'class': this.getClassName(),
+			'contenteditable': false,
+			'tabIndex': 0
+		}, [ this.image ])
+	}
+
+	update(previous) {
+		if (previous.src !== this.attributes.src) {
+			this.image.src = this.attributes.src
+		}
+
+		this.element.className = this.getClassName()
 	}
 
 	getClassName() {
@@ -76,9 +86,12 @@ export class ImageCaption extends Container {
 		super('image-caption', params)
 
 		this.removeObserver = null
-		this.setElement(createElement('figcaption', {
+	}
+
+	render() {
+		return createElement('figcaption', {
 			contenteditable: true
-		}))
+		})
 	}
 
 	onMount({ controls, sizeObserver }) {
@@ -106,14 +119,10 @@ export class ImageCaption extends Container {
 		controls.unregisterControl(this.placeholder)
 	}
 
-	accept(node) {
-		return node.type === 'image'
-	}
-
 	enterHandler(event, { builder, setSelection }) {
 		const emptyParagraph = builder.createBlock()
 
-		builder.connect(this.parent, emptyParagraph)
+		builder.append(this.parent.parent, emptyParagraph, this.parent.next)
 		setSelection(emptyParagraph)
 	}
 
@@ -195,7 +204,7 @@ export default class ImagePlugin extends PluginPlugin {
 		return new Image(attributes)
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
 			let size = ''
@@ -214,27 +223,15 @@ export default class ImagePlugin extends PluginPlugin {
 				}
 			})
 
-			const imgElement = element.querySelector('img')
-			const captionElement = element.querySelector('figcaption')
-			const captionChildren = captionElement
-				? builder.parse(captionElement, context)
-				: builder.create('breakLine')
-			const image = builder.create('image', { src: imgElement.src, size, float })
-			const caption = builder.create('image', {
+			return builder.create('image', { src: element.querySelector('img').src, size, float })
+		}
+
+		if (isHtmlElement(element) && element.matches('figcaption')) {
+			return builder.create('image', {
 				type: 'caption',
 				placeholder: this.params.placeholder
 			})
-
-			if (captionChildren) {
-				builder.append(caption, captionChildren)
-			}
-
-			builder.append(image, caption)
-
-			return image
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
@@ -301,34 +298,30 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	toggleFloatLeft(image) {
-		return () => {
-			image.attributes.size = ''
-			image.attributes.float = image.attributes.float === 'left' ? 'none' : 'left'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'size', '')
+			builder.setAttribute(image, 'float', image.attributes.float === 'left' ? 'none' : 'left')
 		}
 	}
 
 	toggleFloatRight(image) {
-		return () => {
-			image.attributes.size = ''
-			image.attributes.float = image.attributes.float === 'right' ? 'none' : 'right'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'size', '')
+			builder.setAttribute(image, 'float', image.attributes.float === 'right' ? 'none' : 'right')
 		}
 	}
 
 	toggleSizeWide(image) {
-		return () => {
-			image.attributes.float = 'none'
-			image.attributes.size = image.attributes.size === 'wide' ? '' : 'wide'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'float', 'none')
+			builder.setAttribute(image, 'size', image.attributes.size === 'wide' ? '' : 'wide')
 		}
 	}
 
 	toggleSizeBanner(image) {
-		return () => {
-			image.attributes.float = 'none'
-			image.attributes.size = image.attributes.size === 'banner' ? '' : 'banner'
-			image.element.className = image.getClassName()
+		return (event, { builder }) => {
+			builder.setAttribute(image, 'float', 'none')
+			builder.setAttribute(image, 'size', image.attributes.size === 'banner' ? '' : 'banner')
 		}
 	}
 
@@ -358,7 +351,7 @@ export default class ImagePlugin extends PluginPlugin {
 					placeholder: this.params.placeholder
 				})
 
-				image.setSrc(src)
+				builder.setAttribute(image, 'src', src)
 				builder.append(caption, builder.create('breakLine'))
 				builder.append(image, caption)
 				builder.replace(container, image)

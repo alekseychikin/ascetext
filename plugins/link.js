@@ -8,11 +8,12 @@ export class Link extends InlineWidget {
 		super('link', attributes)
 
 		this.isDeleteEmpty = true
-		this.controls = []
+	}
 
-		this.setElement(createElement('a', {
-			href: attributes.url
-		}))
+	render() {
+		return createElement('a', {
+			href: this.attributes.url
+		})
 	}
 
 	normalize(element, builder) {
@@ -30,29 +31,14 @@ export class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			const node = builder.create('link', this.attributes.url)
-			const last = this.first.getLastNode()
-
-			if (this.first) {
-				builder.append(node, this.first)
-			}
-
-			if (element.first) {
-				builder.connectWithNormalize(last, element.first)
-			}
-
-			return node
+			return builder.create('link', this.attributes.url)
 		}
 
 		return false
 	}
 
 	duplicate(builder) {
-		const duplicate = new Link(this.attributes)
-
-		builder.connect(this, duplicate)
-
-		return duplicate
+		return builder.create('link', this.attributes.url)
 	}
 
 	stringify(children) {
@@ -100,33 +86,15 @@ export default class LinkPlugin extends PluginPlugin {
 		return new Link({ url })
 	}
 
-	parse(element, builder, context) {
+	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('a')) {
-			const url = element.getAttribute('href')
-			let children
-
-			const node = new Link({ url })
-
-			if (children = builder.parse(element, context)) {
-				builder.append(node, children)
-			}
-
-			return node
+			return builder.create('link', element.getAttribute('href'))
 		}
-
-		return false
 	}
 
 	parseJson(element, builder) {
 		if (element.type === 'link') {
-			const link = builder.create('link', element.url)
-			let children
-
-			if (children = builder.parseJson(element.body)) {
-				builder.append(link, children)
-			}
-
-			return link
+			return builder.create('link', element.url)
 		}
 	}
 
@@ -203,8 +171,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'link') {
-				builder.connect(item, item.first)
-				builder.cut(item)
+				builder.replace(item, item.first)
 			}
 		})
 	}
@@ -216,8 +183,8 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = this.create(url)
-				builder.connect(item, link)
+				link = builder.create('link', url)
+				builder.replace(item, link)
 				builder.push(link, item)
 			}
 		})
@@ -226,17 +193,15 @@ export default class LinkPlugin extends PluginPlugin {
 	removeLink(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((node) => {
 			if (node.type === 'link') {
-				builder.connect(node, node.first)
-				builder.cut(node)
+				builder.replace(node, node.first)
 			}
 		})
 	}
 
 	wrap(match, builder) {
-		const link = this.create(match.content)
+		const link = builder.create('link', match.content)
 
-		builder.preconnect(match, link)
-		builder.push(link, match)
+		builder.append(link, match)
 
 		return link
 	}
@@ -246,8 +211,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		while (current) {
 			if (current.type === 'link') {
-				builder.connect(current, current.first)
-				builder.cut(current)
+				builder.replace(current, current.first)
 			}
 
 			current = current.parent
