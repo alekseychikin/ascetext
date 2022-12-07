@@ -1,5 +1,6 @@
 import ControlControl from './control'
 import getIcon from '../utils/get-icon'
+import isFunction from '../utils/is-function'
 
 export default class ControlButton extends ControlControl {
 	get css() {
@@ -38,11 +39,11 @@ export default class ControlButton extends ControlControl {
 			this.css.container
 		]
 
-		if (this.params.selected && (typeof this.params.selected === 'function' && this.params.selected(node) || this.params.selected === true)) {
+		if (this.params.selected && (isFunction(this.params.selected) && this.params.selected(node) || this.params.selected === true)) {
 			classNames.push(this.css.selected)
 		}
 
-		if (this.params.disabled && (typeof this.params.disabled === 'function' && this.params.disabled(node) || this.params.disabled === true)) {
+		if (this.params.disabled && (isFunction(this.params.disabled) && this.params.disabled(node) || this.params.disabled === true)) {
 			classNames.push(this.css.disabled)
 		}
 

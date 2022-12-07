@@ -1,6 +1,7 @@
 import { operationTypes } from '../core/timetravel'
 import isElementBr from '../utils/is-element-br'
 import isHtmlElement from '../utils/is-html-element'
+import isFunction from '../utils/is-function'
 import Fragment from '../nodes/fragment'
 
 const ignoreParsingElements = ['style', 'script']
@@ -60,7 +61,7 @@ export default class Builder {
 			next
 		})
 
-		if (typeof target.update === 'function') {
+		if (isFunction(target.update)) {
 			target.update(previous)
 		}
 	}
@@ -212,7 +213,7 @@ export default class Builder {
 					this.cut(current)
 				// 	this.append(container, current, tail)
 
-					if (typeof container.append === 'function') {
+					if (isFunction(container.append)) {
 						container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
 					} else {
 						this.appendHandler(container, current, tail)
@@ -359,7 +360,7 @@ export default class Builder {
 	}
 
 	cut(node) {
-		if (typeof node.cut === 'function') {
+		if (isFunction(node.cut)) {
 			node.cut({ builder: this })
 		// } else if (node.isContainer || node.isWidget) {
 		// 	if (node.parent && node.parent.isSection) {
@@ -455,7 +456,7 @@ export default class Builder {
 		if (hasRoot && !node.isMount) {
 			node.isMount = true
 
-			if (typeof node.onMount === 'function') {
+			if (isFunction(node.onMount)) {
 				node.onMount(this.core)
 			}
 
@@ -472,7 +473,7 @@ export default class Builder {
 		let current
 
 		if (node.isMount) {
-			if (typeof node.onUnmount === 'function') {
+			if (isFunction(node.onUnmount)) {
 				node.onUnmount(this.core)
 			}
 

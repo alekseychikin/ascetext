@@ -1,3 +1,5 @@
+import isFunction from '../utils/is-function'
+
 const backspaceKey = 8
 const deletekey = 46
 const enterKey = 13
