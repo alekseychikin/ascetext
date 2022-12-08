@@ -200,7 +200,9 @@ export default class Builder {
 		let tail = anchor
 
 		if (target.type === 'fragment') {
-			this.append(node, target.first, anchor)
+			if (target.first) {
+				this.append(node, target.first, anchor)
+			}
 		} else {
 			while (current) {
 				next = current.next
