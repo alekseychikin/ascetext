@@ -158,12 +158,15 @@ export default class Editing {
 			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
 
 			firstContainer = selectedItems[0].getClosestContainer()
-			this.core.builder.cutUntil(since, until)
-			children = this.core.stringify(since)
-			returnHtmlValue += children
-			returnTextValue += children
-				.replace(/<br\s*?\/?>/g, '\n')
-				.replace(/(<([^>]+)>)/ig, '') + '\n'
+
+			if (!firstContainer.isEmpty) {
+				this.core.builder.cutUntil(since, until)
+				children = this.core.stringify(since)
+				returnHtmlValue += children
+				returnTextValue += children
+					.replace(/<br\s*?\/?>/g, '\n')
+					.replace(/(<([^>]+)>)/ig, '') + '\n'
+			}
 		}
 
 		selectedItems.forEach((item) => {

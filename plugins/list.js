@@ -54,7 +54,9 @@ export class ListItem extends Group {
 	}
 
 	append(target, anchor, { builder, appendDefault }) {
-		if (target.type === 'text' || target.isInlineWidget) {
+		if (target.isContainer && target.type !== 'list-item-content') {
+			builder.append(this.first, target.first, anchor)
+		} else if (target.type === 'text' || target.isInlineWidget) {
 			builder.append(this.first, target)
 		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
 			appendDefault(this, target.first.first, anchor)
@@ -69,7 +71,7 @@ export class ListItem extends Group {
 			return true
 		}
 
-		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
+		return node.isContainer || node.type === 'text' || node.isInlineWidget
 	}
 
 	duplicate(builder) {

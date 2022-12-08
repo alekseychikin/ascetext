@@ -71,9 +71,9 @@ export default class RichEditor {
 			container.appendChild(node.childNodes[0])
 		}
 
-		const children = this.builder.parse(container) || this.builder.createBlock()
+		const children = this.builder.parse(container)
 
-		this.builder.append(this.model, children)
+		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
 		window.addEventListener('load', this.sizeObserver.update)
@@ -142,8 +142,9 @@ export default class RichEditor {
 
 		container.innerHTML = content
 
-		const children = this.builder.parse(container) || this.builder.createBlock()
-		this.builder.append(this.model, children)
+		const children = this.builder.parse(container)
+
+		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 	}
 
@@ -158,9 +159,9 @@ export default class RichEditor {
 		this.model = new Root(this.node)
 		this.node.innerHTML = ''
 
-		const children = this.builder.parseJson(data) || this.builder.createBlock()
+		const children = this.builder.parseJson(data)
 
-		this.builder.append(this.model, children)
+		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 	}
 

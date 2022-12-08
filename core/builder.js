@@ -90,7 +90,7 @@ export default class Builder {
 			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
 				if (parsed) return parsed
 
-				return this.core.plugins[pluginName].parse(currentElement, this)
+				return this.core.plugins[pluginName].parse(currentElement, this, children)
 			}, null)
 
 			if (current) {
