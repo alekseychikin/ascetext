@@ -178,8 +178,12 @@ export default class LinkPlugin extends PluginPlugin {
 
 	setLink(event, { builder, getSelectedItems }) {
 		const selectedItems = getSelectedItems()
-		const url = event.target.value
+		let url = event.target.value
 		let link
+
+		if (!url.match(/^(https?:\/\/|^\/)/)) {
+			url = 'https://' + url
+		}
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
