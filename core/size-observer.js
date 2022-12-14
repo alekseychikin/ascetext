@@ -11,6 +11,7 @@ export default class SizeObserver {
 		this.handlers = []
 		this.timer = null
 
+		this.core.selection.onUpdate(this.update)
 		window.addEventListener('resize', this.update)
 	}
 

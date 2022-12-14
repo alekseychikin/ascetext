@@ -36,6 +36,7 @@ export default class Toolbar {
 		this.wrapControls = this.wrapControls.bind(this)
 		this.updateBoundings = this.updateBoundings.bind(this)
 
+		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
 		this.isShowCenteredToolbar = false
 		this.isKeepOpen = false
@@ -51,7 +52,6 @@ export default class Toolbar {
 		this.previousSelection = null
 		this.nextControlsToRender = null
 		this.cancelObserver = null
-		this.previousContainer = null
 		this.containerAvatar = createElement('div', {
 			style: {
 				position: 'fixed',
@@ -92,7 +92,6 @@ export default class Toolbar {
 		} else {
 			this.updateSideToolbar()
 			this.updateCenteredToolbar()
-			this.updateBoundings()
 		}
 	}
 
@@ -141,8 +140,7 @@ export default class Toolbar {
 		if (
 			!isRange &&
 			anchorContainer.isContainer &&
-			anchorContainer.isEmpty &&
-			anchorContainer.parent.isSection
+			anchorContainer.isEmpty
 		) {
 			this.renderInsertToolbar()
 		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
@@ -157,7 +155,6 @@ export default class Toolbar {
 		const { focused } = this.selection
 
 		if (!focused) {
-			console.log('hide centered toolbar')
 			this.hideCenteredToolbar()
 
 			return null
@@ -213,11 +210,14 @@ export default class Toolbar {
 				: this.css.toggleButtonReplace
 		})
 		this.toggleButtonHolder.appendChild(this.toggleButton)
-		this.sizeObserver.update()
-		this.showToggleButtonHolder()
 
+		// if (hasControls || anchorContainer.parent.isSection) {
 		if (hasControls) {
+			this.sizeObserver.update()
+			this.showToggleButtonHolder()
 			this.toggleButton.addEventListener('click', this.toggleSideToolbar)
+		} else {
+			this.hideToggleButtonHolder()
 		}
 	}
 
@@ -301,6 +301,7 @@ export default class Toolbar {
 
 	renderSideControls(nextControls) {
 		this.emptySideToolbar()
+		this.updateBoundings(this.selection.anchorContainer)
 
 		nextControls.forEach((groupControls) => {
 			const controls = this.wrapControls(groupControls)
@@ -324,6 +325,7 @@ export default class Toolbar {
 
 		this.emptyCenteredControls()
 		this.nextControlsToRender = null
+		this.updateBoundings(this.selection.anchorContainer)
 
 		controlsToRender.forEach((groupControls) => {
 			const controls = this.wrapControls(groupControls)
@@ -403,10 +405,12 @@ export default class Toolbar {
 	}
 
 	showToggleButtonHolder() {
+		this.isShowToggleButtonHolder = true
 		this.toggleButtonHolder.classList.remove('hidden')
 	}
 
 	hideToggleButtonHolder() {
+		this.isShowToggleButtonHolder = false
 		this.toggleButtonHolder.classList.add('hidden')
 	}
 
@@ -422,6 +426,7 @@ export default class Toolbar {
 		this.lastRangeFocused = false
 		this.focusedNodes = []
 		this.centeredToolbar.classList.add('hidden')
+		this.hideAvatar()
 	}
 
 	wrapControls(controls) {
@@ -456,17 +461,14 @@ export default class Toolbar {
 		return false
 	}
 
-	updateBoundings() {
-		if (this.previousContainer !== this.selection.anchorContainer) {
-			if (this.cancelObserver) {
-				this.cancelObserver()
-			}
+	updateBoundings(container) {
+		if (this.cancelObserver) {
+			this.cancelObserver()
+			this.cancelObserver = null
+		}
 
-			if (!this.selection.anchorContainer) {
-				return null
-			}
-
-			this.cancelObserver = this.sizeObserver.observe(this.selection.anchorContainer.element, (entry) => {
+		this.cancelObserver = this.sizeObserver.observe(container.element, (entry) => {
+			if (this.isShowToggleButtonHolder) {
 				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
 					? entry.element.top + entry.scrollTop + 40
 					: entry.element.top + entry.scrollTop - 40
@@ -479,28 +481,35 @@ export default class Toolbar {
 					this.sideToolbar.style.top = `${sideOffsetTop}px`
 					this.sideToolbar.style.left = `${Math.max(10, sideOffsetLeft)}px`
 				}
+			}
 
-				if (this.isShowCenteredToolbar) {
+			if (this.isShowCenteredToolbar) {
+				let centeredOffsetTop = entry.element.top + entry.scrollTop
+				let offsetLeft = entry.element.left - this.centeredToolbar.offsetWidth / 2
+				let offsetTop
+
+				if (container.isWidget) {
+					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
+						? centeredOffsetTop + 20
+						: centeredOffsetTop - this.centeredToolbar.offsetHeight
+					offsetLeft += entry.element.width / 2
+				} else {
 					const selectedText = this.setAvatar(entry)
-					const centeredOffsetTop = entry.element.top + selectedText.offsetTop + entry.scrollTop
-					const offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
+
+					centeredOffsetTop += selectedText.offsetTop
+					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
 						? centeredOffsetTop + selectedText.offsetHeight + 20
 						: centeredOffsetTop - this.centeredToolbar.offsetHeight
-					const offsetLeft =
-						entry.element.left + selectedText.offsetLeft +
-						selectedText.offsetWidth / 2 -
-						this.centeredToolbar.offsetWidth / 2
-
-					this.centeredToolbar.style.top = `${offsetTop}px`
-					this.centeredToolbar.style.left = `${Math.max(
-						toolbarIndent,
-						Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
-					)}px`
+					offsetLeft += selectedText.offsetLeft + selectedText.offsetWidth / 2
 				}
-			})
 
-			this.previousContainer = this.selection.anchorContainer
-		}
+				this.centeredToolbar.style.top = `${offsetTop}px`
+				this.centeredToolbar.style.left = `${Math.max(
+					toolbarIndent,
+					Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
+				)}px`
+			}
+		})
 	}
 
 	setAvatar(entry) {
@@ -508,6 +517,7 @@ export default class Toolbar {
 		const content = this.selection.anchorContainer.element.outerText
 		const styles = getStyle(this.selection.anchorContainer.element)
 
+		this.containerAvatar.style.display = ''
 		this.containerAvatar.style.width = `${entry.element.width}px`
 		this.containerAvatar.style.fontFamily = styles.fontFamily
 		this.containerAvatar.style.fontSize = styles.fontSize
@@ -524,6 +534,10 @@ export default class Toolbar {
 		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
 
 		return this.containerAvatar.querySelector('span[data-selected-text]')
+	}
+
+	hideAvatar() {
+		this.containerAvatar.style.display = 'none'
 	}
 
 	destroy() {
