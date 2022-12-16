@@ -41,14 +41,17 @@ export default class Builder {
 	setAttribute(node, name, value) {
 		const previous = { ...node.attributes }
 
-		node.attributes[name] = value
+		node.attributes = {
+			...node.attributes,
+			[name]: value
+		}
 		this.handleAttributes(node, previous, node.attributes)
 	}
 
 	setAttributes(node, attributes) {
 		const previous = { ...node.attributes }
 
-		node.attributes = attributes
+		node.attributes = { ...attributes }
 		this.handleAttributes(node, previous, attributes)
 	}
 
