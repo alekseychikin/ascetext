@@ -159,11 +159,12 @@ export default class ImagePlugin extends PluginPlugin {
 		this.insertImage = this.insertImage.bind(this)
 		this.updateImage = this.updateImage.bind(this)
 		this.params = Object.assign({
-			onSelectFile: (file) => new Promise((resolve) => {
+			onSelectFile: (file, image, setSrc) => new Promise((resolve) => {
 				const reader = new FileReader()
 
 				reader.onload = event => {
 					resolve(event.target.result)
+					setSrc(event.target.result)
 				}
 
 				reader.readAsDataURL(file)
@@ -345,13 +346,15 @@ export default class ImagePlugin extends PluginPlugin {
 
 			if (files.length) {
 				const image = builder.create('image', { src: '' })
-				const src = await this.params.onSelectFile(files[0], image)
+				const src = await this.params.onSelectFile(files[0], image, (src) => {
+					builder.setAttribute(image, 'src', src)
+				})
 				const caption = builder.create('image', {
 					type: 'caption',
 					placeholder: this.params.placeholder
 				})
 
-				builder.setAttribute(image, 'src', src)
+				image.image.src = src
 				builder.append(caption, builder.create('breakLine'))
 				builder.append(image, caption)
 				builder.replace(container, image)
@@ -360,13 +363,16 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	updateImage(image) {
-		return async (event) => {
+		return async (event, { builder }) => {
 			const { files } = event.target
 
 			if (files.length) {
-				const src = await this.params.onSelectFile(files[0], image)
+				const src = await this.params.onSelectFile(files[0], image, (src) => {
+					builder.setAttribute(image, 'src', src)
+				})
 
-				image.setSrc(src)
+				builder.setAttribute(image, 'src', '')
+				image.image.src = src
 			}
 		}
 	}
