@@ -50,7 +50,7 @@
 }
 
 .contenteditor__toggle-button--replace {
-	background: url('./icons/replace.svg') center no-repeat;
+	background: url('./icons/dots.svg') center no-repeat;
 }
 
 .contenteditor__toggle-button--move {
@@ -74,10 +74,6 @@
 	pointer-events: none;
 	transform: translateX(-10px);
 	transition: opacity 0.15s ease-in-out, transform 0.15s ease-in-out, left 0.15s step-end;
-}
-
-.show-controls .rich-editor__toolbar-toggler {
-	background: url('./icons/close.svg');
 }
 
 .rich-editor__controls {
