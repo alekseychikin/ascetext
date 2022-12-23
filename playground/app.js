@@ -24,7 +24,7 @@ const plugins = {
 }
 
 const editor = new Editor(document.getElementById('app'), { plugins })
-
+/*
 document.getElementById('save').addEventListener('click', () => {
 	const data = [new window.ClipboardItem({ "text/html": new Blob([`
 		<html>
@@ -71,3 +71,4 @@ document.getElementById('copy-table').addEventListener('click', () => {
 	`], { type: "text/html" }) })]
 	navigator.clipboard.write(data)
 })
+*/

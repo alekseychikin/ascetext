@@ -65,16 +65,9 @@ export default class LinkPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			link: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M14.1213 11.9995L16.2426 9.87816C17.4142 8.70658 17.4142 6.80709 16.2426 5.63552C15.0711 4.46394 13.1716 4.46394 12 5.63552L9.87868 7.75684C9.76349 7.87202 9.65964 7.99424 9.5671 8.12211L7.51002 10.1792C7.42673 8.92939 7.86273 7.65146 8.81802 6.69618L10.9393 4.57486C12.6967 2.8175 15.5459 2.8175 17.3033 4.57486C19.0607 6.33221 19.0607 9.18146 17.3033 10.9388L15.182 13.0601C13.7966 14.4455 11.7326 14.7388 10.06 13.9398L11.2234 12.7764C12.2242 13.0436 13.3362 12.7846 14.1213 11.9995Z" fill="currentColor"/>\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M8.81806 10.9391C10.2036 9.55357 12.2679 9.26042 13.9406 10.0597L12.7775 11.2231C11.7765 10.9555 10.6641 11.2144 9.87872 11.9998L7.7574 14.1211C6.58583 15.2927 6.58583 17.1922 7.7574 18.3637C8.92898 19.5353 10.8285 19.5353 12 18.3637L14.1214 16.2424C14.1833 16.1805 14.242 16.1165 14.2974 16.0507L14.3073 16.0607L16.4933 13.8747C16.5605 15.107 16.1234 16.3617 15.182 17.3031L13.0607 19.4244C11.3033 21.1818 8.4541 21.1818 6.69674 19.4244C4.93938 17.667 4.93938 14.8178 6.69674 13.0604L8.81806 10.9391Z" fill="currentColor"/>\
-</svg>',
-			remove: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 13L3 12L7 8L3 4L4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13Z" fill="currentColor"/>\
-</svg>',
-			cancel: '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M4 13L3 12L7 8L3 4L4 3L8 7L12 3L13 4L9 8L13 12L12 13L8 9L4 13Z" fill="currentColor"/>\
-</svg>'
+			link: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m9.172 14.829 5.657-5.657M7.05 11.293l-1.414 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414m-1.414-9.9 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			remove: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			cancel: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
 	}
 

@@ -175,23 +175,10 @@ export default class ImagePlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			image: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<path fill-rule="evenodd" clip-rule="evenodd" d="M22.5 4.5H1.5V19.5H22.5V4.5ZM21 6H3V18H21V6ZM14.25 10.1893L14.7803 10.7197L19.2803 15.2197L18.2197 16.2803L14.25 12.3107L11.7803 14.7803L11.25 15.3107L10.7197 14.7803L9 13.0607L5.78033 16.2803L4.71967 15.2197L8.46967 11.4697L9 10.9393L9.53033 11.4697L11.25 13.1893L13.7197 10.7197L14.25 10.1893ZM10.5 10.5C11.3284 10.5 12 9.82843 12 9C12 8.17157 11.3284 7.5 10.5 7.5C9.67157 7.5 9 8.17157 9 9C9 9.82843 9.67157 10.5 10.5 10.5Z" fill="currentColor"/>\
-</svg>',
-			floatRight: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<mask id="a" fill="#fff"><rect width="9" height="9" rx="1"/></mask>\
-<rect width="9" height="9" rx="1" stroke="currentColor" stroke-width="2.6" mask="url(#a)"/>\
-<path d="M12 1.3h8v1.3h-8zM12 6.6h8v1.3h-8zM0 12h20v1.3H0zM0 17.4h20v1.3H0z" fill="currentColor"/>\
-</svg>',
-			floatLeft: '<svg width="20" height="20" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<mask id="b" fill="#fff"><rect x="11" width="9" height="9" rx="1"/></mask>\
-<rect x="11" width="9" height="9" rx="1" stroke="currentColor" stroke-width="2.6" mask="url(#b)"/>\
-<path d="M0 1.3h8v1.3H0zM0 6.6h8v1.3H0zM0 12h20v1.3H0zM0 17.4h20v1.3H0z" fill="currentColor"/>\
-</svg>',
-			wide: '<svg width="26" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">\
-<rect x=".65" y="3.95" width="24.7" height="9.7" rx="1.35" stroke="currentColor" stroke-width="1.3"/>\
-<path fill="currentColor" d="M4 0h18v1H4zM4 17h18v1H4z"/>\
-</svg>'
+			image: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m3 17 4.768-5.563c.424-.494.635-.741.887-.83.22-.079.462-.077.682.005.25.092.458.342.875.842l2.666 3.2c.39.467.583.7.82.794.208.083.438.093.653.03.244-.072.459-.287.888-.717l.497-.497c.438-.438.657-.656.904-.728a.999.999 0 0 1 .659.037c.238.098.432.34.818.823L21 18m0-10.8v9.6c0 1.12 0 1.68-.218 2.108a2 2 0 0 1-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 0 1-.874-.874C3 18.48 3 17.92 3 16.8V7.2c0-1.12 0-1.68.218-2.108a2 2 0 0 1 .874-.874C4.52 4 5.08 4 6.2 4h11.6c1.12 0 1.68 0 2.108.218a2 2 0 0 1 .874.874C21 5.52 21 6.08 21 7.2ZM15 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			floatLeft: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 14h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatLeft" fill="#fff"><rect x="13" y="9" width="8" height="6" rx="1"/></mask><rect x="13" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatLeft)"/></svg>',
+			floatRight: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16m-6-4h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatRight" fill="#fff"><rect x="3" y="9" width="8" height="6" rx="1"/></mask><rect x="3" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatRight)"/></svg>',
+			wide: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="a" fill="#fff"><rect x="3" y="9" width="18" height="6" rx="1"/></mask><rect x="3" y="9" width="18" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#a)"/></svg>'
 		}
 	}
 
