@@ -342,10 +342,12 @@ export default class Toolbar {
 		})
 	}
 
-	controlHandler(action, event) {
-		this.selection.restoreSelection()
-		this.timeTravel.preservePreviousSelection()
-		this.customMode = false
+	controlHandler(action, event, keep = false) {
+		if (!keep) {
+			this.selection.restoreSelection()
+			this.timeTravel.preservePreviousSelection()
+			this.customMode = false
+		}
 
 		const controls = action(event, {
 			builder: this.builder,
@@ -361,6 +363,8 @@ export default class Toolbar {
 			this.nextControlsToRender = controls
 			this.renderCenteredControls(controls)
 			this.customMode = true
+		} else if (keep) {
+			this.showCenteredToolbar()
 		} else {
 			this.restoreSelection()
 			this.editing.update()
@@ -521,6 +525,7 @@ export default class Toolbar {
 		this.containerAvatar.style.fontFamily = styles.fontFamily
 		this.containerAvatar.style.fontSize = styles.fontSize
 		this.containerAvatar.style.lineHeight = styles.lineHeight
+		this.containerAvatar.style.letterSpacing = styles.letterSpacing
 		this.containerAvatar.style.padding = styles.padding
 		this.containerAvatar.style.boxSizing = styles.boxSizing
 		this.containerAvatar.style.textAlign = styles.textAlign
