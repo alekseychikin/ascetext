@@ -1,8 +1,6 @@
 import { getNodeByElement } from '../utils/map-element-to-node'
-import getStyle from '../utils/getStyle'
 import isElementBr from '../utils/is-element-br'
 import isTextElement from '../utils/is-text-element'
-import createElement from '../utils/create-element'
 
 export default class Selection {
 	constructor(core) {
@@ -11,7 +9,6 @@ export default class Selection {
 		this.onUpdate = this.onUpdate.bind(this)
 		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
-		this.eventHandler = this.eventHandler.bind(this)
 
 		this.core = core
 		this.selection = {}
@@ -23,16 +20,12 @@ export default class Selection {
 		this.onUpdateHandlers = []
 		this.selectedItems = []
 		this.focusedNodes = []
+		this.timer = null
 
-		document.addEventListener('focus', this.onFocus, true)
-		document.addEventListener('click', this.eventHandler)
-		document.addEventListener('keyup', this.eventHandler)
-		document.addEventListener('keydown', this.eventHandler)
-		document.addEventListener('input', this.eventHandler)
-	}
-
-	eventHandler(event) {
-		setTimeout(() => this.update(event), 0)
+		document.addEventListener('click', this.update, true)
+		document.addEventListener('keyup', this.update, true)
+		document.addEventListener('input', this.update, true)
+		document.addEventListener('selectionchange', this.update)
 	}
 
 	onFocus(event) {
@@ -45,21 +38,44 @@ export default class Selection {
 		}
 	}
 
-	update() {
+	update(event) {
 		const selection = document.getSelection()
-		const { anchorNode: anchorElement, focusNode: focusElement, isCollapsed } = selection
+		let {
+			anchorNode: anchorElement,
+			focusNode: focusElement,
+			anchorOffset: selectionAnchorOffset,
+			focusOffset: selectionFocusOffset,
+			isCollapsed
+		} = selection
 
-		if (this.skipUpdate) {
-			console.log('skip')
+		if (event.type === 'selectionchange') {
+			if (anchorElement) {
+				if (!this.core.node.contains(anchorElement)) {
+					this.blur()
 
-			return false
-		}
+					return false
+				}
 
-		if (!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) {
-			if (this.focused) {
-				console.log('blur')
-				this.blur()
+				this.focused = true
+			} else {
+				return false
 			}
+		} else if (this.core.node.contains(event.target) || this.core.node === event.target) {
+			this.focused = true
+
+			const anchorNode = getNodeByElement(event.target)
+
+			if (anchorNode && anchorNode.isWidget) {
+				anchorElement = anchorNode.element
+				focusElement = anchorNode.element
+				selectionAnchorOffset = 0
+				selectionFocusOffset = 0
+				anchorNode.element.focus()
+				selection.collapse(anchorNode.element, 0)
+				isCollapsed = true
+			}
+		} else {
+			this.blur()
 
 			return false
 		}
@@ -68,23 +84,22 @@ export default class Selection {
 		const lastNode = getNodeByElement(focusElement)
 		const firstContainer = firstNode.getClosestContainer()
 		const lastContainer = lastNode.getClosestContainer()
-		const firstIndex = this.getIndex(firstContainer, anchorElement, selection.anchorOffset)
-		const lastIndex = this.getIndex(lastContainer, focusElement, selection.focusOffset)
+		const firstIndex = this.getIndex(firstContainer, anchorElement, selectionAnchorOffset)
+		const lastIndex = this.getIndex(lastContainer, focusElement, selectionFocusOffset)
 		const isForwardDirection = this.getDirection(firstIndex, lastIndex) === 'forward'
 		const [ anchorContainer, focusContainer ] =
 			isForwardDirection ? [ firstContainer, lastContainer ] : [ lastContainer, firstContainer ]
-		const [ anchorNode, focusNode ]=
+		const [ anchorNode, focusNode ] =
 			isForwardDirection ? [ firstNode, lastNode ] : [ lastNode, firstNode ]
 		const anchorContainerLength = anchorContainer.isContainer ? anchorContainer.getOffset() : 0
 		const focusContainerLength = focusContainer.isContainer ? focusContainer.getOffset() : 0
 		const [ anchorSelectedElement, anchorSelectedOffset ] = isForwardDirection
-			? this.getSelectedElement(anchorElement, selection.anchorOffset)
-			: this.getSelectedElement(focusElement, selection.focusOffset)
+			? this.getSelectedElement(anchorElement, selectionAnchorOffset)
+			: this.getSelectedElement(focusElement, selectionFocusOffset)
 		const [ focusSelectedElement, focusSelectedOffset ] = isForwardDirection
-			? this.getSelectedElement(focusElement, selection.focusOffset)
-			: this.getSelectedElement(anchorElement, selection.anchorOffset)
+			? this.getSelectedElement(focusElement, selectionFocusOffset)
+			: this.getSelectedElement(anchorElement, selectionAnchorOffset)
 		const anchorOffset = anchorSelectedOffset + anchorContainer.getOffset(anchorSelectedElement)
-		// console.log(anchorOffset)
 		const focusOffset = focusSelectedOffset + focusContainer.getOffset(focusSelectedElement)
 
 		this.anchorIndex = isForwardDirection ? firstIndex : lastIndex
@@ -120,6 +135,10 @@ export default class Selection {
 	}
 
 	blur() {
+		if (!this.focused) {
+			return null
+		}
+
 		this.focused = false
 
 		if (this.anchorContainer) {
@@ -153,6 +172,7 @@ export default class Selection {
 			if (anchorElement === focusElement && anchorIndex === focusIndex) {
 				if (anchorNode.isWidget) {
 					anchorNode.element.focus()
+					sel.collapse(anchorNode.element, 0)
 				} else {
 					sel.collapse(anchorElement, anchorIndex)
 				}
@@ -163,7 +183,7 @@ export default class Selection {
 			sel.collapse(anchorElement, anchorIndex)
 		}
 
-		this.update()
+		this.update({ target: anchorElement, type: 'restore' })
 	}
 
 	getSelectionParams(node, offset) {
@@ -296,7 +316,6 @@ export default class Selection {
 		focusContainer = this.focusContainer,
 		focusOffset = this.focusOffset
 	) {
-		// debugger
 		const focus = this.core.builder.split(focusContainer, focusOffset)
 		const anchor = this.core.builder.split(anchorContainer, anchorOffset)
 		const anchorNextContainer = anchorContainer.getNextSelectableNode()
@@ -395,9 +414,9 @@ export default class Selection {
 	}
 
 	destroy() {
-		document.removeEventListener('focus', this.onFocus, true)
-		document.removeEventListener('click', this.onClickHandler)
-		document.removeEventListener('keyup', this.update)
-		document.removeEventListener('input', this.update)
+		document.removeEventListener('click', this.update, true)
+		document.removeEventListener('keyup', this.update, true)
+		document.removeEventListener('input', this.update, true)
+		document.removeEventListener('selectionchange', this.update)
 	}
 }
