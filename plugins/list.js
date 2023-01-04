@@ -45,8 +45,10 @@ export class List extends Group {
 }
 
 export class ListItem extends Group {
-	constructor() {
+	constructor(params = {}) {
 		super('list-item')
+
+		this.params = params
 	}
 
 	render() {
@@ -68,14 +70,49 @@ export class ListItem extends Group {
 
 	accept(node) {
 		if (node.type === 'list' && this.last && this.last.type === 'list-item-content') {
+			if (this.params.maxDepth !== null) {
+				const depth = this.getDepth(this, node)
+
+				// console.log(depth)
+
+				if (depth >= this.params.maxDepth) {
+					return false
+				}
+			}
+
 			return true
 		}
 
 		return node.isContainer || node.type === 'text' || node.isInlineWidget
 	}
 
+	getDepth(container, node) {
+		let current = container
+		let depth = 0
+
+		while (current) {
+			if (current.type === 'list') {
+				depth++
+			}
+
+			current = current.parent
+		}
+
+		current = node
+
+		while (current) {
+			if (current.type === 'list') {
+				depth++
+			}
+
+			current = current.last
+		}
+
+		return depth
+	}
+
 	duplicate(builder) {
-		return builder.create('list', 'item')
+		return builder.create('list', 'item', this.params)
 	}
 
 	stringify(children) {
@@ -84,8 +121,10 @@ export class ListItem extends Group {
 }
 
 export class ListItemContent extends Container {
-	constructor() {
+	constructor(params = {}) {
 		super('list-item-content')
+
+		this.params = params
 	}
 
 	render() {
@@ -155,8 +194,8 @@ export class ListItemContent extends Container {
 				this.putEmptyBlockInMiddle(builder, setSelection)
 			}
 		} else {
-			const nextItem = builder.create('list', 'item')
-			const content = builder.create('list', 'content')
+			const nextItem = builder.create('list', 'item', this.params)
+			const content = builder.create('list', 'content', this.params)
 
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
@@ -271,13 +310,19 @@ export class ListItemContent extends Container {
 }
 
 export default class ListPlugin extends PluginPlugin {
-	create(params) {
+	constructor(params = { maxDepth: null }) {
+		super()
+
+		this.params = params
+	}
+
+	create(params, subparams) {
 		if (params === 'item') {
-			return new ListItem()
+			return new ListItem(subparams)
 		}
 
 		if (params === 'content') {
-			return new ListItemContent()
+			return new ListItemContent(subparams)
 		}
 
 		return new List(params)
@@ -349,8 +394,8 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (nodeName === 'li') {
-			const listItem = builder.create('list', 'item')
-			const content = builder.create('list', 'content')
+			const listItem = builder.create('list', 'item', this.params)
+			const content = builder.create('list', 'content', this.params)
 
 			builder.append(listItem, content)
 
@@ -364,20 +409,19 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'list-item') {
-			return builder.create('list', 'item')
+			return builder.create('list', 'item', this.params)
 		}
 
 		if (element.type === 'list-item-content') {
-			return builder.create('list', 'content')
+			return builder.create('list', 'content', this.params)
 		}
 	}
 
 	setNumberList(container) {
 		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'numerable' })
-			const listItem = builder.create('list', 'item')
-
-			const content = builder.create('list', 'content')
+			const listItem = builder.create('list', 'item', this.params)
+			const content = builder.create('list', 'content', this.params)
 
 			builder.append(listItem, content)
 			builder.append(list, listItem)
@@ -388,8 +432,8 @@ export default class ListPlugin extends PluginPlugin {
 	setMarkerList(container) {
 		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'marker' })
-			const listItem = builder.create('list', 'item')
-			const content = builder.create('list', 'content')
+			const listItem = builder.create('list', 'item', this.params)
+			const content = builder.create('list', 'content', this.params)
 
 			builder.append(listItem, content)
 			builder.append(list, listItem)
