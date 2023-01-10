@@ -18,8 +18,14 @@ body {
 
 .playground {
 	margin: 0 auto;
-	padding: 50px;
+	padding: 12px;
 	max-width: 844px;
+}
+
+@media (min-width: 640px) {
+	.playground {
+		padding: 50px;
+	}
 }
 
 .playground__header {
