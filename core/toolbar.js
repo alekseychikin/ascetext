@@ -11,6 +11,7 @@ export default class Toolbar {
 	get css() {
 		return {
 			container: 'contenteditor__tooltip',
+			containerMobile: 'contenteditor__tooltip contenteditor__tooltip--mobile',
 			containerHidden: 'contenteditor__tooltip hidden',
 			toggleButtonHolder: 'contenteditor__toggle-button-holder',
 			toggleButtonHolderHidden: 'contenteditor__toggle-button-holder hidden',
@@ -33,10 +34,13 @@ export default class Toolbar {
 		this.checkToolbarVisibility = this.checkToolbarVisibility.bind(this)
 		this.wrapControls = this.wrapControls.bind(this)
 		this.updateBoundings = this.updateBoundings.bind(this)
+		this.viewportChange = this.viewportChange.bind(this)
+		this.viewportResize = this.viewportResize.bind(this)
 
 		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
 		this.isShowCenteredToolbar = false
+		this.isMobile = true
 		this.customMode = false
 		this.builder = core.builder
 		this.selection = core.selection
@@ -48,11 +52,12 @@ export default class Toolbar {
 		this.focusedNodes = []
 		this.lastRangeFocused = false
 		this.previousSelection = null
+		this.previousContainer = null
+		this.previousSideMode = ''
 		this.nextControlsToRender = null
 		this.sideControls = []
 		this.sideMode = 'insert'
 		this.cancelObserver = null
-		this.previousContainer = null
 		this.containerAvatar = createElement('div', {
 			style: {
 				position: 'fixed',
@@ -86,8 +91,32 @@ export default class Toolbar {
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
+		visualViewport.addEventListener('resize', this.viewportResize)
+		visualViewport.addEventListener('scroll', this.viewportResize)
 
 		this.selection.onUpdate(this.onSelectionChange)
+
+		this.mediaQuery = window.matchMedia('(min-width: 640px)')
+		this.bindViewportChange()
+	}
+
+	viewportChange(event) {
+		this.isMobile = !event.matches
+		this.viewportResize()
+		this.onSelectionChange()
+	}
+
+	viewportResize() {
+		this.sizeObserver.update()
+	}
+
+	bindViewportChange() {
+		this.mediaQuery.addEventListener('change', this.viewportChange)
+		this.viewportChange(this.mediaQuery)
+	}
+
+	unbindViewportChange() {
+		this.mediaQuery.removeEventListener('change', this.viewportChange)
 	}
 
 	onSelectionChange() {
@@ -98,15 +127,19 @@ export default class Toolbar {
 		}
 
 		if (!this.customMode) {
-			this.updateButtonHolder()
+			this.updateSideToolbar()
 			this.updateCenteredToolbar()
+			this.updateButtonHolder()
 		}
 	}
 
 	checkToolbarVisibility(event) {
 		if (!this.isTargetInsideToolbar(event.target) && (this.customMode || this.isShowSideToolbar || this.isShowCenteredToolbar)) {
 			this.customMode = false
-			this.hideSideToolbar()
+
+			if (!this.isMobile) {
+				this.hideSideToolbar()
+			}
 		}
 	}
 
@@ -118,32 +151,19 @@ export default class Toolbar {
 	}
 
 	updateButtonHolder() {
-		if (!this.selection.focused && !this.isShowSideToolbar) {
+		const { focused } = this.selection
+
+		if (!focused && !this.isShowSideToolbar || this.isMobile) {
 			this.hideToggleButtonHolder()
-		} else {
-			const { anchorContainer, isRange, focused } = this.selection
-
-			if (focused) {
-				if (
-					!isRange &&
-					anchorContainer.isContainer &&
-					anchorContainer.isEmpty
-				) {
-					this.sideMode = 'insert'
-					this.sideControls = this.getInsertControls()
-
-					if (this.sideControls.length) {
-						this.renderInsertButton()
-					} else {
-						this.hideToggleButtonHolder()
-					}
-				} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
-					this.sideMode = 'replace'
-					this.sideControls = this.getReplaceControls()
-					this.renderReplaceButton(this.sideControls.length)
+		} else if (focused) {
+			if (this.sideMode === 'insert') {
+				if (this.sideControls.length) {
+					this.renderInsertButton()
 				} else {
 					this.hideToggleButtonHolder()
 				}
+			} else {
+				this.renderReplaceButton(this.sideControls.length)
 			}
 		}
 	}
@@ -180,6 +200,38 @@ export default class Toolbar {
 		}
 	}
 
+	updateSideToolbar() {
+		const { anchorContainer, isRange, focused } = this.selection
+
+		if (!focused) {
+			return false
+		}
+
+		if (
+			!isRange &&
+			anchorContainer.isContainer &&
+			anchorContainer.isEmpty
+		) {
+			this.sideMode = 'insert'
+
+			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
+				this.sideControls = this.getInsertControls()
+				this.previousSideMode = this.sideMode
+				this.previousContainer = anchorContainer
+				this.renderSideToolbar()
+			}
+		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
+			this.sideMode = 'replace'
+
+			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
+				this.sideControls = this.getReplaceControls()
+				this.previousSideMode = this.sideMode
+				this.previousContainer = anchorContainer
+				this.renderSideToolbar()
+			}
+		}
+	}
+
 	updateCenteredToolbar() {
 		const { focused } = this.selection
 
@@ -192,22 +244,17 @@ export default class Toolbar {
 		this.renderSelectedToolbar()
 	}
 
-	renderInsertToolbar() {
-		this.hideSideToolbar()
-		this.previousSelection = this.selection.getSelectionInIndexes()
-
-		if (this.sideControls.length) {
-			this.renderInsertButton()
-			this.renderSideControls()
-		}
-	}
-
-	renderReplaceToolbar() {
-		this.hideSideToolbar()
+	renderSideToolbar() {
 		this.previousSelection = this.selection.getSelectionInIndexes()
 
 		if (this.sideControls.length) {
 			this.renderSideControls()
+
+			if (this.isMobile) {
+				this.showSideToolbar()
+			}
+		} else {
+			this.hideSideToolbar()
 		}
 	}
 
@@ -285,15 +332,6 @@ export default class Toolbar {
 		if (this.isShowSideToolbar) {
 			this.hideSideToolbar()
 		} else {
-			switch(this.sideMode) {
-				case 'insert':
-					this.renderInsertToolbar()
-					break
-				case 'replace':
-					this.renderReplaceToolbar()
-					break
-			}
-
 			this.showSideToolbar()
 		}
 	}
@@ -390,49 +428,49 @@ export default class Toolbar {
 		this.sideToolbar.innerHTML = ''
 	}
 
-	emptyCenteredControls() {
-		this.centeredToolbar.innerHTML = ''
-	}
-
-	emptyToggleButtonHolder() {
-		this.toggleButtonHolder.innerHTML = ''
-	}
-
 	showSideToolbar() {
 		this.isShowSideToolbar = true
-		this.sideToolbar.classList.remove('hidden')
+		this.sideToolbar.className = this.isMobile ? this.css.containerMobile : this.css.container
 		this.sizeObserver.update()
-	}
-
-	showCenteredToolbar() {
-		this.isShowCenteredToolbar = true
-		this.centeredToolbar.classList.remove('hidden')
-		this.sizeObserver.update()
-	}
-
-	showToggleButtonHolder() {
-		this.isShowToggleButtonHolder = true
-		this.toggleButtonHolder.classList.remove('hidden')
-	}
-
-	hideToggleButtonHolder() {
-		this.isShowToggleButtonHolder = false
-		this.toggleButtonHolder.classList.add('hidden')
 	}
 
 	hideSideToolbar() {
 		this.isShowSideToolbar = false
 		this.lastRangeFocused = false
 		this.focusedNodes = []
-		this.sideToolbar.classList.add('hidden')
+		this.sideToolbar.className = this.css.containerHidden
+	}
+
+	emptyCenteredControls() {
+		this.centeredToolbar.innerHTML = ''
+	}
+
+	showCenteredToolbar() {
+		this.isShowCenteredToolbar = true
+		this.centeredToolbar.className = this.isMobile ? this.css.containerMobile : this.css.container
+		this.sizeObserver.update()
 	}
 
 	hideCenteredToolbar() {
 		this.isShowCenteredToolbar = false
 		this.lastRangeFocused = false
 		this.focusedNodes = []
-		this.centeredToolbar.classList.add('hidden')
+		this.centeredToolbar.className = this.css.containerHidden
 		this.hideAvatar()
+	}
+
+	emptyToggleButtonHolder() {
+		this.toggleButtonHolder.innerHTML = ''
+	}
+
+	showToggleButtonHolder() {
+		this.isShowToggleButtonHolder = true
+		this.toggleButtonHolder.className = this.css.toggleButtonHolder
+	}
+
+	hideToggleButtonHolder() {
+		this.isShowToggleButtonHolder = false
+		this.toggleButtonHolder.className = this.css.toggleButtonHolderHidden
 	}
 
 	wrapControls(controls) {
@@ -479,7 +517,13 @@ export default class Toolbar {
 				}
 			}
 
-			if (this.isShowCenteredToolbar) {
+			if (this.isMobile) {
+				this.sideToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.sideToolbar.offsetHeight}px`
+				this.sideToolbar.style.left = ''
+
+				this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
+				this.centeredToolbar.style.left = ''
+			} else if (this.isShowCenteredToolbar) {
 				let centeredOffsetTop = entry.element.top + entry.scrollTop
 				let offsetLeft = entry.element.left - this.centeredToolbar.offsetWidth / 2
 				let offsetTop
@@ -504,6 +548,12 @@ export default class Toolbar {
 					toolbarIndent,
 					Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
 				)}px`
+			} else {
+				const offsetLeft = parseInt(this.centeredToolbar.style.left)
+
+				if (offsetLeft + this.centeredToolbar.offsetWidth > document.body.clientWidth) {
+					this.centeredToolbar.style.left = '0'
+				}
 			}
 		})
 	}
@@ -552,7 +602,10 @@ export default class Toolbar {
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)
 		document.removeEventListener('input', this.checkToolbarVisibility)
+		visualViewport.removeEventListener('resize', this.viewportResize)
+		visualViewport.removeEventListener('scroll', this.viewportResize)
 
+		this.unbindViewportChange()
 		this.stopUpdateBoundings()
 	}
 }

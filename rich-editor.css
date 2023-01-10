@@ -14,6 +14,13 @@
 	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
 }
 
+.contenteditor__tooltip--mobile {
+	position: fixed;
+	left: 0;
+	width: 100%;
+	justify-content: center;
+}
+
 .contenteditor__tooltip.hidden {
 	transform: translateY(-10px);
 	opacity: 0;
