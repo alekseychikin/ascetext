@@ -1,19 +1,20 @@
 {
   "name": "ascetext",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Editor for web",
   "main": "index.js",
   "type": "module",
   "files": [
-    "./controls/**",
-    "./core/**",
-    "./icons/**",
-    "./nodes/**",
-    "./plugins/**",
-    "./utils/**",
-    "./ascetext.css",
-    "./index.js",
-    "./index.d.ts"
+    "controls/**",
+    "core/**",
+    "icons/**",
+    "nodes/**",
+    "plugins/**",
+    "utils/**",
+    "ascetext.css",
+    "index.js",
+    "index.d.ts",
+    "package.json"
   ],
   "scripts": {
     "start": "npx gulp watch",
