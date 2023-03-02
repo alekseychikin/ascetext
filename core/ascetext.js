@@ -27,7 +27,7 @@ class Root extends Section {
 	}
 }
 
-export default class RichEditor {
+export default class Ascetext {
 	constructor(node, params) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)

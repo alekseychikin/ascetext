@@ -1,6 +1,6 @@
 {
   "name": "ascetext",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Editor for web",
   "source": "index.js",
   "main": "index.js",
@@ -28,9 +28,7 @@
     "eslint": "^7.27.0",
     "eslint-config-recommended": "^4.1.0",
     "eslint-plugin-import": "^2.23.3",
-    "gulp": "^4.0.2"
-  },
-  "dependencies": {
+    "gulp": "^4.0.2",
     "esbuild": "^0.15.9",
     "regenerator-runtime": "^0.13.9"
   }

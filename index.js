@@ -1,4 +1,4 @@
-import Ascetext from './core/rich-editor'
+import Ascetext from './core/ascetext'
 
 import ParagraphPlugin, { Paragraph } from './plugins/paragraph'
 import BreakLinePlugin from './plugins/break-line'
