@@ -1,4 +1,4 @@
-import WithControls from './with-controls'
+import WithControls from './with-controls.js'
 
 export default class Widget extends WithControls {
 	constructor(type, attributes) {

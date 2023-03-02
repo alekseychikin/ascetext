@@ -1,7 +1,7 @@
-import InlineWidget from '../nodes/inline-widget'
-import PluginPlugin from './plugin'
-import createElement from '../utils/create-element'
-import isElementBr from '../utils/is-element-br'
+import InlineWidget from '../nodes/inline-widget.js'
+import PluginPlugin from './plugin.js'
+import createElement from '../utils/create-element.js'
+import isElementBr from '../utils/is-element-br.js'
 
 class BreakLine extends InlineWidget {
 	constructor() {

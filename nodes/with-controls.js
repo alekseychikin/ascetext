@@ -1,4 +1,4 @@
-import Node from './node'
+import Node from './node.js'
 
 export default class WithControls extends Node {
 	constructor(type, attributes = {}) {

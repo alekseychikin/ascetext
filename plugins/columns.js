@@ -1,9 +1,9 @@
-import PluginPlugin from './plugin'
-import Section from '../nodes/section'
-import Widget from '../nodes/widget'
-import ControlButton from '../controls/button'
-import createElement from '../utils/create-element'
-import isHtmlElement from '../utils/is-html-element'
+import PluginPlugin from './plugin.js'
+import Section from '../nodes/section.js'
+import Widget from '../nodes/widget.js'
+import ControlButton from '../controls/button.js'
+import createElement from '../utils/create-element.js'
+import isHtmlElement from '../utils/is-html-element.js'
 
 export class Columns extends Widget {
 	constructor(types, params) {

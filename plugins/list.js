@@ -1,8 +1,8 @@
-import PluginPlugin from './plugin'
-import Container from '../nodes/container'
-import Group from '../nodes/group'
-import createElement from '../utils/create-element'
-import isHtmlElement from '../utils/is-html-element'
+import PluginPlugin from './plugin.js'
+import Container from '../nodes/container.js'
+import Group from '../nodes/group.js'
+import createElement from '../utils/create-element.js'
+import isHtmlElement from '../utils/is-html-element.js'
 
 export class List extends Group {
 	constructor(attributes = { decor: 'marker' }) {

@@ -1,8 +1,8 @@
-import { operationTypes } from '../core/timetravel'
-import isElementBr from '../utils/is-element-br'
-import isHtmlElement from '../utils/is-html-element'
-import isFunction from '../utils/is-function'
-import Fragment from '../nodes/fragment'
+import { operationTypes } from '../core/timetravel.js'
+import isElementBr from '../utils/is-element-br.js'
+import isHtmlElement from '../utils/is-html-element.js'
+import isFunction from '../utils/is-function.js'
+import Fragment from '../nodes/fragment.js'
 
 const ignoreParsingElements = ['style', 'script']
 const nbsCode = '\u00A0'

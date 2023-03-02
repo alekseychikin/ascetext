@@ -1,4 +1,6 @@
-export default class Ascetext {
+/// <reference types="node" />
+
+export declare class Ascetext {
 	constructor(container: HTMLElement, params?: {
 		plugins?: Record<string, PluginPlugin>;
 		icons?: Record<string, string>;
@@ -7,7 +9,7 @@ export default class Ascetext {
 	destroy(): void;
 }
 
-export class Node {
+export declare class Node {
 	type: string;
 	parent: Node;
 	first: Node;
@@ -19,7 +21,7 @@ export class Node {
 	isWidget: boolean;
 }
 
-export class Selection {
+export declare class Selection {
 	selectedItems: Array<Node>;
 	anchorContainer: Node;
 	focuseContainer: Node;
@@ -30,7 +32,7 @@ export class Selection {
 	getSelectionInIndexes(): Array<number>;
 }
 
-export class Control {
+export declare class Control {
 	slug: string;
 	label: string;
 	icon: string;
@@ -38,7 +40,7 @@ export class Control {
 	type: string;
 }
 
-export class ControlControl {
+export declare class ControlControl {
 	element: HTMLElement;
 	params: Control;
 	handler: (action: () => void, event: Event) => void;
@@ -47,15 +49,15 @@ export class ControlControl {
 	setEventListener(handler: (action: () => void, event: Event) => void): void;
 }
 
-export class ControlButton extends ControlControl {}
+export declare class ControlButton extends ControlControl {}
 
-export class PluginPlugin {
+export declare class PluginPlugin {
 	getInsertControls(container: Node): Array<Control>;
 	getReplaceControls(container: Node): Array<Control>;
 	getSelectControls(selectedNodes: Array<Node>, isRange: boolean): Array<Control>;
 }
 
-export class Toolbar {
+export declare class Toolbar {
 	constructor(core: Ascetext);
 	isShowTooltip: boolean;
 	element: HTMLElement;

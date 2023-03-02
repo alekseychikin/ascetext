@@ -1,4 +1,4 @@
-import ControlControl from './control'
+import ControlControl from './control.js'
 
 export default class ControlInput extends ControlControl {
 	handleAction(event) {

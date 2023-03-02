@@ -1,7 +1,7 @@
-import isElementBr from '../utils/is-element-br'
-import isTextElement from '../utils/is-text-element'
-import { setNode, getNodeByElement } from '../utils/map-element-to-node'
-import walk from '../utils/walk'
+import isElementBr from '../utils/is-element-br.js'
+import isTextElement from '../utils/is-text-element.js'
+import { setNode, getNodeByElement } from '../utils/map-element-to-node.js'
+import walk from '../utils/walk.js'
 
 let id = 1
 

@@ -1,6 +1,6 @@
-import { getNodeByElement } from '../utils/map-element-to-node'
-import isElementBr from '../utils/is-element-br'
-import isTextElement from '../utils/is-text-element'
+import { getNodeByElement } from '../utils/map-element-to-node.js'
+import isElementBr from '../utils/is-element-br.js'
+import isTextElement from '../utils/is-text-element.js'
 
 export default class Selection {
 	constructor(core) {

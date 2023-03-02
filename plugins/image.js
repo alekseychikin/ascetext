@@ -1,8 +1,8 @@
-import Widget from '../nodes/widget'
-import Container from '../nodes/container'
-import PluginPlugin from './plugin'
-import createElement from '../utils/create-element'
-import isHtmlElement from '../utils/is-html-element'
+import Widget from '../nodes/widget.js'
+import Container from '../nodes/container.js'
+import PluginPlugin from './plugin.js'
+import createElement from '../utils/create-element.js'
+import isHtmlElement from '../utils/is-html-element.js'
 
 export class Image extends Widget {
 	constructor(attributes = {}) {

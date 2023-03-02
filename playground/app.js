@@ -1,14 +1,14 @@
 import 'regenerator-runtime/runtime'
 
-import Editor from '../index'
-import ParagraphPlugin from '../plugins/paragraph'
-import BreakLinePlugin from '../plugins/break-line'
-import TextPlugin from '../plugins/text'
-import HeaderPlugin from '../plugins/header'
-import LinkPlugin from '../plugins/link'
-import ImagePlugin from '../plugins/image'
-import ListPlugin from '../plugins/list'
-import QuotePlugin from '../plugins/quote'
+import Editor from '../index.js'
+import ParagraphPlugin from '../plugins/paragraph.js'
+import BreakLinePlugin from '../plugins/break-line.js'
+import TextPlugin from '../plugins/text.js'
+import HeaderPlugin from '../plugins/header.js'
+import LinkPlugin from '../plugins/link.js'
+import ImagePlugin from '../plugins/image.js'
+import ListPlugin from '../plugins/list.js'
+import QuotePlugin from '../plugins/quote.js'
 
 const plugins = {
 	text: new TextPlugin(),

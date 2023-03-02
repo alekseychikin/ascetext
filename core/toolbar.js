@@ -1,9 +1,9 @@
-import createElement from '../utils/create-element'
-import getStyle from '../utils/getStyle'
-import ControlButton from '../controls/button'
-import ControlFile from '../controls/file'
-import ControlInput from '../controls/input'
-import ControlLink from '../controls/link'
+import createElement from '../utils/create-element.js'
+import getStyle from '../utils/getStyle.js'
+import ControlButton from '../controls/button.js'
+import ControlFile from '../controls/file.js'
+import ControlInput from '../controls/input.js'
+import ControlLink from '../controls/link.js'
 
 const toolbarIndent = 10
 

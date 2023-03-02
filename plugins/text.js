@@ -1,8 +1,8 @@
-import Node from '../nodes/node'
-import PluginPlugin from './plugin'
-import isElementBr from '../utils/is-element-br'
-import isTextElement from '../utils/is-text-element'
-import isHtmlElement from '../utils/is-html-element'
+import Node from '../nodes/node.js'
+import PluginPlugin from './plugin.js'
+import isElementBr from '../utils/is-element-br.js'
+import isTextElement from '../utils/is-text-element.js'
+import isHtmlElement from '../utils/is-html-element.js'
 
 const mapModifierToTag = {
 	bold: 'strong',

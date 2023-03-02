@@ -1,6 +1,6 @@
-import ControlControl from './control'
-import getIcon from '../utils/get-icon'
-import isFunction from '../utils/is-function'
+import ControlControl from './control.js'
+import getIcon from '../utils/get-icon.js'
+import isFunction from '../utils/is-function.js'
 
 export default class ControlFile extends ControlControl {
 	handleAction(event) {

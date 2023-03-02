@@ -1,6 +1,6 @@
-import PluginPlugin from './plugin'
-import Container from '../nodes/container'
-import createElement from '../utils/create-element'
+import PluginPlugin from './plugin.js'
+import Container from '../nodes/container.js'
+import createElement from '../utils/create-element.js'
 
 export class Header extends Container {
 	constructor(attributes) {

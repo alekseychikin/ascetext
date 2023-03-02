@@ -1,4 +1,4 @@
-import isFunction from '../utils/is-function'
+import isFunction from '../utils/is-function.js'
 
 const backspaceKey = 8
 const deletekey = 46
