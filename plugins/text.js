@@ -291,6 +291,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (this.params.allowModifiers.includes('bold')) {
 			if (hasBold) {
 				controls.push({
+					slug: 'text.unbold',
 					label: 'Сделать нежирным',
 					icon: 'bold',
 					selected: () => true,
@@ -298,6 +299,7 @@ export default class TextPlugin extends PluginPlugin {
 				})
 			} else {
 				controls.push({
+					slug: 'text.bold',
 					label: 'Сделать жирным',
 					icon: 'bold',
 					action: this.setBold
@@ -308,6 +310,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (this.params.allowModifiers.includes('italic')) {
 			if (hasItalic) {
 				controls.push({
+					slug: 'text.unitalic',
 					label: 'Сделать некурсивом',
 					icon: 'italic',
 					selected: () => true,
@@ -315,6 +318,7 @@ export default class TextPlugin extends PluginPlugin {
 				})
 			} else {
 				controls.push({
+					slug: 'text.italic',
 					label: 'Сделать курсивом',
 					icon: 'italic',
 					action: this.setItalic
@@ -325,6 +329,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (this.params.allowModifiers.includes('underlined')) {
 			if (hasDecoration) {
 				controls.push({
+					slug: 'text.ununderlined',
 					label: 'Сделать неподчёркнутым',
 					icon: 'underlined',
 					selected: () => true,
@@ -332,6 +337,7 @@ export default class TextPlugin extends PluginPlugin {
 				})
 			} else {
 				controls.push({
+					slug: 'text.underlined',
 					label: 'Сделать подчёркнутым',
 					icon: 'underlined',
 					action: this.setUnderline
@@ -342,6 +348,7 @@ export default class TextPlugin extends PluginPlugin {
 		if (this.params.allowModifiers.includes('strike')) {
 			if (hasStrike) {
 				controls.push({
+					slug: 'text.unstrike',
 					label: 'Сделать незачёркнутым',
 					icon: 'strike',
 					selected: () => true,
@@ -349,6 +356,7 @@ export default class TextPlugin extends PluginPlugin {
 				})
 			} else {
 				controls.push({
+					slug: 'text.strike',
 					label: 'Сделать зачёркнутым',
 					icon: 'strike',
 					action: this.setStrike
