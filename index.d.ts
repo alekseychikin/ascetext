@@ -1,80 +1,784 @@
-/// <reference types="node" />
-
-export declare class Ascetext {
-	constructor(container: HTMLElement, params?: {
-		plugins?: Record<string, PluginPlugin>;
-		icons?: Record<string, string>;
-		toolbar?: (instance: Ascetext) => Toolbar;
-	});
-	destroy(): void;
-}
-
-export declare class Node {
+declare class Node {
+	constructor(type: string, attributes?: {});
+	id: number;
 	type: string;
-	parent: Node;
-	first: Node;
-	last: Node;
-	previous: Node;
-	next: Node;
-	isSection: boolean;
+	attributes: {};
 	isContainer: boolean;
 	isWidget: boolean;
+	isSection: boolean;
+	isGroup: boolean;
+	isDeleteEmpty: boolean;
+	isMount: boolean;
+	element: HTMLElement;
+	parent?: Node;
+	next?: Node;
+	previoues?: Node;
+	first?: Node;
+	last?: Node;
+	setElement(element: HTMLElement): void;
+	accept(node: Node): boolean;
+	getNodeUntil(nodeUntil: Node): Node;
+	get hasOnlyBr(): boolean;
+	getClosestContainer(): Node;
+	getPreviousSelectableNode(): false | Node | undefined;
+	getNextSelectableNode(): false | Node | undefined;
+	getOffset(element: any): number;
+	getChildByOffset(offset: number): {
+		node: Node;
+		element: HTMLElement;
+	};
+	getFirstLevelNode(offset: number): Node;
+	getLastNode(): Node;
+	duplicate(builder: Builder): any;
+	split(offset: number, builder: Builder): {
+		head: Node | null;
+		tail: Node | null;
+	};
+	deepesetLastNode(node?: Node): Node | undefined;
+	deepesetFirstNode(node?: Node): Node | undefined;
+	contains(childNode: Node): boolean;
+	stringify(children?: any): string;
+	json(children: any): {
+		type: any;
+		body: any;
+	} | {
+		type: any;
+		body?: undefined;
+	};
 }
 
-export declare class Selection {
-	selectedItems: Array<Node>;
+declare class Section extends Node {
+	isSection: true;
+	constructor(type: string);
+	append(node: Node, anchor: Node, { builder, appendDefault }: {
+		builder: Builder;
+		appendDefault: Builder["appendHandler"];
+	}): void;
+}
+
+declare class WithControls extends Node {
+	onFocus(): void;
+	onBlur(): void;
+}
+
+declare class InlineWidget extends WithControls {
+	isInlineWidget: true;
+}
+
+interface HandlerParams {
+	builder: Builder;
+	setSelection: Selection["setSelection"];
+	restoreSelection: Selection["restoreSelection"];
+	anchorAtFirstPositionInContainer: boolean;
+	anchorAtLastPositionInContainer: boolean;
+	focusAtFirstPositionInContainer: boolean;
+	focusAtLastPositionInContainer: boolean;
 	anchorContainer: Node;
-	focuseContainer: Node;
-	isRange: boolean;
-	constructor(core: Ascetext);
-	setSelection(anchorNode: Node, anchorOffset: number, focusNode?: Node, focusOffset?: number): void;
-	restoreSelection(): void;
-	getSelectionInIndexes(): Array<number>;
+	focusContainer: Node;
+	anchorOffset: number;
+	focusOffset: number;
+	focused: boolean;
+	isLockPushChange: boolean;
 }
 
-export declare class Control {
-	slug: string;
-	label: string;
-	icon: string;
-	action: () => void;
-	type: string;
+interface ActionParams {
+	builder: Builder;
+	anchorContainer: Node;
+	focusContainer: Node;
+	setSelection: Selection["setSelection"];
+	restoreSelection: Selection["restoreSelection"];
+	getSelectedItems: Selection["getSelectedItems"];
+	focusedNodes: Selection["focusedNodes"];
 }
 
-export declare class ControlControl {
-	element: HTMLElement;
-	params: Control;
-	handler: (action: () => void, event: Event) => void;
-	constructor(params: Control);
-	getElement(): HTMLElement;
-	setEventListener(handler: (action: () => void, event: Event) => void): void;
+declare class Widget extends WithControls {
+	isWidget: true;
+	constructor(type: string, attributes?: any);
+	renderElement(): void;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	markDirty(): void;
+	update(previous: any): void;
 }
 
-export declare class ControlButton extends ControlControl {}
-
-export declare class PluginPlugin {
-	getInsertControls(container: Node): Array<Control>;
-	getReplaceControls(container: Node): Array<Control>;
-	getSelectControls(selectedNodes: Array<Node>, isRange: boolean): Array<Control>;
+declare class Container extends Node {
+	isContainer: true;
+	get isEmpty(): boolean;
+	append(target: Node, anchor: Node, { builder, appendDefault }: {
+		builder: Builder;
+		appendDefault: Builder["appendHandler"];
+	}): void;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	containerMethod(): void;
 }
 
-export declare class Toolbar {
-	constructor(core: Ascetext);
-	isShowTooltip: boolean;
-	element: HTMLElement;
-	tooltip: HTMLElement;
-	lastFocusedRange: boolean;
-	icons: Record<string, string>;
-	core: Ascetext;
+declare class Root extends Section {
+}
+
+declare class Fragment extends Node {
+	isFragment: true;
+}
+
+declare class Group extends Node {
+	isGroup: true;
+}
+
+export default class Ascetext<T = Toolbar, S = SizeObserver> {
+	constructor(node: HTMLElement, params?: {
+		plugins?: Record<string, PluginPlugin>;
+		icons?: Record<string, string>;
+		toolbar?: (core: Ascetext) => T;
+		sizeObserver?: (core: Ascetext) => S;
+	});
+	stringify(first: Node): string;
+	onChange(callback: any): () => void;
+	onNodeChange(changes: any): void;
+	node: HTMLElement;
+	onChangeHandlers: any[];
+	plugins: any;
+	icons: any;
+	model: Root;
+	builder: Builder;
+	editing: Editing;
 	selection: Selection;
-	focusedNodes: Array<Node>;
-	plugins: Record<string, PluginPlugin>;
-	previousSelection: Array<number>;
-	onSelectionChange(): void;
-	onMouseDown(event: MouseEvent): void;
-	emptyTooltip(): void;
-	setPosition(position?: 'caret' | 'center'): void;
-	showTooltip(type: string): void;
-	hideTooltip(): void;
-	controlHandler(action: () => void, event: Event): void;
+	timeTravel: TimeTravel;
+	toolbar: T;
+	sizeObserver: S;
+	controls: any;
+	autocomplete: Autocomplete;
+	onChangeTimer: number | null;
+	json(first: any): any;
+	setContent(content: any): void;
+	getContent(): string;
+	setJson(data: any): void;
+	getJson(): any;
+	unmountAll(): void;
+	focus(): void;
 	destroy(): void;
 }
+
+declare class Autocomplete {
+	constructor(core: Ascetext);
+	onEdit(): void;
+	node: HTMLElement;
+	plugins: any;
+	selection: Selection;
+	builder: Builder;
+	editing: Editing;
+	patterns: ({
+		plugin: string;
+		rule: any;
+	} | null)[];
+	lastAnchorContainer: any;
+	lastAnchorOffset: any;
+	getRangeOffsets(selection: Selection, start: any, finish: any): {
+		left: any;
+		top: any;
+		width: any;
+		height: any;
+	};
+}
+
+declare class Builder {
+	constructor(core: Ascetext);
+	core: Ascetext;
+	parse(element: any): Fragment;
+	appendHandler(node: any, target: any, anchor: any): void;
+	handleMount(node: any): void;
+	handleUnmount(node: any): void;
+	create(name: any, ...params: any[]): any;
+	createBlock(): any;
+	createFragment(): Fragment;
+	setAttribute<T>(node: Node, name: string, value: T): void;
+	setAttributes<T>(node: Node, attributes: T): void;
+	handleAttributes(target: any, previous: any, next: any): void;
+	normalize(node: Node): void;
+	parseJson(body: any): Fragment;
+	split(container: Node, offset: number): any;
+	push(node: Node, target: Node): void;
+	append(node: Node, target: Node, anchor?: Node): void;
+	cut(node: any): void;
+	cutUntil(node: any, until: any): void;
+	handleText(current: any): void;
+	replace(node: any, target: any): void;
+	replaceUntil(node: any, target: any, until: any): void;
+	canAccept(container: any, current: any): any;
+	insert(node: any, target: any, offset: any): void;
+	moveTail(container: any, target: any, offset: any): void;
+}
+
+declare class Editing {
+	constructor(core: Ascetext);
+	handleRemoveRange(): "" | {
+		html: string;
+		text: string;
+	};
+	handleBackspace(event: any): void;
+	handleBackspaceKeyDown(event: any): void;
+	handleDelete(event: any): void;
+	handleDeleteKeyDown(event: any): void;
+	handleEnterKeyDownRange(event: any): void;
+	handleEnterKeyDownSingle(event: any): void;
+	handleEnterKeyDown(event: any): void;
+	handleModifyKeyDown(event: any): void;
+	update(): void;
+	onKeyDown(event: any): void;
+	onInput(event: any): void;
+	onPaste(event: any): void;
+	onCut(event: any): void;
+	node: any;
+	core: Ascetext;
+	updatingContainers: any[];
+	modifyKeyHandlerParams: {};
+	markDirtyTimer: number | null;
+	captureSinceAndUntil(items: any, startIndex: any): {
+		since: any;
+		until: any;
+	};
+	getModifyKeyHandlerParams(): {};
+	markDirty(container: Node): void;
+	isChanged: boolean | undefined;
+	handleTextInRemoveNodes(node: Node): void;
+	save(): void;
+	getClosestContainerInSection(node: Node): any;
+	destroy(): void;
+}
+
+declare class Selection {
+	constructor(core: Ascetext);
+	onFocus(event: any): void;
+	update(event: any): false | undefined;
+	onUpdate(handler: any): void;
+	setSelection(anchorNode: any, anchorOffset: any, focusNode: any, focusOffset: any): void;
+	restoreSelection(forceUpdate?: boolean): void;
+	core: Ascetext;
+	selection: {};
+	anchorIndex: any[] | null;
+	focusIndex: any[] | null;
+	focused: boolean;
+	skipUpdate: boolean;
+	forceUpdate: boolean;
+	onUpdateHandlers: any[];
+	selectedItems: any[];
+	focusedNodes: any[];
+	timer: any;
+	isRange: boolean;
+	anchorAtFirstPositionInContainer: boolean | undefined;
+	anchorAtLastPositionInContainer: boolean | undefined;
+	focusAtFirstPositionInContainer: boolean | undefined;
+	focusAtLastPositionInContainer: boolean | undefined;
+	anchorContainer: any;
+	focusContainer: any;
+	anchorOffset: any;
+	focusOffset: any;
+	blur(): null | undefined;
+	getSelectionParams(node: any, offset: any): {
+		element: any;
+		index: any;
+	};
+	getSelectionInIndexes(): {
+		anchorIndex: any[] | null;
+		focusIndex: any[] | null;
+	};
+	setSelectionByIndexes(indexes: any): void;
+	getSelectedElement(element: any, offset: any): any[];
+	getDirection(anchorIndex: any, focusIndex: any): "backward" | "forward";
+	getIndex(container: any, element: any, offset: any): any[];
+	findElement(indexes: any): any;
+	getSelectedItems(): any[];
+	cutRange(anchorContainer?: any, anchorOffset?: any, focusContainer?: any, focusOffset?: any): {
+		head: any;
+		tail: any;
+	};
+	getArrayRangeItems(since: any, until: any): any[];
+	handleSelectedItems(anchorNode: any, focusNode: any): void;
+	destroy(): void;
+}
+
+interface SizeObserverEntry {
+	scrollTop: number;
+	scrollLeft: number;
+	element: DOMRect
+	root: DOMRect
+}
+
+interface SizeObserverConstructor {
+	core: Ascetext;
+	update(): null | undefined;
+	updateHandler(): void;
+	id: number;
+	ids: number[];
+	observedElements: any[];
+	handlers: any[];
+	timer: number | null;
+	observe(element: HTMLElement, handler: (entry: SizeObserverEntry) => void): () => void;
+	calculateBoundings(element: any): {
+		scrollTop: number;
+		scrollLeft: number;
+		element: any;
+		root: any;
+	};
+	destroy(): void;
+}
+
+declare class SizeObserver implements SizeObserverConstructor {
+	constructor(core: Ascetext);
+	core: Ascetext;
+	update(): null | undefined;
+	updateHandler(): void;
+	id: number;
+	ids: number[];
+	observedElements: any[];
+	handlers: any[];
+	timer: number | null;
+	observe(element: HTMLElement, handler: (entry: SizeObserverEntry) => void): () => void;
+	calculateBoundings(element: any): {
+		scrollTop: number;
+		scrollLeft: number;
+		element: any;
+		root: any;
+	};
+	destroy(): void;
+}
+
+declare class TimeTravel {
+	constructor(selection: Selection, builder: Builder);
+	onSelectionChange(selection: Selection): void;
+	commit(): void;
+	timeline: any[];
+	timeindex: number;
+	isLockPushChange: boolean;
+	currentBunch: any[];
+	builder: Builder;
+	selection: Selection;
+	previousSelection: any;
+	preservedPreviousSelection: boolean;
+	reset(): void;
+	preservePreviousSelection(): void;
+	pushChange(event: any): void;
+	goBack(): void;
+	goForward(): void;
+}
+
+type CSSGetter = Record<string, string>;
+type IconsGetter = Record<string, string>;
+
+interface Control {
+	slug: string;
+	label?: string;
+	type?: string;
+	icon?: string;
+	selected?: boolean;
+	disabled?: boolean;
+	action?: (event: any, params: ActionParams) => void;
+	cancel?: (event: any, params: ActionParams) => void;
+}
+
+declare class Toolbar {
+	constructor(core: Ascetext);
+	get css(): CSSGetter;
+	onSelectionChange(): void;
+	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
+	showSideToolbar(): void;
+	hideSideToolbar(): void;
+	renderSideControls(): void;
+	restoreSelection(): void;
+	getSelectedItems(): any;
+	toggleSideToolbar(): void;
+	checkToolbarVisibility(event: any): void;
+	wrapControls(controls: Control[]): any;
+	updateBoundings(container: any): void;
+	viewportChange(event: any): void;
+	viewportResize(): void;
+	isShowToggleButtonHolder: boolean;
+	isShowSideToolbar: boolean;
+	isShowCenteredToolbar: boolean;
+	isMobile: boolean;
+	customMode: boolean;
+	builder: Builder;
+	selection: Selection;
+	timeTravel: TimeTravel;
+	editing: Editing;
+	plugins: any;
+	icons: any;
+	sizeObserver: SizeObserver;
+	focusedNodes: any[];
+	lastRangeFocused: boolean;
+	previousSelection: any;
+	previousContainer: any;
+	previousSideMode: string;
+	nextControlsToRender: any;
+	sideControls: any[];
+	sideMode: string;
+	cancelObserver: any;
+	containerAvatar: any;
+	insertButton: any;
+	replaceButton: any;
+	sideToolbar: any;
+	centeredToolbar: any;
+	toggleButtonHolder: any;
+	toggleButton: any;
+	mediaQuery: MediaQueryList;
+	bindViewportChange(): void;
+	unbindViewportChange(): void;
+	onKeyDown(event: any): void;
+	updateButtonHolder(): void;
+	renderInsertButton(): void;
+	renderReplaceButton(hasControls: boolean): void;
+	updateSideToolbar(): false | undefined;
+	updateCenteredToolbar(): null | undefined;
+	renderSideToolbar(): void;
+	renderSelectedToolbar(): void;
+	getInsertControls(): any[];
+	getReplaceControls(): any[];
+	renderCenteredControls(rawControls: any): void;
+	emptySideToolbar(): void;
+	emptyCenteredControls(): void;
+	showCenteredToolbar(): void;
+	hideCenteredToolbar(): void;
+	emptyToggleButtonHolder(): void;
+	showToggleButtonHolder(): void;
+	hideToggleButtonHolder(): void;
+	isTargetInsideToolbar(target: any): any;
+	stopUpdateBoundings(): void;
+	setAvatar(entry: any): any;
+	hideAvatar(): void;
+	destroy(): void;
+}
+
+declare class ControlControl {
+	constructor(params?: Control);
+	params: Control;
+	element: HTMLElement;
+	setEventListener(handler: any): void;
+	handler: any;
+	getElement(): HTMLElement;
+}
+
+declare class ControlButton extends ControlControl {
+	get css(): CSSGetter;
+	constructor(params: Control);
+	handleAction(event: any): void;
+	getElement(): HTMLButtonElement;
+}
+
+declare class ControlFile extends ControlControl {
+	element: HTMLLabelElement;
+	input: HTMLInputElement;
+	constructor(params: Control);
+	handleAction(event: any): void;
+	getElement(): HTMLLabelElement;
+}
+
+declare class ControlInput extends ControlControl {
+	element: HTMLInputElement;
+	handlers: {};
+	constructor(params: Control);
+	handleAction(event: any): void;
+	handleCancel(event: any): void;
+	handleKeydown(event: any): void;
+	getElement(): HTMLInputElement;
+}
+
+declare class ControlLink extends ControlControl {
+	element: HTMLAnchorElement;
+	constructor(params: Control);
+}
+
+declare class PluginPlugin {
+	create(...params: any[]): Node;
+	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
+	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
+	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
+	getInsertControls(container: Node): Control[];
+	getSelectControls(focusedNodes: Node[], isRange: any): Control[];
+	getReplaceControls(container: Node): Control[];
+}
+
+declare class BreakLine extends InlineWidget {
+	constructor();
+	render(): HTMLElement;
+	split(): {
+		head: any;
+		tail: any;
+	};
+	json(): {
+		type: any;
+	};
+}
+
+declare class BreakLinePlugin extends PluginPlugin {
+	create(): BreakLine;
+	parse(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
+}
+
+declare class Header extends Container {
+	constructor(attributes: any);
+	render(): HTMLElement;
+	json(children: any): {
+		type: any;
+		level: any;
+		body: any;
+	};
+}
+
+declare class HeaderPlugin extends PluginPlugin {
+	params: {
+		allowLevels: number[];
+	};
+	supportHeaders: string[];
+	get icons(): IconsGetter;
+	constructor(params?: {
+		allowLevels: number[];
+	});
+	create({ level }: {
+		level: number;
+	}): Header;
+	parse(element: HTMLElement | Text, builder: Builder): Header | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Header | undefined;
+	setHeader(level: number): (event: any, params: ActionParams) => void;
+}
+
+declare class Image extends Widget {
+	image: HTMLImageElement;
+	attributes: Record<string, string>;
+	constructor(attributes?: {});
+	render(): HTMLElement;
+	update(previous: any): void;
+	getClassName(): string;
+	json(children: any): {
+		type: any;
+		src: any;
+		figcaption: any;
+	} | {
+		type: any;
+		src: any;
+		figcaption?: undefined;
+	};
+}
+
+declare class ImageCaption extends Container {
+	removeObserver: any;
+	attributes: Record<string, string>;
+	constructor(params: any);
+	render(): HTMLElement;
+	onMount({ controls, sizeObserver }: {
+		controls: any;
+		sizeObserver: any;
+	}): void;
+	placeholder: any;
+	onUnmount({ controls }: {
+		controls: any;
+	}): void;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	inputHandler(): void;
+	json(children: any): any;
+}
+
+declare class ImagePlugin extends PluginPlugin {
+	constructor(params?: {});
+	toggleFloatLeft(image: any): (event: any, params: HandlerParams) => void;
+	toggleFloatRight(image: any): (event: any, params: HandlerParams) => void;
+	toggleSizeWide(image: any): (event: any, params: HandlerParams) => void;
+	toggleSizeBanner(image: any): (event: any, params: HandlerParams) => void;
+	insertImage(container: any): (event: any, params: HandlerParams) => Promise<void>;
+	updateImage(image: any): (event: any, params: HandlerParams) => Promise<void>;
+	params: {
+		onSelectFile: (file: File, image: Image, setSrc: any) => Promise<any>;
+		placeholder?: string;
+	};
+	get icons(): IconsGetter;
+	create(params: any): Image | ImageCaption;
+	parse(element: HTMLElement | Text, builder: Builder): Image | undefined;
+	parseJson(element: any, builder: Builder): Image | undefined;
+}
+
+declare class Link extends InlineWidget {
+	attributes: Record<string, string>;
+	constructor(attributes: any);
+	render(): HTMLAnchorElement;
+	normalize(element: any, builder: Builder): any;
+	json(children: any): {
+		type: any;
+		url: any;
+		body: any;
+	};
+}
+
+declare class LinkPlugin extends PluginPlugin {
+	get icons(): IconsGetter;
+	get autocompleteRule(): RegExp;
+	openLinkControls(): (Control & {
+		placeholder?: string;
+		autofocus?: boolean;
+		cancel?: (event: any, params: ActionParams) => any;
+	})[][];
+	removeLinks(event: any, params: ActionParams): void;
+	setLink(event: any, params: ActionParams): void;
+	create(url: string): Link;
+	parse(element: HTMLElement | Text, builder: Builder): Link | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Link | undefined;
+	removeLink(event: any, params: ActionParams): void;
+	wrap(match: any, builder: Builder): any;
+	unwrap(node: any, builder: Builder): void;
+}
+
+declare class List extends Group {
+	constructor(attributes?: {
+		decor: string;
+	});
+	render(): any;
+	normalize(element: any, builder: Builder): any;
+	json(children: any): {
+		type: any;
+		decor: any;
+		body: any;
+	};
+}
+
+declare class ListItem extends Group {
+	constructor(params?: {});
+	params: {};
+	render(): any;
+	append(target: any, anchor: any, { builder, appendDefault }: {
+		builder: Builder;
+		appendDefault: any;
+	}): void;
+	getDepth(container: any, node: any): number;
+}
+
+declare class ListItemContent extends Container {
+	constructor(params?: {});
+	params: {};
+	render(): any;
+	cut({ builder }: {
+		builder: Builder;
+	}): void;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	indentLeft(event: any, params: ActionParams): void;
+	indentRight(event: any, params: ActionParams): void;
+	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
+}
+
+declare class ListPlugin extends PluginPlugin {
+	constructor(params?: {
+		maxDepth: number | null;
+	});
+	params: {
+		maxDepth: number | null;
+	};
+	create(params: any, subparams: any): List | ListItem | ListItemContent;
+	get icons(): IconsGetter;
+	parse(element: any, builder: Builder): any;
+	parseJson(element: any, builder: Builder): any;
+	setNumberList(container: any): (event: any, params: ActionParams) => void;
+	setMarkerList(container: any): (event: any, params: ActionParams) => void;
+}
+
+declare class Paragraph extends Container {
+	constructor();
+	render(): HTMLElement;
+}
+
+declare class ParagraphPlugin extends PluginPlugin {
+	create(): Paragraph;
+	get icons(): IconsGetter;
+	parse(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
+	setParagraph(event: any, params: ActionParams): void;
+}
+
+declare class Quote extends Container {
+	constructor();
+	render(): HTMLElement;
+}
+
+declare class QuotePlugin extends PluginPlugin {
+	get icons(): IconsGetter;
+	create(): Quote;
+	parse(element: HTMLElement | Text, builder: Builder): Quote | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Quote | undefined;
+	setQuote(event: any, params: ActionParams): void;
+}
+
+declare class TextNode extends Node {
+	constructor(attributes?: {}, content?: string);
+	content: string;
+	render(): any;
+	update(): void;
+	create(modifiers: any): any;
+	generateModifiers(): string[];
+	normalize(target: any, builder: any): any;
+	isEqual(target: any): boolean;
+	split(position: any, builder: any): {
+		head: any;
+		tail: any;
+	};
+	stringifyWithModifiers(modifiers: any): any;
+	json(): {
+		type: any;
+		modifiers: string[];
+		content: string;
+	};
+}
+
+declare class TextPlugin extends PluginPlugin {
+	constructor(params?: {});
+	params: {
+		allowModifiers: string[];
+	};
+	supportTags: any[];
+	get icons(): IconsGetter;
+	create(...params: any[]): TextNode;
+	parse(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
+	unsetBold(event: any, params: ActionParams): void;
+	setBold(event: any, params: ActionParams): void;
+	unsetItalic(event: any, params: ActionParams): void;
+	setItalic(event: any, params: ActionParams): void;
+	unsetStrike(event: any, params: ActionParams): void;
+	setStrike(event: any, params: ActionParams): void;
+	unsetUnderline(event: any, params: ActionParams): void;
+	setUnderline(event: any, params: ActionParams): void;
+}
+
+export {
+	Ascetext,
+	Builder,
+	Toolbar,
+	SizeObserverConstructor,
+	SizeObserver,
+	SizeObserverEntry,
+	Control,
+	ControlControl,
+	ControlButton,
+	ControlFile,
+	ControlLink,
+	ControlInput,
+	Section,
+	Group,
+	InlineWidget,
+	Widget,
+	WithControls,
+	Node,
+	Container,
+	ActionParams,
+	ParagraphPlugin,
+	BreakLinePlugin,
+	TextPlugin,
+	HeaderPlugin,
+	Link,
+	LinkPlugin,
+	Image,
+	ImagePlugin,
+	ImageCaption,
+	ListPlugin,
+	QuotePlugin,
+	PluginPlugin
+};

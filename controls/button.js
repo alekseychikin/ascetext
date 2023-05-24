@@ -1,6 +1,5 @@
 import ControlControl from './control.js'
 import getIcon from '../utils/get-icon.js'
-import isFunction from '../utils/is-function.js'
 
 export default class ControlButton extends ControlControl {
 	get css() {
@@ -34,16 +33,16 @@ export default class ControlButton extends ControlControl {
 		this.handler = handler
 	}
 
-	getElement(node) {
+	getElement() {
 		const classNames = [
 			this.css.container
 		]
 
-		if (this.params.selected && (isFunction(this.params.selected) && this.params.selected(node) || this.params.selected === true)) {
+		if (this.params.selected) {
 			classNames.push(this.css.selected)
 		}
 
-		if (this.params.disabled && (isFunction(this.params.disabled) && this.params.disabled(node) || this.params.disabled === true)) {
+		if (this.params.disabled) {
 			classNames.push(this.css.disabled)
 		}
 

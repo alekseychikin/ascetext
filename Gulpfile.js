@@ -1,7 +1,8 @@
-/* eslint-disable import/no-commonjs */
-const gulp = require('gulp')
-const esbuild = require('esbuild')
-const browserSync = require('browser-sync').create()
+import gulp from 'gulp'
+import esbuild from 'esbuild'
+import { create } from 'browser-sync'
+
+const browserSync = create()
 
 function assets() {
 	return gulp.src(['./icons/*.svg', './*.css'], { base: './' })
@@ -22,7 +23,7 @@ function scripts(watch) {
 	}
 }
 
-function watch() {
+function watchTask() {
 	const watchParams = { ignoreInitial: false }
 	browserSync.init({
 		server: {
@@ -43,6 +44,5 @@ function watch() {
 	], watchParams, scripts(true))
 }
 
-module.exports.scripts = scripts(false)
-module.exports.default = gulp.parallel(assets, scripts(false))
-module.exports.watch = gulp.parallel(scripts(true), watch)
+export default gulp.parallel(assets, scripts(false))
+export const watch = gulp.parallel(scripts(true), watchTask)
