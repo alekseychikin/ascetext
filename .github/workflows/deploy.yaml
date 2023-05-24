@@ -7,7 +7,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     container:
-      image: makingoff/php-node:alpha4
+      image: makingoff/php-node:alpha5
     steps:
       - uses: actions/checkout@v2
       - uses: shimataro/ssh-key-action@v2
