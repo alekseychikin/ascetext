@@ -294,7 +294,7 @@ export default class TextPlugin extends PluginPlugin {
 					slug: 'text.unbold',
 					label: 'Сделать нежирным',
 					icon: 'bold',
-					selected: () => true,
+					selected: true,
 					action: this.unsetBold
 				})
 			} else {
@@ -313,7 +313,7 @@ export default class TextPlugin extends PluginPlugin {
 					slug: 'text.unitalic',
 					label: 'Сделать некурсивом',
 					icon: 'italic',
-					selected: () => true,
+					selected: true,
 					action: this.unsetItalic
 				})
 			} else {
@@ -332,7 +332,7 @@ export default class TextPlugin extends PluginPlugin {
 					slug: 'text.ununderlined',
 					label: 'Сделать неподчёркнутым',
 					icon: 'underlined',
-					selected: () => true,
+					selected: true,
 					action: this.unsetUnderline
 				})
 			} else {
@@ -351,7 +351,7 @@ export default class TextPlugin extends PluginPlugin {
 					slug: 'text.unstrike',
 					label: 'Сделать незачёркнутым',
 					icon: 'strike',
-					selected: () => true,
+					selected: true,
 					action: this.unsetStrike
 				})
 			} else {

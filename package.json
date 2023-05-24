@@ -1,9 +1,10 @@
 {
   "name": "ascetext",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Editor for web",
   "main": "index.js",
   "type": "module",
+  "types": "index.d.ts",
   "files": [
     "controls/**",
     "core/**",
@@ -33,11 +34,11 @@
   "devDependencies": {
     "babel-polyfill": "^6.26.0",
     "browser-sync": "^2.27.7",
+    "esbuild": "^0.15.9",
     "eslint": "^7.27.0",
     "eslint-config-recommended": "^4.1.0",
     "eslint-plugin-import": "^2.23.3",
     "gulp": "^4.0.2",
-    "esbuild": "^0.15.9",
     "regenerator-runtime": "^0.13.9"
   }
 }
