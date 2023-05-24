@@ -34,8 +34,8 @@ declare class Node {
 		head: Node | null;
 		tail: Node | null;
 	};
-	deepesetLastNode(node?: Node): Node?;
-	deepesetFirstNode(node?: Node): Node?;
+	deepesetLastNode(node?: Node): Node | undefined;
+	deepesetFirstNode(node?: Node): Node | undefined;
 	contains(childNode: Node): boolean;
 	stringify(children?: any): string;
 	json(children: any): {
@@ -99,7 +99,7 @@ declare class Widget extends WithControls {
 	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	markDirty(): void;
-	update(): void;
+	update(previous: any): void;
 }
 
 declare class Container extends Node {
@@ -149,7 +149,6 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	sizeObserver: S;
 	controls: any;
 	autocomplete: Autocomplete;
-	dragndrop: Dragndrop;
 	onChangeTimer: number | null;
 	json(first: any): any;
 	setContent(content: any): void;
@@ -307,7 +306,6 @@ interface SizeObserverEntry {
 }
 
 interface SizeObserverConstructor {
-	new (core: Ascetext): SizeObserver;
 	core: Ascetext;
 	update(): null | undefined;
 	updateHandler(): void;
@@ -514,8 +512,8 @@ declare class BreakLine extends InlineWidget {
 
 declare class BreakLinePlugin extends PluginPlugin {
 	create(): BreakLine;
-	parse(element: HTMLElement | Text, builder: Builder): BreakLine?;
-	parseJson(element: HTMLElement | Text, builder: Builder): BreakLine?;
+	parse(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
 }
 
 declare class Header extends Container {
@@ -540,8 +538,8 @@ declare class HeaderPlugin extends PluginPlugin {
 	create({ level }: {
 		level: number;
 	}): Header;
-	parse(element: HTMLElement | Text, builder: Builder): Header?;
-	parseJson(element: HTMLElement | Text, builder: Builder): Header?;
+	parse(element: HTMLElement | Text, builder: Builder): Header | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Header | undefined;
 	setHeader(level: number): (event: any, params: ActionParams) => void;
 }
 
@@ -576,7 +574,7 @@ declare class ImageCaption extends Container {
 	onUnmount({ controls }: {
 		controls: any;
 	}): void;
-	enterHandler(event: any, params: HandlerParams): void;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	inputHandler(): void;
 	json(children: any): any;
 }
@@ -595,8 +593,8 @@ declare class ImagePlugin extends PluginPlugin {
 	};
 	get icons(): IconsGetter;
 	create(params: any): Image | ImageCaption;
-	parse(element: HTMLElement | Text, builder: Builder): Image?;
-	parseJson(element: any, builder: Builder): Image?;
+	parse(element: HTMLElement | Text, builder: Builder): Image | undefined;
+	parseJson(element: any, builder: Builder): Image | undefined;
 }
 
 declare class Link extends InlineWidget {
@@ -622,8 +620,8 @@ declare class LinkPlugin extends PluginPlugin {
 	removeLinks(event: any, params: ActionParams): void;
 	setLink(event: any, params: ActionParams): void;
 	create(url: string): Link;
-	parse(element: HTMLElement | Text, builder: Builder): Link?;
-	parseJson(element: HTMLElement | Text, builder: Builder): Link?;
+	parse(element: HTMLElement | Text, builder: Builder): Link | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Link | undefined;
 	removeLink(event: any, params: ActionParams): void;
 	wrap(match: any, builder: Builder): any;
 	unwrap(node: any, builder: Builder): void;
@@ -660,9 +658,9 @@ declare class ListItemContent extends Container {
 	cut({ builder }: {
 		builder: Builder;
 	}): void;
-	backspaceHandler(event: any, params: HandlerParams): void;
-	enterHandler(event: any, params: HandlerParams): void;
-	deleteHandler(event: any, params: HandlerParams): false | undefined;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	indentLeft(event: any, params: ActionParams): void;
 	indentRight(event: any, params: ActionParams): void;
 	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
@@ -691,8 +689,8 @@ declare class Paragraph extends Container {
 declare class ParagraphPlugin extends PluginPlugin {
 	create(): Paragraph;
 	get icons(): IconsGetter;
-	parse(element: HTMLElement | Text, builder: Builder): Paragraph?;
-	parseJson(element: HTMLElement | Text, builder: Builder): Paragraph?;
+	parse(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
 	setParagraph(event: any, params: ActionParams): void;
 }
 
@@ -704,8 +702,8 @@ declare class Quote extends Container {
 declare class QuotePlugin extends PluginPlugin {
 	get icons(): IconsGetter;
 	create(): Quote;
-	parse(element: HTMLElement | Text, builder: Builder): Quote?;
-	parseJson(element: HTMLElement | Text, builder: Builder): Quote?;
+	parse(element: HTMLElement | Text, builder: Builder): Quote | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): Quote | undefined;
 	setQuote(event: any, params: ActionParams): void;
 }
 
@@ -737,9 +735,9 @@ declare class TextPlugin extends PluginPlugin {
 	};
 	supportTags: any[];
 	get icons(): IconsGetter;
-	create(...params?: any[]): TextNode;
-	parse(element: HTMLElement | Text, builder: Builder): TextNode?;
-	parseJson(element: HTMLElement | Text, builder: Builder): TextNode?;
+	create(...params: any[]): TextNode;
+	parse(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
+	parseJson(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	unsetBold(event: any, params: ActionParams): void;
 	setBold(event: any, params: ActionParams): void;
 	unsetItalic(event: any, params: ActionParams): void;
@@ -750,7 +748,6 @@ declare class TextPlugin extends PluginPlugin {
 	setUnderline(event: any, params: ActionParams): void;
 }
 
-export default Ascetext;
 export {
 	Ascetext,
 	Builder,
