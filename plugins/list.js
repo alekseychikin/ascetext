@@ -133,16 +133,6 @@ export class ListItemContent extends Container {
 		})
 	}
 
-	get shortcuts() {
-		return {
-			'down': this.downHandler
-		}
-	}
-
-	downHandler(event) {
-		event.preventDefault()
-	}
-
 	cut({ builder }) {
 		if (this.parent && this.parent.parent) {
 			const list = this.parent.parent
