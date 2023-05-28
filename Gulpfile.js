@@ -10,7 +10,7 @@ function assets() {
 }
 
 function scriptsTask(watch) {
-	return function (done) {
+	return function scripts(done) {
 		esbuild.buildSync({
 			entryPoints: [ './playground/app.js' ],
 			bundle: true,
@@ -44,5 +44,5 @@ function watchTask() {
 	], watchParams, scriptsTask(true))
 }
 
-export default gulp.parallel(assets, scripts(false))
-export const watch = gulp.parallel(scripts(true), watchTask)
+export default gulp.parallel(assets, scriptsTask(false))
+export const watch = gulp.parallel(scriptsTask(true), watchTask)
