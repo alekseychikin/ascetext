@@ -19,6 +19,7 @@ const spaceKey = 32
 const isMac = navigator.userAgent.includes('Macintosh')
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, metaKey, escapeKey ]
+const forbiddenShortcuts = [ 'ctrl+b/meta+b', 'ctrl+i/meta+i', 'ctrl+u/meta+u' ]
 
 export default class Editing {
 	constructor(core) {
@@ -51,6 +52,7 @@ export default class Editing {
 
 	onKeyDown(event) {
 		const { selection, timeTravel, toolbar } = this.core
+		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
 		if (selection.focused) {
@@ -66,10 +68,12 @@ export default class Editing {
 				} else {
 					timeTravel.goBack()
 				}
-			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(event, selection.anchorContainer.shortcuts))) {
+			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(shortrcutMatcher, selection.anchorContainer.shortcuts))) {
 				shortcutHandler(event, this.getModifyKeyHandlerParams())
-			} else if (shortcutHandler = this.catchShortcut(event, toolbar.getShortcuts())) {
+			} else if (shortcutHandler = this.catchShortcut(shortrcutMatcher, toolbar.getShortcuts())) {
 				toolbar.controlHandler(shortcutHandler, event)
+				event.preventDefault()
+			} else if (forbiddenShortcuts.find((item) => shortrcutMatcher(item))) {
 				event.preventDefault()
 			} else if (singleKeyPessed || modifyKeyPressed) {
 				timeTravel.preservePreviousSelection()
@@ -509,8 +513,7 @@ export default class Editing {
 		}
 	}
 
-	catchShortcut(event, shortcuts) {
-		const shortcutMatcher = createShortcutMatcher(event)
+	catchShortcut(shortcutMatcher, shortcuts) {
 		let shortcut
 
 		for (shortcut in shortcuts) {
