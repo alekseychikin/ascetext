@@ -10,6 +10,9 @@ const mapModifierToTag = {
 	strike: 's',
 	underlined: 'u'
 }
+const beginSpacesRegexp = /^[^\S\u00A0]+/
+const finishSpacesRegexp = /[^\S\u00A0]+$/
+const groupSpacesRegexp = /[^\S\u00A0]+/g
 
 export class Text extends Node {
 	constructor(attributes = {}, content = '') {
@@ -177,14 +180,14 @@ export default class TextPlugin extends PluginPlugin {
 			let content = element.nodeValue
 
 			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
-				content = content.replace(/^[^\S\u00A0]+/, '')
+				content = content.replace(beginSpacesRegexp, '')
 			}
 
 			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
-				content = content.replace(/[^\S\u00A0]+$/, '')
+				content = content.replace(finishSpacesRegexp, '')
 			}
 
-			content = content.replace(/[^\S\u00A0]+/g, ' ')
+			content = content.replace(groupSpacesRegexp, ' ')
 
 			if (!content.length || content.match(/^[^\S\u00A0]+$/)) {
 				return false
@@ -293,6 +296,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unbold',
 					label: 'Сделать нежирным',
+					shortcut: 'ctrl+b',
 					icon: 'bold',
 					selected: true,
 					action: this.unsetBold
@@ -301,6 +305,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.bold',
 					label: 'Сделать жирным',
+					shortcut: 'ctrl+b',
 					icon: 'bold',
 					action: this.setBold
 				})
@@ -312,6 +317,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unitalic',
 					label: 'Сделать некурсивом',
+					shortcut: 'ctrl+i',
 					icon: 'italic',
 					selected: true,
 					action: this.unsetItalic
@@ -320,6 +326,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.italic',
 					label: 'Сделать курсивом',
+					shortcut: 'ctrl+i',
 					icon: 'italic',
 					action: this.setItalic
 				})
@@ -331,6 +338,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.ununderlined',
 					label: 'Сделать неподчёркнутым',
+					shortcut: 'ctrl+u',
 					icon: 'underlined',
 					selected: true,
 					action: this.unsetUnderline
@@ -339,6 +347,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.underlined',
 					label: 'Сделать подчёркнутым',
+					shortcut: 'ctrl+u',
 					icon: 'underlined',
 					action: this.setUnderline
 				})
@@ -350,6 +359,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unstrike',
 					label: 'Сделать незачёркнутым',
+					shortcut: 'ctrl+s',
 					icon: 'strike',
 					selected: true,
 					action: this.unsetStrike
@@ -358,6 +368,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.strike',
 					label: 'Сделать зачёркнутым',
+					shortcut: 'ctrl+s',
 					icon: 'strike',
 					action: this.setStrike
 				})

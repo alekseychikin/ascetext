@@ -3,9 +3,9 @@ import isElementBr from '../utils/is-element-br.js'
 import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
+import nbsp from '../utils/nbsp.js'
 
 const ignoreParsingElements = ['style', 'script']
-const nbsCode = '\u00A0'
 
 export default class Builder {
 	constructor(core) {
@@ -416,12 +416,12 @@ export default class Builder {
 		const lastChild = current.previous.deepesetLastNode()
 
 		if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
-			firstChild.content = nbsCode + firstChild.content.substr(1)
+			firstChild.content = nbsp + firstChild.content.substr(1)
 			firstChild.element.nodeValue = firstChild.content
 		}
 
 		if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
-			lastChild.content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsCode
+			lastChild.content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsp
 			lastChild.element.nodeValue = lastChild.content
 		}
 	}

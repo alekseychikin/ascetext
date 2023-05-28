@@ -366,6 +366,7 @@ export default class ListPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'list.indentLeft',
 					label: 'На один уровень влево',
+					shortcut: 'ctrl+[',
 					icon: 'indentLeft',
 					action: container.indentLeft
 				})
@@ -375,6 +376,7 @@ export default class ListPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'list.indentRight',
 					label: 'На один уровень вправо',
+					shortcut: 'ctrl+]',
 					icon: 'indentRight',
 					action: container.indentRight
 				})

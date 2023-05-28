@@ -1,4 +1,6 @@
 import isFunction from '../utils/is-function.js'
+import nbsp from '../utils/nbsp.js'
+import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -10,12 +12,13 @@ const downKey = 40
 const shiftKey = 16
 const ctrlKey = 17
 const optionKey = 18
-const apple = 91
-const esc = 27
+const metaKey = 91
+const escapeKey = 27
 const zKey = 90
 const spaceKey = 32
+const isMac = navigator.userAgent.includes('Macintosh')
 const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
-const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, apple, esc ]
+const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, metaKey, escapeKey ]
 
 export default class Editing {
 	constructor(core) {
@@ -47,8 +50,11 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		if (this.core.selection.focused) {
-			const undoRepeat = event.keyCode === zKey && (event.metaKey || event.ctrlKey)
+		const { selection, timeTravel, toolbar } = this.core
+		let shortcutHandler
+
+		if (selection.focused) {
+			const undoRepeat = event.keyCode === zKey && (isMac && event.metaKey || !isMac && event.ctrlKey)
 			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey && !event.ctrlKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
 
@@ -56,12 +62,17 @@ export default class Editing {
 				event.preventDefault()
 
 				if (event.shiftKey) {
-					this.core.timeTravel.goForward()
+					timeTravel.goForward()
 				} else {
-					this.core.timeTravel.goBack()
+					timeTravel.goBack()
 				}
+			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(event, selection.anchorContainer.shortcuts))) {
+				shortcutHandler(event, this.getModifyKeyHandlerParams())
+			} else if (shortcutHandler = this.catchShortcut(event, toolbar.getShortcuts())) {
+				toolbar.controlHandler(shortcutHandler, event)
+				event.preventDefault()
 			} else if (singleKeyPessed || modifyKeyPressed) {
-				this.core.timeTravel.preservePreviousSelection()
+				timeTravel.preservePreviousSelection()
 
 				if (modifyKeyPressed) {
 					this.handleModifyKeyDown(event)
@@ -74,21 +85,21 @@ export default class Editing {
 						// синхронизировать модель данных
 						// нужно спарсить без нормализации и без обновления реальных нод
 						this.update()
-						this.core.timeTravel.commit()
-						this.core.timeTravel.preservePreviousSelection()
+						timeTravel.commit()
+						timeTravel.preservePreviousSelection()
 
-						const { node, element } = this.core.selection.anchorContainer.getChildByOffset(this.core.selection.anchorOffset)
-						const offset = this.core.selection.anchorOffset - this.core.selection.anchorContainer.getOffset(element)
-						const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? '\u00A0' : ' ') + node.content.substr(offset)
+						const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
+						const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
+						const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? nbsp : ' ') + node.content.substr(offset)
 
 						node.content = content
 						element.nodeValue = content
-						this.core.selection.setSelection(this.core.selection.anchorContainer, this.core.selection.anchorOffset + 1)
+						selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
 						event.preventDefault()
 					}
 
-					// console.log('markDirty', this.core.selection.anchorOffset)
-					this.markDirty(this.core.selection.anchorContainer)
+					// console.log('markDirty', selection.anchorOffset)
+					this.markDirty(selection.anchorContainer)
 				}
 			}
 		}
@@ -496,6 +507,19 @@ export default class Editing {
 
 			current = current.parent
 		}
+	}
+
+	catchShortcut(event, shortcuts) {
+		const shortcutMatcher = createShortcutMatcher(event)
+		let shortcut
+
+		for (shortcut in shortcuts) {
+			if (shortcutMatcher(shortcut)) {
+				return shortcuts[shortcut]
+			}
+		}
+
+		return false
 	}
 
 	destroy() {
