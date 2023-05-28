@@ -1,3 +1,4 @@
+const isMac = navigator.userAgent.includes('Macintosh')
 const codes = {
 	'0': 48,
 	'1': 49,
@@ -68,7 +69,9 @@ export default function createShortcutMatcher(event) {
 	const code = codes[event.key.toUpperCase()]
 
 	return (shortcut) => {
-		const chunks = shortcut.split('+').map((item) => item.toUpperCase())
+		const shortcuts = shortcut.split('/').map((item) => item.trim())
+		const platformShortcut = shortcuts[1] && isMac ? shortcuts[1] : shortcuts[0]
+		const chunks = platformShortcut.split('+').map((item) => item.toUpperCase())
 
 		const parsedShortcut = chunks.reduce((result, chunk) => {
 			if (modifierCodes[chunk]) {

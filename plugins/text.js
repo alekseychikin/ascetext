@@ -296,7 +296,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unbold',
 					label: 'Сделать нежирным',
-					shortcut: 'ctrl+b',
+					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					selected: true,
 					action: this.unsetBold
@@ -305,7 +305,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.bold',
 					label: 'Сделать жирным',
-					shortcut: 'ctrl+b',
+					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					action: this.setBold
 				})
@@ -317,7 +317,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unitalic',
 					label: 'Сделать некурсивом',
-					shortcut: 'ctrl+i',
+					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					selected: true,
 					action: this.unsetItalic
@@ -326,7 +326,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.italic',
 					label: 'Сделать курсивом',
-					shortcut: 'ctrl+i',
+					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					action: this.setItalic
 				})
@@ -338,7 +338,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.ununderlined',
 					label: 'Сделать неподчёркнутым',
-					shortcut: 'ctrl+u',
+					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					selected: true,
 					action: this.unsetUnderline
@@ -347,7 +347,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.underlined',
 					label: 'Сделать подчёркнутым',
-					shortcut: 'ctrl+u',
+					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					action: this.setUnderline
 				})
@@ -359,7 +359,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.unstrike',
 					label: 'Сделать незачёркнутым',
-					shortcut: 'ctrl+s',
+					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					selected: true,
 					action: this.unsetStrike
@@ -368,7 +368,7 @@ export default class TextPlugin extends PluginPlugin {
 				controls.push({
 					slug: 'text.strike',
 					label: 'Сделать зачёркнутым',
-					shortcut: 'ctrl+s',
+					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					action: this.setStrike
 				})
