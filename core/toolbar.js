@@ -458,6 +458,7 @@ export default class Toolbar {
 		this.isShowCenteredToolbar = false
 		this.lastRangeFocused = false
 		this.focusedNodes = []
+		this.centeredControls = []
 		this.centeredToolbar.className = this.css.containerHidden
 		this.hideAvatar()
 	}
