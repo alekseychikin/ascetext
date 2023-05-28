@@ -9,7 +9,7 @@ function assets() {
 		.pipe(gulp.dest('playground/dist'))
 }
 
-function scripts(watch) {
+function scriptsTask(watch) {
 	return function (done) {
 		esbuild.buildSync({
 			entryPoints: [ './playground/app.js' ],
@@ -41,7 +41,7 @@ function watchTask() {
 	gulp.watch([
 		'./playground/app.js',
 		'./{controls,core,nodes,plugins,utils}/*.js'
-	], watchParams, scripts(true))
+	], watchParams, scriptsTask(true))
 }
 
 export default gulp.parallel(assets, scripts(false))

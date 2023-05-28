@@ -56,6 +56,7 @@ export default class Toolbar {
 		this.previousSideMode = ''
 		this.nextControlsToRender = null
 		this.sideControls = []
+		this.centeredControls = []
 		this.sideMode = 'insert'
 		this.cancelObserver = null
 		this.containerAvatar = createElement('div', {
@@ -150,6 +151,50 @@ export default class Toolbar {
 		}
 	}
 
+	updateSideToolbar() {
+		const { anchorContainer, isRange, focused } = this.selection
+
+		if (!focused) {
+			return false
+		}
+
+		if (
+			!isRange &&
+			anchorContainer.isContainer &&
+			anchorContainer.isEmpty
+		) {
+			this.sideMode = 'insert'
+
+			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
+				this.sideControls = this.getInsertControls()
+				this.previousSideMode = this.sideMode
+				this.previousContainer = anchorContainer
+				this.renderSideToolbar()
+			}
+		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
+			this.sideMode = 'replace'
+
+			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
+				this.sideControls = this.getReplaceControls()
+				this.previousSideMode = this.sideMode
+				this.previousContainer = anchorContainer
+				this.renderSideToolbar()
+			}
+		}
+	}
+
+	updateCenteredToolbar() {
+		const { focused } = this.selection
+
+		if (!focused && !this.customMode) {
+			this.hideCenteredToolbar()
+
+			return null
+		}
+
+		this.renderSelectedToolbar()
+	}
+
 	updateButtonHolder() {
 		const { focused } = this.selection
 
@@ -198,50 +243,6 @@ export default class Toolbar {
 		} else {
 			this.hideToggleButtonHolder()
 		}
-	}
-
-	updateSideToolbar() {
-		const { anchorContainer, isRange, focused } = this.selection
-
-		if (!focused) {
-			return false
-		}
-
-		if (
-			!isRange &&
-			anchorContainer.isContainer &&
-			anchorContainer.isEmpty
-		) {
-			this.sideMode = 'insert'
-
-			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
-				this.sideControls = this.getInsertControls()
-				this.previousSideMode = this.sideMode
-				this.previousContainer = anchorContainer
-				this.renderSideToolbar()
-			}
-		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
-			this.sideMode = 'replace'
-
-			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
-				this.sideControls = this.getReplaceControls()
-				this.previousSideMode = this.sideMode
-				this.previousContainer = anchorContainer
-				this.renderSideToolbar()
-			}
-		}
-	}
-
-	updateCenteredToolbar() {
-		const { focused } = this.selection
-
-		if (!focused && !this.customMode) {
-			this.hideCenteredToolbar()
-
-			return null
-		}
-
-		this.renderSelectedToolbar()
 	}
 
 	renderSideToolbar() {
@@ -357,13 +358,11 @@ export default class Toolbar {
 	}
 
 	renderCenteredControls(rawControls) {
-		const controlsToRender = this.nextControlsToRender ? this.nextControlsToRender : rawControls
-
+		this.centeredControls = this.nextControlsToRender ? this.nextControlsToRender : rawControls
 		this.emptyCenteredControls()
 		this.nextControlsToRender = null
 		this.updateBoundings(this.selection.anchorContainer)
-
-		controlsToRender.forEach((groupControls) => {
+		this.centeredControls.forEach((groupControls) => {
 			const controls = this.wrapControls(groupControls)
 			const group = createElement(
 				'div',
@@ -387,15 +386,7 @@ export default class Toolbar {
 			this.customMode = false
 		}
 
-		const controls = action(event, {
-			builder: this.builder,
-			anchorContainer: this.selection.anchorContainer,
-			focusContainer: this.selection.focusContainer,
-			restoreSelection: this.restoreSelection,
-			setSelection: this.selection.setSelection,
-			getSelectedItems: this.getSelectedItems,
-			focusedNodes: this.selection.focusedNodes
-		})
+		const controls = action(event, this.getActionHandlerParams())
 
 		if (controls && controls.length) {
 			this.nextControlsToRender = controls
@@ -407,6 +398,18 @@ export default class Toolbar {
 			this.restoreSelection()
 			this.editing.update()
 			this.hideSideToolbar()
+		}
+	}
+
+	getActionHandlerParams() {
+		return {
+			builder: this.builder,
+			anchorContainer: this.selection.anchorContainer,
+			focusContainer: this.selection.focusContainer,
+			restoreSelection: this.restoreSelection,
+			setSelection: this.selection.setSelection,
+			getSelectedItems: this.getSelectedItems,
+			focusedNodes: this.selection.focusedNodes
 		}
 	}
 
@@ -592,6 +595,25 @@ export default class Toolbar {
 
 	hideAvatar() {
 		this.containerAvatar.style.display = 'none'
+	}
+
+	getShortcuts() {
+		const shortcuts = {}
+
+		function walk(nodes) {
+			nodes.forEach((node) => {
+				if (typeof node.forEach === 'function') {
+					walk(node)
+				} else if (typeof node.shortcut === 'string') {
+					shortcuts[node.shortcut] = node.action
+				}
+			})
+		}
+
+		walk(this.sideControls)
+		walk(this.centeredControls)
+
+		return shortcuts
 	}
 
 	destroy() {
