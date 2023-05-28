@@ -414,6 +414,7 @@ declare class Toolbar {
 	previousSideMode: string;
 	nextControlsToRender: any;
 	sideControls: any[];
+	centeredControls: any[];
 	sideMode: string;
 	cancelObserver: any;
 	containerAvatar: any;
