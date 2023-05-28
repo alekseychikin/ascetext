@@ -66,7 +66,7 @@ export default class Editing {
 				} else {
 					timeTravel.goBack()
 				}
-			} else if (!selection.isRange && selection.anchorContainer.shortcuts && (shortcutHandler = this.catchShortcut(event, selection.anchorContainer.shortcuts))) {
+			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(event, selection.anchorContainer.shortcuts))) {
 				shortcutHandler(event, this.getModifyKeyHandlerParams())
 			} else if (shortcutHandler = this.catchShortcut(event, toolbar.getShortcuts())) {
 				toolbar.controlHandler(shortcutHandler, event)

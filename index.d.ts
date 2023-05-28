@@ -19,6 +19,7 @@ declare class Node {
 	accept(node: Node): boolean;
 	getNodeUntil(nodeUntil: Node): Node;
 	get hasOnlyBr(): boolean;
+	get shortcuts(): Record<string, (event, params: HandlerParams) => false | undefined>;
 	getClosestContainer(): Node;
 	getPreviousSelectableNode(): false | Node | undefined;
 	getNextSelectableNode(): false | Node | undefined;
@@ -370,6 +371,7 @@ interface Control {
 	slug: string;
 	label?: string;
 	type?: string;
+	shortcut?: string;
 	icon?: string;
 	selected?: boolean;
 	disabled?: boolean;

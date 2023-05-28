@@ -48,6 +48,10 @@ export default class Node {
 			isElementBr(this.element.firstChild)
 	}
 
+	get shortrcuts() {
+		return {}
+	}
+
 	getClosestContainer() {
 		let container = this
 
