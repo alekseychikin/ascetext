@@ -77,6 +77,4 @@ export default class Widget extends WithControls {
 	}
 
 	markDirty() {}
-
-	update() {}
 }
