@@ -1,3 +1,4 @@
+import { operationTypes } from '../core/timetravel.js'
 import isFunction from '../utils/is-function.js'
 import nbsp from '../utils/nbsp.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
@@ -88,18 +89,19 @@ export default class Editing {
 						// потому что апдейт — это замена содержимого, а в этом случае нужно
 						// синхронизировать модель данных
 						// нужно спарсить без нормализации и без обновления реальных нод
-						this.update()
-						timeTravel.commit()
-						timeTravel.preservePreviousSelection()
+						// this.update()
+						this.sync()
+						// timeTravel.commit()
+						// timeTravel.preservePreviousSelection()
 
-						const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
-						const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
-						const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? nbsp : ' ') + node.content.substr(offset)
+						// const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
+						// const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
+						// const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? nbsp : ' ') + node.content.substr(offset)
 
-						node.content = content
-						element.nodeValue = content
-						selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
-						event.preventDefault()
+						// node.content = content
+						// element.nodeValue = content
+						// selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
+						// event.preventDefault()
 					}
 
 					// console.log('markDirty', selection.anchorOffset)
@@ -403,7 +405,55 @@ export default class Editing {
 		this.markDirtyTimer = setTimeout(this.update, 350)
 	}
 
+	sync() {
+		// клонировать элементы (и обновить текстовые элементы согласно старой модели) для старой модели и подменить текущие
+		// создать модель по текущим элементам
+		// подменить модель без метода append, потому что не нужно менять элементы, а только перелинковать ноды
+		// записать в историю данную подмену
+
+		const { selection, builder, timeTravel } = this.core
+		const container = selection.anchorContainer
+		const tree = builder.createTree(container.element)
+		let current = tree.first
+
+		timeTravel.pushChange({
+			type: operationTypes.CUT,
+			container,
+			until: container.last,
+			anchor: null,
+			previous: null,
+			next: null,
+			target: container.first
+		})
+
+		container.first = current
+
+		while (current) {
+			current.parent = container
+			container.last = current
+			current = current.next
+		}
+
+		timeTravel.pushChange({
+			type: operationTypes.APPEND,
+			container,
+			target: container.first,
+			last: container.last,
+			anchor: null
+		})
+		timeTravel.commit()
+
+		// создать дерево по текущим элементам
+		// перелинковать ноды
+		// записать в историю cutUntil и append
+	}
+
+	// Нужно делать только, когда контейнер потеряет фокус
+	// Он должен происходить в фоне
+	// Возможно его стоит заменить только на нормализацию
 	update() {
+		this.sync()
+		return null
 		clearTimeout(this.markDirtyTimer)
 		this.markDirtyTimer = null
 

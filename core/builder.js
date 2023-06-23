@@ -65,8 +65,8 @@ export default class Builder {
 		}
 	}
 
-	parse(element, ctx = {}) {
-		const fragment = this.createTree(element, ctx)
+	parse(element) {
+		const fragment = this.createTree(element)
 
 		this.normalize(fragment)
 
@@ -134,7 +134,7 @@ export default class Builder {
 		return container
 	}
 
-	createTree(element, ctx) {
+	createTree(element, ctx = {}) {
 		const fragment = this.createFragment()
 		const lastElement = element.lastChild
 		let currentElement = element.firstChild
@@ -164,7 +164,7 @@ export default class Builder {
 				currentElement.childNodes.length &&
 				(!current || !current.isWidget && current.type !== 'text')
 			) {
-				children = this.parse(currentElement, { ...context })
+				children = this.createTree(currentElement, { ...context })
 			}
 
 			if (current) {
