@@ -15,10 +15,8 @@ const finishSpacesRegexp = /[^\S\u00A0]+$/
 const groupSpacesRegexp = /[^\S\u00A0]+/g
 
 export class Text extends Node {
-	constructor(attributes = {}, content = '') {
+	constructor(attributes) {
 		super('text', attributes)
-
-		this.content = content
 	}
 
 	render() {
@@ -44,7 +42,7 @@ export class Text extends Node {
 			return node
 		}
 
-		return document.createTextNode(this.content)
+		return document.createTextNode(this.attributes.content)
 	}
 
 	generateModifiers() {
@@ -75,7 +73,7 @@ export class Text extends Node {
 
 	normalize(target, builder) {
 		if (target.type === 'text' && this.isEqual(target)) {
-			return builder.create('text', { ...this.attributes }, this.content + target.content)
+			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
 		}
 
 		return false
@@ -100,15 +98,15 @@ export class Text extends Node {
 				head: this.previous,
 				tail: this
 			}
-		} else if (position > this.content.length - 1) {
+		} else if (position > this.attributes.content.length - 1) {
 			return {
 				head: this,
 				tail: this.next
 			}
 		}
 
-		const head = builder.create('text', { ...this.attributes }, this.content.substr(0, position))
-		const tail = builder.create('text', { ...this.attributes }, this.content.substr(position))
+		const head = builder.create('text', { ...this.attributes, content: this.attributes.content.substr(0, position) })
+		const tail = builder.create('text', { ...this.attributes, content: this.attributes.content.substr(position) })
 		const fragment = builder.createFragment()
 
 		builder.append(fragment, head)
@@ -132,14 +130,14 @@ export class Text extends Node {
 			return '<' + mapModifierToTag[modifier] + '>' + this.stringifyWithModifiers(modifiers) + '</' + mapModifierToTag[modifier] + '>'
 		}
 
-		return this.content.replace(/\u00A0/, '&nbsp;')
+		return this.attributes.content.replace(/\u00A0/, '&nbsp;')
 	}
 
 	json() {
 		return {
 			type: this.type,
 			modifiers: this.generateModifiers(),
-			content: this.content
+			content: this.attributes.content
 		}
 	}
 }
@@ -177,20 +175,21 @@ export default class TextPlugin extends PluginPlugin {
 		if (isTextElement(element)) {
 			const firstChild = element.parentNode.firstChild
 			const lastChild = element.parentNode.lastChild
-			let content = element.nodeValue
-			let attributes = {}
+			const attributes = {
+				content: element.nodeValue
+			}
 
 			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
-				content = content.replace(beginSpacesRegexp, '')
+				attributes.content = attributes.content.replace(beginSpacesRegexp, '')
 			}
 
 			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
-				content = content.replace(finishSpacesRegexp, '')
+				attributes.content = attributes.content.replace(finishSpacesRegexp, '')
 			}
 
-			content = content.replace(groupSpacesRegexp, ' ')
+			attributes.content = attributes.content.replace(groupSpacesRegexp, ' ')
 
-			if (!content.length || content.match(/^[^\S\u00A0]+$/)) {
+			if (!attributes.content.length || attributes.content.match(/^[^\S\u00A0]+$/)) {
 				return false
 			}
 
@@ -210,7 +209,7 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.decoration = 'underlined'
 			}
 
-			return builder.create('text', attributes, content)
+			return builder.create('text', attributes)
 		}
 
 		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
@@ -265,7 +264,9 @@ export default class TextPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'text') {
-			const attributes = {}
+			const attributes = {
+				content: element.content
+			}
 
 			if (element.modifiers.includes('bold')) {
 				attributes.weight = 'bold'
@@ -283,7 +284,7 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.strike = 'horizontal'
 			}
 
-			return builder.create('text', attributes, element.content)
+			return builder.create('text', attributes)
 		}
 	}
 

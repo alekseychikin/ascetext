@@ -96,8 +96,9 @@ export default class Editing {
 
 						// const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
 						// const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
-						// const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? nbsp : ' ') + node.content.substr(offset)
+						// const content = node.attributes.content.substr(0, offset) + (!offset || offset === node.attributes.content.length ? nbsp : ' ') + node.attributes.content.substr(offset)
 
+						// Надо изменить в связи с переносом content в атрибуты ноды
 						// node.content = content
 						// element.nodeValue = content
 						// selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
@@ -452,8 +453,8 @@ export default class Editing {
 	// Он должен происходить в фоне
 	// Возможно его стоит заменить только на нормализацию
 	update() {
-		this.sync()
-		return null
+		// this.sync()
+		// return null
 		clearTimeout(this.markDirtyTimer)
 		this.markDirtyTimer = null
 
@@ -497,8 +498,8 @@ export default class Editing {
 
 		while (current) {
 			if (current.type === 'text') {
-				if (current.content !== current.element.nodeValue) {
-					current.element.nodeValue = current.content
+				if (current.attributes.content !== current.element.nodeValue) {
+					current.element.nodeValue = current.attributes.content
 				}
 			} else if (current.first) {
 				this.handleTextInRemoveNodes(current.first)

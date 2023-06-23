@@ -429,14 +429,14 @@ export default class Builder {
 		const firstChild = current.deepesetFirstNode()
 		const lastChild = current.previous.deepesetLastNode()
 
-		if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
-			firstChild.content = nbsp + firstChild.content.substr(1)
-			firstChild.element.nodeValue = firstChild.content
+		if (firstChild && firstChild.type === 'text' && firstChild.attributes.content[0] === ' ') {
+			firstChild.attributes.content = nbsp + firstChild.attributes.content.substr(1)
+			firstChild.element.nodeValue = firstChild.attributes.content
 		}
 
-		if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
-			lastChild.content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsp
-			lastChild.element.nodeValue = lastChild.content
+		if (lastChild && lastChild.type === 'text' && lastChild.attributes.content[lastChild.attributes.content.length - 1] === ' ') {
+			lastChild.attributes.content = lastChild.attributes.content.substr(0, lastChild.attributes.content.length - 1) + nbsp
+			lastChild.element.nodeValue = lastChild.attributes.content
 		}
 	}
 
