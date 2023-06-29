@@ -83,7 +83,6 @@ export default class TimeTravel {
 				switch (previousEvent.type) {
 					case operationTypes.CUT:
 						this.builder.append(previousEvent.container, previousEvent.target, previousEvent.anchor)
-
 						break
 					case operationTypes.APPEND:
 						this.builder.cutUntil(previousEvent.target, previousEvent.last)

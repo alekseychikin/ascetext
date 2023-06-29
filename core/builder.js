@@ -19,9 +19,6 @@ export default class Builder {
 
 	create(name, ...params) {
 		const node = this.core.plugins[name].create(...params)
-		const element = node.render()
-
-		node.setElement(element)
 
 		if (node.isContainer) {
 			this.append(node, this.create('breakLine'))
@@ -69,84 +66,36 @@ export default class Builder {
 	}
 
 	parse(element) {
-		const container = this.createFragment()
-		const lastElement = element.lastChild
-		let currentElement = element.firstChild
-		let nextElement
-		let children = null
-		let current
+		const fragment = this.createTree(element)
 
-		while (currentElement) {
-			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-				currentElement = currentElement.nextSibling
+		this.normalize(fragment)
 
-				continue
-			}
-
-			nextElement = currentElement.nextSibling
-			children = null
-
-			if (isHtmlElement(currentElement) && currentElement.childNodes.length) {
-				children = this.parse(currentElement)
-			}
-
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
-				if (parsed) return parsed
-
-				return this.core.plugins[pluginName].parse(currentElement, this, children)
-			}, null)
-
-			if (current) {
-				this.append(container, current)
-
-				if (children && children.first) {
-					this.append(current, children)
-				}
-
-				if (current.isDeleteEmpty && !current.first) {
-					this.cut(current)
-				}
-			} else if (children && children.first) {
-				this.append(container, children)
-			}
-
-			if (currentElement === lastElement) {
-				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
-					this.cut(current)
-				}
-
-				break
-			}
-
-			currentElement = nextElement
-		}
-
-		this.normalize(container)
-
-		return container
+		return fragment
 	}
 
 	normalize(node) {
 		let current = node.first
 		let next
+		let previous
 		let normalized
 
 		while (current) {
 			next = current.next
+			previous = current.previous
 
-			if (current.previous && isFunction(current.previous.normalize)) {
-				if (normalized = current.previous.normalize(current, this)) {
-					if (current.previous.first) {
-						this.append(normalized, current.previous.first)
-					}
-
-					if (current.first) {
-						this.append(normalized, current.first)
-					}
-
-					this.replaceUntil(current.previous, normalized, current)
-					this.normalize(normalized)
+			if (previous && isFunction(previous.normalize) && (normalized = previous.normalize(current, this))) {
+				if (previous.first) {
+					this.append(normalized, previous.first)
 				}
+
+				if (current.first) {
+					this.append(normalized, current.first)
+				}
+
+				this.replaceUntil(previous, normalized, current)
+				this.normalize(normalized)
+			} else {
+				this.normalize(current)
 			}
 
 			current = next
@@ -183,6 +132,67 @@ export default class Builder {
 		})
 
 		return container
+	}
+
+	createTree(element, ctx = {}) {
+		const fragment = this.createFragment()
+		const lastElement = element.lastChild
+		let currentElement = element.firstChild
+		let nextElement
+		let children = null
+		let current
+
+		while (currentElement) {
+			const context = { ...ctx }
+
+			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+				currentElement = currentElement.nextSibling
+
+				continue
+			}
+
+			nextElement = currentElement.nextSibling
+			children = null
+			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+				if (parsed) return parsed
+
+				return this.core.plugins[pluginName].parse(currentElement, this, context)
+			}, null)
+
+			if (
+				isHtmlElement(currentElement) &&
+				currentElement.childNodes.length &&
+				(!current || !current.isWidget && current.type !== 'text')
+			) {
+				children = this.createTree(currentElement, { ...context })
+			}
+
+			if (current) {
+				this.append(fragment, current)
+
+				if (children && children.first) {
+					this.append(current, children.first)
+				}
+
+				if (current.isDeleteEmpty && !current.first) {
+					this.cut(current)
+				}
+			} else if (children && children.first) {
+				this.append(fragment, children.first)
+			}
+
+			if (currentElement === lastElement) {
+				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+					this.cut(current)
+				}
+
+				break
+			}
+
+			currentElement = nextElement
+		}
+
+		return fragment
 	}
 
 	split(container, offset) {
@@ -255,7 +265,11 @@ export default class Builder {
 		do {
 			current.parent = node
 
+			this.render(current)
+			this.render(node)
+
 			if (anchor) {
+				this.render(anchor)
 				node.element.insertBefore(current.element, anchor.element)
 			} else {
 				node.element.appendChild(current.element)
@@ -345,7 +359,7 @@ export default class Builder {
 		delete last.next
 
 		while (current) {
-			if (current.element.parentNode) {
+			if (current.element && current.element.parentNode) {
 				current.element.parentNode.removeChild(current.element)
 			}
 
@@ -415,14 +429,14 @@ export default class Builder {
 		const firstChild = current.deepesetFirstNode()
 		const lastChild = current.previous.deepesetLastNode()
 
-		if (firstChild && firstChild.type === 'text' && firstChild.content[0] === ' ') {
-			firstChild.content = nbsp + firstChild.content.substr(1)
-			firstChild.element.nodeValue = firstChild.content
+		if (firstChild && firstChild.type === 'text' && firstChild.attributes.content[0] === ' ') {
+			firstChild.attributes.content = nbsp + firstChild.attributes.content.substr(1)
+			firstChild.setNodeValue(firstChild.attributes.content)
 		}
 
-		if (lastChild && lastChild.type === 'text' && lastChild.content[lastChild.content.length - 1] === ' ') {
-			lastChild.content = lastChild.content.substr(0, lastChild.content.length - 1) + nbsp
-			lastChild.element.nodeValue = lastChild.content
+		if (lastChild && lastChild.type === 'text' && lastChild.attributes.content[lastChild.attributes.content.length - 1] === ' ') {
+			lastChild.attributes.content = lastChild.attributes.content.substr(0, lastChild.attributes.content.length - 1) + nbsp
+			lastChild.setNodeValue(lastChild.attributes.content)
 		}
 	}
 
@@ -461,6 +475,12 @@ export default class Builder {
 
 		if (tail) {
 			this.append(target, tail)
+		}
+	}
+
+	render(node) {
+		if (!node.element) {
+			node.setElement(node.render())
 		}
 	}
 }

@@ -1,5 +1,4 @@
 import isFunction from '../utils/is-function.js'
-import nbsp from '../utils/nbsp.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 
 const backspaceKey = 8
@@ -34,6 +33,9 @@ export default class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onKeyUp = this.onKeyUp.bind(this)
+		this.onCompositionStart = this.onCompositionStart.bind(this)
+		this.onCompositionEnd = this.onCompositionEnd.bind(this)
 		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
@@ -43,11 +45,36 @@ export default class Editing {
 		this.updatingContainers = []
 		this.modifyKeyHandlerParams = {}
 		this.markDirtyTimer = null
+		this.isSession = false
+		this.spacesDown = 0
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
+		this.node.addEventListener('keyup', this.onKeyUp)
 		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
+		this.node.addEventListener('compositionstart', this.onCompositionStart)
+		this.node.addEventListener('compositionend', this.onCompositionEnd)
+	}
+
+	onCompositionStart() {
+		this.core.timeTravel.preservePreviousSelection()
+		this.isSession = true
+	}
+
+	onCompositionEnd() {
+		this.isSession = false
+		this.markDirty(this.core.selection.anchorContainer)
+		this.update()
+	}
+
+	onInput(event) {
+		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
+			this.core.selection.anchorContainer.inputHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
+		}
 	}
 
 	onKeyDown(event) {
@@ -83,29 +110,26 @@ export default class Editing {
 				} else {
 					this.handleRemoveRange()
 
-					if (event.keyCode === spaceKey) {
-						// здесь нужно делать синхронизацию, а не апдейт
-						// потому что апдейт — это замена содержимого, а в этом случае нужно
-						// синхронизировать модель данных
-						// нужно спарсить без нормализации и без обновления реальных нод
+					if (event.keyCode === spaceKey && !this.spacesDown) {
 						this.update()
 						timeTravel.commit()
 						timeTravel.preservePreviousSelection()
-
-						const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
-						const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
-						const content = node.content.substr(0, offset) + (!offset || offset === node.content.length ? nbsp : ' ') + node.content.substr(offset)
-
-						node.content = content
-						element.nodeValue = content
-						selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
-						event.preventDefault()
 					}
 
-					// console.log('markDirty', selection.anchorOffset)
+					this.spacesDown++
 					this.markDirty(selection.anchorContainer)
 				}
 			}
+		}
+	}
+
+	onKeyUp(event) {
+		const { timeTravel } = this.core
+
+		if (event.keyCode === spaceKey) {
+			timeTravel.commit()
+			timeTravel.preservePreviousSelection()
+			this.spacesDown = 0
 		}
 	}
 
@@ -116,10 +140,6 @@ export default class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
-					// здесь нужно делать синхронизацию, а не апдейт
-					// потому что апдейт — это замена содержимого, а в этом случае нужно
-					// синхронизировать модель данных
-					// нужно спарсить без нормализации и без обновления реальных нод
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -131,7 +151,6 @@ export default class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.focusAtLastPositionInContainer
 				) {
-					// здесь нужно делать синхронизацию, а не апдейт
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -139,9 +158,7 @@ export default class Editing {
 				this.handleDeleteKeyDown(event)
 				break
 			case enterKey:
-				// debugger
 				if (!this.core.selection.isRange) {
-					// здесь нужно делать синхронизацию, а не апдейт
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -358,15 +375,6 @@ export default class Editing {
 		}
 	}
 
-	onInput(event) {
-		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
-			this.core.selection.anchorContainer.inputHandler(
-				event,
-				this.getModifyKeyHandlerParams()
-			)
-		}
-	}
-
 	getModifyKeyHandlerParams() {
 		this.modifyKeyHandlerParams.builder = this.core.builder
 		this.modifyKeyHandlerParams.anchorOffset = this.core.selection.anchorOffset
@@ -410,12 +418,12 @@ export default class Editing {
 		let container
 		let normalized
 
-		while (container = this.updatingContainers.pop()) {
+		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
 				const content = this.core.builder.parse(container.element)
 
 				if (container.first) {
-					this.handleTextInRemoveNodes(container.first)
+					this.restorePreviousState(container.first)
 					this.core.builder.cutUntil(container.first)
 				}
 
@@ -431,8 +439,6 @@ export default class Editing {
 					this.core.builder.replaceUntil(container.previous, normalized, container)
 				}
 			}
-
-			// console.log('container update', container.element)
 		}
 
 		if (this.core.selection.focused) {
@@ -442,20 +448,41 @@ export default class Editing {
 		this.core.timeTravel.commit()
 	}
 
-	handleTextInRemoveNodes(node) {
+	restorePreviousState(node) {
 		let current = node
+		let next
 
 		while (current) {
-			if (current.type === 'text') {
-				if (current.content !== current.element.nodeValue) {
-					current.element.nodeValue = current.content
+			if (!current.element.parentNode) {
+				if (next = this.findNextElement(current)) {
+					current.parent.element.insertBefore(current.element, next)
+				} else {
+					current.parent.element.appendChild(current.element)
 				}
+			}
+
+			if (current.type === 'text') {
+				current.setNodeValue(current.attributes.content)
 			} else if (current.first) {
-				this.handleTextInRemoveNodes(current.first)
+				this.restorePreviousState(current.first)
 			}
 
 			current = current.next
 		}
+	}
+
+	findNextElement(node) {
+		let current = node.next
+
+		while (current) {
+			if (current.element.parentNode) {
+				return current.element
+			}
+
+			current = current.next
+		}
+
+		return null
 	}
 
 	save() {

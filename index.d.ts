@@ -711,8 +711,9 @@ declare class QuotePlugin extends PluginPlugin {
 }
 
 declare class TextNode extends Node {
-	constructor(attributes?: {}, content?: string);
-	content: string;
+	constructor(attributes: {
+		content: string;
+	});
 	render(): any;
 	update(): void;
 	create(modifiers: any): any;
