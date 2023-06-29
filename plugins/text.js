@@ -219,7 +219,7 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.decoration = 'underlined'
 			}
 
-			return builder.create('text', attributes)
+			return new Text(attributes)
 		}
 
 		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
@@ -264,7 +264,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	parseJson(element, builder) {
+	parseJson(element) {
 		if (element.type === 'text') {
 			const attributes = {
 				content: element.content
@@ -286,7 +286,7 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.strike = 'horizontal'
 			}
 
-			return builder.create('text', attributes)
+			return new Text(attributes)
 		}
 	}
 
