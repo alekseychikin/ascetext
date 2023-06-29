@@ -224,22 +224,18 @@ export default class TextPlugin extends PluginPlugin {
 
 		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
 			ctx.weight = 'bold'
-			// builder.setAttribute(children.first, 'weight', 'bold')
 		}
 
 		if (tagName === 'em' && this.params.allowModifiers.includes('italic')) {
 			ctx.style = 'italic'
-		// 	builder.setAttribute(children.first, 'style', 'italic')
 		}
 
 		if (tagName === 's' && this.params.allowModifiers.includes('horizontal')) {
 			ctx.strike = 'horizontal'
-		// 	builder.setAttribute(children.first, 'strike', 'horizontal')
 		}
 
 		if (tagName === 'u' && this.params.allowModifiers.includes('underlined')) {
 			ctx.decoration = 'underlined'
-		// 	builder.setAttribute(children.first, 'decoration', 'underlined')
 		}
 
 		if (tagName === 'span') {
@@ -252,22 +248,18 @@ export default class TextPlugin extends PluginPlugin {
 				) && this.params.allowModifiers.includes('bold')
 			) {
 				ctx.weight = 'bold'
-		// 		builder.setAttribute(children.first, 'weight', 'bold')
 			}
 
 			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
 				ctx.style = 'italic'
-		// 		builder.setAttribute(children.first, 'style', 'italic')
 			}
 
 			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
 				ctx.strike = 'horizontal'
-		// 		builder.setAttribute(children.first, 'strike', 'horizontal')
 			}
 
 			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
 				ctx.decoration = 'underlined'
-		// 		builder.setAttribute(children.first, 'decoration', 'underlined')
 			}
 		}
 	}
