@@ -35,6 +35,8 @@ export default class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onCompositionStart = this.onCompositionStart.bind(this)
+		this.onCompositionEnd = this.onCompositionEnd.bind(this)
 		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
@@ -44,11 +46,34 @@ export default class Editing {
 		this.updatingContainers = []
 		this.modifyKeyHandlerParams = {}
 		this.markDirtyTimer = null
+		this.isSession = false
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
 		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
+		this.node.addEventListener('compositionstart', this.onCompositionStart)
+		this.node.addEventListener('compositionend', this.onCompositionEnd)
+	}
+
+	onCompositionStart() {
+		this.core.timeTravel.preservePreviousSelection()
+		this.isSession = true
+	}
+
+	onCompositionEnd() {
+		this.isSession = false
+		this.markDirty(this.core.selection.anchorContainer)
+		this.update()
+	}
+
+	onInput(event) {
+		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
+			this.core.selection.anchorContainer.inputHandler(
+				event,
+				this.getModifyKeyHandlerParams()
+			)
+		}
 	}
 
 	onKeyDown(event) {
@@ -85,27 +110,11 @@ export default class Editing {
 					this.handleRemoveRange()
 
 					if (event.keyCode === spaceKey) {
-						// здесь нужно делать синхронизацию, а не апдейт
-						// потому что апдейт — это замена содержимого, а в этом случае нужно
-						// синхронизировать модель данных
-						// нужно спарсить без нормализации и без обновления реальных нод
-						// this.update()
-						this.sync()
-						// timeTravel.commit()
-						// timeTravel.preservePreviousSelection()
-
-						// const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
-						// const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
-						// const content = node.attributes.content.substr(0, offset) + (!offset || offset === node.attributes.content.length ? nbsp : ' ') + node.attributes.content.substr(offset)
-
-						// Надо изменить в связи с переносом content в атрибуты ноды
-						// node.content = content
-						// element.nodeValue = content
-						// selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
-						// event.preventDefault()
+						this.update()
+						timeTravel.commit()
+						timeTravel.preservePreviousSelection()
 					}
 
-					// console.log('markDirty', selection.anchorOffset)
 					this.markDirty(selection.anchorContainer)
 				}
 			}
@@ -119,10 +128,6 @@ export default class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
 				) {
-					// здесь нужно делать синхронизацию, а не апдейт
-					// потому что апдейт — это замена содержимого, а в этом случае нужно
-					// синхронизировать модель данных
-					// нужно спарсить без нормализации и без обновления реальных нод
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -134,7 +139,6 @@ export default class Editing {
 					!this.core.selection.isRange &&
 					this.core.selection.focusAtLastPositionInContainer
 				) {
-					// здесь нужно делать синхронизацию, а не апдейт
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -142,9 +146,7 @@ export default class Editing {
 				this.handleDeleteKeyDown(event)
 				break
 			case enterKey:
-				// debugger
 				if (!this.core.selection.isRange) {
-					// здесь нужно делать синхронизацию, а не апдейт
 					this.update()
 					this.core.timeTravel.preservePreviousSelection()
 				}
@@ -361,15 +363,6 @@ export default class Editing {
 		}
 	}
 
-	onInput(event) {
-		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
-			this.core.selection.anchorContainer.inputHandler(
-				event,
-				this.getModifyKeyHandlerParams()
-			)
-		}
-	}
-
 	getModifyKeyHandlerParams() {
 		this.modifyKeyHandlerParams.builder = this.core.builder
 		this.modifyKeyHandlerParams.anchorOffset = this.core.selection.anchorOffset
@@ -406,67 +399,19 @@ export default class Editing {
 		this.markDirtyTimer = setTimeout(this.update, 350)
 	}
 
-	sync() {
-		// клонировать элементы (и обновить текстовые элементы согласно старой модели) для старой модели и подменить текущие
-		// создать модель по текущим элементам
-		// подменить модель без метода append, потому что не нужно менять элементы, а только перелинковать ноды
-		// записать в историю данную подмену
-
-		const { selection, builder, timeTravel } = this.core
-		const container = selection.anchorContainer
-		const tree = builder.createTree(container.element)
-		let current = tree.first
-
-		timeTravel.pushChange({
-			type: operationTypes.CUT,
-			container,
-			until: container.last,
-			anchor: null,
-			previous: null,
-			next: null,
-			target: container.first
-		})
-
-		container.first = current
-
-		while (current) {
-			current.parent = container
-			container.last = current
-			current = current.next
-		}
-
-		timeTravel.pushChange({
-			type: operationTypes.APPEND,
-			container,
-			target: container.first,
-			last: container.last,
-			anchor: null
-		})
-		timeTravel.commit()
-
-		// создать дерево по текущим элементам
-		// перелинковать ноды
-		// записать в историю cutUntil и append
-	}
-
-	// Нужно делать только, когда контейнер потеряет фокус
-	// Он должен происходить в фоне
-	// Возможно его стоит заменить только на нормализацию
 	update() {
-		// this.sync()
-		// return null
 		clearTimeout(this.markDirtyTimer)
 		this.markDirtyTimer = null
 
 		let container
 		let normalized
 
-		while (container = this.updatingContainers.pop()) {
+		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
 				const content = this.core.builder.parse(container.element)
 
 				if (container.first) {
-					this.handleTextInRemoveNodes(container.first)
+					this.restorePreviousState(container.first)
 					this.core.builder.cutUntil(container.first)
 				}
 
@@ -482,8 +427,6 @@ export default class Editing {
 					this.core.builder.replaceUntil(container.previous, normalized, container)
 				}
 			}
-
-			// console.log('container update', container.element)
 		}
 
 		if (this.core.selection.focused) {
@@ -493,20 +436,41 @@ export default class Editing {
 		this.core.timeTravel.commit()
 	}
 
-	handleTextInRemoveNodes(node) {
+	restorePreviousState(node) {
 		let current = node
+		let next
 
 		while (current) {
-			if (current.type === 'text') {
-				if (current.attributes.content !== current.element.nodeValue) {
-					current.element.nodeValue = current.attributes.content
+			if (!current.element.parentNode) {
+				if (next = this.findNextElement(current)) {
+					current.parent.element.insertBefore(current.element, next)
+				} else {
+					current.parent.element.appendChild(current.element)
 				}
+			}
+
+			if (current.type === 'text') {
+				current.setNodeValue(current.attributes.content)
 			} else if (current.first) {
-				this.handleTextInRemoveNodes(current.first)
+				this.restorePreviousState(current.first)
 			}
 
 			current = current.next
 		}
+	}
+
+	findNextElement(node) {
+		let current = node.next
+
+		while (current) {
+			if (current.element.parentNode) {
+				return current.element
+			}
+
+			current = current.next
+		}
+
+		return null
 	}
 
 	save() {

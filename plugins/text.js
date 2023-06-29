@@ -140,6 +140,16 @@ export class Text extends Node {
 			content: this.attributes.content
 		}
 	}
+
+	setNodeValue(value, element = this.element) {
+		if (element.nodeType === 3) {
+			if (element.nodeValue !== value) {
+				element.nodeValue = value
+			}
+		} else {
+			this.setNodeValue(value, element.firstChild)
+		}
+	}
 }
 
 export default class TextPlugin extends PluginPlugin {

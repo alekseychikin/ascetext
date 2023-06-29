@@ -49,8 +49,6 @@ export default class TimeTravel {
 			return
 		}
 
-		console.log(this.currentBunch)
-
 		const nextSelection = this.selection.getSelectionInIndexes()
 
 		if (this.timeindex < this.timeline.length - 1) {
