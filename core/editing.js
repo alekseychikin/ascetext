@@ -35,6 +35,7 @@ export default class Editing {
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onKeyUp = this.onKeyUp.bind(this)
 		this.onCompositionStart = this.onCompositionStart.bind(this)
 		this.onCompositionEnd = this.onCompositionEnd.bind(this)
 		this.onInput = this.onInput.bind(this)
@@ -47,9 +48,11 @@ export default class Editing {
 		this.modifyKeyHandlerParams = {}
 		this.markDirtyTimer = null
 		this.isSession = false
+		this.spacesDown = 0
 
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('keydown', this.onKeyDown)
+		this.node.addEventListener('keyup', this.onKeyUp)
 		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
@@ -109,15 +112,26 @@ export default class Editing {
 				} else {
 					this.handleRemoveRange()
 
-					if (event.keyCode === spaceKey) {
+					if (event.keyCode === spaceKey && !this.spacesDown) {
 						this.update()
 						timeTravel.commit()
 						timeTravel.preservePreviousSelection()
 					}
 
+					this.spacesDown++
 					this.markDirty(selection.anchorContainer)
 				}
 			}
+		}
+	}
+
+	onKeyUp(event) {
+		const { timeTravel } = this.core
+
+		if (event.keyCode === spaceKey) {
+			timeTravel.commit()
+			timeTravel.preservePreviousSelection()
+			this.spacesDown = 0
 		}
 	}
 
