@@ -1,6 +1,4 @@
-import { operationTypes } from '../core/timetravel.js'
 import isFunction from '../utils/is-function.js'
-import nbsp from '../utils/nbsp.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 
 const backspaceKey = 8
