@@ -29,10 +29,6 @@ export default class ControlButton extends ControlControl {
 		}
 	}
 
-	setEventListener(handler) {
-		this.handler = handler
-	}
-
 	getElement() {
 		const classNames = [
 			this.css.container

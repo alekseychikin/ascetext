@@ -155,7 +155,7 @@ export default class Toolbar {
 		const { anchorContainer, isRange, focused } = this.selection
 
 		if (!focused) {
-			return false
+			return null
 		}
 
 		if (
@@ -187,8 +187,6 @@ export default class Toolbar {
 		const { focused } = this.selection
 
 		if (!focused && !this.customMode) {
-			this.hideCenteredToolbar()
-
 			return null
 		}
 
@@ -373,20 +371,20 @@ export default class Toolbar {
 			)
 
 			this.centeredToolbar.appendChild(group)
-			controls.forEach((control) =>
+			controls.forEach((control) => {
 				control.setEventListener(this.controlHandler)
-			)
+			})
 		})
 	}
 
-	controlHandler(action, event, keep = false) {
+	async controlHandler(action, event, keep = false) {
 		if (!keep) {
 			this.selection.restoreSelection()
 			this.timeTravel.preservePreviousSelection()
 			this.customMode = false
 		}
 
-		const controls = action(event, this.getActionHandlerParams())
+		const controls = await action(event, this.getActionHandlerParams())
 
 		if (controls && controls.length) {
 			this.nextControlsToRender = controls

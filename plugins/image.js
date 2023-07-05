@@ -159,17 +159,9 @@ export default class ImagePlugin extends PluginPlugin {
 		this.insertImage = this.insertImage.bind(this)
 		this.updateImage = this.updateImage.bind(this)
 		this.params = Object.assign({
-			onSelectFile: (file, image, setSrc) => new Promise((resolve) => {
-				const reader = new FileReader()
-
-				reader.onload = event => {
-					resolve(event.target.result)
-					setSrc(event.target.result)
-				}
-
-				reader.readAsDataURL(file)
-			}),
-			placeholder: 'Add image caption (optional)'
+			onSelectFile: (file, image) => Promise.resolve(image.image.src),
+			placeholder: 'Add image caption (optional)',
+			errorIcon: '<svg xmlns="http://www.w3.org/2000/svg" width="453" height="300" fill="none"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="12" d="m6 293.5 441-287m-391 280h333.5m14.5-228V192M27.5 151l121-81 71.5 63.5m27 27 53 46.863m89.5 79.137H404V192m-14.5 94.5L300 207.363m0 0 59.5-46.863L404 192M27.5 254V27.5H377"/><circle cx="253" cy="73" r="19.5" stroke="#000" stroke-width="13"/></svg>'
 		}, params)
 	}
 
@@ -240,6 +232,20 @@ export default class ImagePlugin extends PluginPlugin {
 		return false
 	}
 
+	getInsertControls(container) {
+		if (!container.parent.isSection) {
+			return []
+		}
+
+		return [{
+			slug: 'image.upload',
+			type: 'file',
+			label: 'Вставить картинку',
+			icon: 'image',
+			action: this.insertImage(container)
+		}]
+	}
+
 	getSelectControls(focusedNodes, isRange) {
 		let image
 
@@ -285,6 +291,57 @@ export default class ImagePlugin extends PluginPlugin {
 		return []
 	}
 
+	insertImage(container) {
+		return async (event, { builder, restoreSelection }) => {
+			const { files } = event.target
+
+			if (files.length) {
+				let src = await this.generateImagePreview(files[0])
+				const image = new Image({ src })
+				const caption = builder.create('image', {
+					type: 'caption',
+					placeholder: this.params.placeholder
+				})
+
+				builder.append(image, caption)
+				builder.replace(container, image)
+
+				try {
+					src = await this.params.onSelectFile(files[0], image)
+					image.image.src = src
+					image.attributes.src = src
+				} catch (exception) {
+					console.error('exception', exception)
+					builder.cut(image)
+					restoreSelection()
+				}
+			}
+		}
+	}
+
+	updateImage(image) {
+		return async (event, { builder, restoreSelection }) => {
+			const { files } = event.target
+
+			if (files.length) {
+				let src = await this.generateImagePreview(files[0])
+
+				image.image.src = src
+
+				try {
+					console.log('set prevew')
+					src = await this.params.onSelectFile(files[0], image)
+					console.log('set attribute')
+					builder.setAttribute(image, 'src', src)
+				} catch (exception) {
+					builder.cut(image)
+					restoreSelection()
+				}
+			}
+		}
+	}
+
+
 	toggleFloatLeft(image) {
 		return (event, { builder }) => {
 			builder.setAttribute(image, 'size', '')
@@ -313,54 +370,15 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 	}
 
-	getInsertControls(container) {
-		if (!container.parent.isSection) {
-			return []
-		}
+	generateImagePreview(file) {
+		return new Promise((resolve) => {
+			const reader = new FileReader()
 
-		return [{
-			slug: 'image.upload',
-			type: 'file',
-			label: 'Вставить картинку',
-			icon: 'image',
-			action: this.insertImage(container)
-		}]
-	}
-
-	insertImage(container) {
-		return async (event, { builder }) => {
-			const { files } = event.target
-
-			if (files.length) {
-				const image = builder.create('image', { src: '' })
-				const src = await this.params.onSelectFile(files[0], image, (src) => {
-					builder.setAttribute(image, 'src', src)
-				})
-				const caption = builder.create('image', {
-					type: 'caption',
-					placeholder: this.params.placeholder
-				})
-
-				image.image.src = src
-				builder.append(caption, builder.create('breakLine'))
-				builder.append(image, caption)
-				builder.replace(container, image)
+			reader.onload = event => {
+				resolve(event.target.result)
 			}
-		}
-	}
 
-	updateImage(image) {
-		return async (event, { builder }) => {
-			const { files } = event.target
-
-			if (files.length) {
-				const src = await this.params.onSelectFile(files[0], image, (src) => {
-					builder.setAttribute(image, 'src', src)
-				})
-
-				builder.setAttribute(image, 'src', '')
-				image.image.src = src
-			}
-		}
+			reader.readAsDataURL(file)
+		})
 	}
 }

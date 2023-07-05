@@ -1,6 +1,6 @@
 {
   "name": "ascetext",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Editor for web",
   "main": "index.js",
   "type": "module",
