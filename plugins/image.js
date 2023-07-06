@@ -160,8 +160,7 @@ export default class ImagePlugin extends PluginPlugin {
 		this.updateImage = this.updateImage.bind(this)
 		this.params = Object.assign({
 			onSelectFile: (file, image) => Promise.resolve(image.image.src),
-			placeholder: 'Add image caption (optional)',
-			errorIcon: '<svg xmlns="http://www.w3.org/2000/svg" width="453" height="300" fill="none"><path stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="12" d="m6 293.5 441-287m-391 280h333.5m14.5-228V192M27.5 151l121-81 71.5 63.5m27 27 53 46.863m89.5 79.137H404V192m-14.5 94.5L300 207.363m0 0 59.5-46.863L404 192M27.5 254V27.5H377"/><circle cx="253" cy="73" r="19.5" stroke="#000" stroke-width="13"/></svg>'
+			placeholder: 'Add image caption (optional)'
 		}, params)
 	}
 
@@ -187,8 +186,13 @@ export default class ImagePlugin extends PluginPlugin {
 	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('figure.image')) {
 			const classNames = element.className.split(/\s+/)
+			const figcaption = element.querySelector('figcaption')
+			const caption = new ImageCaption({
+				placeholder: this.params.placeholder
+			})
 			let size = ''
 			let float = 'none'
+			let content
 
 			classNames.forEach((className) => {
 				const sizeMatched = className.match(/image--size-(.*)/)
@@ -203,14 +207,15 @@ export default class ImagePlugin extends PluginPlugin {
 				}
 			})
 
-			return builder.create('image', { src: element.querySelector('img').src, size, float })
-		}
+			const image = new Image({ src: element.querySelector('img').src, size, float })
 
-		if (isHtmlElement(element) && element.matches('figcaption')) {
-			return builder.create('image', {
-				type: 'caption',
-				placeholder: this.params.placeholder
-			})
+			builder.append(image, caption)
+
+			if (figcaption && figcaption.firstChild && (content = builder.parse(figcaption))) {
+				builder.append(caption, content)
+			}
+
+			return image
 		}
 	}
 
@@ -329,9 +334,7 @@ export default class ImagePlugin extends PluginPlugin {
 				image.image.src = src
 
 				try {
-					console.log('set prevew')
 					src = await this.params.onSelectFile(files[0], image)
-					console.log('set attribute')
 					builder.setAttribute(image, 'src', src)
 				} catch (exception) {
 					builder.cut(image)

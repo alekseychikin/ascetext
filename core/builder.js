@@ -253,6 +253,7 @@ export default class Builder {
 		let current = target
 
 		this.cutUntil(target, last)
+		this.prepareContainer(target)
 
 		this.core.onNodeChange({
 			type: operationTypes.APPEND,
@@ -481,6 +482,12 @@ export default class Builder {
 	render(node) {
 		if (!node.element) {
 			node.setElement(node.render())
+		}
+	}
+
+	prepareContainer(node) {
+		if (node.isContainer && !node.first) {
+			this.append(node, this.create('breakLine'))
 		}
 	}
 }
