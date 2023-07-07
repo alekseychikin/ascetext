@@ -126,7 +126,10 @@ export default class Ascetext {
 	onNodeChange(changes) {
 		this.timeTravel.pushChange(changes)
 		this.sizeObserver.update()
+		this.triggerChange()
+	}
 
+	triggerChange() {
 		clearTimeout(this.onChangeTimer)
 		this.onChangeTimer = setTimeout(() => {
 			this.onChangeHandlers.forEach((handler) => handler())

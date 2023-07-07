@@ -303,8 +303,7 @@ export default class ImagePlugin extends PluginPlugin {
 			if (files.length) {
 				let src = await this.generateImagePreview(files[0])
 				const image = new Image({ src })
-				const caption = builder.create('image', {
-					type: 'caption',
+				const caption = new ImageCaption({
 					placeholder: this.params.placeholder
 				})
 
@@ -315,6 +314,7 @@ export default class ImagePlugin extends PluginPlugin {
 					src = await this.params.onSelectFile(files[0], image)
 					image.image.src = src
 					image.attributes.src = src
+					builder.core.triggerChange()
 				} catch (exception) {
 					console.error('exception', exception)
 					builder.cut(image)
@@ -343,7 +343,6 @@ export default class ImagePlugin extends PluginPlugin {
 			}
 		}
 	}
-
 
 	toggleFloatLeft(image) {
 		return (event, { builder }) => {

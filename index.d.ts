@@ -154,6 +154,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	json(first: any): any;
 	setContent(content: any): void;
 	getContent(): string;
+	triggerChange(): void;
 	setJson(data: any): void;
 	getJson(): any;
 	unmountAll(): void;
@@ -584,20 +585,21 @@ declare class ImageCaption extends Container {
 
 declare class ImagePlugin extends PluginPlugin {
 	constructor(params?: {});
-	toggleFloatLeft(image: any): (event: any, params: HandlerParams) => void;
-	toggleFloatRight(image: any): (event: any, params: HandlerParams) => void;
-	toggleSizeWide(image: any): (event: any, params: HandlerParams) => void;
-	toggleSizeBanner(image: any): (event: any, params: HandlerParams) => void;
-	insertImage(container: any): (event: any, params: HandlerParams) => Promise<void>;
-	updateImage(image: any): (event: any, params: HandlerParams) => Promise<void>;
+	toggleFloatLeft(image: Container): (event: MouseEvent, params: ActionParams) => void;
+	toggleFloatRight(image: Container): (event: MouseEvent, params: ActionParams) => void;
+	toggleSizeWide(image: Container): (event: MouseEvent, params: ActionParams) => void;
+	toggleSizeBanner(image: Container): (event: MouseEvent, params: ActionParams) => void;
+	insertImage(container: Container): (event: InputEvent, params: ActionParams) => Promise<void>;
+	updateImage(image: Container): (event: InputEvent, params: ActionParams) => Promise<void>;
 	params: {
-		onSelectFile: (file: File, image: Image, setSrc: any) => Promise<any>;
+		onSelectFile: (file: File, image: Image) => Promise<string>;
 		placeholder?: string;
 	};
 	get icons(): IconsGetter;
 	create(params: any): Image | ImageCaption;
 	parse(element: HTMLElement | Text, builder: Builder): Image | undefined;
 	parseJson(element: any, builder: Builder): Image | undefined;
+	generateImagePreview(file: File): Promise<string>;
 }
 
 declare class Link extends InlineWidget {
@@ -773,6 +775,7 @@ export {
 	Node,
 	Container,
 	ActionParams,
+	HandlerParams,
 	ParagraphPlugin,
 	BreakLinePlugin,
 	TextPlugin,
