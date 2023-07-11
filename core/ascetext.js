@@ -196,6 +196,7 @@ export default class Ascetext {
 		this.toolbar.destroy()
 		this.dragndrop.destroy()
 		this.sizeObserver.destroy()
+		this.controls.destroy()
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}

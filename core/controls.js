@@ -19,4 +19,11 @@ export default class Controls {
 		control.parentNode.removeChild(control)
 		this.controls.splice(this.controls.indexOf(control), 1)
 	}
+
+	destroy() {
+		this.controls.forEach((item) =>
+			item.parentNode.removeChild(item)
+		)
+		this.controls.splice(0, this.controls.length)
+	}
 }
