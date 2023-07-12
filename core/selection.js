@@ -48,6 +48,11 @@ export default class Selection {
 			isCollapsed
 		} = selection
 
+		if (anchorElement === this.core.node) {
+			anchorElement = this.core.model.first.element
+			focusElement = this.core.model.first.element
+		}
+
 		if (event.type === 'selectionchange') {
 			if (anchorElement) {
 				if (!this.core.node.contains(anchorElement)) {
@@ -136,6 +141,13 @@ export default class Selection {
 
 	blur() {
 		if (!this.focused) {
+			this.selectedItems.forEach((item) => {
+				if (item.isWidget) {
+					item.onBlur(this)
+				}
+			})
+			this.selectedItems.splice(0, this.selectedItems.length)
+
 			return null
 		}
 

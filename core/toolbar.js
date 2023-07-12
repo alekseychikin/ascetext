@@ -140,6 +140,7 @@ export default class Toolbar {
 
 			if (!this.isMobile) {
 				this.hideSideToolbar()
+				this.hideCenteredToolbar()
 			}
 		}
 	}

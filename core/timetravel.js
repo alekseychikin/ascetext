@@ -24,6 +24,7 @@ export default class TimeTravel {
 	reset() {
 		this.timeline = []
 		this.currentBunch = []
+		this.timeindex = -1
 		this.isLockPushChange = false
 	}
 

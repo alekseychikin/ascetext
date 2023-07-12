@@ -89,6 +89,7 @@ export default class Editing {
 
 			if (undoRepeat) {
 				event.preventDefault()
+				this.update()
 
 				if (event.shiftKey) {
 					timeTravel.goForward()
@@ -127,9 +128,10 @@ export default class Editing {
 		const { timeTravel } = this.core
 
 		if (event.keyCode === spaceKey) {
+			this.update()
+			this.spacesDown = 0
 			timeTravel.commit()
 			timeTravel.preservePreviousSelection()
-			this.spacesDown = 0
 		}
 	}
 

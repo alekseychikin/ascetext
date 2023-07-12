@@ -21,7 +21,7 @@ export default class Container extends Node {
 		} else {
 			const isEmpty = this.isEmpty && this.first
 
-			if (isEmpty) {
+			if (isEmpty && (!anchor || anchor.type !== 'breakLine')) {
 				builder.cut(this.first)
 			}
 
@@ -44,11 +44,8 @@ export default class Container extends Node {
 			event.preventDefault()
 
 			if (focusAtLastPositionInContainer && this.last.type !== 'breakLine') {
-				const br = builder.createFragment()
-
-				builder.append(br, builder.create('breakLine'))
-				builder.append(br, builder.create('breakLine'))
-				builder.append(this, br)
+				builder.append(this, builder.create('breakLine'))
+				builder.append(this, builder.create('breakLine'))
 			} else {
 				builder.insert(this, builder.create('breakLine'), anchorOffset)
 			}

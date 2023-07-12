@@ -147,6 +147,8 @@ export default class Ascetext {
 
 		const children = this.builder.parse(container)
 
+		this.toolbar.hideSideToolbar()
+		this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 	}
@@ -164,6 +166,8 @@ export default class Ascetext {
 
 		const children = this.builder.parseJson(data)
 
+		this.toolbar.hideSideToolbar()
+		this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 	}
