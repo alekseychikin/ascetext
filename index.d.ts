@@ -38,13 +38,9 @@ declare class Node {
 	deepesetLastNode(node?: Node): Node | undefined;
 	deepesetFirstNode(node?: Node): Node | undefined;
 	contains(childNode: Node): boolean;
-	stringify(children?: any): string;
-	json(children: any): {
-		type: any;
-		body: any;
-	} | {
-		type: any;
-		body?: undefined;
+	json<T>(children?: T): {
+		type: string;
+		body?: T;
 	};
 }
 
@@ -127,6 +123,9 @@ declare class Group extends Node {
 	isGroup: true;
 }
 
+type inferBody<T, S> = T extends { body: infer U } ? { body: inferBody<U, S> } : S
+type InferReturn<T> = T extends (param: any) => { body: infer U } ? { body: inferBody<U, ReturnType<T>> } : ReturnType<T>
+
 export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	constructor(node: HTMLElement, params?: {
 		plugins?: Record<string, PluginPlugin>;
@@ -156,7 +155,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	getContent(): string;
 	triggerChange(): void;
 	setJson(data: any): void;
-	getJson(): any;
+	getJson<U extends Node>(): InferReturn<U['json']>[];
 	unmountAll(): void;
 	focus(): void;
 	destroy(): void;
@@ -166,7 +165,7 @@ declare class Autocomplete {
 	constructor(core: Ascetext);
 	onEdit(): void;
 	node: HTMLElement;
-	plugins: any;
+	plugins: Record<string, PluginPlugin>;
 	selection: Selection;
 	builder: Builder;
 	editing: Editing;
@@ -510,7 +509,7 @@ declare class BreakLine extends InlineWidget {
 		tail: any;
 	};
 	json(): {
-		type: any;
+		type: 'BreakLine';
 	};
 }
 
@@ -523,10 +522,10 @@ declare class BreakLinePlugin extends PluginPlugin {
 declare class Header extends Container {
 	constructor(attributes: any);
 	render(): HTMLElement;
-	json(children: any): {
-		type: any;
-		level: any;
-		body: any;
+	json<T>(children?: T): {
+		type: 'header';
+		level: number;
+		body?: T;
 	};
 }
 
@@ -554,14 +553,10 @@ declare class Image extends Widget {
 	render(): HTMLElement;
 	update(previous: any): void;
 	getClassName(): string;
-	json(children: any): {
-		type: any;
-		src: any;
-		figcaption: any;
-	} | {
-		type: any;
-		src: any;
-		figcaption?: undefined;
+	json<T>(children?: T): {
+		type: 'image';
+		src: string;
+		figcaption?: T;
 	};
 }
 
@@ -580,7 +575,10 @@ declare class ImageCaption extends Container {
 	}): void;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	inputHandler(): void;
-	json(children: any): any;
+	json<T>(children?: T): {
+		type: 'image-caption',
+		body?: T
+	};
 }
 
 declare class ImagePlugin extends PluginPlugin {
@@ -603,14 +601,15 @@ declare class ImagePlugin extends PluginPlugin {
 }
 
 declare class Link extends InlineWidget {
+	type: 'link';
 	attributes: Record<string, string>;
 	constructor(attributes: any);
 	render(): HTMLAnchorElement;
 	normalize(element: any, builder: Builder): any;
-	json(children: any): {
-		type: any;
-		url: any;
-		body: any;
+	json<T>(children?: T): {
+		type: 'link';
+		url: string;
+		body?: T;
 	};
 }
 
@@ -638,10 +637,10 @@ declare class List extends Group {
 	});
 	render(): any;
 	normalize(element: any, builder: Builder): any;
-	json(children: any): {
-		type: any;
-		decor: any;
-		body: any;
+	json<T>(children?: T): {
+		type: 'list';
+		decor: 'numerable' | 'marker';
+		body?: T;
 	};
 }
 
@@ -654,6 +653,10 @@ declare class ListItem extends Group {
 		appendDefault: any;
 	}): void;
 	getDepth(container: any, node: any): number;
+	json<T>(children?: T): {
+		type: 'list-item';
+		body?: T;
+	}
 }
 
 declare class ListItemContent extends Container {
@@ -669,6 +672,10 @@ declare class ListItemContent extends Container {
 	indentLeft(event: any, params: ActionParams): void;
 	indentRight(event: any, params: ActionParams): void;
 	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
+	json<T>(children?: T): {
+		type: 'list-item-content';
+		body?: T;
+	}
 }
 
 declare class ListPlugin extends PluginPlugin {
@@ -680,8 +687,8 @@ declare class ListPlugin extends PluginPlugin {
 	};
 	create(params: any, subparams: any): List | ListItem | ListItemContent;
 	get icons(): IconsGetter;
-	parse(element: any, builder: Builder): any;
-	parseJson(element: any, builder: Builder): any;
+	parse(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
+	parseJson(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(container: any): (event: any, params: ActionParams) => void;
 	setMarkerList(container: any): (event: any, params: ActionParams) => void;
 }
@@ -689,6 +696,10 @@ declare class ListPlugin extends PluginPlugin {
 declare class Paragraph extends Container {
 	constructor();
 	render(): HTMLElement;
+	json<T>(children?: T): {
+		type: 'paragraph';
+		body?: T;
+	}
 }
 
 declare class ParagraphPlugin extends PluginPlugin {
@@ -702,6 +713,10 @@ declare class ParagraphPlugin extends PluginPlugin {
 declare class Quote extends Container {
 	constructor();
 	render(): HTMLElement;
+	json<T>(children?: T): {
+		type: 'quote';
+		body?: T;
+	}
 }
 
 declare class QuotePlugin extends PluginPlugin {
@@ -728,7 +743,7 @@ declare class TextNode extends Node {
 	};
 	stringifyWithModifiers(modifiers: any): any;
 	json(): {
-		type: any;
+		type: 'text';
 		modifiers: string[];
 		content: string;
 	};
@@ -753,6 +768,8 @@ declare class TextPlugin extends PluginPlugin {
 	unsetUnderline(event: any, params: ActionParams): void;
 	setUnderline(event: any, params: ActionParams): void;
 }
+
+export type inferNodes<T extends Record<string, PluginPlugin>> = T extends Record<string, infer K extends { parse: (...params: any) => any}> ? Exclude<ReturnType<K["parse"]>, undefined> : never
 
 export {
 	Ascetext,
