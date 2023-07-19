@@ -36,6 +36,7 @@ export default class Toolbar {
 		this.updateBoundings = this.updateBoundings.bind(this)
 		this.viewportChange = this.viewportChange.bind(this)
 		this.viewportResize = this.viewportResize.bind(this)
+		this.onKeyDown = this.onKeyDown.bind(this)
 
 		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
@@ -49,8 +50,10 @@ export default class Toolbar {
 		this.plugins = core.plugins
 		this.icons = core.icons
 		this.sizeObserver = core.sizeObserver
+		this.node = core.node
 		this.focusedNodes = []
 		this.lastRangeFocused = false
+		this.skip = false
 		this.previousSelection = null
 		this.previousContainer = null
 		this.previousSideMode = ''
@@ -90,6 +93,7 @@ export default class Toolbar {
 		document.body.appendChild(this.centeredToolbar)
 		document.body.appendChild(this.containerAvatar)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
+		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
 		visualViewport.addEventListener('resize', this.viewportResize)
@@ -121,6 +125,12 @@ export default class Toolbar {
 	}
 
 	onSelectionChange() {
+		if (this.skip) {
+			this.skip = false
+
+			return null
+		}
+
 		if (this.selection.focused) {
 			this.updateBoundings(this.selection.anchorContainer)
 		} else {
@@ -140,7 +150,10 @@ export default class Toolbar {
 
 			if (!this.isMobile) {
 				this.hideSideToolbar()
-				this.hideCenteredToolbar()
+
+				if (!this.isTargetInsideEditor(event.target)) {
+					this.hideCenteredToolbar()
+				}
 			}
 		}
 	}
@@ -149,6 +162,7 @@ export default class Toolbar {
 		if (event.key === 'Escape') {
 			this.hideSideToolbar()
 			this.hideCenteredToolbar()
+			this.skip = true
 		}
 	}
 
@@ -281,7 +295,7 @@ export default class Toolbar {
 
 			this.previousSelection = this.selection.getSelectionInIndexes()
 
-			if (controls.length) {
+			if (controls.length && !this.isShowSideToolbar) {
 				this.renderCenteredControls(controls)
 				this.showCenteredToolbar()
 			} else {
@@ -434,6 +448,7 @@ export default class Toolbar {
 		this.isShowSideToolbar = true
 		this.sideToolbar.className = this.isMobile ? this.css.containerMobile : this.css.container
 		this.sizeObserver.update()
+		this.hideCenteredToolbar()
 	}
 
 	hideSideToolbar() {
@@ -500,6 +515,10 @@ export default class Toolbar {
 		return this.sideToolbar.contains(target) ||
 			this.centeredToolbar.contains(target) ||
 			this.toggleButtonHolder.contains(target)
+	}
+
+	isTargetInsideEditor(target) {
+		return this.node === target || this.node.contains(target)
 	}
 
 	updateBoundings(container) {

@@ -400,6 +400,7 @@ declare class Toolbar {
 	isShowCenteredToolbar: boolean;
 	isMobile: boolean;
 	customMode: boolean;
+	skip: boolean;
 	builder: Builder;
 	selection: Selection;
 	timeTravel: TimeTravel;
@@ -427,7 +428,7 @@ declare class Toolbar {
 	mediaQuery: MediaQueryList;
 	bindViewportChange(): void;
 	unbindViewportChange(): void;
-	onKeyDown(event: any): void;
+	onKeyDown(event: KeyboardEvent): void;
 	updateButtonHolder(): void;
 	renderInsertButton(): void;
 	renderReplaceButton(hasControls: boolean): void;
@@ -445,7 +446,8 @@ declare class Toolbar {
 	emptyToggleButtonHolder(): void;
 	showToggleButtonHolder(): void;
 	hideToggleButtonHolder(): void;
-	isTargetInsideToolbar(target: any): any;
+	isTargetInsideToolbar(target: HTMLElement): boolean;
+	isTargetInsideEditor(target: HTMLElement): boolean;
 	stopUpdateBoundings(): void;
 	setAvatar(entry: any): any;
 	hideAvatar(): void;
