@@ -64,6 +64,7 @@ export default class Ascetext {
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
+		this.init = false
 
 		const container = document.createElement('div')
 
@@ -75,6 +76,7 @@ export default class Ascetext {
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
+		this.init = true
 		this.node.setAttribute('contenteditable', true)
 		window.addEventListener('load', this.sizeObserver.update)
 		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
@@ -124,9 +126,11 @@ export default class Ascetext {
 	}
 
 	onNodeChange(changes) {
-		this.timeTravel.pushChange(changes)
-		this.sizeObserver.update()
-		this.triggerChange()
+		if (this.init) {
+			this.timeTravel.pushChange(changes)
+			this.sizeObserver.update()
+			this.triggerChange()
+		}
 	}
 
 	triggerChange() {
@@ -140,6 +144,7 @@ export default class Ascetext {
 		this.unmountAll()
 		this.model = new Root(this.node)
 		this.node.innerHTML = ''
+		this.init = false
 
 		const container = document.createElement('div')
 
@@ -151,6 +156,7 @@ export default class Ascetext {
 		this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
+		this.init = true
 	}
 
 	getContent() {
@@ -163,6 +169,7 @@ export default class Ascetext {
 		this.unmountAll()
 		this.model = new Root(this.node)
 		this.node.innerHTML = ''
+		this.init = false
 
 		const children = this.builder.parseJson(data)
 
@@ -170,6 +177,7 @@ export default class Ascetext {
 		this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
+		this.init = true
 	}
 
 	getJson() {
