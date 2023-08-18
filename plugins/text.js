@@ -10,6 +10,12 @@ const mapModifierToTag = {
 	strike: 's',
 	underlined: 'u'
 }
+const supportTags = {
+	bold: ['strong', 'b'],
+	italic: ['em', 'i'],
+	strike: 's',
+	underlined: 'u'
+}
 const beginSpacesRegexp = /^[^\S\u00A0]+/
 const finishSpacesRegexp = /[^\S\u00A0]+$/
 const groupSpacesRegexp = /[^\S\u00A0]+/g
@@ -146,8 +152,10 @@ export class Text extends Node {
 			if (element.nodeValue !== value) {
 				element.nodeValue = value
 			}
-		} else {
+		} else if (element.firstChild) {
 			this.setNodeValue(value, element.firstChild)
+		} else {
+			this.setElement(this.render())
 		}
 	}
 }
@@ -159,7 +167,15 @@ export default class TextPlugin extends PluginPlugin {
 		this.params = Object.assign({
 			allowModifiers: ['bold', 'italic', 'underlined', 'strike']
 		}, params)
-		this.supportTags = this.params.allowModifiers.map((modifier) => mapModifierToTag[modifier])
+		this.supportTags = this.params.allowModifiers.reduce((result, modifier) => {
+			if (typeof supportTags[modifier] === 'string') {
+				result.push(supportTags[modifier])
+			} else {
+				result = result.concat(supportTags[modifier])
+			}
+
+			return result
+		}, [])
 	}
 
 	get icons() {
@@ -222,19 +238,19 @@ export default class TextPlugin extends PluginPlugin {
 			return new Text(attributes)
 		}
 
-		if (tagName === 'strong' && this.params.allowModifiers.includes('bold')) {
+		if (supportTags.bold.includes(tagName) && this.params.allowModifiers.includes('bold')) {
 			ctx.weight = 'bold'
 		}
 
-		if (tagName === 'em' && this.params.allowModifiers.includes('italic')) {
+		if (supportTags.italic.includes(tagName) && this.params.allowModifiers.includes('italic')) {
 			ctx.style = 'italic'
 		}
 
-		if (tagName === 's' && this.params.allowModifiers.includes('horizontal')) {
+		if (supportTags.strike === tagName && this.params.allowModifiers.includes('horizontal')) {
 			ctx.strike = 'horizontal'
 		}
 
-		if (tagName === 'u' && this.params.allowModifiers.includes('underlined')) {
+		if (supportTags.underlined === tagName && this.params.allowModifiers.includes('underlined')) {
 			ctx.decoration = 'underlined'
 		}
 

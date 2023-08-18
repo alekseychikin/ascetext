@@ -76,5 +76,5 @@ export default class Widget extends WithControls {
 		setSelection(newBlock)
 	}
 
-	markDirty() {}
+	scheduleUpdate() {}
 }

@@ -21,6 +21,15 @@ export default class Selection {
 		this.selectedItems = []
 		this.focusedNodes = []
 		this.timer = null
+		this.anchorAtFirstPositionInContainer = null
+		this.anchorAtLastPositionInContainer = false
+		this.focusAtFirstPositionInContainer = null
+		this.focusAtLastPositionInContainer = false
+		this.isRange = false
+		this.anchorContainer = null
+		this.focusContainer = null
+		this.anchorOffset = 0
+		this.focusOffset = 0
 
 		document.addEventListener('click', this.update, true)
 		document.addEventListener('keyup', this.update, true)

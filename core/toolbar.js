@@ -408,6 +408,7 @@ export default class Toolbar {
 		} else if (keep) {
 			this.showCenteredToolbar()
 		} else {
+			this.previousSideMode = ''
 			this.restoreSelection()
 			this.editing.update()
 			this.hideSideToolbar()

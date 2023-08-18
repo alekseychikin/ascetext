@@ -168,6 +168,7 @@
 	height: 40px;
 	outline: none;
 	font: 16px/26px 'PT Sans', sans-serif;
+	background: none;
 }
 
 .contenteditor__control-input-file {

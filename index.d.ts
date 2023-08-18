@@ -95,7 +95,7 @@ declare class Widget extends WithControls {
 	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
-	markDirty(): void;
+	scheduleUpdate(): void;
 	update(previous: any): void;
 }
 
@@ -150,6 +150,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	controls: any;
 	autocomplete: Autocomplete;
 	onChangeTimer: number | null;
+	init: boolean;
 	json(first: any): any;
 	setContent(content: any): void;
 	getContent(): string;
@@ -234,13 +235,13 @@ declare class Editing {
 	core: Ascetext;
 	updatingContainers: any[];
 	modifyKeyHandlerParams: {};
-	markDirtyTimer: number | null;
+	scheduleTimer: number | null;
 	captureSinceAndUntil(items: any, startIndex: any): {
 		since: any;
 		until: any;
 	};
 	getModifyKeyHandlerParams(): {};
-	markDirty(container: Node): void;
+	scheduleUpdate(container: Node): void;
 	isChanged: boolean | undefined;
 	handleTextInRemoveNodes(node: Node): void;
 	save(): void;
@@ -450,7 +451,6 @@ declare class Toolbar {
 	isTargetInsideEditor(target: HTMLElement): boolean;
 	stopUpdateBoundings(): void;
 	setAvatar(entry: any): any;
-	hideAvatar(): void;
 	destroy(): void;
 }
 

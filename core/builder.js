@@ -317,7 +317,7 @@ export default class Builder {
 		let current = node
 
 		if (node.previous) {
-			this.core.editing.markDirty(node.previous)
+			this.core.editing.scheduleUpdate(node.previous)
 		}
 
 		if (node.parent || node.previous || last.next) {

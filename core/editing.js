@@ -1,5 +1,6 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
+import { Text } from '../plugins/text.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -32,6 +33,7 @@ export default class Editing {
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
+		this.onMouseDown = this.onMouseDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onKeyUp = this.onKeyUp.bind(this)
 		this.onCompositionStart = this.onCompositionStart.bind(this)
@@ -39,22 +41,45 @@ export default class Editing {
 		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
+		this.getTopNode = this.getTopNode.bind(this)
+		this.rerender = this.rerender.bind(this)
+		this.selectionUpdate = this.selectionUpdate.bind(this)
 
 		this.node = core.node
 		this.core = core
 		this.updatingContainers = []
 		this.modifyKeyHandlerParams = {}
-		this.markDirtyTimer = null
+		this.scheduleTimer = null
 		this.isSession = false
 		this.spacesDown = 0
+		this.lastSelection = null
+		this.lastSelectionIndexes = null
+		this.freezUpdateSelection = false
 
-		this.node.addEventListener('paste', this.onPaste)
+		this.node.addEventListener('mousedown', this.onMouseDown)
 		this.node.addEventListener('keydown', this.onKeyDown)
 		this.node.addEventListener('keyup', this.onKeyUp)
 		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
+		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
+		document.addEventListener('contextmenu', () => setTimeout(() => this.freezUpdateSelection = true, 0))
+
+		this.core.selection.onUpdate(this.selectionUpdate)
+	}
+
+	onMouseDown() {
+		this.freezUpdateSelection = false
+	}
+
+	selectionUpdate() {
+		const { selection } = this.core
+
+		if (!this.freezUpdateSelection) {
+			this.lastSelection = selection.selectedItems
+			this.lastSelectionIndexes = selection.getSelectionInIndexes()
+		}
 	}
 
 	onCompositionStart() {
@@ -64,16 +89,87 @@ export default class Editing {
 
 	onCompositionEnd() {
 		this.isSession = false
-		this.markDirty(this.core.selection.anchorContainer)
+		this.scheduleUpdate(this.core.selection.anchorContainer)
 		this.update()
 	}
 
 	onInput(event) {
-		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.inputHandler) {
-			this.core.selection.anchorContainer.inputHandler(
+		const { selection } = this.core
+
+		if (selection.anchorContainer && selection.anchorContainer.inputHandler) {
+			selection.anchorContainer.inputHandler(
 				event,
 				this.getModifyKeyHandlerParams()
 			)
+		}
+
+		if (this.freezUpdateSelection) {
+			let nextNode
+			let parentNode
+			const containers = [this.lastSelection[0].getClosestContainer()]
+				.concat(this.lastSelection.filter((node) => node.isContainer || node.isWidget))
+				.filter((node, index, self) => self.indexOf(node) === index)
+
+			if (containers.length === 1) {
+				this.scheduleUpdate(containers[0])
+				this.update()
+			} else if (containers.length > 1) {
+				const insertNode = new Text({ content: event.data || '' })
+				const topNodes = this.lastSelection.map(this.getTopNode)
+					.filter((node, index, self) => self.indexOf(node) === index)
+
+				topNodes.forEach((node) => {
+					nextNode = node.next
+					parentNode = node.parent
+
+					if (node.element.parentNode) {
+						node.element.parentNode.removeChild(node.element)
+					}
+				})
+				topNodes.forEach(this.rerender)
+				topNodes.forEach((node) => {
+					if (nextNode) {
+						parentNode.element.insertBefore(node.element, nextNode.element)
+					} else {
+						parentNode.element.appendChild(node.element)
+					}
+				})
+				selection.setSelectionByIndexes(this.lastSelectionIndexes)
+				this.handleRemoveRange()
+				this.core.timeTravel.preservePreviousSelection()
+
+				this.core.builder.insert(selection.anchorContainer, insertNode, selection.anchorOffset)
+				this.lastSelection = null
+				this.lastSelectionIndexes = null
+			}
+
+		}
+	}
+
+	getTopNode(node) {
+		let current = node
+
+		while (current.parent.type !== 'root') {
+			current = current.parent
+		}
+
+		return current
+	}
+
+	rerender(node) {
+		let current = node.first
+
+		if (node.element.parentNode) {
+			node.element.parentNode.removeChild(node.element)
+		}
+
+		node.setElement(node.render())
+
+		while (current) {
+			this.rerender(current)
+
+			node.element.appendChild(current.element)
+			current = current.next
 		}
 	}
 
@@ -81,6 +177,8 @@ export default class Editing {
 		const { selection, timeTravel, toolbar } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
+
+		this.freezUpdateSelection = false
 
 		if (selection.focused) {
 			const undoRepeat = event.keyCode === zKey && (isMac && event.metaKey || !isMac && event.ctrlKey)
@@ -118,7 +216,7 @@ export default class Editing {
 					}
 
 					this.spacesDown++
-					this.markDirty(selection.anchorContainer)
+					this.scheduleUpdate(selection.anchorContainer)
 				}
 			}
 		}
@@ -251,7 +349,7 @@ export default class Editing {
 		}
 
 		if (firstContainer && firstContainer.isContainer) {
-			this.markDirty(firstContainer)
+			this.scheduleUpdate(firstContainer)
 			this.core.selection.setSelection(
 				firstContainer,
 				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
@@ -306,7 +404,7 @@ export default class Editing {
 			if (event.defaultPrevented) {
 				this.update()
 			} else {
-				this.markDirty(this.core.selection.anchorContainer)
+				this.scheduleUpdate(this.core.selection.anchorContainer)
 			}
 		} else {
 			event.preventDefault()
@@ -334,7 +432,7 @@ export default class Editing {
 			if (event.defaultPrevented) {
 				this.update()
 			} else {
-				this.markDirty(this.core.selection.anchorContainer)
+				this.scheduleUpdate(this.core.selection.anchorContainer)
 			}
 		} else {
 			event.preventDefault()
@@ -395,27 +493,27 @@ export default class Editing {
 		return this.modifyKeyHandlerParams
 	}
 
-	markDirty(container) {
+	scheduleUpdate(container) {
 		this.isChanged = true
 
 		if (this.core.timeTravel.isLockPushChange) {
 			return
 		}
 
-		if (this.markDirtyTimer !== null) {
-			clearTimeout(this.markDirtyTimer)
+		if (this.scheduleTimer !== null) {
+			clearTimeout(this.scheduleTimer)
 		}
 
 		if (this.updatingContainers.indexOf(container) === -1) {
 			this.updatingContainers.push(container)
 		}
 
-		this.markDirtyTimer = setTimeout(this.update, 350)
+		this.scheduleTimer = setTimeout(this.update, 350)
 	}
 
 	update() {
-		clearTimeout(this.markDirtyTimer)
-		this.markDirtyTimer = null
+		clearTimeout(this.scheduleTimer)
+		this.scheduleTimer = null
 
 		let container
 		let normalized
@@ -514,6 +612,8 @@ export default class Editing {
 		if (!paste.length) {
 			paste = (event.clipboardData || window.clipboardData).getData('text')
 		}
+
+		this.freezUpdateSelection = false
 		console.log(paste)
 
 		doc.innerHTML = paste
