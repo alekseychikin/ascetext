@@ -468,7 +468,7 @@ export default class Builder {
 	insert(node, target, offset) {
 		const { tail } = this.split(node, offset)
 
-		this.append(node, target, tail)
+		this.append(node, target, node.isContainer && node.isEmpty ? null : tail)
 	}
 
 	moveTail(container, target, offset) {
