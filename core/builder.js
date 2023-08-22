@@ -4,6 +4,7 @@ import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
 import nbsp from '../utils/nbsp.js'
+import { LineHolder } from '../nodes/container.js'
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -18,13 +19,7 @@ export default class Builder {
 	}
 
 	create(name, ...params) {
-		const node = this.core.plugins[name].create(...params)
-
-		if (node.isContainer) {
-			this.append(node, this.create('breakLine'))
-		}
-
-		return node
+		return this.core.plugins[name].create(...params)
 	}
 
 	createBlock() {
@@ -65,8 +60,8 @@ export default class Builder {
 		}
 	}
 
-	parse(element) {
-		const fragment = this.createTree(element)
+	parse(element, ctx = {}) {
+		const fragment = this.createTree(element, ctx)
 
 		this.normalize(fragment)
 
@@ -134,7 +129,7 @@ export default class Builder {
 		return container
 	}
 
-	createTree(element, ctx = {}) {
+	createTree(element, ctx) {
 		const fragment = this.createFragment()
 		const lastElement = element.lastChild
 		let currentElement = element.firstChild
@@ -182,7 +177,7 @@ export default class Builder {
 			}
 
 			if (currentElement === lastElement) {
-				if (isElementBr(lastElement) && lastElement.previousSibling && !isElementBr(lastElement.previousSibling)) {
+				if (ctx.removeLeadingBr && isElementBr(lastElement)) {
 					this.cut(current)
 				}
 
@@ -217,6 +212,16 @@ export default class Builder {
 				this.append(node, target.first, anchor)
 			}
 		} else {
+			if (node.isContainer && node.isEmpty) {
+				if (tail && tail === node.first) {
+					tail = node.first.next
+				}
+
+				if (node.first) {
+					this.cut(node.first)
+				}
+			}
+
 			while (current) {
 				next = current.next
 
@@ -300,6 +305,14 @@ export default class Builder {
 		if (!anchor) {
 			node.last = last
 		}
+
+		if (target.previous && target.previous.type === 'line-holder') {
+			this.cut(target.previous)
+		}
+
+		if (last.type === 'breakLine' && !last.next) {
+			this.append(last.parent, new LineHolder(), last.next)
+		}
 	}
 
 	cut(node) {
@@ -374,8 +387,8 @@ export default class Builder {
 			current = current.next
 		}
 
-		if (isContainer && !parent.first && node.type !== 'breakLine') {
-			this.append(parent, this.create('breakLine'))
+		if (isContainer && !parent.first) {
+			this.append(parent, new LineHolder())
 		}
 	}
 
@@ -468,7 +481,7 @@ export default class Builder {
 	insert(node, target, offset) {
 		const { tail } = this.split(node, offset)
 
-		this.append(node, target, node.isContainer && node.isEmpty ? null : tail)
+		this.append(node, target, tail)
 	}
 
 	moveTail(container, target, offset) {
@@ -487,7 +500,7 @@ export default class Builder {
 
 	prepareContainer(node) {
 		if (node.isContainer && !node.first) {
-			this.append(node, this.create('breakLine'))
+			this.append(node, new LineHolder())
 		}
 	}
 }

@@ -33,7 +33,6 @@ export default class Editing {
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
-		this.onMouseDown = this.onMouseDown.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onKeyUp = this.onKeyUp.bind(this)
 		this.onCompositionStart = this.onCompositionStart.bind(this)
@@ -54,7 +53,8 @@ export default class Editing {
 		this.spacesDown = 0
 		this.lastSelection = null
 		this.lastSelectionIndexes = null
-		this.freezUpdateSelection = false
+		this.hadKeydown = false
+		this.keydownTimer = null
 
 		this.node.addEventListener('mousedown', this.onMouseDown)
 		this.node.addEventListener('keydown', this.onKeyDown)
@@ -64,22 +64,15 @@ export default class Editing {
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
-		document.addEventListener('contextmenu', () => setTimeout(() => this.freezUpdateSelection = true, 0))
 
-		this.core.selection.onUpdate(this.selectionUpdate)
-	}
-
-	onMouseDown() {
-		this.freezUpdateSelection = false
+		this.core.selection.onUpdate(() => setTimeout(this.selectionUpdate, 0))
 	}
 
 	selectionUpdate() {
 		const { selection } = this.core
 
-		if (!this.freezUpdateSelection) {
-			this.lastSelection = selection.selectedItems
-			this.lastSelectionIndexes = selection.getSelectionInIndexes()
-		}
+		this.lastSelection = selection.selectedItems
+		this.lastSelectionIndexes = selection.getSelectionInIndexes()
 	}
 
 	onCompositionStart() {
@@ -89,12 +82,13 @@ export default class Editing {
 
 	onCompositionEnd() {
 		this.isSession = false
+		this.setKeydown()
 		this.scheduleUpdate(this.core.selection.anchorContainer)
 		this.update()
 	}
 
 	onInput(event) {
-		const { selection } = this.core
+		const { selection, timeTravel } = this.core
 
 		if (selection.anchorContainer && selection.anchorContainer.inputHandler) {
 			selection.anchorContainer.inputHandler(
@@ -103,14 +97,17 @@ export default class Editing {
 			)
 		}
 
-		if (this.freezUpdateSelection) {
+		if (!this.hadKeydown && !this.isSession) {
 			let nextNode
 			let parentNode
 			const containers = [this.lastSelection[0].getClosestContainer()]
 				.concat(this.lastSelection.filter((node) => node.isContainer || node.isWidget))
 				.filter((node, index, self) => self.indexOf(node) === index)
 
+
 			if (containers.length === 1) {
+				timeTravel.preservePreviousSelection()
+				timeTravel.previousSelection = this.lastSelectionIndexes
 				this.scheduleUpdate(containers[0])
 				this.update()
 			} else if (containers.length > 1) {
@@ -142,7 +139,6 @@ export default class Editing {
 				this.lastSelection = null
 				this.lastSelectionIndexes = null
 			}
-
 		}
 	}
 
@@ -178,7 +174,7 @@ export default class Editing {
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
-		this.freezUpdateSelection = false
+		this.setKeydown()
 
 		if (selection.focused) {
 			const undoRepeat = event.keyCode === zKey && (isMac && event.metaKey || !isMac && event.ctrlKey)
@@ -231,6 +227,11 @@ export default class Editing {
 			timeTravel.commit()
 			timeTravel.preservePreviousSelection()
 		}
+	}
+
+	setKeydown() {
+		this.hadKeydown = true
+		this.keydownTimer = setTimeout(() => this.hadKeydown = false, 10)
 	}
 
 	handleModifyKeyDown(event) {
@@ -520,7 +521,7 @@ export default class Editing {
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element)
+				const content = this.core.builder.parse(container.element, { removeLeadingBr: true })
 
 				if (container.first) {
 					this.restorePreviousState(container.first)
@@ -531,7 +532,7 @@ export default class Editing {
 					container.element.removeChild(container.element.firstChild)
 				}
 
-				this.core.builder.append(container, content.first || this.core.builder.create('breakLine'))
+				this.core.builder.append(container, content.first)
 			}
 
 			if (container.previous && isFunction(container.previous.normalize)) {
@@ -613,7 +614,6 @@ export default class Editing {
 			paste = (event.clipboardData || window.clipboardData).getData('text')
 		}
 
-		this.freezUpdateSelection = false
 		console.log(paste)
 
 		doc.innerHTML = paste

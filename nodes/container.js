@@ -1,4 +1,35 @@
 import Node from './node.js'
+import InlineWidget from '../nodes/inline-widget.js'
+import createElement from '../utils/create-element.js'
+
+export class LineHolder extends InlineWidget {
+	constructor() {
+		super('line-holder')
+	}
+
+	render() {
+		return createElement('br')
+	}
+
+	accept(node) {
+		return node.isContainer || node.isInlineWidget
+	}
+
+	split() {
+		return {
+			head: this.previous,
+			tail: this
+		}
+	}
+
+	stringify() {
+		return ''
+	}
+
+	json() {
+		return null
+	}
+}
 
 export default class Container extends Node {
 	constructor(type, attributes = {}) {
@@ -8,25 +39,11 @@ export default class Container extends Node {
 	}
 
 	get isEmpty() {
-		return !this.first || this.first === this.last && this.first.type === 'breakLine'
+		return !this.first || this.first === this.last && this.first.type === 'line-holder'
 	}
 
 	accept(node) {
 		return node.type === 'text' || node.isInlineWidget
-	}
-
-	append(target, anchor, { builder, appendDefault }) {
-		if (target.isContainer) {
-			builder.append(this, target.first, anchor)
-		} else {
-			const isEmpty = this.isEmpty && this.first
-
-			if (isEmpty && (!anchor || anchor.type !== 'breakLine')) {
-				builder.cut(this.first)
-			}
-
-			appendDefault(this, target, isEmpty ? null : anchor)
-		}
 	}
 
 	enterHandler(
@@ -43,12 +60,7 @@ export default class Container extends Node {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			if (focusAtLastPositionInContainer && this.last.type !== 'breakLine') {
-				builder.append(this, builder.create('breakLine'))
-				builder.append(this, builder.create('breakLine'))
-			} else {
-				builder.insert(this, builder.create('breakLine'), anchorOffset)
-			}
+			builder.insert(this, builder.create('breakLine'), anchorOffset)
 
 			setSelection(anchorContainer, anchorOffset + 1)
 		} else {
