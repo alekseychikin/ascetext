@@ -104,13 +104,19 @@ export default class Ascetext {
 		const content = []
 		let children = []
 		let current = first
+		let element
 
 		while (current) {
 			if (current.first) {
 				children = this.json(current.first)
 			}
 
-			content.push(current.json(children))
+			element = current.json(children)
+
+			if (element) {
+				content.push(element)
+			}
+
 			current = current.next
 		}
 
