@@ -1,6 +1,7 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 import { Text } from '../plugins/text.js'
+import { LineHolder } from '../nodes/container.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -516,34 +517,35 @@ export default class Editing {
 		clearTimeout(this.scheduleTimer)
 		this.scheduleTimer = null
 
+		const { builder, selection } = this.core
 		let container
 		let normalized
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const content = this.core.builder.parse(container.element, { removeLeadingBr: true })
+				const content = builder.parse(container.element, { removeLeadingBr: true })
 
 				if (container.first) {
 					this.restorePreviousState(container.first)
-					this.core.builder.cutUntil(container.first)
+					builder.cutUntil(container.first)
 				}
 
 				while (container.element.firstChild !== null) {
 					container.element.removeChild(container.element.firstChild)
 				}
 
-				this.core.builder.append(container, content.first)
+				builder.append(container, content.first || new LineHolder())
 			}
 
 			if (container.previous && isFunction(container.previous.normalize)) {
-				if (normalized = container.previous.normalize(container, this.core.builder)) {
-					this.core.builder.replaceUntil(container.previous, normalized, container)
+				if (normalized = container.previous.normalize(container, builder)) {
+					builder.replaceUntil(container.previous, normalized, container)
 				}
 			}
 		}
 
-		if (this.core.selection.focused) {
-			this.core.selection.restoreSelection(false)
+		if (selection.focused) {
+			selection.restoreSelection(false)
 		}
 
 		this.core.timeTravel.commit()
