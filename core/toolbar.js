@@ -51,6 +51,7 @@ export default class Toolbar {
 		this.icons = core.icons
 		this.sizeObserver = core.sizeObserver
 		this.node = core.node
+		this.container = document.createElement('div')
 		this.focusedNodes = []
 		this.lastRangeFocused = false
 		this.skip = false
@@ -88,10 +89,11 @@ export default class Toolbar {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
-		document.body.appendChild(this.toggleButtonHolder)
-		document.body.appendChild(this.sideToolbar)
-		document.body.appendChild(this.centeredToolbar)
-		document.body.appendChild(this.containerAvatar)
+		this.container.appendChild(this.toggleButtonHolder)
+		this.container.appendChild(this.sideToolbar)
+		this.container.appendChild(this.centeredToolbar)
+		this.container.appendChild(this.containerAvatar)
+		document.body.appendChild(this.container)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
@@ -637,10 +639,11 @@ export default class Toolbar {
 	}
 
 	destroy() {
-		document.body.removeChild(this.toggleButtonHolder)
-		document.body.removeChild(this.containerAvatar)
-		document.body.removeChild(this.sideToolbar)
-		document.body.removeChild(this.centeredToolbar)
+		this.container.removeChild(this.toggleButtonHolder)
+		this.container.removeChild(this.containerAvatar)
+		this.container.removeChild(this.sideToolbar)
+		this.container.removeChild(this.centeredToolbar)
+		document.body.removeChild(this.container)
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)
 		document.removeEventListener('input', this.checkToolbarVisibility)
