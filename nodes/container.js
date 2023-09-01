@@ -119,6 +119,7 @@ export default class Container extends Node {
 
 	hidePlaceholder() {
 		if (this.placeholder && this.removeObserver) {
+			cancelAnimationFrame(this.inputHandlerTimer)
 			this.removeObserver()
 			this.controls.unregisterControl(this.placeholder)
 			this.removeObserver = null
