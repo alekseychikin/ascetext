@@ -92,10 +92,7 @@ export default class Editing {
 		const { selection, timeTravel } = this.core
 
 		if (selection.anchorContainer && selection.anchorContainer.inputHandler) {
-			selection.anchorContainer.inputHandler(
-				event,
-				this.getModifyKeyHandlerParams()
-			)
+			selection.anchorContainer.inputHandler()
 		}
 
 		if (!this.hadKeydown && !this.isSession) {

@@ -281,7 +281,10 @@ export default class Builder {
 				node.element.appendChild(current.element)
 			}
 
-			this.handleMount(current)
+			if (node.isMount && node.inputHandler) {
+				node.inputHandler()
+			}
+
 			current = current.next
 		} while (current)
 
@@ -312,6 +315,13 @@ export default class Builder {
 
 		if (last.type === 'breakLine' && !last.next) {
 			this.append(last.parent, new LineHolder(), last.next)
+		}
+
+		current = target
+
+		while (current) {
+			this.handleMount(current)
+			current = current.next
 		}
 	}
 
