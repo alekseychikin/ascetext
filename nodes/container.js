@@ -85,22 +85,6 @@ export default class Container extends Node {
 		this.hidePlaceholder()
 	}
 
-	get onlyOneChild() {
-		const root = this.findRoot
-
-		return root.first === root.last && root.first === this
-	}
-
-	get findRoot() {
-		let root = this
-
-		while (root.type !== 'root') {
-			root = root.parent
-		}
-
-		return root
-	}
-
 	inputHandler() {
 		if (this.placeholder) {
 			if (this.inputHandlerTimer) {
