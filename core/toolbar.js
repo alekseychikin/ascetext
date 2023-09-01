@@ -1,5 +1,5 @@
 import createElement from '../utils/create-element.js'
-import getStyle from '../utils/getStyle.js'
+import getStyle from '../utils/get-style.js'
 import ControlButton from '../controls/button.js'
 import ControlFile from '../controls/file.js'
 import ControlInput from '../controls/input.js'
