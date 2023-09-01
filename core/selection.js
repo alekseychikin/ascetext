@@ -150,12 +150,13 @@ export default class Selection {
 
 	blur() {
 		if (!this.focused) {
-			this.selectedItems.forEach((item) => {
-				if (item.isWidget) {
+			this.focusedNodes.forEach((item) => {
+				if (item.isWidget || item.isContainer) {
 					item.onBlur(this)
 				}
 			})
 			this.selectedItems.splice(0, this.selectedItems.length)
+			this.focusedNodes.splice(0, this.focusedNodes.length)
 
 			return null
 		}
@@ -185,6 +186,9 @@ export default class Selection {
 			typeof anchorOffset === 'undefined' ? 0 : anchorOffset < 0 ?
 				anchorNode.getOffset() + anchorOffset + 1 : anchorOffset
 		)
+
+		this.selectedItems.splice(0, this.selectedItems.length)
+		this.focusedNodes.splice(0, this.focusedNodes.length)
 
 		if (focusNode) {
 			const { element: focusElement, index: focusIndex } =
@@ -411,27 +415,33 @@ export default class Selection {
 
 	handleSelectedItems(anchorNode, focusNode) {
 		const selectedItems = this.getArrayRangeItems(anchorNode, focusNode)
-		const focusedNodes = selectedItems.slice(0)
+		const itemsToFocus = []
+		let focusedNodes = selectedItems.slice(0)
 		let firstNode = focusedNodes[0]
-
-		selectedItems.forEach((item) => {
-			if (item.isWidget && this.selectedItems.indexOf(item) === -1) {
-				item.onFocus(this)
-			}
-		})
-		this.selectedItems.forEach((item) => {
-			if (item.isWidget && selectedItems.indexOf(item) === -1) {
-				item.onBlur(this)
-			}
-		})
 
 		while (firstNode && firstNode !== this.anchorContainer.parent) {
 			focusedNodes.unshift(firstNode)
 			firstNode = firstNode.parent
 		}
 
+		focusedNodes = focusedNodes.filter((node, index, self) => self.indexOf(node) === index)
+		focusedNodes.forEach((item) => {
+			if ((item.isWidget || item.isContainer) && this.focusedNodes.indexOf(item) === -1) {
+				itemsToFocus.push(item)
+			}
+		})
+		this.focusedNodes.forEach((item) => {
+			if ((item.isWidget || item.isContainer) && focusedNodes.indexOf(item) === -1) {
+				item.onBlur(this)
+			}
+		})
+
 		this.selectedItems = selectedItems
-		this.focusedNodes = focusedNodes.filter((node, index, self) => self.indexOf(node) === index)
+		this.focusedNodes = focusedNodes
+
+		itemsToFocus.forEach((item) => {
+			item.onFocus(this)
+		})
 	}
 
 	destroy() {

@@ -23,7 +23,7 @@ const plugins = {
 	quote: new QuotePlugin()
 }
 
-const editor = new Editor(document.getElementById('app'), { plugins })
+const editor = new Editor(document.getElementById('app'), { plugins, placeholder: 'Here is where your story comes...' })
 /*
 document.getElementById('save').addEventListener('click', () => {
 	const data = [new window.ClipboardItem({ "text/html": new Blob([`

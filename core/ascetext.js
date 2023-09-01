@@ -18,6 +18,7 @@ import Toolbar from './toolbar.js'
 import Controls from './controls.js'
 import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
+import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
 
 class Root extends Section {
 	constructor(element) {
@@ -52,13 +53,14 @@ export default class Ascetext {
 
 			return icons
 		}, {}), params.icons || {})
+		this.placeholder = extractPlaceholderParams(params.placeholder)
 		this.model = new Root(node)
 		// this.navigation = new Navigation(this)
 		this.builder = new Builder(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder)
-		this.sizeObserver = params.sizeObserver ? params.sizeObserver(this) : new SizeObserver(this)
+		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)

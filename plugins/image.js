@@ -85,7 +85,15 @@ export class ImageCaption extends Container {
 	constructor(params) {
 		super('image-caption', params)
 
-		this.removeObserver = null
+		this.imagePlaceholder = createElement('div', {
+			style: {
+				'position': 'absolute',
+				'pointer-events': 'none',
+				'top': '0',
+				'left': '0'
+			},
+			class: 'contenteditor__image-placeholder'
+		})
 	}
 
 	render() {
@@ -95,28 +103,19 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		this.placeholder = createElement('div', {
-			style: {
-				'position': 'absolute',
-				'pointer-events': 'none',
-				'top': '0',
-				'left': '0'
-			},
-			class: 'contenteditor__image-placeholder'
-		})
-		this.placeholder.appendChild(document.createTextNode(this.attributes.placeholder))
+		this.imagePlaceholder.appendChild(document.createTextNode(this.attributes.placeholder))
 
 		this.removeObserver = sizeObserver.observe(this.element, (entry) => {
-			this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
-			this.placeholder.style.width = `${entry.element.width}px`
+			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+			this.imagePlaceholder.style.width = `${entry.element.width}px`
 		})
-		controls.registerControl(this.placeholder)
+		controls.registerControl(this.imagePlaceholder)
 		this.inputHandler()
 	}
 
 	onUnmount({ controls }) {
 		this.removeObserver()
-		controls.unregisterControl(this.placeholder)
+		controls.unregisterControl(this.imagePlaceholder)
 	}
 
 	enterHandler(event, { builder, setSelection }) {
@@ -127,7 +126,7 @@ export class ImageCaption extends Container {
 	}
 
 	inputHandler() {
-		this.placeholder.style.display = this.element.innerText.trim() ? 'none' : ''
+		this.imagePlaceholder.style.display = this.element.innerText.trim() ? 'none' : ''
 	}
 
 	stringify(children) {

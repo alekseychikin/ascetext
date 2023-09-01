@@ -36,6 +36,12 @@ export default class Container extends Node {
 		super(type, attributes)
 
 		this.isContainer = true
+		this.placeholder = null
+		this.placeholderHandler = null
+		this.removeObserver = null
+		this.sizeObserver = null
+		this.controls = null
+		this.inputHandlerTimer = null
 	}
 
 	get isEmpty() {
@@ -44,6 +50,79 @@ export default class Container extends Node {
 
 	accept(node) {
 		return node.type === 'text' || node.isInlineWidget
+	}
+
+	onFocus(selection) {
+		if (!selection.isRange && this.placeholder) {
+			this.invokePlaceholderHandler(true)
+		}
+	}
+
+	onBlur() {
+		if (this.placeholder) {
+			this.invokePlaceholderHandler(false)
+		}
+	}
+
+	onMount({ controls, placeholder, sizeObserver }) {
+		if (placeholder) {
+			this.placeholderHandler = placeholder
+			this.controls = controls
+			this.sizeObserver = sizeObserver
+			this.placeholder = createElement('div', {
+				style: {
+					'position': 'absolute',
+					'pointer-events': 'none',
+					'top': '0',
+					'left': '0'
+				}
+			})
+			this.invokePlaceholderHandler(false)
+		}
+	}
+
+	onUnmount() {
+		this.hidePlaceholder()
+	}
+
+	inputHandler() {
+		if (this.placeholder) {
+			if (this.inputHandlerTimer) {
+				return null
+			}
+
+			this.inputHandlerTimer = requestAnimationFrame(() => this.invokePlaceholderHandler(true))
+		}
+	}
+
+	invokePlaceholderHandler(focused) {
+		cancelAnimationFrame(this.inputHandlerTimer)
+		this.inputHandlerTimer = null
+		this.placeholderHandler(this.placeholder, this, focused)
+
+		if (!this.element.innerText.trim().length) {
+			this.showPlaceholder()
+		} else {
+			this.hidePlaceholder()
+		}
+	}
+
+	showPlaceholder() {
+		if (this.placeholder) {
+			this.removeObserver = this.sizeObserver.observe(this.element, (entry) => {
+				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+				this.placeholder.style.width = `${entry.element.width}px`
+			})
+			this.controls.registerControl(this.placeholder)
+		}
+	}
+
+	hidePlaceholder() {
+		if (this.placeholder && this.removeObserver) {
+			this.removeObserver()
+			this.controls.unregisterControl(this.placeholder)
+			this.removeObserver = null
+		}
 	}
 
 	enterHandler(

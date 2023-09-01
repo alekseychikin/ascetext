@@ -109,7 +109,8 @@ declare class Container extends Node {
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
-	containerMethod(): void;
+	showPlaceholder: () => void;
+	hidePlaceholder: () => void;
 }
 
 declare class Root extends Section {
@@ -126,17 +127,23 @@ declare class Group extends Node {
 type inferBody<T, S> = T extends { body: infer U } ? { body: inferBody<U, S> } : S
 type InferReturn<T> = T extends (param: any) => { body: infer U } ? { body: inferBody<U, ReturnType<T>> } : ReturnType<T>
 
-export default class Ascetext<T = Toolbar, S = SizeObserver> {
+export default class Ascetext<T = Toolbar> {
 	constructor(node: HTMLElement, params?: {
 		plugins?: Record<string, PluginPlugin>;
 		icons?: Record<string, string>;
 		toolbar?: (core: Ascetext) => T;
-		sizeObserver?: (core: Ascetext) => S;
+		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
+		placeholder?: string | {
+			label: string;
+			className: string;
+		} | ((element: HTMLElement, container: Container, focused: boolean) => void);
 	});
 	stringify(first: Node): string;
 	onChange(callback: any): () => void;
 	onNodeChange(changes: any): void;
+	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
 	node: HTMLElement;
+	controlsContainer: HTMLElement;
 	onChangeHandlers: any[];
 	plugins: any;
 	icons: any;
@@ -146,7 +153,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	toolbar: T;
-	sizeObserver: S;
+	sizeObserver: SizeObserver;
 	controls: any;
 	autocomplete: Autocomplete;
 	onChangeTimer: number | null;
@@ -254,7 +261,7 @@ declare class Selection {
 	onFocus(event: any): void;
 	update(event: any): false | undefined;
 	onUpdate(handler: any): void;
-	setSelection(anchorNode: any, anchorOffset: any, focusNode: any, focusOffset: any): void;
+	setSelection(anchorNode: any, anchorOffset?: any, focusNode?: any, focusOffset?: any): void;
 	restoreSelection(forceUpdate?: boolean): void;
 	core: Ascetext;
 	selection: {};
@@ -303,8 +310,8 @@ declare class Selection {
 interface SizeObserverEntry {
 	scrollTop: number;
 	scrollLeft: number;
-	element: DOMRect
-	root: DOMRect
+	element: DOMRect;
+	root: DOMRect;
 }
 
 interface SizeObserverConstructor {
@@ -571,7 +578,7 @@ declare class ImageCaption extends Container {
 		controls: any;
 		sizeObserver: any;
 	}): void;
-	placeholder: any;
+	imagePlaceholder: HTMLElement;
 	onUnmount({ controls }: {
 		controls: any;
 	}): void;
