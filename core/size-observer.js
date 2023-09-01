@@ -1,5 +1,7 @@
+import isFunction from '../utils/is-function.js'
+
 export default class SizeObserver {
-	constructor(core) {
+	constructor(core, middleware) {
 		this.core = core
 
 		this.update = this.update.bind(this)
@@ -10,6 +12,7 @@ export default class SizeObserver {
 		this.observedElements = []
 		this.handlers = []
 		this.timer = null
+		this.middleware = middleware
 
 		this.core.selection.onUpdate(this.update)
 		window.addEventListener('resize', this.update)
@@ -37,12 +40,18 @@ export default class SizeObserver {
 			return null
 		}
 
-		this.timer = setTimeout(this.updateHandler, 16)
+		this.timer = requestAnimationFrame(this.updateHandler)
 	}
 
 	updateHandler() {
 		this.observedElements.forEach((element, index) => {
-			this.handlers[index](this.calculateBoundings(element))
+			let boundings = this.calculateBoundings(element)
+
+			if (isFunction(this.middleware)) {
+				boundings = this.middleware(boundings)
+			}
+
+			this.handlers[index](boundings)
 		})
 		this.timer = null
 	}

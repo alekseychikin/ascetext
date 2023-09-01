@@ -131,7 +131,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 		plugins?: Record<string, PluginPlugin>;
 		icons?: Record<string, string>;
 		toolbar?: (core: Ascetext) => T;
-		sizeObserver?: (core: Ascetext) => S;
+		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
 	});
 	stringify(first: Node): string;
 	onChange(callback: any): () => void;
@@ -146,7 +146,7 @@ export default class Ascetext<T = Toolbar, S = SizeObserver> {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	toolbar: T;
-	sizeObserver: S;
+	sizeObserver: SizeObserver;
 	controls: any;
 	autocomplete: Autocomplete;
 	onChangeTimer: number | null;
