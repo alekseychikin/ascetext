@@ -133,8 +133,7 @@ export default class Container extends Node {
 			anchorOffset,
 			anchorContainer,
 			setSelection,
-			focusAtLastPositionInContainer,
-			anchorAtFirstPositionInContainer,
+			focusAtLastPositionInContainer
 		}
 	) {
 		if (event.shiftKey) {
@@ -152,20 +151,15 @@ export default class Container extends Node {
 
 			event.preventDefault()
 
-			if (anchorAtFirstPositionInContainer) {
-				builder.append(this.parent, builder.createBlock(), this)
-				setSelection(this)
+			if (focusAtLastPositionInContainer) {
+				newBlock = builder.createBlock()
 			} else {
-				if (focusAtLastPositionInContainer) {
-					newBlock = builder.createBlock()
-				} else {
-					newBlock = this.duplicate(builder)
-				}
-
-				builder.append(this.parent, newBlock, this.next)
-				builder.moveTail(this, newBlock, anchorOffset)
-				setSelection(newBlock)
+				newBlock = this.duplicate(builder)
 			}
+
+			builder.append(this.parent, newBlock, this.next)
+			builder.moveTail(this, newBlock, anchorOffset)
+			setSelection(newBlock)
 		}
 	}
 
