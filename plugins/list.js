@@ -20,16 +20,6 @@ export class List extends Group {
 		return node.type === 'list-item'
 	}
 
-	normalize(element, builder) {
-		if (element.type !== 'list') {
-			return false
-		}
-
-		if (this.attributes.decor === element.attributes.decor) {
-			return builder.create('list', { decor: this.attributes.decor })
-		}
-	}
-
 	stringify(children) {
 		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
 

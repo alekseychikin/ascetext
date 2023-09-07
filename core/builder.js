@@ -283,6 +283,7 @@ export default class Builder {
 
 							container = wrapper
 							current = next
+							tail = null
 
 							continue
 						}
