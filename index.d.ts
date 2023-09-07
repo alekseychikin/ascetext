@@ -198,7 +198,7 @@ declare class Builder {
 	appendHandler(node: any, target: any, anchor: any): void;
 	handleMount(node: any): void;
 	handleUnmount(node: any): void;
-	create(name: any, ...params: any[]): any;
+	create(name: any, ...params: any[]): Node;
 	createBlock(): any;
 	createFragment(): Fragment;
 	setAttribute<T>(node: Node, name: string, value: T): void;
@@ -501,7 +501,9 @@ declare class ControlLink extends ControlControl {
 }
 
 declare class PluginPlugin {
-	create(...params: any[]): Node;
+	create(...params: any[]): Record<string, {
+		new(params): Node;
+	}>;
 	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
 	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
