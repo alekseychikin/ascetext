@@ -147,7 +147,7 @@ export default class Node {
 	}
 
 	getChildByOffset(offset) {
-		let restOffset = offset
+		let restOffset = Math.min(offset, this.getOffset())
 
 		if (this.isWidget && !offset) {
 			return { node: this, element: this.element }
@@ -168,8 +168,16 @@ export default class Node {
 				restOffset -= 1
 			}
 		})
+		const node = getNodeByElement(element)
 
-		return { node: getNodeByElement(element), element }
+		if (node.type === 'line-holder' && node.previous && node.previous.type === 'breakLine') {
+			return {
+				node: node.previous,
+				element: node.element
+			}
+		}
+
+		return { node, element }
 	}
 
 	getFirstLevelNode(offset) {
