@@ -96,8 +96,7 @@ export default class Container extends Node {
 	}
 
 	invokePlaceholderHandler(focused) {
-		cancelAnimationFrame(this.inputHandlerTimer)
-		this.inputHandlerTimer = null
+		this.cancelPlaceholderHandler()
 		this.placeholderHandler(this.placeholder, this, focused)
 
 		if (!this.element.innerText.trim().length) {
@@ -118,12 +117,18 @@ export default class Container extends Node {
 	}
 
 	hidePlaceholder() {
+		this.cancelPlaceholderHandler()
+
 		if (this.placeholder && this.removeObserver) {
-			cancelAnimationFrame(this.inputHandlerTimer)
 			this.removeObserver()
-			this.controls.unregisterControl(this.placeholder)
 			this.removeObserver = null
+			this.controls.unregisterControl(this.placeholder)
 		}
+	}
+
+	cancelPlaceholderHandler() {
+		cancelAnimationFrame(this.inputHandlerTimer)
+		this.inputHandlerTimer = null
 	}
 
 	enterHandler(
