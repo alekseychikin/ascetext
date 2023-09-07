@@ -141,6 +141,10 @@ export default class Node {
 	getOffset(element) {
 		let index = 0
 
+		if (this.isWidget) {
+			return 0
+		}
+
 		walk(this.element, (current) => {
 			if (current === element) {
 				return true
@@ -197,7 +201,7 @@ export default class Node {
 	getFirstLevelNode(offset) {
 		let { node: firstLevelNode } = this.getChildByOffset(offset)
 
-		while (firstLevelNode.parent !== this) {
+		while (!firstLevelNode.isWidget && firstLevelNode.parent !== this) {
 			firstLevelNode = firstLevelNode.parent
 		}
 
