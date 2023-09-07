@@ -9,7 +9,7 @@ class BreakLine extends InlineWidget {
 	}
 
 	render() {
-		return createElement('br')
+		return createElement('br', { class: 'break' })
 	}
 
 	accept(node) {
@@ -33,8 +33,10 @@ class BreakLine extends InlineWidget {
 }
 
 export default class BreakLinePlugin extends PluginPlugin {
-	create() {
-		return new BreakLine()
+	get register() {
+		return {
+			'breakLine': BreakLine
+		}
 	}
 
 	parse(element, builder) {

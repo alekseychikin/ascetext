@@ -18,8 +18,10 @@ export class Paragraph extends Container {
 }
 
 export default class ParagraphPlugin extends PluginPlugin {
-	create() {
-		return new Paragraph()
+	get register() {
+		return {
+			'paragraph': Paragraph
+		}
 	}
 
 	get icons() {

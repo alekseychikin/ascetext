@@ -147,6 +147,13 @@ export class ImageCaption extends Container {
 }
 
 export default class ImagePlugin extends PluginPlugin {
+	get register() {
+		return {
+			'image': Image,
+			'image-caption': ImageCaption
+		}
+	}
+
 	constructor(params = {}) {
 		super()
 
@@ -170,16 +177,6 @@ export default class ImagePlugin extends PluginPlugin {
 			floatRight: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16m-6-4h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatRight" fill="#fff"><rect x="3" y="9" width="8" height="6" rx="1"/></mask><rect x="3" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatRight)"/></svg>',
 			wide: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="a" fill="#fff"><rect x="3" y="9" width="18" height="6" rx="1"/></mask><rect x="3" y="9" width="18" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#a)"/></svg>'
 		}
-	}
-
-	create(params) {
-		const { type, ...attributes } = params
-
-		if (type === 'caption') {
-			return new ImageCaption(attributes)
-		}
-
-		return new Image(attributes)
 	}
 
 	parse(element, builder) {
@@ -221,11 +218,8 @@ export default class ImagePlugin extends PluginPlugin {
 	parseJson(element, builder) {
 		if (element.type === 'image') {
 			const image = builder.create('image', { src: element.src })
-			const caption = builder.create('image', {
-				type: 'caption',
-				placeholder: this.params.placeholder
-			})
-			const children = element.figcaption ? builder.parseJson(element.figcaption) : builder.create('breakLine')
+			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+			const children = element.figcaption ? builder.parseJson(element.figcaption) : builder.create('line-holder')
 
 			builder.append(caption, children)
 			builder.append(image, caption)

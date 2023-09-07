@@ -31,14 +31,14 @@ export class Link extends InlineWidget {
 		})
 
 		if (areEqualElements) {
-			return builder.create('link', this.attributes.url)
+			return builder.create('link', { url: this.attributes.url })
 		}
 
 		return false
 	}
 
 	duplicate(builder) {
-		return builder.create('link', this.attributes.url)
+		return builder.create('link', { url: this.attributes.url })
 	}
 
 	stringify(children) {
@@ -55,6 +55,12 @@ export class Link extends InlineWidget {
 }
 
 export default class LinkPlugin extends PluginPlugin {
+	get register() {
+		return {
+			'link': Link
+		}
+	}
+
 	constructor() {
 		super()
 
@@ -75,19 +81,15 @@ export default class LinkPlugin extends PluginPlugin {
 		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
 	}
 
-	create(url) {
-		return new Link({ url })
-	}
-
 	parse(element, builder) {
 		if (isHtmlElement(element) && element.matches('a')) {
-			return builder.create('link', element.getAttribute('href'))
+			return builder.create('link', { url: element.getAttribute('href') })
 		}
 	}
 
 	parseJson(element, builder) {
 		if (element.type === 'link') {
-			return builder.create('link', element.url)
+			return builder.create('link', { url: element.url })
 		}
 	}
 
@@ -180,7 +182,7 @@ export default class LinkPlugin extends PluginPlugin {
 
 		selectedItems.forEach((item) => {
 			if (item.type === 'text') {
-				link = builder.create('link', url)
+				link = builder.create('link', { url })
 				builder.replace(item, link)
 				builder.push(link, item)
 			}
@@ -196,7 +198,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	wrap(match, builder) {
-		const link = builder.create('link', match.content)
+		const link = builder.create('link', { url: match.attributes.content })
 
 		builder.append(link, match)
 

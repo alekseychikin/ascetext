@@ -77,6 +77,10 @@ export class Text extends Node {
 		return false
 	}
 
+	wrapper(builder) {
+		return builder.createBlock()
+	}
+
 	normalize(target, builder) {
 		if (target.type === 'text' && this.isEqual(target)) {
 			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
@@ -161,6 +165,12 @@ export class Text extends Node {
 }
 
 export default class TextPlugin extends PluginPlugin {
+	get register() {
+		return {
+			'text': Text
+		}
+	}
+
 	constructor(params = {}) {
 		super()
 
@@ -185,10 +195,6 @@ export default class TextPlugin extends PluginPlugin {
 			underlined: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h12M8 5v6a4 4 0 0 0 8 0V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 			strike: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c.896 0 1.775.192 2.546.557.348.165.668.362.955.586.347.273.645.586.882.93.43.628.643 1.337.615 2.053-.028.716-.296 1.412-.776 2.017-.48.605-1.154 1.096-1.952 1.421a6.073 6.073 0 0 1-2.583.428 5.865 5.865 0 0 1-2.497-.684c-.74-.402-1.332-.957-1.713-1.605M4 12h16m-3.476-5.703c-.381-.648-.973-1.203-1.714-1.605a5.866 5.866 0 0 0-2.496-.684 6.075 6.075 0 0 0-2.584.428c-.798.325-1.472.816-1.952 1.42-.48.606-.747 1.302-.776 2.018-.008.21.005.42.037.626" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
-	}
-
-	create(params, text) {
-		return new Text(params, text)
 	}
 
 	parse(element, builder, ctx) {

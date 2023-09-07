@@ -12,6 +12,8 @@ export default class Builder {
 	constructor(core) {
 		this.core = core
 
+		this.registeredNodes = {}
+		this.registerPlugins()
 		this.parse = this.parse.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
 		this.handleMount = this.handleMount.bind(this)
@@ -19,7 +21,7 @@ export default class Builder {
 	}
 
 	create(name, ...params) {
-		return this.core.plugins[name].create(...params)
+		return new this.registeredNodes[name](...params)
 	}
 
 	createBlock() {
@@ -539,5 +541,18 @@ export default class Builder {
 		if (node.isContainer && !node.first) {
 			this.append(node, new LineHolder())
 		}
+	}
+
+	registerPlugins() {
+		Object.keys(this.core.plugins).forEach((key) => {
+			const plugin = this.core.plugins[key]
+			let nodes
+
+			if (nodes = plugin.register) {
+				Object.keys(nodes).forEach((type) => {
+					this.registeredNodes[type] = nodes[type]
+				})
+			}
+		})
 	}
 }
