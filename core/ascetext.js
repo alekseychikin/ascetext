@@ -60,7 +60,7 @@ export default class Ascetext {
 		this.builder = new Builder(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
-		this.timeTravel = new TimeTravel(this.selection, this.builder)
+		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)

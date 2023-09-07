@@ -5,7 +5,7 @@ export const operationTypes = {
 }
 
 export default class TimeTravel {
-	constructor(selection, builder) {
+	constructor(selection, builder, root) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.commit = this.commit.bind(this)
 
@@ -13,6 +13,7 @@ export default class TimeTravel {
 		this.timeindex = -1
 		this.isLockPushChange = true
 		this.currentBunch = []
+		this.root = root
 		this.builder = builder
 		this.selection = selection
 		this.previousSelection = null
@@ -31,7 +32,6 @@ export default class TimeTravel {
 	onSelectionChange(selection) {
 		if (!this.preservedPreviousSelection) {
 			this.previousSelection = selection.getSelectionInIndexes()
-			// console.log('timetravel previous selection', this.previousSelection.anchorIndex, this.previousSelection.focusIndex)
 		}
 	}
 
@@ -41,7 +41,32 @@ export default class TimeTravel {
 
 	pushChange(event) {
 		if (!this.isLockPushChange) {
-			this.currentBunch.push(event)
+			let payload
+
+			switch (event.type) {
+				case operationTypes.ATTRIBUTE:
+					this.currentBunch.push({
+						type: event.type,
+						target: this.getIndex(event.target),
+						previous: event.previous,
+						next: event.next
+					})
+					break
+				case operationTypes.APPEND:
+				case operationTypes.CUT:
+					payload = this.builder.getJson(event.target, event.last)
+
+					if (payload.length) {
+						this.currentBunch.push({
+							type: event.type,
+							container: this.getIndex(event.container),
+							target: this.getIndex(event.target),
+							payload
+						})
+					}
+
+					break
+			}
 		}
 	}
 
@@ -83,13 +108,20 @@ export default class TimeTravel {
 
 				switch (previousEvent.type) {
 					case operationTypes.CUT:
-						this.builder.append(previousEvent.container, previousEvent.target, previousEvent.anchor)
+						this.builder.append(
+							this.findByIndex(previousEvent.container),
+							this.builder.parseJson(previousEvent.payload),
+							this.findByIndex(previousEvent.target)
+						)
 						break
 					case operationTypes.APPEND:
-						this.builder.cutUntil(previousEvent.target, previousEvent.last)
+						this.builder.cutUntil(
+							this.findByIndex(previousEvent.target),
+							this.findByOffset(previousEvent.target, previousEvent.payload.length)
+						)
 						break
 					case operationTypes.ATTRIBUTE:
-						this.builder.setAttributes(previousEvent.target, previousEvent.previous)
+						this.builder.setAttributes(this.findByIndex(previousEvent.target), previousEvent.previous)
 						break
 				}
 			}
@@ -116,13 +148,20 @@ export default class TimeTravel {
 
 				switch (nextEvent.type) {
 					case operationTypes.CUT:
-						this.builder.cutUntil(nextEvent.target, nextEvent.until)
+						this.builder.cutUntil(
+							this.findByIndex(nextEvent.target),
+							this.findByOffset(nextEvent.target, nextEvent.payload.length)
+						)
 						break
 					case operationTypes.APPEND:
-						this.builder.append(nextEvent.container, nextEvent.target, nextEvent.anchor)
+						this.builder.append(
+							this.findByIndex(nextEvent.container),
+							this.builder.parseJson(nextEvent.payload),
+							this.findByOffset(nextEvent.target, nextEvent.payload.length)
+						)
 						break
 					case operationTypes.ATTRIBUTE:
-						this.builder.setAttributes(nextEvent.target, nextEvent.next)
+						this.builder.setAttributes(this.findByIndex(nextEvent.target), nextEvent.next)
 						break
 				}
 			}
@@ -131,5 +170,54 @@ export default class TimeTravel {
 			this.isLockPushChange = false
 			this.timeindex++
 		}
+	}
+
+	getIndex(node) {
+		const path = []
+		let index = 0
+		let current = node
+
+		while (current && current !== this.root) {
+			if (current.previous) {
+				index++
+				current = current.previous
+
+				continue
+			}
+
+			if (current.parent) {
+				path.unshift(index)
+				index = 0
+				current = current.parent
+			}
+		}
+
+		return path
+	}
+
+	findByIndex(input) {
+		const path = [...input]
+		let current = this.root
+		let index
+		let i
+
+		while (path.length) {
+			current = current.first
+			index = path.shift()
+
+			for (i = 0; i < index; i++) {
+				current = current.next
+			}
+		}
+
+		return current
+	}
+
+	findByOffset(input, offset) {
+		const index = [...input]
+
+		index[index.length - 1] += offset - 1
+
+		return this.findByIndex(index)
 	}
 }

@@ -9,7 +9,7 @@ class BreakLine extends InlineWidget {
 	}
 
 	render() {
-		return createElement('br', { class: 'break' })
+		return createElement('br')
 	}
 
 	accept(node) {

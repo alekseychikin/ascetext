@@ -304,14 +304,6 @@ export default class Builder {
 		this.cutUntil(target, last)
 		this.prepareContainer(target)
 
-		this.core.onNodeChange({
-			type: operationTypes.APPEND,
-			container: node,
-			target,
-			last,
-			anchor
-		})
-
 		do {
 			current.parent = node
 
@@ -325,7 +317,7 @@ export default class Builder {
 				node.element.appendChild(current.element)
 			}
 
-			if (node.isMount && node.inputHandler) {
+			if (node.isMount && isFunction(node.inputHandler)) {
 				node.inputHandler()
 			}
 
@@ -357,7 +349,7 @@ export default class Builder {
 			this.cut(target.previous)
 		}
 
-		if (last.type === 'breakLine' && !last.next) {
+		if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
 			this.append(last.parent, new LineHolder(), last.next)
 		}
 
@@ -366,6 +358,16 @@ export default class Builder {
 		while (current) {
 			this.handleMount(current)
 			current = current.next
+		}
+
+		if (node.isMount) {
+			this.core.onNodeChange({
+				type: operationTypes.APPEND,
+				container: node,
+				target,
+				last,
+				anchor
+			})
 		}
 	}
 
@@ -387,11 +389,11 @@ export default class Builder {
 			this.core.editing.scheduleUpdate(node.previous)
 		}
 
-		if (node.parent || node.previous || last.next) {
+		if (node.isMount && (node.parent || node.previous || last.next)) {
 			this.core.onNodeChange({
 				type: operationTypes.CUT,
 				container: node.parent,
-				until: last,
+				last,
 				anchor: last.next,
 				previous: node.previous,
 				next: last.next,
@@ -514,7 +516,7 @@ export default class Builder {
 
 	replaceUntil(node, target, until) {
 		const parent = node.parent
-		const next = until.next
+		const next = until ? until.next : null
 
 		this.cutUntil(node, until)
 		this.append(parent, target, next)
