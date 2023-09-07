@@ -440,7 +440,7 @@ declare class Toolbar {
 	updateButtonHolder(): void;
 	renderInsertButton(): void;
 	renderReplaceButton(hasControls: boolean): void;
-	updateSideToolbar(): false | undefined;
+	updateSideToolbar(): void;
 	updateCenteredToolbar(): null | undefined;
 	renderSideToolbar(): void;
 	renderSelectedToolbar(): void;
