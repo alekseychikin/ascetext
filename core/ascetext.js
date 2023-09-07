@@ -25,6 +25,7 @@ class Root extends Section {
 		super('root')
 
 		this.element = element
+		this.isMount = true
 	}
 }
 

@@ -10,4 +10,8 @@ export default class InlineWidget extends WithControls {
 	accept(node) {
 		return node.type === 'text'
 	}
+
+	wrapper(builder) {
+		return builder.createBlock()
+	}
 }

@@ -395,6 +395,7 @@ export default class Selection {
 				while (current) {
 					if (current.isContainer) {
 						current = current.getNextSelectableNode()
+						console.log('current', current)
 
 						break
 					}

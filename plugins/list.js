@@ -1,4 +1,5 @@
 import PluginPlugin from './plugin.js'
+import Node from '../nodes/node.js'
 import Container from '../nodes/container.js'
 import Group from '../nodes/group.js'
 import createElement from '../utils/create-element.js'
@@ -44,7 +45,7 @@ export class List extends Group {
 	}
 }
 
-export class ListItem extends Group {
+export class ListItem extends Node {
 	constructor(params = {}) {
 		super('list-item')
 
@@ -66,6 +67,10 @@ export class ListItem extends Group {
 		} else {
 			appendDefault(this, target, anchor)
 		}
+	}
+
+	wrapper() {
+		return new List()
 	}
 
 	accept(node) {

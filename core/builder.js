@@ -273,6 +273,21 @@ export default class Builder {
 						this.appendHandler(container, current, tail)
 					}
 				} else {
+					if (isFunction(current.wrapper)) {
+						const wrapper = current.wrapper(this)
+
+						if (this.canAccept(container, wrapper)) {
+							this.append(container, wrapper, anchor)
+							this.cut(current)
+							this.append(wrapper, current)
+
+							container = wrapper
+							current = next
+
+							continue
+						}
+					}
+
 					this.cut(current)
 					console.log('can not accept', container, current)
 				}
