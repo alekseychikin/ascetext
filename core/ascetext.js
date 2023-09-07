@@ -103,26 +103,7 @@ export default class Ascetext {
 	}
 
 	json(first) {
-		const content = []
-		let children = []
-		let current = first
-		let element
-
-		while (current) {
-			if (current.first) {
-				children = this.json(current.first)
-			}
-
-			element = current.json(children)
-
-			if (element) {
-				content.push(element)
-			}
-
-			current = current.next
-		}
-
-		return content
+		return this.builder.getJson(first)
 	}
 
 	onChange(callback) {

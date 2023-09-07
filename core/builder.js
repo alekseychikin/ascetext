@@ -129,6 +129,33 @@ export default class Builder {
 		return container
 	}
 
+	getJson(first, last) {
+		const content = []
+		let children = []
+		let current = first
+		let element
+
+		while (current) {
+			if (current.first) {
+				children = this.getJson(current.first)
+			}
+
+			element = current.json(children)
+
+			if (element) {
+				content.push(element)
+			}
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
+		}
+
+		return content
+	}
+
 	createTree(element, ctx) {
 		const fragment = this.createFragment()
 		const lastElement = element.lastChild
