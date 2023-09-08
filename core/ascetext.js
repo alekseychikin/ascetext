@@ -25,6 +25,7 @@ class Root extends Section {
 		super('root')
 
 		this.element = element
+		this.isMount = true
 	}
 }
 
@@ -59,7 +60,7 @@ export default class Ascetext {
 		this.builder = new Builder(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
-		this.timeTravel = new TimeTravel(this.selection, this.builder)
+		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
@@ -103,26 +104,7 @@ export default class Ascetext {
 	}
 
 	json(first) {
-		const content = []
-		let children = []
-		let current = first
-		let element
-
-		while (current) {
-			if (current.first) {
-				children = this.json(current.first)
-			}
-
-			element = current.json(children)
-
-			if (element) {
-				content.push(element)
-			}
-
-			current = current.next
-		}
-
-		return content
+		return this.builder.getJson(first)
 	}
 
 	onChange(callback) {

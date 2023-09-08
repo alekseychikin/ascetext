@@ -520,18 +520,19 @@ export default class Editing {
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const content = builder.parse(container.element, { removeLeadingBr: true })
+				const content = builder.parse(container.element, { removeLeadingBr: true }).first || new LineHolder()
+				const first = container.first
 
-				if (container.first) {
-					this.restorePreviousState(container.first)
-					builder.cutUntil(container.first)
+				if (first) {
+					this.restorePreviousState(first)
+					builder.cutUntil(first)
 				}
 
 				while (container.element.firstChild !== null) {
 					container.element.removeChild(container.element.firstChild)
 				}
 
-				builder.append(container, content.first || new LineHolder())
+				builder.append(container, content)
 			}
 
 			if (container.previous && isFunction(container.previous.normalize)) {

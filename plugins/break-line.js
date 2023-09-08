@@ -33,8 +33,10 @@ class BreakLine extends InlineWidget {
 }
 
 export default class BreakLinePlugin extends PluginPlugin {
-	create() {
-		return new BreakLine()
+	get register() {
+		return {
+			'breakLine': BreakLine
+		}
 	}
 
 	parse(element, builder) {

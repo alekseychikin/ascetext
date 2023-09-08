@@ -1,4 +1,5 @@
 import PluginPlugin from './plugin.js'
+import Node from '../nodes/node.js'
 import Container from '../nodes/container.js'
 import Group from '../nodes/group.js'
 import createElement from '../utils/create-element.js'
@@ -19,16 +20,6 @@ export class List extends Group {
 		return node.type === 'list-item'
 	}
 
-	normalize(element, builder) {
-		if (element.type !== 'list') {
-			return false
-		}
-
-		if (this.attributes.decor === element.attributes.decor) {
-			return builder.create('list', { decor: this.attributes.decor })
-		}
-	}
-
 	stringify(children) {
 		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
 
@@ -44,7 +35,7 @@ export class List extends Group {
 	}
 }
 
-export class ListItem extends Group {
+export class ListItem extends Node {
 	constructor(params = {}) {
 		super('list-item')
 
@@ -66,6 +57,10 @@ export class ListItem extends Group {
 		} else {
 			appendDefault(this, target, anchor)
 		}
+	}
+
+	wrapper() {
+		return new List()
 	}
 
 	accept(node) {
@@ -112,7 +107,7 @@ export class ListItem extends Group {
 	}
 
 	duplicate(builder) {
-		return builder.create('list', 'item', this.params)
+		return builder.create('list-item', this.params)
 	}
 
 	stringify(children) {
@@ -194,8 +189,8 @@ export class ListItemContent extends Container {
 				this.putEmptyBlockInMiddle(builder, setSelection)
 			}
 		} else {
-			const nextItem = builder.create('list', 'item', this.params)
-			const content = builder.create('list', 'content', this.params)
+			const nextItem = builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
 
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
@@ -301,7 +296,7 @@ export class ListItemContent extends Container {
 	}
 
 	duplicate(builder) {
-		return builder.create('list', 'content')
+		return builder.create('list-item-content', this.params)
 	}
 
 	stringify(children) {
@@ -310,22 +305,18 @@ export class ListItemContent extends Container {
 }
 
 export default class ListPlugin extends PluginPlugin {
+	get register() {
+		return {
+			'list': List,
+			'list-item': ListItem,
+			'list-item-content': ListItemContent
+		}
+	}
+
 	constructor(params = { maxDepth: null }) {
 		super()
 
 		this.params = params
-	}
-
-	create(params, subparams) {
-		if (params === 'item') {
-			return new ListItem(subparams)
-		}
-
-		if (params === 'content') {
-			return new ListItemContent(subparams)
-		}
-
-		return new List(params)
 	}
 
 	get icons() {
@@ -396,8 +387,8 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (nodeName === 'li') {
-			const listItem = builder.create('list', 'item', this.params)
-			const content = builder.create('list', 'content', this.params)
+			const listItem = builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
 
 			builder.append(listItem, content)
 
@@ -411,19 +402,19 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'list-item') {
-			return builder.create('list', 'item', this.params)
+			return builder.create('list-item', this.params)
 		}
 
 		if (element.type === 'list-item-content') {
-			return builder.create('list', 'content', this.params)
+			return builder.create('list-item-content', this.params)
 		}
 	}
 
 	setNumberList(container) {
 		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'numerable' })
-			const listItem = builder.create('list', 'item', this.params)
-			const content = builder.create('list', 'content', this.params)
+			const listItem = builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
 
 			builder.append(listItem, content)
 			builder.append(list, listItem)
@@ -434,8 +425,8 @@ export default class ListPlugin extends PluginPlugin {
 	setMarkerList(container) {
 		return (event, { builder }) => {
 			const list = builder.create('list', { decor: 'marker' })
-			const listItem = builder.create('list', 'item', this.params)
-			const content = builder.create('list', 'content', this.params)
+			const listItem = builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
 
 			builder.append(listItem, content)
 			builder.append(list, listItem)

@@ -5,6 +5,20 @@ import walk from '../utils/walk.js'
 
 let id = 1
 
+function hasGroupParent(node) {
+	let current = node
+
+	while (current) {
+		if (current.isGroup) {
+			return true
+		}
+
+		current = current.parent
+	}
+
+	return false
+}
+
 export default class Node {
 	constructor(type, attributes = {}) {
 		this.id = id++
@@ -85,7 +99,7 @@ export default class Node {
 			}
 
 			if (
-				(current.parent.isSection || current.parent.isGroup) &&
+				(current.parent.isSection || hasGroupParent(current)) &&
 				(current.isContainer || current.isWidget)
 			) {
 				return current
@@ -116,7 +130,7 @@ export default class Node {
 			}
 
 			if (
-				(current.parent.isSection || current.parent.isGroup) &&
+				(current.parent.isSection || hasGroupParent(current)) &&
 				(current.isContainer || current.isWidget)
 			) {
 				return current
@@ -126,6 +140,10 @@ export default class Node {
 
 	getOffset(element) {
 		let index = 0
+
+		if (this.isWidget) {
+			return 0
+		}
 
 		walk(this.element, (current) => {
 			if (current === element) {
@@ -147,7 +165,7 @@ export default class Node {
 	}
 
 	getChildByOffset(offset) {
-		let restOffset = offset
+		let restOffset = Math.min(offset, this.getOffset())
 
 		if (this.isWidget && !offset) {
 			return { node: this, element: this.element }
@@ -168,14 +186,22 @@ export default class Node {
 				restOffset -= 1
 			}
 		})
+		const node = getNodeByElement(element)
 
-		return { node: getNodeByElement(element), element }
+		if (node.type === 'line-holder' && node.previous && node.previous.type === 'breakLine') {
+			return {
+				node: node.previous,
+				element: node.element
+			}
+		}
+
+		return { node, element }
 	}
 
 	getFirstLevelNode(offset) {
 		let { node: firstLevelNode } = this.getChildByOffset(offset)
 
-		while (firstLevelNode.parent !== this) {
+		while (!firstLevelNode.isWidget && firstLevelNode.parent !== this) {
 			firstLevelNode = firstLevelNode.parent
 		}
 

@@ -12,6 +12,8 @@ export default class Builder {
 	constructor(core) {
 		this.core = core
 
+		this.registeredNodes = {}
+		this.registerPlugins()
 		this.parse = this.parse.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
 		this.handleMount = this.handleMount.bind(this)
@@ -19,7 +21,7 @@ export default class Builder {
 	}
 
 	create(name, ...params) {
-		return this.core.plugins[name].create(...params)
+		return new this.registeredNodes[name](...params)
 	}
 
 	createBlock() {
@@ -127,6 +129,33 @@ export default class Builder {
 		})
 
 		return container
+	}
+
+	getJson(first, last) {
+		const content = []
+		let children = []
+		let current = first
+		let element
+
+		while (current) {
+			if (current.first) {
+				children = this.getJson(current.first)
+			}
+
+			element = current.json(children)
+
+			if (element) {
+				content.push(element)
+			}
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
+		}
+
+		return content
 	}
 
 	createTree(element, ctx) {
@@ -244,6 +273,22 @@ export default class Builder {
 						this.appendHandler(container, current, tail)
 					}
 				} else {
+					if (isFunction(current.wrapper)) {
+						const wrapper = current.wrapper(this)
+
+						if (this.canAccept(container, wrapper)) {
+							this.append(container, wrapper, anchor)
+							this.cut(current)
+							this.append(wrapper, current)
+
+							container = wrapper
+							current = next
+							tail = null
+
+							continue
+						}
+					}
+
 					this.cut(current)
 					console.log('can not accept', container, current)
 				}
@@ -260,14 +305,6 @@ export default class Builder {
 		this.cutUntil(target, last)
 		this.prepareContainer(target)
 
-		this.core.onNodeChange({
-			type: operationTypes.APPEND,
-			container: node,
-			target,
-			last,
-			anchor
-		})
-
 		do {
 			current.parent = node
 
@@ -281,7 +318,7 @@ export default class Builder {
 				node.element.appendChild(current.element)
 			}
 
-			if (node.isMount && node.inputHandler) {
+			if (node.isMount && isFunction(node.inputHandler)) {
 				node.inputHandler()
 			}
 
@@ -313,7 +350,7 @@ export default class Builder {
 			this.cut(target.previous)
 		}
 
-		if (last.type === 'breakLine' && !last.next) {
+		if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
 			this.append(last.parent, new LineHolder(), last.next)
 		}
 
@@ -322,6 +359,16 @@ export default class Builder {
 		while (current) {
 			this.handleMount(current)
 			current = current.next
+		}
+
+		if (node.isMount) {
+			this.core.onNodeChange({
+				type: operationTypes.APPEND,
+				container: node,
+				target,
+				last,
+				anchor
+			})
 		}
 	}
 
@@ -343,11 +390,11 @@ export default class Builder {
 			this.core.editing.scheduleUpdate(node.previous)
 		}
 
-		if (node.parent || node.previous || last.next) {
+		if (node.isMount && (node.parent || node.previous || last.next)) {
 			this.core.onNodeChange({
 				type: operationTypes.CUT,
 				container: node.parent,
-				until: last,
+				last,
 				anchor: last.next,
 				previous: node.previous,
 				next: last.next,
@@ -470,7 +517,7 @@ export default class Builder {
 
 	replaceUntil(node, target, until) {
 		const parent = node.parent
-		const next = until.next
+		const next = until ? until.next : null
 
 		this.cutUntil(node, until)
 		this.append(parent, target, next)
@@ -512,5 +559,18 @@ export default class Builder {
 		if (node.isContainer && !node.first) {
 			this.append(node, new LineHolder())
 		}
+	}
+
+	registerPlugins() {
+		Object.keys(this.core.plugins).forEach((key) => {
+			const plugin = this.core.plugins[key]
+			let nodes
+
+			if (nodes = plugin.register) {
+				Object.keys(nodes).forEach((type) => {
+					this.registeredNodes[type] = nodes[type]
+				})
+			}
+		})
 	}
 }

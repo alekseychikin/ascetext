@@ -144,6 +144,10 @@
 	border: 0;
 	padding: 8px;
 	min-width: 40px;
+	max-width: 300px;
+	overflow: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 	height: 40px;
 	cursor: pointer;
 	outline: none;

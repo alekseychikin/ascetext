@@ -76,5 +76,12 @@ export default class Widget extends WithControls {
 		setSelection(newBlock)
 	}
 
+	split() {
+		return {
+			head: null,
+			tail: this
+		}
+	}
+
 	scheduleUpdate() {}
 }
