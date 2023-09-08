@@ -133,6 +133,7 @@ export default class Ascetext {
 	setContent(content) {
 		this.unmountAll()
 		this.model = new Root(this.node)
+		this.timeTravel.root = this.model
 		this.node.innerHTML = ''
 		this.init = false
 
@@ -158,6 +159,7 @@ export default class Ascetext {
 	setJson(data) {
 		this.unmountAll()
 		this.model = new Root(this.node)
+		this.timeTravel.root = this.model
 		this.node.innerHTML = ''
 		this.init = false
 

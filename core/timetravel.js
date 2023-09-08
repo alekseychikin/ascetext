@@ -189,6 +189,8 @@ export default class TimeTravel {
 				path.unshift(index)
 				index = 0
 				current = current.parent
+			} else {
+				break
 			}
 		}
 
