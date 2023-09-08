@@ -198,8 +198,8 @@ declare class Builder {
 	appendHandler(node: any, target: any, anchor: any): void;
 	handleMount(node: any): void;
 	handleUnmount(node: any): void;
-	create(name: any, ...params: any[]): Node;
-	createBlock(): any;
+	create<T>(name: string, ...params: any[]): T;
+	createBlock(): Container;
 	createFragment(): Fragment;
 	setAttribute<T>(node: Node, name: string, value: T): void;
 	setAttributes<T>(node: Node, attributes: T): void;
@@ -501,8 +501,8 @@ declare class ControlLink extends ControlControl {
 }
 
 declare class PluginPlugin {
-	create(...params: any[]): Record<string, {
-		new(params): Node;
+	get register(): Record<string, {
+		new(...params: any[]): Node;
 	}>;
 	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
 	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
@@ -525,7 +525,6 @@ declare class BreakLine extends InlineWidget {
 }
 
 declare class BreakLinePlugin extends PluginPlugin {
-	create(): BreakLine;
 	parse(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
 }
@@ -549,9 +548,6 @@ declare class HeaderPlugin extends PluginPlugin {
 	constructor(params?: {
 		allowLevels: number[];
 	});
-	create({ level }: {
-		level: number;
-	}): Header;
 	parse(element: HTMLElement | Text, builder: Builder): Header | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): Header | undefined;
 	setHeader(level: number): (event: any, params: ActionParams) => void;
@@ -605,7 +601,6 @@ declare class ImagePlugin extends PluginPlugin {
 		placeholder?: string;
 	};
 	get icons(): IconsGetter;
-	create(params: any): Image | ImageCaption;
 	parse(element: HTMLElement | Text, builder: Builder): Image | undefined;
 	parseJson(element: any, builder: Builder): Image | undefined;
 	generateImagePreview(file: File): Promise<string>;
@@ -634,7 +629,6 @@ declare class LinkPlugin extends PluginPlugin {
 	})[][];
 	removeLinks(event: any, params: ActionParams): void;
 	setLink(event: any, params: ActionParams): void;
-	create(url: string): Link;
 	parse(element: HTMLElement | Text, builder: Builder): Link | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): Link | undefined;
 	removeLink(event: any, params: ActionParams): void;
@@ -696,7 +690,6 @@ declare class ListPlugin extends PluginPlugin {
 	params: {
 		maxDepth: number | null;
 	};
-	create(params: any, subparams: any): List | ListItem | ListItemContent;
 	get icons(): IconsGetter;
 	parse(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
 	parseJson(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
@@ -714,7 +707,6 @@ declare class Paragraph extends Container {
 }
 
 declare class ParagraphPlugin extends PluginPlugin {
-	create(): Paragraph;
 	get icons(): IconsGetter;
 	parse(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
@@ -732,7 +724,6 @@ declare class Quote extends Container {
 
 declare class QuotePlugin extends PluginPlugin {
 	get icons(): IconsGetter;
-	create(): Quote;
 	parse(element: HTMLElement | Text, builder: Builder): Quote | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): Quote | undefined;
 	setQuote(event: any, params: ActionParams): void;
@@ -767,7 +758,6 @@ declare class TextPlugin extends PluginPlugin {
 	};
 	supportTags: any[];
 	get icons(): IconsGetter;
-	create(...params: any[]): TextNode;
 	parse(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	unsetBold(event: any, params: ActionParams): void;
