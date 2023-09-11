@@ -277,7 +277,7 @@ export default class Builder {
 						const wrapper = current.wrapper(this)
 
 						if (this.canAccept(container, wrapper)) {
-							this.append(container, wrapper, anchor)
+							this.append(container, wrapper, tail)
 							this.cut(current)
 							this.append(wrapper, current)
 

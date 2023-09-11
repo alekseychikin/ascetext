@@ -51,7 +51,7 @@ export default class Editing {
 		this.modifyKeyHandlerParams = {}
 		this.scheduleTimer = null
 		this.isSession = false
-		this.spacesDown = 0
+		this.spacesDown = false
 		this.lastSelection = null
 		this.lastSelectionIndexes = null
 		this.hadKeydown = false
@@ -207,9 +207,19 @@ export default class Editing {
 						this.update()
 						timeTravel.commit()
 						timeTravel.preservePreviousSelection()
+						event.preventDefault()
+
+						const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
+						const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
+						const needNbsp = !offset || offset === element.nodeValue.length || element.nodeValue[offset] === ' ' || element.nodeValue[offset - 1] === ' '
+						const content = element.nodeValue.substr(0, offset) + (needNbsp ? '\u00A0' : ' ') + element.nodeValue.substr(offset)
+
+						node.attributes.content = content
+						element.nodeValue = content
+						selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
+						this.spacesDown = true
 					}
 
-					this.spacesDown++
 					this.scheduleUpdate(selection.anchorContainer)
 				}
 			}
@@ -221,7 +231,7 @@ export default class Editing {
 
 		if (event.keyCode === spaceKey) {
 			this.update()
-			this.spacesDown = 0
+			this.spacesDown = false
 			timeTravel.commit()
 			timeTravel.preservePreviousSelection()
 		}

@@ -252,7 +252,7 @@ export default class TextPlugin extends PluginPlugin {
 			ctx.style = 'italic'
 		}
 
-		if (supportTags.strike === tagName && this.params.allowModifiers.includes('horizontal')) {
+		if (supportTags.strike === tagName && this.params.allowModifiers.includes('strike')) {
 			ctx.strike = 'horizontal'
 		}
 

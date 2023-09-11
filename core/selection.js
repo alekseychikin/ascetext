@@ -235,6 +235,10 @@ export default class Selection {
 			}
 		}
 
+		if (isTextElement(element)) {
+			index = Math.min(index, element.nodeValue.length)
+		}
+
 		return { element, index }
 	}
 

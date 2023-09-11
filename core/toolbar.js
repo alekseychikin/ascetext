@@ -412,6 +412,8 @@ export default class Toolbar {
 		} else {
 			this.previousSideMode = ''
 			this.restoreSelection()
+			this.editing.scheduleUpdate(this.selection.anchorContainer)
+			this.editing.scheduleUpdate(this.selection.focusContainer)
 			this.editing.update()
 			this.hideSideToolbar()
 		}
