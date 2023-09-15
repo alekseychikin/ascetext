@@ -259,7 +259,7 @@ declare class Editing {
 declare class Selection {
 	constructor(core: Ascetext);
 	onFocus(event: any): void;
-	update(event: any): false | undefined;
+	update(event: any): void;
 	onUpdate(handler: any): void;
 	setSelection(anchorNode: any, anchorOffset?: any, focusNode?: any, focusOffset?: any): void;
 	restoreSelection(forceUpdate?: boolean): void;

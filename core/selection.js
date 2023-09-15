@@ -67,12 +67,12 @@ export default class Selection {
 				if (!this.core.node.contains(anchorElement)) {
 					this.blur()
 
-					return false
+					return
 				}
 
 				this.focused = true
 			} else {
-				return false
+				return
 			}
 		} else if (this.core.node.contains(event.target) || this.core.node === event.target) {
 			this.focused = true
@@ -88,10 +88,10 @@ export default class Selection {
 				selection.collapse(anchorNode.element, 0)
 				isCollapsed = true
 			}
-		} else {
+		} else if (isCollapsed || !anchorElement) {
 			this.blur()
 
-			return false
+			return
 		}
 
 		const firstNode = getNodeByElement(anchorElement)
@@ -135,7 +135,7 @@ export default class Selection {
 			this.handleSelectedItems(anchorNode, focusNode)
 			this.onUpdateHandlers.forEach((handler) => handler(this))
 
-			return false
+			return
 		}
 
 		this.forceUpdate = false

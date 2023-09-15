@@ -28,7 +28,8 @@ function watchTask() {
 	browserSync.init({
 		server: {
 			baseDir: "./playground"
-		}
+		},
+		open: false
 	})
 
 	gulp.watch([

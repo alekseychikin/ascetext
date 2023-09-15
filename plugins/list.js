@@ -47,9 +47,7 @@ export class ListItem extends Node {
 	}
 
 	append(target, anchor, { builder, appendDefault }) {
-		if (target.isContainer && target.type !== 'list-item-content') {
-			builder.append(this.first, target.first, anchor)
-		} else if (target.type === 'text' || target.isInlineWidget) {
+		if (target.type === 'text' || target.isInlineWidget) {
 			builder.append(this.first, target)
 		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
 			appendDefault(this, target.first.first, anchor)
@@ -78,7 +76,7 @@ export class ListItem extends Node {
 			return true
 		}
 
-		return node.isContainer || node.type === 'text' || node.isInlineWidget
+		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
 	}
 
 	getDepth(container, node) {
