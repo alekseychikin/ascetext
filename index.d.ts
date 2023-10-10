@@ -91,7 +91,6 @@ interface ActionParams {
 declare class Widget extends WithControls {
 	isWidget: true;
 	constructor(type: string, attributes?: any);
-	renderElement(): void;
 	backspaceHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	deleteHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
@@ -258,18 +257,16 @@ declare class Editing {
 
 declare class Selection {
 	constructor(core: Ascetext);
-	onFocus(event: any): void;
 	update(event: any): void;
 	onUpdate(handler: any): void;
 	setSelection(anchorNode: any, anchorOffset?: any, focusNode?: any, focusOffset?: any): void;
-	restoreSelection(forceUpdate?: boolean): void;
+	restoreSelection(): void;
 	core: Ascetext;
 	selection: {};
 	anchorIndex: any[] | null;
 	focusIndex: any[] | null;
 	focused: boolean;
 	skipUpdate: boolean;
-	forceUpdate: boolean;
 	onUpdateHandlers: any[];
 	selectedItems: any[];
 	focusedNodes: any[];
@@ -293,10 +290,9 @@ declare class Selection {
 		focusIndex: any[] | null;
 	};
 	setSelectionByIndexes(indexes: any): void;
-	getSelectedElement(element: any, offset: any): any[];
 	getDirection(anchorIndex: any, focusIndex: any): "backward" | "forward";
 	getIndex(container: any, element: any, offset: any): any[];
-	findElement(indexes: any): any;
+	findElementByIndex(indexes: number[]): HTMLElement | Text;
 	getSelectedItems(): any[];
 	cutRange(anchorContainer?: any, anchorOffset?: any, focusContainer?: any, focusOffset?: any): {
 		head: any;

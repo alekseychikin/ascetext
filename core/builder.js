@@ -561,6 +561,11 @@ export default class Builder {
 		if (node.isContainer && !node.first) {
 			this.append(node, new LineHolder())
 		}
+
+		if (node.isWidget) {
+			node.element.setAttribute('tabindex', '0')
+			node.element.setAttribute('data-widget', '')
+		}
 	}
 
 	registerPlugins() {
