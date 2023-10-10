@@ -180,38 +180,53 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	parse(element, builder) {
-		if (isHtmlElement(element) && element.matches('figure.image')) {
-			const classNames = element.className.split(/\s+/)
-			const figcaption = element.querySelector('figcaption')
-			const caption = new ImageCaption({
-				placeholder: this.params.placeholder
-			})
+		if (isHtmlElement(element)) {
+			let img
 			let size = ''
 			let float = 'none'
 			let content
 
-			classNames.forEach((className) => {
-				const sizeMatched = className.match(/image--size-(.*)/)
-				const floatMatched = className.match(/image--float-(.*)/)
+			if (element.matches('figure') && element.querySelector('img')) {
+				const classNames = element.className.split(/\s+/)
+				const figcaption = element.querySelector('figcaption')
 
-				if (sizeMatched) {
-					size = sizeMatched[1]
+				classNames.forEach((className) => {
+					const sizeMatched = className.match(/image--size-(.*)/)
+					const floatMatched = className.match(/image--float-(.*)/)
+
+					if (sizeMatched) {
+						size = sizeMatched[1]
+					}
+
+					if (floatMatched) {
+						float = floatMatched[1]
+					}
+				})
+				img = element.querySelector('img')
+
+				if (figcaption && figcaption.firstChild) {
+					content = builder.parse(figcaption)
 				}
-
-				if (floatMatched) {
-					float = floatMatched[1]
-				}
-			})
-
-			const image = new Image({ src: element.querySelector('img').src, size, float })
-
-			builder.append(image, caption)
-
-			if (figcaption && figcaption.firstChild && (content = builder.parse(figcaption))) {
-				builder.append(caption, content)
 			}
 
-			return image
+			if (element.matches('img')) {
+				img = element
+			}
+
+			if (img) {
+				const image = new Image({ src: img.src, size, float })
+				const caption = new ImageCaption({
+					placeholder: this.params.placeholder
+				})
+
+				builder.append(image, caption)
+
+				if (content) {
+					builder.append(caption, content)
+				}
+
+				return image
+			}
 		}
 	}
 
