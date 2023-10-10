@@ -133,11 +133,13 @@ export default class Builder {
 
 	getJson(first, last) {
 		const content = []
-		let children = []
+		let children
 		let current = first
 		let element
 
 		while (current) {
+			children = []
+
 			if (current.first) {
 				children = this.getJson(current.first)
 			}
