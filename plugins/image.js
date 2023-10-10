@@ -213,8 +213,8 @@ export default class ImagePlugin extends PluginPlugin {
 			}
 
 			if (img) {
-				const image = new Image({ src: img.src, size, float })
-				const caption = new ImageCaption({
+				const image = builder.create('image', { src: img.src, size, float })
+				const caption = builder.create('image-caption', {
 					placeholder: this.params.placeholder
 				})
 
@@ -309,8 +309,8 @@ export default class ImagePlugin extends PluginPlugin {
 
 			if (files.length) {
 				let src = await this.generateImagePreview(files[0])
-				const image = new Image({ src })
-				const caption = new ImageCaption({
+				const image = builder.create('image', { src })
+				const caption = builder.create('image-caption', {
 					placeholder: this.params.placeholder
 				})
 

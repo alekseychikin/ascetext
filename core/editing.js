@@ -89,7 +89,7 @@ export default class Editing {
 	}
 
 	onInput(event) {
-		const { selection, timeTravel } = this.core
+		const { selection, timeTravel, builder } = this.core
 
 		if (selection.anchorContainer && selection.anchorContainer.inputHandler) {
 			selection.anchorContainer.inputHandler()
@@ -109,7 +109,7 @@ export default class Editing {
 				this.scheduleUpdate(containers[0])
 				this.update()
 			} else if (containers.length > 1) {
-				const insertNode = new Text({ content: event.data || '' })
+				const insertNode = builder.create('text', { content: event.data || '' })
 				const topNodes = this.lastSelection.map(this.getTopNode)
 					.filter((node, index, self) => self.indexOf(node) === index)
 
@@ -131,9 +131,9 @@ export default class Editing {
 				})
 				selection.setSelectionByIndexes(this.lastSelectionIndexes)
 				this.handleRemoveRange()
-				this.core.timeTravel.preservePreviousSelection()
+				timeTravel.preservePreviousSelection()
 
-				this.core.builder.insert(selection.anchorContainer, insertNode, selection.anchorOffset)
+				builder.insert(selection.anchorContainer, insertNode, selection.anchorOffset)
 				this.lastSelection = null
 				this.lastSelectionIndexes = null
 			}
