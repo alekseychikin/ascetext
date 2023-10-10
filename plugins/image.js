@@ -20,8 +20,7 @@ export class Image extends Widget {
 
 		return createElement('figure', {
 			'class': this.getClassName(),
-			'contenteditable': false,
-			'tabIndex': 0
+			'contenteditable': false
 		}, [ this.image ])
 	}
 

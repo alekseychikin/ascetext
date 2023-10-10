@@ -363,7 +363,7 @@ export default class Editing {
 				firstContainer,
 				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
 			)
-		} else {
+		} else if (nextSelectableNode) {
 			this.core.selection.setSelection(nextSelectableNode)
 		}
 
@@ -553,7 +553,7 @@ export default class Editing {
 		}
 
 		if (selection.focused) {
-			selection.restoreSelection(false)
+			selection.restoreSelection()
 		}
 
 		this.core.timeTravel.commit()
