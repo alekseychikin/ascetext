@@ -30,7 +30,7 @@ class Root extends Section {
 }
 
 export default class Ascetext {
-	constructor(node, params) {
+	constructor(node, params = {}) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
 		this.onNodeChange = this.onNodeChange.bind(this)

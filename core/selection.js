@@ -38,7 +38,6 @@ export default class Selection {
 	}
 
 	update(event) {
-
 		if (event.type !== 'selectionchange') {
 			if (this.core.node.contains(event.target)) {
 				const anchorNode = getNodeByElement(event.target)
