@@ -128,7 +128,7 @@ type InferReturn<T> = T extends (param: any) => { body: infer U } ? { body: infe
 
 export default class Ascetext<T = Toolbar> {
 	constructor(node: HTMLElement, params?: {
-		plugins?: Record<string, PluginPlugin>;
+		plugins?: Array<PluginPlugin>;
 		icons?: Record<string, string>;
 		toolbar?: (core: Ascetext) => T;
 		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
@@ -144,7 +144,7 @@ export default class Ascetext<T = Toolbar> {
 	node: HTMLElement;
 	controlsContainer: HTMLElement;
 	onChangeHandlers: any[];
-	plugins: any;
+	plugins: Array<PluginPlugin>;
 	icons: any;
 	model: Root;
 	builder: Builder;
@@ -172,7 +172,7 @@ declare class Autocomplete {
 	constructor(core: Ascetext);
 	onEdit(): void;
 	node: HTMLElement;
-	plugins: Record<string, PluginPlugin>;
+	plugins: Array<PluginPlugin>;
 	selection: Selection;
 	builder: Builder;
 	editing: Editing;
@@ -409,7 +409,7 @@ declare class Toolbar {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	editing: Editing;
-	plugins: any;
+	plugins: Array<PluginPlugin>;
 	icons: any;
 	sizeObserver: SizeObserver;
 	focusedNodes: any[];

@@ -111,10 +111,10 @@ export default class Builder {
 				children = this.parseJson(element.body)
 			}
 
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+			current = this.core.plugins.reduce((parsed, plugin) => {
 				if (parsed) return parsed
 
-				return this.core.plugins[pluginName].parseJson(element, this)
+				return plugin.parseJson(element, this)
 			}, false)
 
 			if (current) {
@@ -179,10 +179,10 @@ export default class Builder {
 
 			nextElement = currentElement.nextSibling
 			children = null
-			current = Object.keys(this.core.plugins).reduce((parsed, pluginName) => {
+			current = this.core.plugins.reduce((parsed, plugin) => {
 				if (parsed) return parsed
 
-				return this.core.plugins[pluginName].parse(currentElement, this, context)
+				return plugin.parse(currentElement, this, context)
 			}, null)
 
 			if (
@@ -569,8 +569,7 @@ export default class Builder {
 	}
 
 	registerPlugins() {
-		Object.keys(this.core.plugins).forEach((key) => {
-			const plugin = this.core.plugins[key]
+		this.core.plugins.forEach((plugin) => {
 			let nodes
 
 			if (nodes = plugin.register) {

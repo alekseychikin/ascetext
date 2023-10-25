@@ -37,19 +37,19 @@ export default class Ascetext {
 
 		this.node = node
 		this.onChangeHandlers = []
-		this.plugins = Object.assign({
-			text: new TextPlugin(),
-			breakLine: new BreakLinePlugin(),
-			paragraph: new ParagraphPlugin(),
-			header: new HeaderPlugin(),
-			link: new LinkPlugin(),
-			image: new ImagePlugin(),
-			list: new ListPlugin(),
-			quote: new QuotePlugin()
-		}, params.plugins || {})
-		this.icons = Object.assign(Object.keys(this.plugins).reduce((icons, plugin) => {
-			if (this.plugins[plugin].icons) {
-				icons = Object.assign(icons, this.plugins[plugin].icons)
+		this.plugins = params.plugins || [
+			new TextPlugin(),
+			new BreakLinePlugin(),
+			new ParagraphPlugin(),
+			new HeaderPlugin(),
+			new LinkPlugin(),
+			new ImagePlugin(),
+			new ListPlugin(),
+			new QuotePlugin()
+		]
+		this.icons = Object.assign(this.plugins.reduce((icons, plugin) => {
+			if (plugin.icons) {
+				icons = Object.assign(icons, plugin.icons)
 			}
 
 			return icons

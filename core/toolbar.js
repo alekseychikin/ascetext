@@ -284,8 +284,8 @@ export default class Toolbar {
 			this.lastRangeFocused && !this.selection.isRange ||
 			focusedNodes.length
 		) {
-			Object.keys(this.plugins).forEach((type) => {
-				const nodeControls = this.plugins[type].getSelectControls(
+			this.plugins.forEach((plugin) => {
+				const nodeControls = plugin.getSelectControls(
 					focusedNodes,
 					this.selection.isRange
 				)
@@ -313,8 +313,8 @@ export default class Toolbar {
 	getInsertControls() {
 		const controls = []
 
-		Object.keys(this.plugins).forEach((type) => {
-			const nodeControls = this.plugins[type].getInsertControls(
+		this.plugins.forEach((plugin) => {
+			const nodeControls = plugin.getInsertControls(
 				this.selection.anchorContainer
 			)
 
@@ -329,9 +329,9 @@ export default class Toolbar {
 	getReplaceControls() {
 		const controls = []
 
-		Object.keys(this.plugins).forEach((type) => {
-			const nodeControls = this.plugins[type].getReplaceControls(
-				this.selection.anchorContainer
+		this.plugins.forEach((plugin) => {
+			const nodeControls = plugin.getReplaceControls(
+				this.selection.focusedNodes
 			)
 
 			if (nodeControls.length) {

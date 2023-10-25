@@ -10,20 +10,23 @@ import ImagePlugin from '../plugins/image.js'
 import ListPlugin from '../plugins/list.js'
 import QuotePlugin from '../plugins/quote.js'
 
-const plugins = {
-	text: new TextPlugin(),
-	breakLine: new BreakLinePlugin(),
-	paragraph: new ParagraphPlugin(),
-	header: new HeaderPlugin(),
-	link: new LinkPlugin(),
-	image: new ImagePlugin({
+const plugins = [
+	new TextPlugin(),
+	new BreakLinePlugin(),
+	new ParagraphPlugin(),
+	new HeaderPlugin(),
+	new LinkPlugin(),
+	new ImagePlugin({
 		placeholder: 'Add image caption'
 	}),
-	list: new ListPlugin(),
-	quote: new QuotePlugin()
-}
+	new ListPlugin(),
+	new QuotePlugin()
+]
 
-const editor = new Editor(document.getElementById('app'), { plugins, placeholder: 'Here is where your story comes...' })
+const editor = new Editor(document.getElementById('app'), {
+	plugins,
+	placeholder: 'Here is where your story comes...'
+})
 /*
 document.getElementById('save').addEventListener('click', () => {
 	const data = [new window.ClipboardItem({ "text/html": new Blob([`
