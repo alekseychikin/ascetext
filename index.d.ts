@@ -1,8 +1,8 @@
-declare class Node {
-	constructor(type: string, attributes?: {});
+declare class Node<S = Record<string, string>> {
+	constructor(type: string, attributes?: S);
 	id: number;
 	type: string;
-	attributes: {};
+	attributes: S;
 	isContainer: boolean;
 	isWidget: boolean;
 	isSection: boolean;
@@ -12,14 +12,14 @@ declare class Node {
 	element: HTMLElement;
 	parent?: Node;
 	next?: Node;
-	previoues?: Node;
+	previous?: Node;
 	first?: Node;
 	last?: Node;
 	setElement(element: HTMLElement): void;
 	accept(node: Node): boolean;
 	getNodeUntil(nodeUntil: Node): Node;
 	get hasOnlyBr(): boolean;
-	get shortcuts(): Record<string, (event, params: HandlerParams) => false | undefined>;
+	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => false | undefined>;
 	getClosestContainer(): Node;
 	getPreviousSelectableNode(): false | Node | undefined;
 	getNextSelectableNode(): false | Node | undefined;
@@ -75,6 +75,7 @@ interface HandlerParams {
 	anchorOffset: number;
 	focusOffset: number;
 	focused: boolean;
+	focusedNodes: Selection["focusedNodes"];
 	isLockPushChange: boolean;
 }
 
@@ -162,7 +163,7 @@ export default class Ascetext {
 	getContent(): string;
 	triggerChange(): void;
 	setJson(data: any): void;
-	getJson<U extends Node>(): InferReturn<U['json']>[];
+	getJson<T>(): T;
 	unmountAll(): void;
 	focus(): void;
 	destroy(): void;
@@ -268,8 +269,8 @@ declare class Selection {
 	focused: boolean;
 	skipUpdate: boolean;
 	onUpdateHandlers: any[];
-	selectedItems: any[];
-	focusedNodes: any[];
+	selectedItems: Node[];
+	focusedNodes: Node[];
 	timer: any;
 	isRange: boolean;
 	anchorAtFirstPositionInContainer: boolean | undefined;
@@ -513,7 +514,7 @@ declare class PluginPlugin {
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getInsertControls(container: Node): Control[];
 	getSelectControls(focusedNodes: Node[], isRange: any): Control[];
-	getReplaceControls(container: Node): Control[];
+	getReplaceControls(focusedNodes: Node[]): Control[];
 }
 
 declare class BreakLine extends InlineWidget {
@@ -524,7 +525,7 @@ declare class BreakLine extends InlineWidget {
 		tail: any;
 	};
 	json(): {
-		type: 'BreakLine';
+		type: 'breakLine';
 	};
 }
 
@@ -536,10 +537,10 @@ declare class BreakLinePlugin extends PluginPlugin {
 declare class Header extends Container {
 	constructor(attributes: any);
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'header';
 		level: number;
-		body?: T;
+		body: T;
 	};
 }
 
@@ -586,9 +587,9 @@ declare class ImageCaption extends Container {
 	}): void;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	inputHandler(): void;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'image-caption',
-		body?: T
+		body: T
 	};
 }
 
@@ -616,10 +617,10 @@ declare class Link extends InlineWidget {
 	constructor(attributes: any);
 	render(): HTMLAnchorElement;
 	normalize(element: any, builder: Builder): any;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'link';
 		url: string;
-		body?: T;
+		body: T;
 	};
 }
 
@@ -646,10 +647,10 @@ declare class List extends Group {
 	});
 	render(): any;
 	normalize(element: any, builder: Builder): any;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list';
 		decor: 'numerable' | 'marker';
-		body?: T;
+		body: T;
 	};
 }
 
@@ -662,9 +663,9 @@ declare class ListItem extends Group {
 		appendDefault: any;
 	}): void;
 	getDepth(container: any, node: any): number;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list-item';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -681,9 +682,9 @@ declare class ListItemContent extends Container {
 	indentLeft(event: any, params: ActionParams): void;
 	indentRight(event: any, params: ActionParams): void;
 	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list-item-content';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -697,16 +698,16 @@ declare class ListPlugin extends PluginPlugin {
 	get icons(): IconsGetter;
 	parse(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
 	parseJson(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
-	setNumberList(container: any): (event: any, params: ActionParams) => void;
-	setMarkerList(container: any): (event: any, params: ActionParams) => void;
+	setNumberList(event: any, params: ActionParams): void;
+	setMarkerList(event: any, params: ActionParams): void;
 }
 
 declare class Paragraph extends Container {
 	constructor();
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'paragraph';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -720,9 +721,9 @@ declare class ParagraphPlugin extends PluginPlugin {
 declare class Quote extends Container {
 	constructor();
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'quote';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -733,10 +734,16 @@ declare class QuotePlugin extends PluginPlugin {
 	setQuote(event: any, params: ActionParams): void;
 }
 
-declare class TextNode extends Node {
-	constructor(attributes: {
-		content: string;
-	});
+export interface TextAttributes {
+	content: string;
+	weight?: string;
+	style?: string;
+	decoration?: string;
+	strike?: string
+}
+
+declare class TextNode extends Node<TextAttributes> {
+	constructor(attributes: TextAttributes);
 	render(): any;
 	update(): void;
 	create(modifiers: any): any;
@@ -774,7 +781,15 @@ declare class TextPlugin extends PluginPlugin {
 	setUnderline(event: any, params: ActionParams): void;
 }
 
-export type inferNodes<T extends Record<string, PluginPlugin>> = T extends Record<string, infer K extends { parse: (...params: any) => any}> ? Exclude<ReturnType<K["parse"]>, undefined> : never
+type InferNodes<T extends Array<PluginPlugin>> = T extends Array<{ parse: (...params: any) => infer U}> ? Exclude<U, undefined> : never
+type ExtractJson<T extends Node> = T extends { json(children: any): { body: any } }
+	? Omit<ReturnType<T["json"]>, 'body'> & {
+		body: Json<T>
+	}
+	: T extends { json(): any }
+		? ReturnType<T["json"]>
+		: never
+type Json<T extends Node> = ExtractJson<T>[]
 
 export {
 	Ascetext,
@@ -786,6 +801,7 @@ export {
 	SizeObserverConstructor,
 	SizeObserver,
 	SizeObserverEntry,
+	Component,
 	Control,
 	ControlControl,
 	ControlButton,
@@ -810,7 +826,12 @@ export {
 	Image,
 	ImagePlugin,
 	ImageCaption,
+	List,
+	ListItem,
+	ListItemContent,
 	ListPlugin,
 	QuotePlugin,
-	PluginPlugin
+	PluginPlugin,
+	Json,
+	InferNodes
 };
