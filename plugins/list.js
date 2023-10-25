@@ -16,6 +16,20 @@ export class List extends Group {
 		return createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
 	}
 
+	update(previous) {
+		if (previous.decor !== this.attributes.decor) {
+			const element = createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
+
+			while (this.element.childNodes.length) {
+				element.appendChild(this.element.childNodes[0])
+			}
+
+			this.element.parentNode.insertBefore(element, this.element)
+			this.element.parentNode.removeChild(this.element)
+			this.setElement(element)
+		}
+	}
+
 	accept(node) {
 		return node.type === 'list-item'
 	}
@@ -66,9 +80,7 @@ export class ListItem extends Node {
 			if (this.params.maxDepth !== null) {
 				const depth = this.getDepth(this, node)
 
-				// console.log(depth)
-
-				if (depth >= this.params.maxDepth) {
+				if (depth > this.params.maxDepth) {
 					return false
 				}
 			}
@@ -84,7 +96,7 @@ export class ListItem extends Node {
 		let depth = 0
 
 		while (current) {
-			if (current.type === 'list') {
+			if (current.type === 'list-item') {
 				depth++
 			}
 
@@ -94,7 +106,7 @@ export class ListItem extends Node {
 		current = node
 
 		while (current) {
-			if (current.type === 'list') {
+			if (current.type === 'list-item') {
 				depth++
 			}
 
@@ -148,7 +160,8 @@ export class ListItemContent extends Container {
 		builder,
 		anchorContainer,
 		anchorAtFirstPositionInContainer,
-		setSelection
+		setSelection,
+		focusedNodes
 	}) {
 		const item = this.parent
 		const parent = item.parent
@@ -159,7 +172,7 @@ export class ListItemContent extends Container {
 			if (parent.parent.type === 'list-item') {
 				this.indentLeft(event, { builder, anchorContainer, setSelection })
 			} else if (parent.parent.isSection) {
-				this.putEmptyBlockInMiddle(builder, setSelection)
+				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
 			}
 		}
 	}
@@ -168,7 +181,8 @@ export class ListItemContent extends Container {
 		builder,
 		setSelection,
 		anchorContainer,
-		anchorOffset
+		anchorOffset,
+		focusedNodes
 	}) {
 		event.preventDefault()
 
@@ -184,7 +198,7 @@ export class ListItemContent extends Container {
 			if (parent.parent.type === 'list-item') {
 				this.indentLeft(event, { anchorContainer, setSelection, builder })
 			} else if (parent.parent.isSection) {
-				this.putEmptyBlockInMiddle(builder, setSelection)
+				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
 			}
 		} else {
 			const nextItem = builder.create('list-item', this.params)
@@ -227,15 +241,18 @@ export class ListItemContent extends Container {
 	indentLeft(event, { builder, anchorContainer, setSelection }) {
 		const item = anchorContainer.parent
 		const parentList = item.parent
+		let subList
 
 		if (item.next) {
-			const list = builder.create('list', { decor: item.parent.attributes.decor })
-
-			builder.append(list, item.next)
-			builder.append(item, list)
+			subList = builder.create('list', { decor: item.parent.attributes.decor })
+			builder.append(subList, item.next)
 		}
 
 		builder.append(parentList.parent.parent, item, parentList.parent.next)
+
+		if (subList) {
+			builder.append(item, subList)
+		}
 
 		if (!parentList.first) {
 			builder.cut(parentList)
@@ -260,37 +277,58 @@ export class ListItemContent extends Container {
 		setSelection(anchorContainer)
 	}
 
-	putEmptyBlockInMiddle(builder, setSelection) {
-		const item = this.parent
-		const parentList = item.parent
-		const newBlock = builder.createBlock()
-		const last = item.last
-		const next = item.next
+	convertListItemToBlock(event, { builder, setSelection, focusedNodes }) {
+		focusedNodes.forEach((container) => {
+			if (container.type === 'list-item-content') {
+				const item = container.parent
+				const newBlock = builder.createBlock()
+				let parentList = item.parent
+				let parentSection = item.parent
+				let parentNext = item.next
+				let next = item.next
 
-		builder.append(parentList.parent, newBlock, parentList.next)
+				if (item.last && item.last.type === 'list') {
+					builder.append(parentList, item.last.first, item.next)
+					builder.cut(item.last)
+					next = item.next
+				}
 
-		if (this.first) {
-			builder.append(newBlock, this.first)
-		}
+				if (container.first) {
+					builder.append(newBlock, container.first)
+				}
 
-		builder.cut(item)
+				builder.cut(item)
 
-		if (next) {
-			const ul = builder.create('list', parent.attributes)
+				while (!parentSection.isSection) {
+					parentNext = parentSection.next
+					parentSection = parentSection.parent
 
-			builder.append(ul, next)
-			builder.append(newBlock.parent, ul, newBlock.next)
-		}
+					if (next && parentSection.type === 'list') {
+						parentList = next.parent
+						builder.append(parentSection, next, parentNext)
 
-		if (!parentList.first) {
-			builder.cut(parentList)
-		}
+						if (!parentList.first) {
+							builder.cut(parentList)
+						}
+					}
 
-		if (last && last.type === 'list') {
-			builder.append(newBlock.parent, last, newBlock.next)
-		}
+					if (!next && parentNext && !parentSection.isSection) {
+						next = parentNext
+					}
+				}
 
-		setSelection(newBlock)
+				builder.append(parentSection, newBlock, parentNext)
+
+				if (next) {
+					const ul = builder.create('list', next.parent.attributes)
+
+					builder.append(ul, next)
+					builder.append(newBlock.parent, ul, newBlock.next)
+				}
+
+				setSelection(newBlock)
+			}
+		})
 	}
 
 	duplicate(builder) {
@@ -314,6 +352,8 @@ export default class ListPlugin extends PluginPlugin {
 	constructor(params = { maxDepth: null }) {
 		super()
 
+		this.setList = this.setList.bind(this)
+
 		this.params = params
 	}
 
@@ -333,13 +373,13 @@ export default class ListPlugin extends PluginPlugin {
 					slug: 'list.createMarked',
 					label: 'Добавить маркированный спискок',
 					icon: 'marked',
-					action: this.setMarkerList(container)
+					action: this.setList('marker')
 				},
 				{
 					slug: 'list.createNumerated',
 					label: 'Добавить нумерованный список',
 					icon: 'numerated',
-					action: this.setNumberList(container)
+					action: this.setList('numerable')
 				}
 			]
 		}
@@ -347,28 +387,101 @@ export default class ListPlugin extends PluginPlugin {
 		return []
 	}
 
-	getReplaceControls(container) {
-		const controls = []
+	getReplaceControls(focusedNodes) {
+		const containers = focusedNodes.filter((node) => node.isContainer)
+		const listItemContents = containers.filter((node) => node.type === 'list-item-content')
+		const types = listItemContents.reduce((result, node) => {
+			const { decor } = node.parent.parent.attributes
 
-		if (container.type === 'list-item-content') {
-			if (container.parent.parent.parent.type === 'list-item') {
-				controls.push({
-					slug: 'list.indentLeft',
-					label: 'На один уровень влево',
-					shortcut: 'ctrl+[/meta+[',
-					icon: 'indentLeft',
-					action: container.indentLeft
-				})
+			if (!result.includes(decor)) {
+				result.push(decor)
 			}
 
-			if (container.parent.previous) {
+			return result
+		}, [])
+		const controls = []
+
+		if (types.length > 1) {
+			controls.push({
+				slug: 'list.uncreateMarked',
+				label: 'Конвертировать в нумерованный список',
+				icon: 'marked',
+				selected: true,
+				action: this.convertNumberList
+			})
+			controls.push({
+				slug: 'list.uncreateNumerated',
+				label: 'Конвертировать в маркированный список',
+				icon: 'numerated',
+				selected: true,
+				action: this.convertMarkerList
+			})
+		} else if (types.length === 1) {
+			if (types[0] === 'marker') {
 				controls.push({
-					slug: 'list.indentRight',
-					label: 'На один уровень вправо',
-					shortcut: 'ctrl+]/meta+]',
-					icon: 'indentRight',
-					action: container.indentRight
+					slug: 'list.uncreateMarked',
+					label: 'Убрать элементы из списка',
+					icon: 'marked',
+					selected: true,
+					action: listItemContents[0].convertListItemToBlock
 				})
+				controls.push({
+					slug: 'list.uncreateMarked',
+					label: 'Конвертировать в нумерованный список',
+					icon: 'numerated',
+					action: this.convertNumberList
+				})
+			} else {
+				controls.push({
+					slug: 'list.uncreateMarked',
+					label: 'Конвертировать в маркированный список',
+					icon: 'marked',
+					action: this.convertMarkerList
+				})
+				controls.push({
+					slug: 'list.uncreateMarked',
+					label: 'Убрать элементы из списка',
+					icon: 'numerated',
+					selected: true,
+					action: listItemContents[0].convertListItemToBlock
+				})
+			}
+		} else {
+			controls.push({
+				slug: 'list.createMarked',
+				label: 'Добавить маркированный спискок',
+				icon: 'marked',
+				action: this.setList('marker')
+			})
+			controls.push({
+				slug: 'list.createNumerated',
+				label: 'Добавить нумерованный список',
+				icon: 'numerated',
+				action: this.setList('numerable')
+			})
+		}
+
+		if (containers.length === 1) {
+			if (containers[0].type === 'list-item-content') {
+				if (containers[0].parent.parent.parent.type === 'list-item') {
+					controls.push({
+						slug: 'list.indentLeft',
+						label: 'На один уровень влево',
+						shortcut: 'ctrl+[/meta+[',
+						icon: 'indentLeft',
+						action: containers[0].indentLeft
+					})
+				}
+
+				if (containers[0].parent.previous && (!this.params.maxDepth || containers[0].parent.getDepth(containers[0].parent) < this.params.maxDepth)) {
+					controls.push({
+						slug: 'list.indentRight',
+						label: 'На один уровень вправо',
+						shortcut: 'ctrl+]/meta+]',
+						icon: 'indentRight',
+						action: containers[0].indentRight
+					})
+				}
 			}
 		}
 
@@ -408,27 +521,58 @@ export default class ListPlugin extends PluginPlugin {
 		}
 	}
 
-	setNumberList(container) {
-		return (event, { builder }) => {
-			const list = builder.create('list', { decor: 'numerable' })
-			const listItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
-
-			builder.append(listItem, content)
-			builder.append(list, listItem)
-			builder.replace(container, list)
-		}
+	convertNumberList(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((node) => {
+			if (node.type === 'list-item-content') {
+				builder.setAttribute(node.parent.parent, 'decor', 'numerable')
+			}
+		})
 	}
 
-	setMarkerList(container) {
-		return (event, { builder }) => {
-			const list = builder.create('list', { decor: 'marker' })
-			const listItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
+	convertMarkerList(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((node) => {
+			if (node.type === 'list-item-content') {
+				builder.setAttribute(node.parent.parent, 'decor', 'marker')
+			}
+		})
+	}
 
-			builder.append(listItem, content)
-			builder.append(list, listItem)
-			builder.replace(container, list)
+	setList(type) {
+		return (event, { builder, focusedNodes }) => {
+			const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+			const { params } = this
+			let previous
+			let group = []
+
+			function convertGroup(group) {
+				if (group.length) {
+					const list = builder.create('list', { decor: type })
+
+					builder.append(group[0].parent, list, group[0])
+					group.forEach((node) => {
+						const listItem = builder.create('list-item', params)
+						const content = builder.create('list-item-content', params)
+
+						builder.append(content, node.first)
+						builder.append(listItem, content)
+						builder.append(list, listItem)
+						builder.cut(node)
+					})
+				}
+			}
+
+			containers.forEach((node) => {
+				if (node.previous !== previous) {
+					previous = node
+					convertGroup(group)
+					group = [node]
+				} else {
+					group.push(node)
+					previous = node
+				}
+			})
+
+			convertGroup(group)
 		}
 	}
 }

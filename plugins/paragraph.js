@@ -42,13 +42,15 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 	}
 
-	setParagraph(event, { builder, anchorContainer }) {
-		if (anchorContainer.type !== 'paragraph') {
-			const paragraph = builder.create('paragraph')
+	setParagraph(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((item) => {
+			if (item.isContainer && item.parent.isSection && item.type !== 'paragraph') {
+				const paragraph = builder.create('paragraph')
 
-			builder.append(paragraph, anchorContainer.first)
-			builder.replace(anchorContainer, paragraph)
-		}
+				builder.append(paragraph, item.first)
+				builder.replace(item, paragraph)
+			}
+		})
 	}
 
 	getInsertControls(container) {
@@ -64,8 +66,11 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}]
 	}
 
-	getReplaceControls(container) {
-		if (container.type === 'paragraph' || !container.parent.isSection || !container.isContainer) {
+	getReplaceControls(focusedNodes) {
+		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+		const paragraphs = containers.filter((node) => node.type === 'paragraph')
+
+		if (containers.length === paragraphs.length) {
 			return []
 		}
 
@@ -73,6 +78,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 			slug: 'paragraph.create',
 			label: 'Сделать параграфом',
 			icon: 'paragraph',
+			selected: paragraphs.length > 0,
 			action: this.setParagraph
 		}]
 	}

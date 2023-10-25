@@ -68,13 +68,15 @@ export default class HeaderPlugin extends PluginPlugin {
 	}
 
 	setHeader(level) {
-		return (event, { builder, anchorContainer }) => {
-			if (anchorContainer.type !== 'header' || anchorContainer.level !== level) {
-				const header = builder.create('header', { level })
+		return (event, { builder, focusedNodes }) => {
+			focusedNodes.forEach((item) => {
+				if (item.isContainer && item.parent.isSection && (item.type !== 'header' || item.level !== level)) {
+					const header = builder.create('header', { level })
 
-				builder.append(header, anchorContainer.first)
-				builder.replace(anchorContainer, header)
-			}
+					builder.append(header, item.first)
+					builder.replace(item, header)
+				}
+			})
 		}
 	}
 
@@ -97,18 +99,23 @@ export default class HeaderPlugin extends PluginPlugin {
 		return controls
 	}
 
-	getReplaceControls(container) {
-		if (!container.parent.isSection || !container.isContainer) {
+	getReplaceControls(focusedNodes) {
+		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+		const headers = containers.filter((node) => node.type === 'header')
+		const headerLevels = headers.map((header) => header.attributes.level)
+
+		if (!containers.length) {
 			return []
 		}
 
 		const controls = this.params.allowLevels
-			.filter((level) => level !== container.attributes.level)
+			.filter((level) => !headerLevels.includes(level) || containers.length > headerLevels.length)
 			.map((level) =>
 				({
 					slug: `header.h${level}`,
 					label: 'Сделать заголовком',
 					icon: `h${level}`,
+					selected: headerLevels.includes(level),
 					action: this.setHeader(level)
 				})
 			)

@@ -182,12 +182,11 @@ export default class Toolbar {
 	updateSideToolbar() {
 		const { anchorContainer, isRange, focused } = this.selection
 
-		if (!focused) {
+		if (!focused || isRange) {
 			return null
 		}
 
 		if (
-			!isRange &&
 			anchorContainer.isContainer &&
 			anchorContainer.isEmpty
 		) {
@@ -199,7 +198,11 @@ export default class Toolbar {
 				this.previousContainer = anchorContainer
 				this.renderSideToolbar()
 			}
-		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
+		} else if (
+			anchorContainer.isContainer &&
+			!anchorContainer.isEmpty ||
+			anchorContainer.isWidget
+		) {
 			this.sideMode = 'replace'
 
 			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
@@ -222,9 +225,9 @@ export default class Toolbar {
 	}
 
 	updateButtonHolder() {
-		const { focused } = this.selection
+		const { focused, isRange } = this.selection
 
-		if (!focused && !this.isShowSideToolbar || this.isMobile) {
+		if (!focused && !this.isShowSideToolbar || this.isMobile || isRange) {
 			this.hideToggleButtonHolder()
 		} else if (focused) {
 			if (this.sideMode === 'insert') {
@@ -288,6 +291,7 @@ export default class Toolbar {
 	renderSelectedToolbar() {
 		const controls = []
 		const focusedNodes = this.selection.focusedNodes
+		const containers = focusedNodes.filter((node) => node.isContainer)
 
 		if (
 			focusedNodes.length !== this.focusedNodes.length ||
@@ -295,6 +299,14 @@ export default class Toolbar {
 			this.lastRangeFocused && !this.selection.isRange ||
 			focusedNodes.length
 		) {
+			if (containers.length > 1) {
+				this.getReplaceControls().forEach((nodeControls) => {
+					if (nodeControls.length) {
+						controls.push(nodeControls)
+					}
+				})
+			}
+
 			this.plugins.forEach((plugin) => {
 				const nodeControls = plugin.getSelectControls(
 					focusedNodes,

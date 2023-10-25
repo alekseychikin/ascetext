@@ -55,8 +55,11 @@ export default class QuotePlugin extends PluginPlugin {
 		}]
 	}
 
-	getReplaceControls(container) {
-		if (container.type === 'quote' || !container.parent.isSection || !container.isContainer) {
+	getReplaceControls(focusedNodes) {
+		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+		const quotes = containers.filter((node) => node.type === 'quote')
+
+		if (containers.length === quotes.length) {
 			return []
 		}
 
@@ -64,16 +67,19 @@ export default class QuotePlugin extends PluginPlugin {
 			slug: 'quote.create',
 			label: 'Сделать цитатой',
 			icon: 'quote',
+			selected: quotes.length > 0,
 			action: this.setQuote
 		}]
 	}
 
-	setQuote(event, { builder, anchorContainer }) {
-		if (anchorContainer.type !== 'quote') {
-			const quote = builder.create('quote')
+	setQuote(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((item) => {
+			if (item.isContainer && item.parent.isSection && item.type !== 'quote') {
+				const quote = builder.create('quote')
 
-			builder.append(quote, anchorContainer.first)
-			builder.replace(anchorContainer, quote)
-		}
+				builder.append(quote, item.first)
+				builder.replace(item, quote)
+			}
+		})
 	}
 }
