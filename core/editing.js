@@ -168,7 +168,7 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, toolbar } = this.core
+		const { selection, timeTravel, components } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
@@ -190,8 +190,7 @@ export default class Editing {
 				}
 			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(shortrcutMatcher, selection.anchorContainer.shortcuts))) {
 				shortcutHandler(event, this.getModifyKeyHandlerParams())
-			} else if (shortcutHandler = this.catchShortcut(shortrcutMatcher, toolbar.getShortcuts())) {
-				toolbar.controlHandler(shortcutHandler, event)
+			} else if (components.find((component) => component.catchShortcut(shortrcutMatcher, event))) {
 				event.preventDefault()
 			} else if (forbiddenShortcuts.find((item) => shortrcutMatcher(item))) {
 				event.preventDefault()
@@ -497,6 +496,7 @@ export default class Editing {
 		this.modifyKeyHandlerParams.anchorContainer = this.core.selection.anchorContainer
 		this.modifyKeyHandlerParams.focusContainer = this.core.selection.focusContainer
 		this.modifyKeyHandlerParams.focused = this.core.selection.focused
+		this.modifyKeyHandlerParams.focusedNodes = this.core.selection.focusedNodes
 		this.modifyKeyHandlerParams.isLockPushChange = this.core.timeTravel.isLockPushChange
 
 		return this.modifyKeyHandlerParams

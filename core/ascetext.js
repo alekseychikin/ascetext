@@ -63,11 +63,12 @@ export default class Ascetext {
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
-		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 		this.init = false
+		this.components = params.components ? params.components : [new Toolbar(this)]
+		this.components.forEach((component) => component.register(this))
 
 		const container = document.createElement('div')
 
@@ -143,8 +144,8 @@ export default class Ascetext {
 
 		const children = this.builder.parse(container)
 
-		this.toolbar.hideSideToolbar()
-		this.toolbar.hideCenteredToolbar()
+		// this.toolbar.hideSideToolbar()
+		// this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
@@ -165,8 +166,8 @@ export default class Ascetext {
 
 		const children = this.builder.parseJson(data)
 
-		this.toolbar.hideSideToolbar()
-		this.toolbar.hideCenteredToolbar()
+		// this.toolbar.hideSideToolbar()
+		// this.toolbar.hideCenteredToolbar()
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
@@ -197,10 +198,10 @@ export default class Ascetext {
 		this.node.setAttribute('contenteditable', false)
 		this.editing.destroy()
 		this.selection.destroy()
-		this.toolbar.destroy()
 		this.dragndrop.destroy()
 		this.sizeObserver.destroy()
 		this.controls.destroy()
+		this.components.forEach((component) => component.unregister())
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}

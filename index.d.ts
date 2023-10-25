@@ -126,11 +126,11 @@ declare class Group extends Node {
 type inferBody<T, S> = T extends { body: infer U } ? { body: inferBody<U, S> } : S
 type InferReturn<T> = T extends (param: any) => { body: infer U } ? { body: inferBody<U, ReturnType<T>> } : ReturnType<T>
 
-export default class Ascetext<T = Toolbar> {
+export default class Ascetext {
 	constructor(node: HTMLElement, params?: {
 		plugins?: Array<PluginPlugin>;
+		components?: Array<Component>;
 		icons?: Record<string, string>;
-		toolbar?: (core: Ascetext) => T;
 		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
 		placeholder?: string | {
 			label: string;
@@ -145,13 +145,13 @@ export default class Ascetext<T = Toolbar> {
 	controlsContainer: HTMLElement;
 	onChangeHandlers: any[];
 	plugins: Array<PluginPlugin>;
+	components: Array<Component>;
 	icons: any;
 	model: Root;
 	builder: Builder;
 	editing: Editing;
 	selection: Selection;
 	timeTravel: TimeTravel;
-	toolbar: T;
 	sizeObserver: SizeObserver;
 	controls: any;
 	autocomplete: Autocomplete;
@@ -383,8 +383,16 @@ interface Control {
 	cancel?: (event: any, params: ActionParams) => void;
 }
 
-declare class Toolbar {
-	constructor(core: Ascetext);
+export type ShortcutMatcher = (shortcut: string) => boolean;
+
+declare class Component {
+	register(core: Ascetext): void;
+	unregister(): void;
+	catchShortcut(matcher: ShortcutMatcher, event: KeyboardEvent): boolean;
+}
+
+declare class Toolbar extends Component {
+	constructor();
 	get css(): CSSGetter;
 	onSelectionChange(): void;
 	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
@@ -411,7 +419,7 @@ declare class Toolbar {
 	editing: Editing;
 	plugins: Array<PluginPlugin>;
 	icons: any;
-	sizeObserver: SizeObserver;
+	sizeObserver: SizeObserver | null;
 	focusedNodes: any[];
 	lastRangeFocused: boolean;
 	previousSelection: any;

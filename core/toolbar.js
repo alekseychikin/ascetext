@@ -22,7 +22,7 @@ export default class Toolbar {
 		}
 	}
 
-	constructor(core) {
+	constructor() {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showSideToolbar = this.showSideToolbar.bind(this)
@@ -43,14 +43,14 @@ export default class Toolbar {
 		this.isShowCenteredToolbar = false
 		this.isMobile = true
 		this.customMode = false
-		this.builder = core.builder
-		this.selection = core.selection
-		this.timeTravel = core.timeTravel
-		this.editing = core.editing
-		this.plugins = core.plugins
-		this.icons = core.icons
-		this.sizeObserver = core.sizeObserver
-		this.node = core.node
+		this.builder = null
+		this.selection = null
+		this.timeTravel = null
+		this.editing = null
+		this.plugins = null
+		this.icons = null
+		this.sizeObserver = null
+		this.node = null
 		this.container = document.createElement('div')
 		this.focusedNodes = []
 		this.lastRangeFocused = false
@@ -93,17 +93,28 @@ export default class Toolbar {
 		this.container.appendChild(this.sideToolbar)
 		this.container.appendChild(this.centeredToolbar)
 		this.container.appendChild(this.containerAvatar)
+		this.mediaQuery = window.matchMedia('(min-width: 640px)')
+	}
+
+	register(core) {
+		this.builder = core.builder
+		this.selection = core.selection
+		this.timeTravel = core.timeTravel
+		this.editing = core.editing
+		this.plugins = core.plugins
+		this.icons = core.icons
+		this.sizeObserver = core.sizeObserver
+		this.node = core.node
+
 		document.body.appendChild(this.container)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
-		visualViewport.addEventListener('resize', this.viewportResize)
-		visualViewport.addEventListener('scroll', this.viewportResize)
 
 		this.selection.onUpdate(this.onSelectionChange)
-
-		this.mediaQuery = window.matchMedia('(min-width: 640px)')
+		visualViewport.addEventListener('resize', this.viewportResize)
+		visualViewport.addEventListener('scroll', this.viewportResize)
 		this.bindViewportChange()
 	}
 
@@ -419,6 +430,21 @@ export default class Toolbar {
 		}
 	}
 
+	catchShortcut(shortcutMatcher, event) {
+		const shortcuts = this.getShortcuts()
+		let shortcut
+
+		for (shortcut in shortcuts) {
+			if (shortcutMatcher(shortcut)) {
+				this.controlHandler(shortcuts[shortcut], event)
+
+				return true
+			}
+		}
+
+		return false
+	}
+
 	getActionHandlerParams() {
 		return {
 			builder: this.builder,
@@ -640,7 +666,7 @@ export default class Toolbar {
 		return shortcuts
 	}
 
-	destroy() {
+	unregister() {
 		this.container.removeChild(this.toggleButtonHolder)
 		this.container.removeChild(this.containerAvatar)
 		this.container.removeChild(this.sideToolbar)
