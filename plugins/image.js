@@ -171,10 +171,10 @@ export default class ImagePlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			image: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m3 17 4.768-5.563c.424-.494.635-.741.887-.83.22-.079.462-.077.682.005.25.092.458.342.875.842l2.666 3.2c.39.467.583.7.82.794.208.083.438.093.653.03.244-.072.459-.287.888-.717l.497-.497c.438-.438.657-.656.904-.728a.999.999 0 0 1 .659.037c.238.098.432.34.818.823L21 18m0-10.8v9.6c0 1.12 0 1.68-.218 2.108a2 2 0 0 1-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 0 1-.874-.874C3 18.48 3 17.92 3 16.8V7.2c0-1.12 0-1.68.218-2.108a2 2 0 0 1 .874-.874C4.52 4 5.08 4 6.2 4h11.6c1.12 0 1.68 0 2.108.218a2 2 0 0 1 .874.874C21 5.52 21 6.08 21 7.2ZM15 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			floatLeft: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 14h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatLeft" fill="#fff"><rect x="13" y="9" width="8" height="6" rx="1"/></mask><rect x="13" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatLeft)"/></svg>',
-			floatRight: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16m-6-4h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatRight" fill="#fff"><rect x="3" y="9" width="8" height="6" rx="1"/></mask><rect x="3" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatRight)"/></svg>',
-			wide: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="a" fill="#fff"><rect x="3" y="9" width="18" height="6" rx="1"/></mask><rect x="3" y="9" width="18" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#a)"/></svg>'
+			image: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m3 17 4.768-5.563c.424-.494.635-.741.887-.83.22-.079.462-.077.682.005.25.092.458.342.875.842l2.666 3.2c.39.467.583.7.82.794.208.083.438.093.653.03.244-.072.459-.287.888-.717l.497-.497c.438-.438.657-.656.904-.728a.999.999 0 0 1 .659.037c.238.098.432.34.818.823L21 18m0-10.8v9.6c0 1.12 0 1.68-.218 2.108a2 2 0 0 1-.874.874C19.48 20 18.92 20 17.8 20H6.2c-1.12 0-1.68 0-2.108-.218a2 2 0 0 1-.874-.874C3 18.48 3 17.92 3 16.8V7.2c0-1.12 0-1.68.218-2.108a2 2 0 0 1 .874-.874C4.52 4 5.08 4 6.2 4h11.6c1.12 0 1.68 0 2.108.218a2 2 0 0 1 .874.874C21 5.52 21 6.08 21 7.2ZM15 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			floatLeft: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 14h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatLeft" fill="#fff"><rect x="13" y="9" width="8" height="6" rx="1"/></mask><rect x="13" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatLeft)"/></svg>',
+			floatRight: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16m-6-4h6m-6-4h6M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="imageFloatRight" fill="#fff"><rect x="3" y="9" width="8" height="6" rx="1"/></mask><rect x="3" y="9" width="8" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#imageFloatRight)"/></svg>',
+			wide: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 18h16M4 6h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><mask id="a" fill="#fff"><rect x="3" y="9" width="18" height="6" rx="1"/></mask><rect x="3" y="9" width="18" height="6" rx="1" stroke="currentColor" stroke-width="4" mask="url(#a)"/></svg>'
 		}
 	}
 
@@ -252,7 +252,7 @@ export default class ImagePlugin extends PluginPlugin {
 		return [{
 			slug: 'image.upload',
 			type: 'file',
-			label: 'Вставить картинку',
+			label: 'Upload image',
 			icon: 'image',
 			action: this.insertImage(container)
 		}]
@@ -271,21 +271,21 @@ export default class ImagePlugin extends PluginPlugin {
 			return [
 				{
 					slug: 'image.floatLeft',
-					label: 'Обтекание справа',
+					label: 'Float right',
 					icon: 'floatRight',
 					selected: image.attributes.float === 'left',
 					action: this.toggleFloatLeft(image)
 				},
 				{
 					slug: 'image.floatRight',
-					label: 'Обтекание слева',
+					label: 'Float left',
 					icon: 'floatLeft',
 					selected: image.attributes.float === 'right',
 					action: this.toggleFloatRight(image)
 				},
 				{
 					slug: 'image.wide',
-					label: 'Широкая картинка',
+					label: 'Full wide',
 					icon: 'wide',
 					selected: image.attributes.size === 'wide',
 					action: this.toggleSizeWide(image)
@@ -293,7 +293,7 @@ export default class ImagePlugin extends PluginPlugin {
 				{
 					slug: 'image.upload',
 					type: 'file',
-					label: 'Обновить картинку',
+					label: 'Upload image',
 					icon: 'image',
 					action: this.updateImage(image)
 				}

@@ -559,7 +559,7 @@ export default class Toolbar extends ComponentComponent {
 				case 'dropdown':
 					return new ControlDropdown({
 						...control,
-						components: this.wrapControls(control.controls.map((control) => ({
+						children: this.wrapControls(control.controls.map((control) => ({
 							...control,
 							showLabel: true
 						})))
