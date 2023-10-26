@@ -9,7 +9,8 @@ import ImagePlugin, { Image, ImageCaption } from './plugins/image.js'
 import ListPlugin, { List, ListItem, ListItemContent } from './plugins/list.js'
 import QuotePlugin, { Quote } from './plugins/quote.js'
 import PluginPlugin from './plugins/plugin.js'
-import Toolbar from './core/toolbar.js'
+import ComponentComponent from './components/component.js'
+import Toolbar from './components/toolbar.js'
 import SizeObserver from './core/size-observer.js'
 import ControlControl from './controls/control.js'
 import ControlButton from './controls/button.js'
@@ -42,6 +43,7 @@ export {
 	QuotePlugin,
 	Quote,
 	PluginPlugin,
+	ComponentComponent,
 	Toolbar,
 	SizeObserver,
 	ControlControl,

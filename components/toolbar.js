@@ -1,5 +1,6 @@
 import createElement from '../utils/create-element.js'
 import getStyle from '../utils/get-style.js'
+import ComponentComponent from './component.js'
 import ControlButton from '../controls/button.js'
 import ControlFile from '../controls/file.js'
 import ControlInput from '../controls/input.js'
@@ -8,7 +9,7 @@ import ControlDropdown from '../controls/dropdown.js'
 
 const toolbarIndent = 10
 
-export default class Toolbar {
+export default class Toolbar extends ComponentComponent {
 	get css() {
 		return {
 			container: 'contenteditor__tooltip',
@@ -24,6 +25,8 @@ export default class Toolbar {
 	}
 
 	constructor() {
+		super()
+
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showSideToolbar = this.showSideToolbar.bind(this)

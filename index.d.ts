@@ -386,13 +386,13 @@ interface Control {
 
 export type ShortcutMatcher = (shortcut: string) => boolean;
 
-declare class Component {
+declare class ComponentComponent {
 	register(core: Ascetext): void;
 	unregister(): void;
 	catchShortcut(matcher: ShortcutMatcher, event: KeyboardEvent): boolean;
 }
 
-declare class Toolbar extends Component {
+declare class Toolbar extends ComponentComponent {
 	constructor();
 	get css(): CSSGetter;
 	onSelectionChange(): void;
@@ -794,14 +794,14 @@ type Json<T extends Node> = ExtractJson<T>[]
 export {
 	Ascetext,
 	Builder,
-	Toolbar,
 	Selection,
 	Editing,
 	TimeTravel,
 	SizeObserverConstructor,
 	SizeObserver,
 	SizeObserverEntry,
-	Component,
+	ComponentComponent,
+	Toolbar,
 	Control,
 	ControlControl,
 	ControlButton,
