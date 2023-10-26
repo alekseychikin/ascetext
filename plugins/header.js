@@ -109,7 +109,6 @@ export default class HeaderPlugin extends PluginPlugin {
 		}
 
 		const controls = this.params.allowLevels
-			.filter((level) => !headerLevels.includes(level) || containers.length > headerLevels.length)
 			.map((level) =>
 				({
 					slug: `header.h${level}`,

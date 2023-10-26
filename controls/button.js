@@ -22,9 +22,11 @@ export default class ControlButton extends ControlControl {
 		this.element.addEventListener('click', this.handleAction)
 		this.element.title = params.label
 
-		if (params.icon) {
+		if (params.icon && params.showIcon) {
 			this.element.appendChild(getIcon(params.icon))
-		} else {
+		}
+
+		if (params.showLabel) {
 			this.element.appendChild(document.createTextNode(params.label))
 		}
 	}

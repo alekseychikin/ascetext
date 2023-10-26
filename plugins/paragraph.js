@@ -70,7 +70,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
 		const paragraphs = containers.filter((node) => node.type === 'paragraph')
 
-		if (containers.length === paragraphs.length) {
+		if (!containers.length) {
 			return []
 		}
 

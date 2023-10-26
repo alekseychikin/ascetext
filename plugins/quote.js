@@ -59,7 +59,7 @@ export default class QuotePlugin extends PluginPlugin {
 		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
 		const quotes = containers.filter((node) => node.type === 'quote')
 
-		if (containers.length === quotes.length) {
+		if (!containers.length) {
 			return []
 		}
 

@@ -20,9 +20,11 @@ export default class ControlFile extends ControlControl {
 		this.input.className = 'contenteditor__control-input-file'
 		this.element.appendChild(this.input)
 
-		if (params.icon) {
+		if (params.icon && params.showIcon) {
 			this.element.appendChild(getIcon(params.icon))
-		} else {
+		}
+
+		if (params.showLabel) {
 			this.element.appendChild(document.createTextNode(params.label))
 		}
 	}

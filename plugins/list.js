@@ -388,8 +388,8 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	getReplaceControls(focusedNodes) {
-		const containers = focusedNodes.filter((node) => node.isContainer)
-		const listItemContents = containers.filter((node) => node.type === 'list-item-content')
+		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+		const listItemContents = focusedNodes.filter((node) => node.type === 'list-item-content')
 		const types = listItemContents.reduce((result, node) => {
 			const { decor } = node.parent.parent.attributes
 
@@ -446,7 +446,7 @@ export default class ListPlugin extends PluginPlugin {
 					action: listItemContents[0].convertListItemToBlock
 				})
 			}
-		} else {
+		} else if (containers.length) {
 			controls.push({
 				slug: 'list.createMarked',
 				label: 'Добавить маркированный спискок',

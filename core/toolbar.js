@@ -4,6 +4,7 @@ import ControlButton from '../controls/button.js'
 import ControlFile from '../controls/file.js'
 import ControlInput from '../controls/input.js'
 import ControlLink from '../controls/link.js'
+import ControlDropdown from '../controls/dropdown.js'
 
 const toolbarIndent = 10
 
@@ -300,11 +301,20 @@ export default class Toolbar {
 			focusedNodes.length
 		) {
 			if (containers.length > 1) {
-				this.getReplaceControls().forEach((nodeControls) => {
+				const replaceControls = this.getReplaceControls().reduce((result, nodeControls) => {
 					if (nodeControls.length) {
-						controls.push(nodeControls)
+						return result.concat(nodeControls)
 					}
-				})
+
+					return result
+				}, [])
+
+				if (replaceControls.length) {
+					controls.push([{
+						type: 'dropdown',
+						controls: replaceControls
+					}])
+				}
 			}
 
 			this.plugins.forEach((plugin) => {
@@ -538,10 +548,19 @@ export default class Toolbar {
 		return controls.map((rawControl) => {
 			const control = {
 				...rawControl,
-				icon: rawControl.icon ? this.icons[rawControl.icon] : ''
+				icon: rawControl.icon ? this.icons[rawControl.icon] : '',
+				showIcon: true
 			}
 
 			switch (control.type) {
+				case 'dropdown':
+					return new ControlDropdown({
+						...control,
+						components: this.wrapControls(control.controls.map((control) => ({
+							...control,
+							showLabel: true
+						})))
+					})
 				case 'input':
 					return new ControlInput(control)
 				case 'file':
