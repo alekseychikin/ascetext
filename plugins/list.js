@@ -306,10 +306,10 @@ export class ListItemContent extends Container {
 					if (next && parentSection.type === 'list') {
 						parentList = next.parent
 						builder.append(parentSection, next, parentNext)
+					}
 
-						if (!parentList.first) {
-							builder.cut(parentList)
-						}
+					if (!parentList.first) {
+						builder.cut(parentList)
 					}
 
 					if (!next && parentNext && !parentSection.isSection) {
