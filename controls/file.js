@@ -11,21 +11,24 @@ export default class ControlFile extends ControlControl {
 		super(params)
 
 		this.handleAction = this.handleAction.bind(this)
+		this.input.addEventListener('change', this.handleAction)
+	}
+
+	createElement() {
 		this.element = document.createElement('label')
 		this.input = document.createElement('input')
-		this.input.addEventListener('change', this.handleAction)
-		this.element.title = params.label
+		this.element.title = this.params.label
 
 		this.input.type = 'file'
 		this.input.className = 'contenteditor__control-input-file'
 		this.element.appendChild(this.input)
 
-		if (params.icon && params.showIcon) {
-			this.element.appendChild(getIcon(params.icon))
+		if (this.params.icon && this.params.showIcon) {
+			this.element.appendChild(getIcon(this.params.icon))
 		}
 
-		if (params.showLabel) {
-			this.element.appendChild(document.createTextNode(params.label))
+		if (this.params.showLabel) {
+			this.element.appendChild(document.createTextNode(this.params.label))
 		}
 	}
 

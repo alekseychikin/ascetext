@@ -55,7 +55,6 @@ export default class Toolbar extends ComponentComponent {
 		this.icons = null
 		this.sizeObserver = null
 		this.node = null
-		this.container = document.createElement('div')
 		this.focusedNodes = []
 		this.lastRangeFocused = false
 		this.skip = false
@@ -63,6 +62,7 @@ export default class Toolbar extends ComponentComponent {
 		this.previousContainer = null
 		this.previousSideMode = ''
 		this.nextControlsToRender = null
+		this.unsubscribe = null
 		this.sideControls = []
 		this.centeredControls = []
 		this.sideMode = 'insert'
@@ -93,10 +93,7 @@ export default class Toolbar extends ComponentComponent {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
-		this.container.appendChild(this.toggleButtonHolder)
-		this.container.appendChild(this.sideToolbar)
-		this.container.appendChild(this.centeredToolbar)
-		this.container.appendChild(this.containerAvatar)
+		this.container = document.createElement('div')
 		this.mediaQuery = window.matchMedia('(min-width: 640px)')
 	}
 
@@ -110,13 +107,17 @@ export default class Toolbar extends ComponentComponent {
 		this.sizeObserver = core.sizeObserver
 		this.node = core.node
 
+		this.container.appendChild(this.toggleButtonHolder)
+		this.container.appendChild(this.sideToolbar)
+		this.container.appendChild(this.centeredToolbar)
+		this.container.appendChild(this.containerAvatar)
 		document.body.appendChild(this.container)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
 
-		this.selection.onUpdate(this.onSelectionChange)
+		this.unsubscribe = this.selection.onUpdate(this.onSelectionChange)
 		visualViewport.addEventListener('resize', this.viewportResize)
 		visualViewport.addEventListener('scroll', this.viewportResize)
 		this.bindViewportChange()
@@ -711,8 +712,11 @@ export default class Toolbar extends ComponentComponent {
 		document.removeEventListener('input', this.checkToolbarVisibility)
 		visualViewport.removeEventListener('resize', this.viewportResize)
 		visualViewport.removeEventListener('scroll', this.viewportResize)
-
+		this.unsubscribe()
 		this.unbindViewportChange()
 		this.stopUpdateBoundings()
+		this.hideToggleButtonHolder()
+		this.hideSideToolbar()
+		this.hideCenteredToolbar()
 	}
 }

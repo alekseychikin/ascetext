@@ -144,11 +144,12 @@ export default class Ascetext {
 
 		const children = this.builder.parse(container)
 
-		// this.toolbar.hideSideToolbar()
-		// this.toolbar.hideCenteredToolbar()
+		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
+		this.selection.setSelection(this.model.first)
 		this.timeTravel.reset()
 		this.init = true
+		this.components.forEach((component) => component.register(this))
 	}
 
 	getContent() {
@@ -166,11 +167,11 @@ export default class Ascetext {
 
 		const children = this.builder.parseJson(data)
 
-		// this.toolbar.hideSideToolbar()
-		// this.toolbar.hideCenteredToolbar()
+		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
+		this.components.forEach((component) => component.register(this))
 	}
 
 	getJson() {
@@ -191,6 +192,11 @@ export default class Ascetext {
 
 	focus() {
 		this.selection.setSelection(this.model.first, 0)
+	}
+
+	refreshComponent() {
+		this.components.forEach((component) => component.unregister())
+		this.components.forEach((component) => component.register(this))
 	}
 
 	destroy() {

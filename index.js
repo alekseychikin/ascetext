@@ -23,6 +23,7 @@ import Group from './nodes/group.js'
 import InlineWidget from './nodes/inline-widget.js'
 import Widget from './nodes/widget.js'
 import Node from './nodes/node.js'
+import getIcon from './utils/get-icon.js'
 
 export {
 	ParagraphPlugin,
@@ -56,7 +57,8 @@ export {
 	Group,
 	InlineWidget,
 	Widget,
-	Node
+	Node,
+	getIcon
 }
 
 export default Ascetext

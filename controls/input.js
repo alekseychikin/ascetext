@@ -27,10 +27,12 @@ export default class ControlInput extends ControlControl {
 		this.handleAction = this.handleAction.bind(this)
 		this.handleCancel = this.handleCancel.bind(this)
 		this.handleKeydown = this.handleKeydown.bind(this)
-		this.handlers = {}
-		this.element = document.createElement('input')
 		this.element.addEventListener('keydown', this.handleKeydown)
-		this.element.placeholder = params.placeholder
+	}
+
+	createElement() {
+		this.element = document.createElement('input')
+		this.element.placeholder = this.params.placeholder
 		this.element.className = 'contenteditor__control-input'
 	}
 

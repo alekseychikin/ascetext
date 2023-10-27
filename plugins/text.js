@@ -345,7 +345,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasBold) {
 				controls.push({
 					slug: 'text.unbold',
-					label: 'Сделать нежирным',
+					label: 'Bold',
 					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					selected: true,
@@ -354,7 +354,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.bold',
-					label: 'Сделать жирным',
+					label: 'Bold',
 					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					action: this.setBold
@@ -366,7 +366,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasItalic) {
 				controls.push({
 					slug: 'text.unitalic',
-					label: 'Сделать некурсивом',
+					label: 'Italic',
 					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					selected: true,
@@ -375,7 +375,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.italic',
-					label: 'Сделать курсивом',
+					label: 'Italic',
 					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					action: this.setItalic
@@ -387,7 +387,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasDecoration) {
 				controls.push({
 					slug: 'text.ununderlined',
-					label: 'Сделать неподчёркнутым',
+					label: 'Underline',
 					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					selected: true,
@@ -396,7 +396,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.underlined',
-					label: 'Сделать подчёркнутым',
+					label: 'Underline',
 					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					action: this.setUnderline
@@ -408,7 +408,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasStrike) {
 				controls.push({
 					slug: 'text.unstrike',
-					label: 'Сделать незачёркнутым',
+					label: 'Strike',
 					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					selected: true,
@@ -417,7 +417,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.strike',
-					label: 'Сделать зачёркнутым',
+					label: 'Strike',
 					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					action: this.setStrike

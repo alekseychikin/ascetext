@@ -1,7 +1,10 @@
 export default class ControlControl {
 	constructor(params) {
 		this.params = params
+		this.createElement()
+	}
 
+	createElement() {
 		this.element = document.createElement('button')
 		this.element.appendChild(document.createTextNode('Button'))
 	}

@@ -18,16 +18,19 @@ export default class ControlButton extends ControlControl {
 		super(params)
 
 		this.handleAction = this.handleAction.bind(this)
-		this.element = document.createElement('button')
 		this.element.addEventListener('click', this.handleAction)
-		this.element.title = params.label
+	}
 
-		if (params.icon && params.showIcon) {
-			this.element.appendChild(getIcon(params.icon))
+	createElement() {
+		this.element = document.createElement('button')
+		this.element.title = this.params.label
+
+		if (this.params.icon && this.params.showIcon) {
+			this.element.appendChild(getIcon(this.params.icon))
 		}
 
-		if (params.showLabel) {
-			this.element.appendChild(document.createTextNode(params.label))
+		if (this.params.showLabel) {
+			this.element.appendChild(document.createTextNode(this.params.label))
 		}
 	}
 

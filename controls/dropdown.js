@@ -17,16 +17,11 @@ export default class ControlDropdown extends ControlControl {
 
 		this.toggleDropdown = this.toggleDropdown.bind(this)
 		this.element.addEventListener('click', this.toggleDropdown)
-
-		this.children = params.children
-		this.toggleDropdown = null
-		this.dropdown = null
-		this.createElement()
 	}
 
 	createElement() {
+		this.element = document.createElement('button')
 		this.element.title = this.params.label ?? 'Formatting'
-		this.element.innerHTML = ''
 		this.element.appendChild(document.createTextNode(this.params.label ?? 'Formatting'))
 		this.element.appendChild(getIcon('<svg class="contenteditor__dropdown-arrow" xmlns="http://www.w3.org/2000/svg" width="13" height="7" fill="none"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 1 6.5 5.5 1 1"/></svg>'))
 		this.element.className = this.css.container
@@ -34,7 +29,7 @@ export default class ControlDropdown extends ControlControl {
 		this.dropdown = document.createElement('div')
 		this.dropdown.className = this.css.dropdown
 
-		this.children.forEach((component) =>
+		this.params.children.forEach((component) =>
 			this.dropdown.appendChild(component.getElement())
 		)
 		this.element.appendChild(this.dropdown)
@@ -43,7 +38,7 @@ export default class ControlDropdown extends ControlControl {
 	setEventListener(handler) {
 		this.handler = handler
 
-		this.children.forEach((component) =>
+		this.params.children.forEach((component) =>
 			component.setEventListener(handler)
 		)
 	}

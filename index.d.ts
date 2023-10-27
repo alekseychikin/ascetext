@@ -378,6 +378,8 @@ interface Control {
 	type?: string;
 	shortcut?: string;
 	icon?: string;
+	showLabel?: boolean;
+	showIcon?: boolean;
 	selected?: boolean;
 	disabled?: boolean;
 	action?: (event: any, params: ActionParams) => void;
@@ -470,6 +472,7 @@ declare class ControlControl {
 	constructor(params?: Control);
 	params: Control;
 	element: HTMLElement;
+	createElement(): void;
 	setEventListener(handler: any): void;
 	handler: any;
 	getElement(): HTMLElement;
@@ -782,14 +785,8 @@ declare class TextPlugin extends PluginPlugin {
 }
 
 type InferNodes<T extends Array<PluginPlugin>> = T extends Array<{ parse: (...params: any) => infer U}> ? Exclude<U, undefined> : never
-type ExtractJson<T extends Node> = T extends { json(children: any): { body: any } }
-	? Omit<ReturnType<T["json"]>, 'body'> & {
-		body: Json<T>
-	}
-	: T extends { json(): any }
-		? ReturnType<T["json"]>
-		: never
-type Json<T extends Node> = ExtractJson<T>[]
+
+declare function getIcon(source: string): HTMLElement;
 
 export {
 	Ascetext,
@@ -832,6 +829,6 @@ export {
 	ListPlugin,
 	QuotePlugin,
 	PluginPlugin,
-	Json,
-	InferNodes
+	InferNodes,
+	getIcon
 };

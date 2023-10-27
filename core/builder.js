@@ -388,10 +388,6 @@ export default class Builder {
 		const isContainer = parent && parent.isContainer
 		let current = node
 
-		if (node.previous) {
-			this.core.editing.scheduleUpdate(node.previous)
-		}
-
 		if (node.isMount && (node.parent || node.previous || last.next)) {
 			this.core.onNodeChange({
 				type: operationTypes.CUT,

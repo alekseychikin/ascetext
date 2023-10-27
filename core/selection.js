@@ -145,6 +145,10 @@ export default class Selection {
 
 	onUpdate(handler) {
 		this.onUpdateHandlers.push(handler)
+
+		return () => {
+			this.onUpdateHandlers.splice(this.onUpdateHandlers.indexOf(handler), 1)
+		}
 	}
 
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
