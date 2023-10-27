@@ -3,6 +3,10 @@ import Fragment from '../nodes/fragment.js'
 const containerTags = [ 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'div' ]
 
 export default class PluginPlugin {
+	get register() {
+		return {}
+	}
+
 	create() {
 		return new Fragment()
 	}

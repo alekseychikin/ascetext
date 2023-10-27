@@ -71,9 +71,9 @@ export default class LinkPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			link: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m9.172 14.829 5.657-5.657M7.05 11.293l-1.414 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414m-1.414-9.9 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			remove: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			cancel: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+			link: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m9.172 14.829 5.657-5.657M7.05 11.293l-1.414 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414m-1.414-9.9 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			remove: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			cancel: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16 20v-2m2-2h2M7.05 11.293l-1.413 1.414a4 4 0 1 0 5.657 5.657l1.413-1.414M6 8H4m4-4v2m3.293 1.05 1.414-1.414a4 4 0 0 1 5.657 5.657l-1.414 1.414" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
 	}
 
@@ -111,7 +111,7 @@ export default class LinkPlugin extends PluginPlugin {
 			if (link) {
 				return [{
 					slug: 'link.removeAll',
-					label: 'Удалить ссылки',
+					label: 'Remove links',
 					icon: 'link',
 					selected: true,
 					action: this.removeLinks
@@ -121,7 +121,7 @@ export default class LinkPlugin extends PluginPlugin {
 			return hasText
 				? [{
 					slug: 'link.create',
-					label: 'Сделать ссылку',
+					label: 'Create link',
 					icon: 'link',
 					action: this.openLinkControls
 				}]
@@ -136,7 +136,7 @@ export default class LinkPlugin extends PluginPlugin {
 				url: link.attributes.url
 			}, {
 				slug: 'link.remove',
-				label: 'Удалить',
+				label: 'Remove',
 				icon: 'remove',
 				action: this.removeLink
 			}]
@@ -148,13 +148,13 @@ export default class LinkPlugin extends PluginPlugin {
 			[{
 				slug: 'link.input',
 				type: 'input',
-				placeholder: 'Введите адрес ссылки',
+				placeholder: 'Type link url...',
 				autofocus: true,
 				action: this.setLink,
 				cancel: (event, { restoreSelection }) => restoreSelection()
 			}, {
 				slug: 'link.cancel',
-				label: 'Отменить',
+				label: 'Cancel',
 				icon: 'cancel',
 				action: (event, { restoreSelection }) => restoreSelection()
 			}]

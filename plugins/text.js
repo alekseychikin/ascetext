@@ -190,10 +190,10 @@ export default class TextPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			bold: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11a1 1 0 1 0 0 2v-2Zm0 8H7a1 1 0 0 0 1 1v-1ZM8 5V4a1 1 0 0 0-1 1h1Zm0 8h5.5v-2H8v2Zm5.5 5H8v2h5.5v-2Zm2.5-2.5a2.5 2.5 0 0 1-2.5 2.5v2a4.5 4.5 0 0 0 4.5-4.5h-2ZM13.5 13a2.5 2.5 0 0 1 2.5 2.5h2a4.5 4.5 0 0 0-4.5-4.5v2ZM8 6h4.5V4H8v2Zm4.5 5H8v2h4.5v-2ZM15 8.5a2.5 2.5 0 0 1-2.5 2.5v2A4.5 4.5 0 0 0 17 8.5h-2ZM12.5 6A2.5 2.5 0 0 1 15 8.5h2A4.5 4.5 0 0 0 12.5 4v2ZM7 5v14h2V5H7Z" fill="currentColor"/></svg>',
-			italic: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 19h4m0-14h4m-6 14 4-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			underlined: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h12M8 5v6a4 4 0 0 0 8 0V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			strike: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c.896 0 1.775.192 2.546.557.348.165.668.362.955.586.347.273.645.586.882.93.43.628.643 1.337.615 2.053-.028.716-.296 1.412-.776 2.017-.48.605-1.154 1.096-1.952 1.421a6.073 6.073 0 0 1-2.583.428 5.865 5.865 0 0 1-2.497-.684c-.74-.402-1.332-.957-1.713-1.605M4 12h16m-3.476-5.703c-.381-.648-.973-1.203-1.714-1.605a5.866 5.866 0 0 0-2.496-.684 6.075 6.075 0 0 0-2.584.428c-.798.325-1.472.816-1.952 1.42-.48.606-.747 1.302-.776 2.018-.008.21.005.42.037.626" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+			bold: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11a1 1 0 1 0 0 2v-2Zm0 8H7a1 1 0 0 0 1 1v-1ZM8 5V4a1 1 0 0 0-1 1h1Zm0 8h5.5v-2H8v2Zm5.5 5H8v2h5.5v-2Zm2.5-2.5a2.5 2.5 0 0 1-2.5 2.5v2a4.5 4.5 0 0 0 4.5-4.5h-2ZM13.5 13a2.5 2.5 0 0 1 2.5 2.5h2a4.5 4.5 0 0 0-4.5-4.5v2ZM8 6h4.5V4H8v2Zm4.5 5H8v2h4.5v-2ZM15 8.5a2.5 2.5 0 0 1-2.5 2.5v2A4.5 4.5 0 0 0 17 8.5h-2ZM12.5 6A2.5 2.5 0 0 1 15 8.5h2A4.5 4.5 0 0 0 12.5 4v2ZM7 5v14h2V5H7Z" fill="currentColor"/></svg>',
+			italic: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 19h4m0-14h4m-6 14 4-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			underlined: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h12M8 5v6a4 4 0 0 0 8 0V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			strike: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c.896 0 1.775.192 2.546.557.348.165.668.362.955.586.347.273.645.586.882.93.43.628.643 1.337.615 2.053-.028.716-.296 1.412-.776 2.017-.48.605-1.154 1.096-1.952 1.421a6.073 6.073 0 0 1-2.583.428 5.865 5.865 0 0 1-2.497-.684c-.74-.402-1.332-.957-1.713-1.605M4 12h16m-3.476-5.703c-.381-.648-.973-1.203-1.714-1.605a5.866 5.866 0 0 0-2.496-.684 6.075 6.075 0 0 0-2.584.428c-.798.325-1.472.816-1.952 1.42-.48.606-.747 1.302-.776 2.018-.008.21.005.42.037.626" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
 	}
 
@@ -345,7 +345,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasBold) {
 				controls.push({
 					slug: 'text.unbold',
-					label: 'Сделать нежирным',
+					label: 'Bold',
 					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					selected: true,
@@ -354,7 +354,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.bold',
-					label: 'Сделать жирным',
+					label: 'Bold',
 					shortcut: 'ctrl+b/meta+b',
 					icon: 'bold',
 					action: this.setBold
@@ -366,7 +366,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasItalic) {
 				controls.push({
 					slug: 'text.unitalic',
-					label: 'Сделать некурсивом',
+					label: 'Italic',
 					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					selected: true,
@@ -375,7 +375,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.italic',
-					label: 'Сделать курсивом',
+					label: 'Italic',
 					shortcut: 'ctrl+i/meta+i',
 					icon: 'italic',
 					action: this.setItalic
@@ -387,7 +387,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasDecoration) {
 				controls.push({
 					slug: 'text.ununderlined',
-					label: 'Сделать неподчёркнутым',
+					label: 'Underline',
 					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					selected: true,
@@ -396,7 +396,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.underlined',
-					label: 'Сделать подчёркнутым',
+					label: 'Underline',
 					shortcut: 'ctrl+u/meta+u',
 					icon: 'underlined',
 					action: this.setUnderline
@@ -408,7 +408,7 @@ export default class TextPlugin extends PluginPlugin {
 			if (hasStrike) {
 				controls.push({
 					slug: 'text.unstrike',
-					label: 'Сделать незачёркнутым',
+					label: 'Strike',
 					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					selected: true,
@@ -417,7 +417,7 @@ export default class TextPlugin extends PluginPlugin {
 			} else {
 				controls.push({
 					slug: 'text.strike',
-					label: 'Сделать зачёркнутым',
+					label: 'Strike',
 					shortcut: 'ctrl+s/meta+s',
 					icon: 'strike',
 					action: this.setStrike

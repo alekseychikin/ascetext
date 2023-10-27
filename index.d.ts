@@ -1,8 +1,8 @@
-declare class Node {
-	constructor(type: string, attributes?: {});
+declare class Node<S = Record<string, string>> {
+	constructor(type: string, attributes?: S);
 	id: number;
 	type: string;
-	attributes: {};
+	attributes: S;
 	isContainer: boolean;
 	isWidget: boolean;
 	isSection: boolean;
@@ -12,14 +12,14 @@ declare class Node {
 	element: HTMLElement;
 	parent?: Node;
 	next?: Node;
-	previoues?: Node;
+	previous?: Node;
 	first?: Node;
 	last?: Node;
 	setElement(element: HTMLElement): void;
 	accept(node: Node): boolean;
 	getNodeUntil(nodeUntil: Node): Node;
 	get hasOnlyBr(): boolean;
-	get shortcuts(): Record<string, (event, params: HandlerParams) => false | undefined>;
+	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => false | undefined>;
 	getClosestContainer(): Node;
 	getPreviousSelectableNode(): false | Node | undefined;
 	getNextSelectableNode(): false | Node | undefined;
@@ -75,6 +75,7 @@ interface HandlerParams {
 	anchorOffset: number;
 	focusOffset: number;
 	focused: boolean;
+	focusedNodes: Selection["focusedNodes"];
 	isLockPushChange: boolean;
 }
 
@@ -126,11 +127,11 @@ declare class Group extends Node {
 type inferBody<T, S> = T extends { body: infer U } ? { body: inferBody<U, S> } : S
 type InferReturn<T> = T extends (param: any) => { body: infer U } ? { body: inferBody<U, ReturnType<T>> } : ReturnType<T>
 
-export default class Ascetext<T = Toolbar> {
+export default class Ascetext {
 	constructor(node: HTMLElement, params?: {
-		plugins?: Record<string, PluginPlugin>;
+		plugins?: Array<PluginPlugin>;
+		components?: Array<Component>;
 		icons?: Record<string, string>;
-		toolbar?: (core: Ascetext) => T;
 		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
 		placeholder?: string | {
 			label: string;
@@ -144,14 +145,14 @@ export default class Ascetext<T = Toolbar> {
 	node: HTMLElement;
 	controlsContainer: HTMLElement;
 	onChangeHandlers: any[];
-	plugins: any;
+	plugins: Array<PluginPlugin>;
+	components: Array<Component>;
 	icons: any;
 	model: Root;
 	builder: Builder;
 	editing: Editing;
 	selection: Selection;
 	timeTravel: TimeTravel;
-	toolbar: T;
 	sizeObserver: SizeObserver;
 	controls: any;
 	autocomplete: Autocomplete;
@@ -162,7 +163,7 @@ export default class Ascetext<T = Toolbar> {
 	getContent(): string;
 	triggerChange(): void;
 	setJson(data: any): void;
-	getJson<U extends Node>(): InferReturn<U['json']>[];
+	getJson<T>(): T;
 	unmountAll(): void;
 	focus(): void;
 	destroy(): void;
@@ -172,7 +173,7 @@ declare class Autocomplete {
 	constructor(core: Ascetext);
 	onEdit(): void;
 	node: HTMLElement;
-	plugins: Record<string, PluginPlugin>;
+	plugins: Array<PluginPlugin>;
 	selection: Selection;
 	builder: Builder;
 	editing: Editing;
@@ -268,8 +269,8 @@ declare class Selection {
 	focused: boolean;
 	skipUpdate: boolean;
 	onUpdateHandlers: any[];
-	selectedItems: any[];
-	focusedNodes: any[];
+	selectedItems: Node[];
+	focusedNodes: Node[];
 	timer: any;
 	isRange: boolean;
 	anchorAtFirstPositionInContainer: boolean | undefined;
@@ -377,14 +378,24 @@ interface Control {
 	type?: string;
 	shortcut?: string;
 	icon?: string;
+	showLabel?: boolean;
+	showIcon?: boolean;
 	selected?: boolean;
 	disabled?: boolean;
 	action?: (event: any, params: ActionParams) => void;
 	cancel?: (event: any, params: ActionParams) => void;
 }
 
-declare class Toolbar {
-	constructor(core: Ascetext);
+export type ShortcutMatcher = (shortcut: string) => boolean;
+
+declare class ComponentComponent {
+	register(core: Ascetext): void;
+	unregister(): void;
+	catchShortcut(matcher: ShortcutMatcher, event: KeyboardEvent): boolean;
+}
+
+declare class Toolbar extends ComponentComponent {
+	constructor();
 	get css(): CSSGetter;
 	onSelectionChange(): void;
 	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
@@ -409,9 +420,9 @@ declare class Toolbar {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	editing: Editing;
-	plugins: any;
+	plugins: Array<PluginPlugin>;
 	icons: any;
-	sizeObserver: SizeObserver;
+	sizeObserver: SizeObserver | null;
 	focusedNodes: any[];
 	lastRangeFocused: boolean;
 	previousSelection: any;
@@ -461,6 +472,7 @@ declare class ControlControl {
 	constructor(params?: Control);
 	params: Control;
 	element: HTMLElement;
+	createElement(): void;
 	setEventListener(handler: any): void;
 	handler: any;
 	getElement(): HTMLElement;
@@ -505,7 +517,7 @@ declare class PluginPlugin {
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getInsertControls(container: Node): Control[];
 	getSelectControls(focusedNodes: Node[], isRange: any): Control[];
-	getReplaceControls(container: Node): Control[];
+	getReplaceControls(focusedNodes: Node[]): Control[];
 }
 
 declare class BreakLine extends InlineWidget {
@@ -516,7 +528,7 @@ declare class BreakLine extends InlineWidget {
 		tail: any;
 	};
 	json(): {
-		type: 'BreakLine';
+		type: 'breakLine';
 	};
 }
 
@@ -528,10 +540,10 @@ declare class BreakLinePlugin extends PluginPlugin {
 declare class Header extends Container {
 	constructor(attributes: any);
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'header';
 		level: number;
-		body?: T;
+		body: T;
 	};
 }
 
@@ -578,9 +590,9 @@ declare class ImageCaption extends Container {
 	}): void;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): false | undefined;
 	inputHandler(): void;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'image-caption',
-		body?: T
+		body: T
 	};
 }
 
@@ -608,10 +620,10 @@ declare class Link extends InlineWidget {
 	constructor(attributes: any);
 	render(): HTMLAnchorElement;
 	normalize(element: any, builder: Builder): any;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'link';
 		url: string;
-		body?: T;
+		body: T;
 	};
 }
 
@@ -638,10 +650,10 @@ declare class List extends Group {
 	});
 	render(): any;
 	normalize(element: any, builder: Builder): any;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list';
 		decor: 'numerable' | 'marker';
-		body?: T;
+		body: T;
 	};
 }
 
@@ -654,9 +666,9 @@ declare class ListItem extends Group {
 		appendDefault: any;
 	}): void;
 	getDepth(container: any, node: any): number;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list-item';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -673,9 +685,9 @@ declare class ListItemContent extends Container {
 	indentLeft(event: any, params: ActionParams): void;
 	indentRight(event: any, params: ActionParams): void;
 	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'list-item-content';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -689,16 +701,16 @@ declare class ListPlugin extends PluginPlugin {
 	get icons(): IconsGetter;
 	parse(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
 	parseJson(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
-	setNumberList(container: any): (event: any, params: ActionParams) => void;
-	setMarkerList(container: any): (event: any, params: ActionParams) => void;
+	setNumberList(event: any, params: ActionParams): void;
+	setMarkerList(event: any, params: ActionParams): void;
 }
 
 declare class Paragraph extends Container {
 	constructor();
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'paragraph';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -712,9 +724,9 @@ declare class ParagraphPlugin extends PluginPlugin {
 declare class Quote extends Container {
 	constructor();
 	render(): HTMLElement;
-	json<T>(children?: T): {
+	json<T>(children: T): {
 		type: 'quote';
-		body?: T;
+		body: T;
 	}
 }
 
@@ -725,10 +737,16 @@ declare class QuotePlugin extends PluginPlugin {
 	setQuote(event: any, params: ActionParams): void;
 }
 
-declare class TextNode extends Node {
-	constructor(attributes: {
-		content: string;
-	});
+export interface TextAttributes {
+	content: string;
+	weight?: string;
+	style?: string;
+	decoration?: string;
+	strike?: string
+}
+
+declare class TextNode extends Node<TextAttributes> {
+	constructor(attributes: TextAttributes);
 	render(): any;
 	update(): void;
 	create(modifiers: any): any;
@@ -766,18 +784,21 @@ declare class TextPlugin extends PluginPlugin {
 	setUnderline(event: any, params: ActionParams): void;
 }
 
-export type inferNodes<T extends Record<string, PluginPlugin>> = T extends Record<string, infer K extends { parse: (...params: any) => any}> ? Exclude<ReturnType<K["parse"]>, undefined> : never
+type InferNodes<T extends Array<PluginPlugin>> = T extends Array<{ parse: (...params: any) => infer U}> ? Exclude<U, undefined> : never
+
+declare function getIcon(source: string): HTMLElement;
 
 export {
 	Ascetext,
 	Builder,
-	Toolbar,
 	Selection,
 	Editing,
 	TimeTravel,
 	SizeObserverConstructor,
 	SizeObserver,
 	SizeObserverEntry,
+	ComponentComponent,
+	Toolbar,
 	Control,
 	ControlControl,
 	ControlButton,
@@ -802,7 +823,12 @@ export {
 	Image,
 	ImagePlugin,
 	ImageCaption,
+	List,
+	ListItem,
+	ListItemContent,
 	ListPlugin,
 	QuotePlugin,
-	PluginPlugin
+	PluginPlugin,
+	InferNodes,
+	getIcon
 };

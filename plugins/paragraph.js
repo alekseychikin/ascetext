@@ -26,7 +26,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			paragraph: '<svg width="24" height="24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 18 8 6 3 18m8-4H5m16 4v-6m0 3a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+			paragraph: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 18 8 6 3 18m8-4H5m16 4v-6m0 3a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
 	}
 
@@ -42,13 +42,15 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 	}
 
-	setParagraph(event, { builder, anchorContainer }) {
-		if (anchorContainer.type !== 'paragraph') {
-			const paragraph = builder.create('paragraph')
+	setParagraph(event, { builder, focusedNodes }) {
+		focusedNodes.forEach((item) => {
+			if (item.isContainer && item.parent.isSection && item.type !== 'paragraph') {
+				const paragraph = builder.create('paragraph')
 
-			builder.append(paragraph, anchorContainer.first)
-			builder.replace(anchorContainer, paragraph)
-		}
+				builder.append(paragraph, item.first)
+				builder.replace(item, paragraph)
+			}
+		})
 	}
 
 	getInsertControls(container) {
@@ -58,21 +60,25 @@ export default class ParagraphPlugin extends PluginPlugin {
 
 		return [{
 			slug: 'paragraph.create',
-			label: 'Сделать параграфом',
+			label: 'Paragraph',
 			icon: 'paragraph',
 			action: this.setParagraph
 		}]
 	}
 
-	getReplaceControls(container) {
-		if (container.type === 'paragraph' || !container.parent.isSection || !container.isContainer) {
+	getReplaceControls(focusedNodes) {
+		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
+		const paragraphs = containers.filter((node) => node.type === 'paragraph')
+
+		if (!containers.length) {
 			return []
 		}
 
 		return [{
 			slug: 'paragraph.create',
-			label: 'Сделать параграфом',
+			label: 'Paragraph',
 			icon: 'paragraph',
+			selected: paragraphs.length > 0,
 			action: this.setParagraph
 		}]
 	}

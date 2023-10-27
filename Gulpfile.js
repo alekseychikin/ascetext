@@ -34,8 +34,7 @@ function watchTask() {
 
 	gulp.watch([
 		'./**/*.js',
-		'playground/*.html',
-		'playground/dist/**/*',
+		'playground/*.html'
 	]).on('change', browserSync.reload)
 	gulp.watch(['./icons/*.svg', './*.css'], watchParams, assets)
 

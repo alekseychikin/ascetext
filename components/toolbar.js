@@ -1,13 +1,15 @@
 import createElement from '../utils/create-element.js'
 import getStyle from '../utils/get-style.js'
+import ComponentComponent from './component.js'
 import ControlButton from '../controls/button.js'
 import ControlFile from '../controls/file.js'
 import ControlInput from '../controls/input.js'
 import ControlLink from '../controls/link.js'
+import ControlDropdown from '../controls/dropdown.js'
 
 const toolbarIndent = 10
 
-export default class Toolbar {
+export default class Toolbar extends ComponentComponent {
 	get css() {
 		return {
 			container: 'contenteditor__tooltip',
@@ -22,7 +24,9 @@ export default class Toolbar {
 		}
 	}
 
-	constructor(core) {
+	constructor() {
+		super()
+
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.controlHandler = this.controlHandler.bind(this)
 		this.showSideToolbar = this.showSideToolbar.bind(this)
@@ -43,15 +47,14 @@ export default class Toolbar {
 		this.isShowCenteredToolbar = false
 		this.isMobile = true
 		this.customMode = false
-		this.builder = core.builder
-		this.selection = core.selection
-		this.timeTravel = core.timeTravel
-		this.editing = core.editing
-		this.plugins = core.plugins
-		this.icons = core.icons
-		this.sizeObserver = core.sizeObserver
-		this.node = core.node
-		this.container = document.createElement('div')
+		this.builder = null
+		this.selection = null
+		this.timeTravel = null
+		this.editing = null
+		this.plugins = null
+		this.icons = null
+		this.sizeObserver = null
+		this.node = null
 		this.focusedNodes = []
 		this.lastRangeFocused = false
 		this.skip = false
@@ -59,6 +62,7 @@ export default class Toolbar {
 		this.previousContainer = null
 		this.previousSideMode = ''
 		this.nextControlsToRender = null
+		this.unsubscribe = null
 		this.sideControls = []
 		this.centeredControls = []
 		this.sideMode = 'insert'
@@ -89,6 +93,20 @@ export default class Toolbar {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.toggleButton = null
+		this.container = document.createElement('div')
+		this.mediaQuery = window.matchMedia('(min-width: 640px)')
+	}
+
+	register(core) {
+		this.builder = core.builder
+		this.selection = core.selection
+		this.timeTravel = core.timeTravel
+		this.editing = core.editing
+		this.plugins = core.plugins
+		this.icons = core.icons
+		this.sizeObserver = core.sizeObserver
+		this.node = core.node
+
 		this.container.appendChild(this.toggleButtonHolder)
 		this.container.appendChild(this.sideToolbar)
 		this.container.appendChild(this.centeredToolbar)
@@ -98,12 +116,10 @@ export default class Toolbar {
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
+
+		this.unsubscribe = this.selection.onUpdate(this.onSelectionChange)
 		visualViewport.addEventListener('resize', this.viewportResize)
 		visualViewport.addEventListener('scroll', this.viewportResize)
-
-		this.selection.onUpdate(this.onSelectionChange)
-
-		this.mediaQuery = window.matchMedia('(min-width: 640px)')
 		this.bindViewportChange()
 	}
 
@@ -171,12 +187,11 @@ export default class Toolbar {
 	updateSideToolbar() {
 		const { anchorContainer, isRange, focused } = this.selection
 
-		if (!focused) {
+		if (!focused || isRange) {
 			return null
 		}
 
 		if (
-			!isRange &&
 			anchorContainer.isContainer &&
 			anchorContainer.isEmpty
 		) {
@@ -188,7 +203,11 @@ export default class Toolbar {
 				this.previousContainer = anchorContainer
 				this.renderSideToolbar()
 			}
-		} else if (!isRange && (anchorContainer.isContainer && !anchorContainer.isEmpty || anchorContainer.isWidget)) {
+		} else if (
+			anchorContainer.isContainer &&
+			!anchorContainer.isEmpty ||
+			anchorContainer.isWidget
+		) {
 			this.sideMode = 'replace'
 
 			if (this.previousSideMode !== this.sideMode || this.previousContainer !== anchorContainer) {
@@ -211,9 +230,9 @@ export default class Toolbar {
 	}
 
 	updateButtonHolder() {
-		const { focused } = this.selection
+		const { focused, isRange } = this.selection
 
-		if (!focused && !this.isShowSideToolbar || this.isMobile) {
+		if (!focused && !this.isShowSideToolbar || this.isMobile || isRange) {
 			this.hideToggleButtonHolder()
 		} else if (focused) {
 			if (this.sideMode === 'insert') {
@@ -277,6 +296,7 @@ export default class Toolbar {
 	renderSelectedToolbar() {
 		const controls = []
 		const focusedNodes = this.selection.focusedNodes
+		const containers = focusedNodes.filter((node) => node.isContainer)
 
 		if (
 			focusedNodes.length !== this.focusedNodes.length ||
@@ -284,8 +304,25 @@ export default class Toolbar {
 			this.lastRangeFocused && !this.selection.isRange ||
 			focusedNodes.length
 		) {
-			Object.keys(this.plugins).forEach((type) => {
-				const nodeControls = this.plugins[type].getSelectControls(
+			if (containers.length > 1) {
+				const replaceControls = this.getReplaceControls().reduce((result, nodeControls) => {
+					if (nodeControls.length) {
+						return result.concat(nodeControls)
+					}
+
+					return result
+				}, [])
+
+				if (replaceControls.length) {
+					controls.push([{
+						type: 'dropdown',
+						controls: replaceControls
+					}])
+				}
+			}
+
+			this.plugins.forEach((plugin) => {
+				const nodeControls = plugin.getSelectControls(
 					focusedNodes,
 					this.selection.isRange
 				)
@@ -313,8 +350,8 @@ export default class Toolbar {
 	getInsertControls() {
 		const controls = []
 
-		Object.keys(this.plugins).forEach((type) => {
-			const nodeControls = this.plugins[type].getInsertControls(
+		this.plugins.forEach((plugin) => {
+			const nodeControls = plugin.getInsertControls(
 				this.selection.anchorContainer
 			)
 
@@ -329,9 +366,9 @@ export default class Toolbar {
 	getReplaceControls() {
 		const controls = []
 
-		Object.keys(this.plugins).forEach((type) => {
-			const nodeControls = this.plugins[type].getReplaceControls(
-				this.selection.anchorContainer
+		this.plugins.forEach((plugin) => {
+			const nodeControls = plugin.getReplaceControls(
+				this.selection.focusedNodes
 			)
 
 			if (nodeControls.length) {
@@ -419,6 +456,21 @@ export default class Toolbar {
 		}
 	}
 
+	catchShortcut(shortcutMatcher, event) {
+		const shortcuts = this.getShortcuts()
+		let shortcut
+
+		for (shortcut in shortcuts) {
+			if (shortcutMatcher(shortcut)) {
+				this.controlHandler(shortcuts[shortcut], event)
+
+				return true
+			}
+		}
+
+		return false
+	}
+
 	getActionHandlerParams() {
 		return {
 			builder: this.builder,
@@ -500,10 +552,19 @@ export default class Toolbar {
 		return controls.map((rawControl) => {
 			const control = {
 				...rawControl,
-				icon: rawControl.icon ? this.icons[rawControl.icon] : ''
+				icon: rawControl.icon ? this.icons[rawControl.icon] : '',
+				showIcon: true
 			}
 
 			switch (control.type) {
+				case 'dropdown':
+					return new ControlDropdown({
+						...control,
+						children: this.wrapControls(control.controls.map((control) => ({
+							...control,
+							showLabel: true
+						})))
+					})
 				case 'input':
 					return new ControlInput(control)
 				case 'file':
@@ -640,7 +701,7 @@ export default class Toolbar {
 		return shortcuts
 	}
 
-	destroy() {
+	unregister() {
 		this.container.removeChild(this.toggleButtonHolder)
 		this.container.removeChild(this.containerAvatar)
 		this.container.removeChild(this.sideToolbar)
@@ -651,8 +712,11 @@ export default class Toolbar {
 		document.removeEventListener('input', this.checkToolbarVisibility)
 		visualViewport.removeEventListener('resize', this.viewportResize)
 		visualViewport.removeEventListener('scroll', this.viewportResize)
-
+		this.unsubscribe()
 		this.unbindViewportChange()
 		this.stopUpdateBoundings()
+		this.hideToggleButtonHolder()
+		this.hideSideToolbar()
+		this.hideCenteredToolbar()
 	}
 }

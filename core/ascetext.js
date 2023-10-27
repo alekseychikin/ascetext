@@ -14,7 +14,7 @@ import LinkPlugin from '../plugins/link.js'
 import ImagePlugin from '../plugins/image.js'
 import ListPlugin from '../plugins/list.js'
 import QuotePlugin from '../plugins/quote.js'
-import Toolbar from './toolbar.js'
+import Toolbar from '../components/toolbar.js'
 import Controls from './controls.js'
 import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
@@ -30,26 +30,26 @@ class Root extends Section {
 }
 
 export default class Ascetext {
-	constructor(node, params) {
+	constructor(node, params = {}) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
 		this.onNodeChange = this.onNodeChange.bind(this)
 
 		this.node = node
 		this.onChangeHandlers = []
-		this.plugins = Object.assign({
-			text: new TextPlugin(),
-			breakLine: new BreakLinePlugin(),
-			paragraph: new ParagraphPlugin(),
-			header: new HeaderPlugin(),
-			link: new LinkPlugin(),
-			image: new ImagePlugin(),
-			list: new ListPlugin(),
-			quote: new QuotePlugin()
-		}, params.plugins || {})
-		this.icons = Object.assign(Object.keys(this.plugins).reduce((icons, plugin) => {
-			if (this.plugins[plugin].icons) {
-				icons = Object.assign(icons, this.plugins[plugin].icons)
+		this.plugins = params.plugins || [
+			new TextPlugin(),
+			new BreakLinePlugin(),
+			new ParagraphPlugin(),
+			new HeaderPlugin(),
+			new LinkPlugin(),
+			new ImagePlugin(),
+			new ListPlugin(),
+			new QuotePlugin()
+		]
+		this.icons = Object.assign(this.plugins.reduce((icons, plugin) => {
+			if (plugin.icons) {
+				icons = Object.assign(icons, plugin.icons)
 			}
 
 			return icons
@@ -63,11 +63,12 @@ export default class Ascetext {
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
-		this.toolbar = params.toolbar ? params.toolbar(this) : new Toolbar(this)
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 		this.init = false
+		this.components = params.components ? params.components : [new Toolbar(this)]
+		this.components.forEach((component) => component.register(this))
 
 		const container = document.createElement('div')
 
@@ -143,11 +144,12 @@ export default class Ascetext {
 
 		const children = this.builder.parse(container)
 
-		this.toolbar.hideSideToolbar()
-		this.toolbar.hideCenteredToolbar()
+		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
+		this.selection.setSelection(this.model.first)
 		this.timeTravel.reset()
 		this.init = true
+		this.components.forEach((component) => component.register(this))
 	}
 
 	getContent() {
@@ -165,11 +167,11 @@ export default class Ascetext {
 
 		const children = this.builder.parseJson(data)
 
-		this.toolbar.hideSideToolbar()
-		this.toolbar.hideCenteredToolbar()
+		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
+		this.components.forEach((component) => component.register(this))
 	}
 
 	getJson() {
@@ -192,15 +194,20 @@ export default class Ascetext {
 		this.selection.setSelection(this.model.first, 0)
 	}
 
+	refreshComponent() {
+		this.components.forEach((component) => component.unregister())
+		this.components.forEach((component) => component.register(this))
+	}
+
 	destroy() {
 		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
 		this.node.setAttribute('contenteditable', false)
 		this.editing.destroy()
 		this.selection.destroy()
-		this.toolbar.destroy()
 		this.dragndrop.destroy()
 		this.sizeObserver.destroy()
 		this.controls.destroy()
+		this.components.forEach((component) => component.unregister())
 		// this.node.removeEventListener('keydown', this.onKeyDown)
 		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}

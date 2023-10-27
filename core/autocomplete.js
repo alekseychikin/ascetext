@@ -7,8 +7,8 @@ export default class Autocomplete {
 		this.selection = core.selection
 		this.builder = core.builder
 		this.editing = core.editing
-		this.patterns = Object.keys(this.plugins).map((plugin) =>
-			this.plugins[plugin].autocompleteRule ? { plugin, rule: this.plugins[plugin].autocompleteRule } : null
+		this.patterns = this.plugins.map((plugin) =>
+			plugin.autocompleteRule ? { plugin, rule: plugin.autocompleteRule } : null
 		).filter(Boolean)
 		this.lastAnchorContainer = null
 		this.lastAnchorOffset = null
@@ -47,7 +47,7 @@ export default class Autocomplete {
 
 				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset - 1) {
 					editing.update()
-					plugin = this.plugins[this.patterns[index].plugin]
+					plugin = this.patterns[index].plugin
 					plugin.unwrap(selection.anchorContainer.getChildByOffset(start + 1).node, builder)
 
 					const textNode = builder.create('text', { content: match[0] })

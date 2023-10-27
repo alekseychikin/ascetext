@@ -38,7 +38,6 @@ export default class Selection {
 	}
 
 	update(event) {
-
 		if (event.type !== 'selectionchange') {
 			if (this.core.node.contains(event.target)) {
 				const anchorNode = getNodeByElement(event.target)
@@ -146,6 +145,10 @@ export default class Selection {
 
 	onUpdate(handler) {
 		this.onUpdateHandlers.push(handler)
+
+		return () => {
+			this.onUpdateHandlers.splice(this.onUpdateHandlers.indexOf(handler), 1)
+		}
 	}
 
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
