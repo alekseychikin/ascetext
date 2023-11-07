@@ -1,11 +1,12 @@
 {
   "name": "ascetext",
-  "version": "0.6.2",
+  "version": "0.6.3",
   "description": "Editor for web",
   "main": "index.js",
   "type": "module",
   "types": "index.d.ts",
   "files": [
+    "components/**",
     "controls/**",
     "core/**",
     "icons/**",
