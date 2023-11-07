@@ -46,7 +46,7 @@ export default class Selection {
 					anchorNode.element.focus()
 					document.getSelection().collapse(anchorNode.element, 0)
 				}
-			} else {
+			} else if (!this.core.components.find((component) => component.checkSelection(event.target))) {
 				return this.blur()
 			}
 		}

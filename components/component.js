@@ -10,4 +10,8 @@ export default class ComponentComponent {
 	unregister() {
 		this.core = null
 	}
+
+	checkSelection() {
+		return false
+	}
 }

@@ -162,6 +162,10 @@ export default class Toolbar extends ComponentComponent {
 		}
 	}
 
+	checkSelection(target) {
+		return this.isTargetInsideToolbar(target)
+	}
+
 	checkToolbarVisibility(event) {
 		if (!this.isTargetInsideToolbar(event.target) && (this.customMode || this.isShowSideToolbar || this.isShowCenteredToolbar)) {
 			this.customMode = false

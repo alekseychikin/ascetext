@@ -259,7 +259,7 @@ declare class Editing {
 declare class Selection {
 	constructor(core: Ascetext);
 	update(event: any): void;
-	onUpdate(handler: any): void;
+	onUpdate(handler: (selection: Selection) => void): () => void;
 	setSelection(anchorNode: any, anchorOffset?: any, focusNode?: any, focusOffset?: any): void;
 	restoreSelection(): void;
 	core: Ascetext;
@@ -268,7 +268,7 @@ declare class Selection {
 	focusIndex: any[] | null;
 	focused: boolean;
 	skipUpdate: boolean;
-	onUpdateHandlers: any[];
+	onUpdateHandlers: ((selection: Selection) => void)[];
 	selectedItems: Node[];
 	focusedNodes: Node[];
 	timer: any;
@@ -392,6 +392,7 @@ declare class ComponentComponent {
 	register(core: Ascetext): void;
 	unregister(): void;
 	catchShortcut(matcher: ShortcutMatcher, event: KeyboardEvent): boolean;
+	checkSelection(target: HTMLElement): boolean;
 }
 
 declare class Toolbar extends ComponentComponent {
