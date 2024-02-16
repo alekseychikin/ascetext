@@ -19,6 +19,7 @@ import Controls from './controls.js'
 import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
 import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
+import DOMHost from '../hosts/dom.js'
 
 class Root extends Section {
 	constructor(element) {
@@ -54,6 +55,7 @@ export default class Ascetext {
 
 			return icons
 		}, {}), params.icons || {})
+		this.host = params.host || new DOMHost(node)
 		this.placeholder = extractPlaceholderParams(params.placeholder)
 		this.model = new Root(node)
 		// this.navigation = new Navigation(this)
@@ -69,6 +71,7 @@ export default class Ascetext {
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
+		console.log(this.host.getVirtualTree(node.firstChild))
 
 		const container = document.createElement('div')
 

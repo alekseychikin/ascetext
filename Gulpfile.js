@@ -40,7 +40,7 @@ function watchTask() {
 
 	gulp.watch([
 		'./playground/app.js',
-		'./{controls,core,nodes,plugins,utils}/*.js'
+		'./{controls,core,nodes,plugins,utils,hosts}/*.js'
 	], watchParams, scriptsTask(true))
 }
 
