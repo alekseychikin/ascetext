@@ -93,6 +93,12 @@ export default class LinkPlugin extends PluginPlugin {
 		}
 	}
 
+	parseTreeElement(element, builder) {
+		if (element.type === 'a') {
+			return builder.create('link', { url: element.attributes.href })
+		}
+	}
+
 	getSelectControls(focusedNodes, isRange) {
 		let link = false
 		let hasText = false

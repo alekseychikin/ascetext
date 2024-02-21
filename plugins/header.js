@@ -67,6 +67,14 @@ export default class HeaderPlugin extends PluginPlugin {
 		return false
 	}
 
+	parseTreeElement(element, builder) {
+		if (this.supportHeaders.includes(element.type)) {
+			const matches = element.type.toLowerCase().match(/(?<level>\d)+/)
+
+			return builder.create('header', { level: Number(matches.groups.level) })
+		}
+	}
+
 	setHeader(level) {
 		return (event, { builder, focusedNodes }) => {
 			focusedNodes.forEach((item) => {

@@ -71,15 +71,13 @@ export default class Ascetext {
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
-		console.log(this.host.getVirtualTree(node.firstChild))
 
+		const children = this.builder.parseVirtualTree(this.host.getVirtualTree(node.firstChild))
 		const container = document.createElement('div')
 
 		while (node.childNodes.length) {
 			container.appendChild(node.childNodes[0])
 		}
-
-		const children = this.builder.parse(container)
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()

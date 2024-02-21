@@ -521,6 +521,21 @@ export default class ListPlugin extends PluginPlugin {
 		}
 	}
 
+	parseTreeElement(element, builder) {
+		if (element.type === 'ul' || element.type === 'ol') {
+			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'unordered' })
+		}
+
+		if (element.type === 'li') {
+			const listItem =  builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
+
+			builder.append(listItem, content)
+
+			return listItem
+		}
+	}
+
 	convertNumberList(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((node) => {
 			if (node.type === 'list-item-content') {

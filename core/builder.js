@@ -221,6 +221,47 @@ export default class Builder {
 		return fragment
 	}
 
+	parseVirtualTree(tree, ctx = {}) {
+		const fragment = this.createFragment()
+		let currentElement
+		let i
+		let children = null
+		let current
+
+		for (i = 0; i < tree.length; i++) {
+			const context = { ...ctx }
+
+			currentElement = tree[i]
+
+			children = null
+			current = this.core.plugins.reduce((parsed, plugin) => {
+				if (parsed) return parsed
+
+				return plugin.parseTreeElement(currentElement, this, context)
+			}, null)
+
+			if (!current || !current.isWidget && current.type !== 'text') {
+				children = this.parseVirtualTree(currentElement.body, { ...context })
+			}
+
+			if (current) {
+				this.append(fragment, current)
+
+				if (children && children.first) {
+					this.append(current, children.first)
+				}
+
+				if (current.isDeleteEmpty && !current.first) {
+					this.cut(current)
+				}
+			} else if (children && children.first) {
+				this.append(fragment, children.first)
+			}
+		}
+
+		return fragment
+	}
+
 	split(container, offset) {
 		const firstLevelNode = container.getFirstLevelNode(offset)
 

@@ -3,6 +3,7 @@ import Container from '../nodes/container.js'
 import PluginPlugin from './plugin.js'
 import createElement from '../utils/create-element.js'
 import isHtmlElement from '../utils/is-html-element.js'
+import findElement from '../utils/find-element.js'
 
 export class Image extends Widget {
 	constructor(attributes = {}) {
@@ -242,6 +243,21 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 
 		return false
+	}
+
+	parseTreeElement(element, builder) {
+		const img = findElement(element, 'img')
+
+		if (element.type === 'figure' && img) {
+			const image = builder.create('image', { src: img.attributes.src })
+			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+			const children = builder.parseVirtualTree(element.body)
+
+			builder.append(caption, children)
+			builder.append(image, caption)
+
+			return image
+		}
 	}
 
 	getInsertControls(container) {

@@ -42,6 +42,12 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 	}
 
+	parseTreeElement(element, builder) {
+		if (element.type === 'p') {
+			return builder.create('paragraph')
+		}
+	}
+
 	setParagraph(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((item) => {
 			if (item.isContainer && item.parent.isSection && item.type !== 'paragraph') {

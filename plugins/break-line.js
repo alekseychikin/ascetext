@@ -50,4 +50,10 @@ export default class BreakLinePlugin extends PluginPlugin {
 			return builder.create('breakLine')
 		}
 	}
+
+	parseTreeElement(element, builder) {
+		if (element.type === 'br') {
+			return builder.create('breakLine')
+		}
+	}
 }

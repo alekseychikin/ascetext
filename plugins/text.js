@@ -286,6 +286,77 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
+	parseTreeElement(element, builder, ctx) {
+		if (element.type !== 'text' && !this.supportTags.includes(element.type) && element.type !== 'span') {
+			return null
+		}
+
+		if (element.type === 'text') {
+			const attributes = {
+				content: element.attributes.content.replace(groupSpacesRegexp, ' ')
+			}
+
+			if (ctx.weight) {
+				attributes.weight = 'bold'
+			}
+
+			if (ctx.style) {
+				attributes.style = 'italic'
+			}
+
+			if (ctx.strike) {
+				attributes.strike = 'horizontal'
+			}
+
+			if (ctx.decoration) {
+				attributes.decoration = 'underlined'
+			}
+
+			return new Text(attributes)
+		}
+
+		if (supportTags.bold.includes(element.type) && this.params.allowModifiers.includes('bold')) {
+			ctx.weight = 'bold'
+		}
+
+		if (supportTags.italic.includes(element.type) && this.params.allowModifiers.includes('italic')) {
+			ctx.style = 'italic'
+		}
+
+		if (supportTags.strike === element.type && this.params.allowModifiers.includes('strike')) {
+			ctx.strike = 'horizontal'
+		}
+
+		if (supportTags.underlined === element.type && this.params.allowModifiers.includes('underlined')) {
+			ctx.decoration = 'underlined'
+		}
+
+		if (element.type === 'span') {
+			if (
+				(
+					element.attributes.style['font-weight'] === 'bold' ||
+					element.attributes.style['font-weight'] === '600' ||
+					element.attributes.style['font-weight'] === '500' ||
+					element.attributes.style['font-weight'] === '700'
+				) && this.params.allowModifiers.includes('bold')
+			) {
+				ctx.weight = 'bold'
+			}
+
+			if (element.attributes.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
+				ctx.style = 'italic'
+			}
+
+			if (element.attributes.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
+				ctx.strike = 'horizontal'
+			}
+
+			if (element.attributes.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
+				ctx.decoration = 'underlined'
+			}
+		}
+	}
+
 	parseJson(element) {
 		if (element.type === 'text') {
 			const attributes = {

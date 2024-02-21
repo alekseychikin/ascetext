@@ -42,6 +42,12 @@ export default class QuotePlugin extends PluginPlugin {
 		}
 	}
 
+	parseTreeElement(element, builder) {
+		if (element.type === 'blockquote') {
+			return builder.create('quote')
+		}
+	}
+
 	getInsertControls(container) {
 		if (container.type === 'quote' || !container.parent.isSection) {
 			return []
