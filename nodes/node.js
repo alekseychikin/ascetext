@@ -188,12 +188,12 @@ export default class Node {
 		})
 		const node = getNodeByElement(element)
 
-		if (node.type === 'line-holder' && node.previous && node.previous.type === 'breakLine') {
-			return {
-				node: node.previous,
-				element: node.element
-			}
-		}
+		// if (node.type === 'line-holder' && node.previous && node.previous.type === 'breakLine') {
+		// 	return {
+		// 		node: node.previous,
+		// 		element: node.element
+		// 	}
+		// }
 
 		return { node, element }
 	}

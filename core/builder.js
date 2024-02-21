@@ -208,9 +208,9 @@ export default class Builder {
 			}
 
 			if (currentElement === lastElement) {
-				if (ctx.removeLeadingBr && isElementBr(lastElement)) {
-					this.cut(current)
-				}
+				// if (ctx.removeLeadingBr && isElementBr(lastElement)) {
+				// 	this.cut(current)
+				// }
 
 				break
 			}
@@ -389,13 +389,13 @@ export default class Builder {
 			node.last = last
 		}
 
-		if (target.previous && target.previous.type === 'line-holder') {
-			this.cut(target.previous)
-		}
+		// if (target.previous && target.previous.type === 'line-holder') {
+		// 	this.cut(target.previous)
+		// }
 
-		if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
-			this.append(last.parent, new LineHolder(), last.next)
-		}
+		// if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
+		// 	this.append(last.parent, new LineHolder(), last.next)
+		// }
 
 		current = target
 
@@ -483,9 +483,9 @@ export default class Builder {
 			current = current.next
 		}
 
-		if (isContainer && !parent.first) {
-			this.append(parent, new LineHolder())
-		}
+		// if (isContainer && !parent.first) {
+		// 	this.append(parent, new LineHolder())
+		// }
 	}
 
 	handleMount(node) {
@@ -595,9 +595,9 @@ export default class Builder {
 	}
 
 	prepareContainer(node) {
-		if (node.isContainer && !node.first) {
-			this.append(node, new LineHolder())
-		}
+		// if (node.isContainer && !node.first) {
+		// 	this.append(node, new LineHolder())
+		// }
 
 		if (node.isWidget) {
 			node.element.setAttribute('tabindex', '0')

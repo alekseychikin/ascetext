@@ -225,9 +225,9 @@ export class ListItemContent extends Container {
 			if (nextSelectableNode.isContainer) {
 				const offset = anchorContainer.getOffset()
 
-				if (!nextSelectableNode.hasOnlyBr) {
-					builder.append(anchorContainer, nextSelectableNode.first)
-				}
+				// if (!nextSelectableNode.hasOnlyBr) {
+				// 	builder.append(anchorContainer, nextSelectableNode.first)
+				// }
 
 				builder.cut(nextSelectableNode)
 

@@ -524,13 +524,13 @@ export default class Editing {
 		clearTimeout(this.scheduleTimer)
 		this.scheduleTimer = null
 
-		const { builder, selection } = this.core
+		const { builder, selection, host } = this.core
 		let container
 		let normalized
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const content = builder.parse(container.element, { removeLeadingBr: true }).first || new LineHolder()
+				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first// || new LineHolder()
 				const first = container.first
 
 				if (first) {

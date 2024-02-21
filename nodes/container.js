@@ -45,7 +45,7 @@ export default class Container extends Node {
 	}
 
 	get isEmpty() {
-		return !this.first || this.first === this.last && this.first.type === 'line-holder'
+		return !this.first// || this.first === this.last && this.first.type === 'line-holder'
 	}
 
 	accept(node) {
@@ -259,9 +259,9 @@ export default class Container extends Node {
 			} else if (nextSelectableNode.isContainer) {
 				const offset = container.getOffset()
 
-				if (!nextSelectableNode.hasOnlyBr) {
-					builder.append(container, nextSelectableNode.first)
-				}
+				// if (!nextSelectableNode.hasOnlyBr) {
+				// 	builder.append(container, nextSelectableNode.first)
+				// }
 
 				builder.cut(nextSelectableNode)
 
