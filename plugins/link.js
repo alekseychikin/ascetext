@@ -11,9 +11,13 @@ export class Link extends InlineWidget {
 	}
 
 	render() {
-		return createElement('a', {
-			href: this.attributes.url
-		})
+		return {
+			type: 'a',
+			attributes: {
+				href: this.attributes.url
+			},
+			body: []
+		}
 	}
 
 	normalize(element, builder) {

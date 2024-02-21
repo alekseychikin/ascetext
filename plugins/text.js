@@ -26,29 +26,23 @@ export class Text extends Node {
 	}
 
 	render() {
-		return this.create(this.generateModifiers())
+		return this.create()
 	}
 
 	update() {
 		const element = this.render()
 
-		this.element.parentNode.insertBefore(element, this.element)
-		this.element.parentNode.removeChild(this.element)
-		this.setElement(element)
+		// this.element.parentNode.insertBefore(element, this.element)
+		// this.element.parentNode.removeChild(this.element)
+		// this.setElement(element)
 	}
 
-	create(modifiers) {
-		let modifier
-
-		if (modifier = modifiers.shift()) {
-			const node = document.createElement(mapModifierToTag[modifier])
-
-			node.appendChild(this.create(modifiers))
-
-			return node
+	create() {
+		return {
+			type: 'text',
+			attributes: { ...this.attributes },
+			body: []
 		}
-
-		return document.createTextNode(this.attributes.content)
 	}
 
 	generateModifiers() {
@@ -286,75 +280,32 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	parseTreeElement(element, builder, ctx) {
-		if (element.type !== 'text' && !this.supportTags.includes(element.type) && element.type !== 'span') {
+	parseTreeElement(element, builder) {
+		if (element.type !== 'text') {
 			return null
 		}
 
-		if (element.type === 'text') {
-			const attributes = {
-				content: element.attributes.content.replace(groupSpacesRegexp, ' ')
-			}
-
-			if (ctx.weight) {
-				attributes.weight = 'bold'
-			}
-
-			if (ctx.style) {
-				attributes.style = 'italic'
-			}
-
-			if (ctx.strike) {
-				attributes.strike = 'horizontal'
-			}
-
-			if (ctx.decoration) {
-				attributes.decoration = 'underlined'
-			}
-
-			return new Text(attributes)
+		const attributes = {
+			content: element.attributes.content.replace(groupSpacesRegexp, ' ')
 		}
 
-		if (supportTags.bold.includes(element.type) && this.params.allowModifiers.includes('bold')) {
-			ctx.weight = 'bold'
+		if (element.attributes.weight && this.params.allowModifiers.includes('bold')) {
+			attributes.weight = 'bold'
 		}
 
-		if (supportTags.italic.includes(element.type) && this.params.allowModifiers.includes('italic')) {
-			ctx.style = 'italic'
+		if (element.attributes.style && this.params.allowModifiers.includes('italic')) {
+			attributes.style = 'italic'
 		}
 
-		if (supportTags.strike === element.type && this.params.allowModifiers.includes('strike')) {
-			ctx.strike = 'horizontal'
+		if (element.attributes.strike && this.params.allowModifiers.includes('strike')) {
+			attributes.strike = 'horizontal'
 		}
 
-		if (supportTags.underlined === element.type && this.params.allowModifiers.includes('underlined')) {
-			ctx.decoration = 'underlined'
+		if (element.attributes.decoration && this.params.allowModifiers.includes('underlined')) {
+			attributes.decoration = 'underlined'
 		}
 
-		if (element.type === 'span') {
-			if (
-				(
-					element.attributes.style['font-weight'] === 'bold' ||
-					element.attributes.style['font-weight'] === '600' ||
-					element.attributes.style['font-weight'] === '500' ||
-					element.attributes.style['font-weight'] === '700'
-				) && this.params.allowModifiers.includes('bold')
-			) {
-				ctx.weight = 'bold'
-			}
-
-			if (element.attributes.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
-				ctx.style = 'italic'
-			}
-
-			if (element.attributes.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
-				ctx.strike = 'horizontal'
-			}
-
-			if (element.attributes.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
-				ctx.decoration = 'underlined'
-			}
-		}
+		return new Text(attributes)
 	}
 
 	parseJson(element) {

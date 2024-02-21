@@ -9,7 +9,11 @@ export class Quote extends Container {
 	}
 
 	render() {
-		return createElement('blockquote')
+		return {
+			type: 'blockquote',
+			attributes: {},
+			body: []
+		}
 	}
 
 	stringify(children) {

@@ -590,7 +590,7 @@ export default class Builder {
 
 	render(node) {
 		if (!node.element) {
-			node.setElement(node.render())
+			node.setElement(this.core.host.createElement(node.render()))
 		}
 	}
 

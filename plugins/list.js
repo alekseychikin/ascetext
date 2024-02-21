@@ -13,20 +13,24 @@ export class List extends Group {
 	}
 
 	render() {
-		return createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
+		return {
+			type: this.attributes.decor === 'numerable' ? 'ol' : 'ul',
+			attributes: {},
+			body: []
+		}
 	}
 
 	update(previous) {
 		if (previous.decor !== this.attributes.decor) {
-			const element = createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
+			// const element = createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
 
-			while (this.element.childNodes.length) {
-				element.appendChild(this.element.childNodes[0])
-			}
+			// while (this.element.childNodes.length) {
+			// 	element.appendChild(this.element.childNodes[0])
+			// }
 
-			this.element.parentNode.insertBefore(element, this.element)
-			this.element.parentNode.removeChild(this.element)
-			this.setElement(element)
+			// this.element.parentNode.insertBefore(element, this.element)
+			// this.element.parentNode.removeChild(this.element)
+			// this.setElement(element)
 		}
 	}
 
@@ -57,7 +61,11 @@ export class ListItem extends Node {
 	}
 
 	render() {
-		return createElement('li')
+		return {
+			type: 'li',
+			attributes: {},
+			body: []
+		}
 	}
 
 	append(target, anchor, { builder, appendDefault }) {
@@ -133,9 +141,13 @@ export class ListItemContent extends Container {
 	}
 
 	render() {
-		return createElement('div', {
-			tabIndex: 0
-		})
+		return {
+			type: 'div',
+			attributes: {
+				tabIndex: 0
+			},
+			body: []
+		}
 	}
 
 	cut({ builder }) {

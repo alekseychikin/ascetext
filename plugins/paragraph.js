@@ -9,7 +9,11 @@ export class Paragraph extends Container {
 	}
 
 	render() {
-		return createElement('p')
+		return {
+			type: 'p',
+			attributes: {},
+			body: []
+		}
 	}
 
 	stringify(children) {

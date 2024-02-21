@@ -8,7 +8,11 @@ export class Header extends Container {
 	}
 
 	render() {
-		return createElement(`h${this.attributes.level}`)
+		return {
+			type: `h${this.attributes.level}`,
+			attributes: {},
+			body: []
+		}
 	}
 
 	stringify(children) {

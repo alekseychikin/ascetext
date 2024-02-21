@@ -15,19 +15,25 @@ export class Image extends Widget {
 	}
 
 	render() {
-		this.image = createElement('img', {
-			src: this.attributes.src
-		})
-
-		return createElement('figure', {
-			'class': this.getClassName(),
-			'contenteditable': false
-		}, [ this.image ])
+		return {
+			type: 'figure',
+			attributes: {
+				'class': this.getClassName(),
+				'contenteditable': false
+			},
+			body: [{
+				type: 'img',
+				attributes: {
+					src: this.attributes.src
+				},
+				body: []
+			}]
+		}
 	}
 
 	update(previous) {
 		if (previous.src !== this.attributes.src) {
-			this.image.src = this.attributes.src
+			// this.image.src = this.attributes.src
 		}
 
 		this.element.className = this.getClassName()
@@ -97,9 +103,13 @@ export class ImageCaption extends Container {
 	}
 
 	render() {
-		return createElement('figcaption', {
-			contenteditable: true
-		})
+		return {
+			type: 'figcaption',
+			attributes: {
+				contenteditable: true
+			},
+			body: []
+		}
 	}
 
 	onMount({ controls, sizeObserver }) {
