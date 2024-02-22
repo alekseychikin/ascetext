@@ -2,35 +2,6 @@ import Node from './node.js'
 import InlineWidget from '../nodes/inline-widget.js'
 import createElement from '../utils/create-element.js'
 
-export class LineHolder extends InlineWidget {
-	constructor() {
-		super('line-holder')
-	}
-
-	render() {
-		return createElement('br')
-	}
-
-	accept(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
-	split() {
-		return {
-			head: this.previous,
-			tail: this
-		}
-	}
-
-	stringify() {
-		return ''
-	}
-
-	json() {
-		return null
-	}
-}
-
 export default class Container extends Node {
 	constructor(type, attributes = {}) {
 		super(type, attributes)

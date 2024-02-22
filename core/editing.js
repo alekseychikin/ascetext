@@ -1,7 +1,6 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 import { Text } from '../plugins/text.js'
-import { LineHolder } from '../nodes/container.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -530,7 +529,7 @@ export default class Editing {
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first// || new LineHolder()
+				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
 				const first = container.first
 
 				if (first) {
@@ -542,7 +541,9 @@ export default class Editing {
 					container.element.removeChild(container.element.firstChild)
 				}
 
-				builder.append(container, content)
+				if (content) {
+					builder.append(container, content)
+				}
 			}
 
 			if (container.previous && isFunction(container.previous.normalize)) {

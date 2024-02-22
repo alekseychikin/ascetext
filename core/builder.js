@@ -4,7 +4,6 @@ import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
 import nbsp from '../utils/nbsp.js'
-import { LineHolder } from '../nodes/container.js'
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -208,10 +207,6 @@ export default class Builder {
 			}
 
 			if (currentElement === lastElement) {
-				// if (ctx.removeLeadingBr && isElementBr(lastElement)) {
-				// 	this.cut(current)
-				// }
-
 				break
 			}
 
@@ -356,10 +351,9 @@ export default class Builder {
 
 			if (anchor) {
 				this.render(anchor)
-				node.element.insertBefore(current.element, anchor.element)
-			} else {
-				node.element.appendChild(current.element)
 			}
+
+			this.core.host.append(node, current, anchor)
 
 			if (node.isMount && isFunction(node.inputHandler)) {
 				node.inputHandler()
@@ -388,14 +382,6 @@ export default class Builder {
 		if (!anchor) {
 			node.last = last
 		}
-
-		// if (target.previous && target.previous.type === 'line-holder') {
-		// 	this.cut(target.previous)
-		// }
-
-		// if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
-		// 	this.append(last.parent, new LineHolder(), last.next)
-		// }
 
 		current = target
 
@@ -469,10 +455,7 @@ export default class Builder {
 		delete last.next
 
 		while (current) {
-			if (current.element && current.element.parentNode) {
-				current.element.parentNode.removeChild(current.element)
-			}
-
+			this.core.host.remove(current)
 			this.handleUnmount(current)
 			delete current.parent
 
@@ -482,10 +465,6 @@ export default class Builder {
 
 			current = current.next
 		}
-
-		// if (isContainer && !parent.first) {
-		// 	this.append(parent, new LineHolder())
-		// }
 	}
 
 	handleMount(node) {
@@ -595,10 +574,6 @@ export default class Builder {
 	}
 
 	prepareContainer(node) {
-		// if (node.isContainer && !node.first) {
-		// 	this.append(node, new LineHolder())
-		// }
-
 		if (node.isWidget) {
 			node.element.setAttribute('tabindex', '0')
 			node.element.setAttribute('data-widget', '')

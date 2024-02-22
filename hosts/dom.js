@@ -1,4 +1,5 @@
 import isHtmlElement from '../utils/is-html-element.js'
+import isElementBr from '../utils/is-element-br.js'
 
 const blockElements = [
 	'br',
@@ -37,6 +38,22 @@ const blockElements = [
 	'ul',
 	'video'
 ]
+const containerElements = [
+	'address',
+	'blockquote',
+	'dd',
+	'dt',
+	'figcaption',
+	'h1',
+	'h2',
+	'h3',
+	'h4',
+	'h5',
+	'h6',
+	'header',
+	'p',
+	'pre'
+]
 const textElements = [
 	'em',
 	'i',
@@ -49,7 +66,7 @@ const textElements = [
 const beginSpacesRegexp = /^[^\S\u00A0]+/
 const finishSpacesRegexp = /[^\S\u00A0]+$/
 const groupSpacesRegexp = /[^\S\u00A0]+/g
-const traillingBrs = []
+const trailingBrs = []
 const mapModifierToTag = {
 	bold: 'strong',
 	italic: 'em',
@@ -98,6 +115,10 @@ export default class DOMHost {
 	}
 
 	getHtmlElement(current) {
+		if (isElementBr(current) && trailingBrs.includes(current)) {
+			return null
+		}
+
 		return [{
 			type: current.nodeName.toLowerCase(),
 			attributes: this.getAttributes(current),
@@ -214,6 +235,10 @@ export default class DOMHost {
 
 		tree.body.map(this.createElement).forEach((child) => node.appendChild(child))
 
+		if (containerElements.includes(tree.type) && !node.childNodes.length) {
+			node.appendChild(this.getTrailingBr())
+		}
+
 		return node
 	}
 
@@ -251,5 +276,41 @@ export default class DOMHost {
 		}
 
 		return modifiers
+	}
+
+	remove(current) {
+		if (current.element && current.element.parentNode) {
+			const parent = current.element.parentNode
+
+			parent.removeChild(current.element)
+
+			if (containerElements.includes(parent.nodeName.toLowerCase()) && !parent.childNodes.length) {
+				parent.appendChild(this.getTrailingBr())
+			}
+		}
+	}
+
+	append(node, target, anchor) {
+		const lastChild = node.element.lastChild
+		const trailingIndex = lastChild && isElementBr(lastChild) ? trailingBrs.indexOf(lastChild) : -1
+
+		if (!anchor && trailingIndex >= 0) {
+			trailingBrs.splice(trailingIndex, 1)
+			node.element.removeChild(lastChild)
+		}
+
+		node.element.insertBefore(target.element, anchor ? anchor.element : null)
+
+		if (!anchor && isElementBr(target.element)) {
+			node.element.appendChild(this.getTrailingBr())
+		}
+	}
+
+	getTrailingBr() {
+		const trailingBr = document.createElement('br')
+
+		trailingBrs.push(trailingBr)
+
+		return trailingBr
 	}
 }
