@@ -31,14 +31,6 @@ export class Image extends Widget {
 		}
 	}
 
-	update(previous) {
-		if (previous.src !== this.attributes.src) {
-			// this.image.src = this.attributes.src
-		}
-
-		this.element.className = this.getClassName()
-	}
-
 	getClassName() {
 		const classNames = [ 'image' ]
 

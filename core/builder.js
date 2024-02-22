@@ -55,10 +55,7 @@ export default class Builder {
 			previous,
 			next
 		})
-
-		if (isFunction(target.update)) {
-			target.update(previous)
-		}
+		this.core.host.update(target)
 	}
 
 	parse(element, ctx = {}) {

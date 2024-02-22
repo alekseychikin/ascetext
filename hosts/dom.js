@@ -221,6 +221,7 @@ export default class DOMHost {
 		return attributes
 	}
 
+	// добавить lookahead
 	createElement(tree) {
 		if (tree.type === 'text') {
 			return this.createText(tree, this.generateModifiers(tree))
@@ -240,6 +241,22 @@ export default class DOMHost {
 		}
 
 		return node
+	}
+
+	// TODO: вызвать this.createElement с лукахедом в виде node.element
+	// нужно сделать создание по аналогии того, что я делал gutt-browser-stringifier
+	update(node) {
+		const element = this.createElement(node.render())
+		let current = node.first
+
+		while (current) {
+			element.appendChild(current.element)
+			current = current.next
+		}
+
+		node.element.parentNode.insertBefore(element, node.element)
+		node.element.parentNode.removeChild(node.element)
+		node.setElement(element)
 	}
 
 	createText(tree, modifiers) {

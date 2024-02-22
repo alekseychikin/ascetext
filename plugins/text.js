@@ -29,14 +29,6 @@ export class Text extends Node {
 		return this.create()
 	}
 
-	update() {
-		const element = this.render()
-
-		// this.element.parentNode.insertBefore(element, this.element)
-		// this.element.parentNode.removeChild(this.element)
-		// this.setElement(element)
-	}
-
 	create() {
 		return {
 			type: 'text',

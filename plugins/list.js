@@ -20,20 +20,6 @@ export class List extends Group {
 		}
 	}
 
-	update(previous) {
-		if (previous.decor !== this.attributes.decor) {
-			// const element = createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
-
-			// while (this.element.childNodes.length) {
-			// 	element.appendChild(this.element.childNodes[0])
-			// }
-
-			// this.element.parentNode.insertBefore(element, this.element)
-			// this.element.parentNode.removeChild(this.element)
-			// this.setElement(element)
-		}
-	}
-
 	accept(node) {
 		return node.type === 'list-item'
 	}
