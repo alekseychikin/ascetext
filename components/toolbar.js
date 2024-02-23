@@ -384,7 +384,7 @@ export default class Toolbar extends ComponentComponent {
 	}
 
 	toggleSideToolbar() {
-		this.selection.restoreSelection()
+		// this.selection.restoreSelection()
 
 		if (this.isShowSideToolbar) {
 			this.hideSideToolbar()
@@ -437,7 +437,7 @@ export default class Toolbar extends ComponentComponent {
 
 	async controlHandler(action, event, keep = false) {
 		if (!keep) {
-			this.selection.restoreSelection()
+			// this.selection.restoreSelection()
 			this.timeTravel.preservePreviousSelection()
 			this.customMode = false
 		}
@@ -491,7 +491,7 @@ export default class Toolbar extends ComponentComponent {
 		if (this.previousSelection !== null) {
 			this.lastRangeFocused = false
 			this.focusedNodes = []
-			this.selection.restoreSelection()
+			// this.selection.restoreSelection()
 		}
 	}
 

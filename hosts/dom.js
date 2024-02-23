@@ -89,6 +89,13 @@ export default class DOMHost {
 		this.node = node
 
 		this.createElement = this.createElement.bind(this)
+		this.focus = this.focus.bind(this)
+		this.selectionChange = this.selectionChange.bind(this)
+		this.selectionHandlers = []
+		this.selectionTimeout = null
+		this.skipFocus = false
+		document.addEventListener('focus', this.focus, true)
+		document.addEventListener('selectionchange', this.selectionChange)
 	}
 
 	getVirtualTree(node) {
@@ -329,5 +336,37 @@ export default class DOMHost {
 		trailingBrs.push(trailingBr)
 
 		return trailingBr
+	}
+
+	focus(event) {
+		if (!this.skipFocus) {
+			cancelAnimationFrame(this.selectionTimeout)
+			this.selectionTimeout = requestAnimationFrame(() => {
+				this.selectionUpdate({
+					anchorNode: event.srcElement,
+					focusNode: event.srcElement,
+					anchorOffset: 0,
+					focusOffset: 0,
+					isCollapsed: true
+				})
+			}, 1)
+		}
+	}
+
+	selectionChange(event) {
+		cancelAnimationFrame(this.selectionTimeout)
+		this.selectionTimeout = requestAnimationFrame(() => {
+			this.selectionUpdate(document.getSelection())
+		}, 1)
+		this.skipFocus = true
+		setTimeout(() => (this.skipFocus = false), 50)
+	}
+
+	selectionUpdate(event) {
+		this.selectionHandlers.forEach((handler) => handler(event))
+	}
+
+	onSelectionChange(handler) {
+		this.selectionHandlers.push(handler)
 	}
 }

@@ -31,25 +31,26 @@ export default class Selection {
 		this.anchorOffset = 0
 		this.focusOffset = 0
 
-		document.addEventListener('click', this.update, true)
-		document.addEventListener('keyup', this.update, true)
-		document.addEventListener('input', this.update, true)
-		document.addEventListener('selectionchange', this.update)
+		// document.addEventListener('click', this.update, true)
+		// document.addEventListener('keyup', this.update, true)
+		// document.addEventListener('input', this.update, true)
+		// document.addEventListener('selectionchange', this.update)
+		this.core.host.onSelectionChange(this.update)
 	}
 
 	update(event) {
-		if (event.type !== 'selectionchange') {
-			if (this.core.node.contains(event.target)) {
-				const anchorNode = getNodeByElement(event.target)
+		// if (event.type !== 'selectionchange') {
+		// 	if (this.core.node.contains(event.target)) {
+		// 		const anchorNode = getNodeByElement(event.target)
 
-				if (anchorNode && anchorNode.isWidget) {
-					anchorNode.element.focus()
-					document.getSelection().collapse(anchorNode.element, 0)
-				}
-			} else if (!this.core.components.find((component) => component.checkSelection(event.target))) {
-				return this.blur()
-			}
-		}
+		// 		if (anchorNode && anchorNode.isWidget) {
+		// 			anchorNode.element.focus()
+		// 			document.getSelection().collapse(anchorNode.element, 0)
+		// 		}
+		// 	} else if (!this.core.components.find((component) => component.checkSelection(event.target))) {
+		// 		return this.blur()
+		// 	}
+		// }
 
 		const {
 			isCollapsed,
@@ -57,10 +58,18 @@ export default class Selection {
 			focusElement,
 			anchorOffset,
 			focusOffset
-		} = this.getPreparedSelection()
+		} = this.getPreparedSelection(event)
+		const targetHitsComponent = this.core.components.find((component) => component.checkSelection(event.anchorNode))
 
-		if (!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) {
+		// console.log(event)
+
+		if ((!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) && !targetHitsComponent) {
 			return this.blur()
+		}
+
+		if (targetHitsComponent) {
+			// TODO: make fake selection
+			return
 		}
 
 		const firstNode = getNodeByElement(anchorElement)
@@ -99,15 +108,14 @@ export default class Selection {
 		this.onUpdateHandlers.forEach((handler) => handler(this))
 	}
 
-	getPreparedSelection() {
-		const selection = document.getSelection()
+	getPreparedSelection(event) {
 		const {
 			isCollapsed,
 			anchorNode,
 			focusNode,
 			anchorOffset,
 			focusOffset
-		} = selection
+		} = event
 		const anchor = this.findSelectableElement(anchorNode, anchorOffset)
 		const focus = this.findSelectableElement(focusNode, focusOffset)
 
@@ -187,7 +195,7 @@ export default class Selection {
 			}
 		}
 
-		this.update({ target: anchorElement, type: 'restore' })
+		// this.update({ target: anchorElement, type: 'restore' })
 	}
 
 	getSelectionParams(node, offset) {
