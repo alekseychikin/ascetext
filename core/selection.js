@@ -52,6 +52,10 @@ export default class Selection {
 		// 	}
 		// }
 
+		// В этот модуль должны приходить данные firstNode, lastNode и остальные сразу.
+		// А ещё должен быть маркер isComponentFocused, если клик был произведён в тулбар
+		// и определяться это должно в хосте
+
 		const {
 			isCollapsed,
 			anchorElement,
@@ -59,15 +63,12 @@ export default class Selection {
 			anchorOffset,
 			focusOffset
 		} = this.getPreparedSelection(event)
-		const targetHitsComponent = this.core.components.find((component) => component.checkSelection(event.anchorNode))
 
-		// console.log(event)
-
-		if ((!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) && !targetHitsComponent) {
+		if ((!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) && !event.selectedComponent) {
 			return this.blur()
 		}
 
-		if (targetHitsComponent) {
+		if (event.selectedComponent) {
 			// TODO: make fake selection
 			return
 		}
@@ -100,9 +101,9 @@ export default class Selection {
 		this.focused = true
 		this.isRange = !isCollapsed
 		this.anchorAtFirstPositionInContainer = this.anchorOffset === 0
-		this.anchorAtLastPositionInContainer = this.anchorOffset === this.anchorContainer.getOffset()
+		this.anchorAtLastPositionInContainer = this.anchorOffset === this.core.host.getOffset(this.anchorContainer)
 		this.focusAtFirstPositionInContainer = this.focusOffset === 0
-		this.focusAtLastPositionInContainer = this.focusOffset === this.focusContainer.getOffset()
+		this.focusAtLastPositionInContainer = this.focusOffset === this.core.host.getOffset(this.focusContainer)
 
 		this.handleSelectedItems(anchorNode, focusNode)
 		this.onUpdateHandlers.forEach((handler) => handler(this))
@@ -159,11 +160,12 @@ export default class Selection {
 		}
 	}
 
+	// надо выделять в хосте
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
 		const { element: anchorElement, index: anchorIndex } = this.getSelectionParams(
 			anchorNode,
 			typeof anchorOffset === 'undefined' ? 0 : anchorOffset < 0 ?
-				anchorNode.getOffset() + anchorOffset + 1 : anchorOffset
+				this.core.host.getOffset(anchorNode) + anchorOffset + 1 : anchorOffset
 		)
 
 		if (focusNode && (anchorNode !== focusNode || anchorOffset !== focusOffset)) {
@@ -182,6 +184,7 @@ export default class Selection {
 		this.focusedNodes.splice(0, this.focusedNodes.length)
 	}
 
+	// не должно быть тут
 	selectElements(anchorElement, anchorOffset, focusElement, focusOffset) {
 		const selection = window.getSelection()
 
@@ -198,8 +201,10 @@ export default class Selection {
 		// this.update({ target: anchorElement, type: 'restore' })
 	}
 
+	// не должно быть вообще
 	getSelectionParams(node, offset) {
-		const { element: childByOffset } = node.getChildByOffset(offset)
+		const { host } = this.core
+		const { element: childByOffset } = host.getChildByOffset(node, offset)
 		let element = node.element
 		let index = offset
 
@@ -207,7 +212,7 @@ export default class Selection {
 			return { element: node.element, index: 0 }
 		} else if (isTextElement(childByOffset)) {
 			element = childByOffset
-			index -= node.getOffset(childByOffset)
+			index -= host.getOffset(node, childByOffset)
 		} else {
 			const parentNode = childByOffset.parentNode
 
@@ -251,6 +256,7 @@ export default class Selection {
 		)
 	}
 
+	// не должно быть тут
 	getDirection(anchorIndex, focusIndex) {
 		for (let i = 0; i < anchorIndex.length; i++) {
 			if (focusIndex[i] < anchorIndex[i]) {
@@ -264,6 +270,7 @@ export default class Selection {
 	}
 
 	getIndex(container, element, offset) {
+		const { host } = this.core
 		const indexes = []
 		let index
 		let current = container.element
@@ -282,9 +289,9 @@ export default class Selection {
 
 		if (container.element === element) {
 			element = container.element.childNodes[offset]
-			indexes.push(container.getOffset(element))
+			indexes.push(host.getOffset(container, element))
 		} else {
-			indexes.push(container.getOffset(element) + (isTextElement(element) ? offset : 0))
+			indexes.push(host.getOffset(container, element) + (isTextElement(element) ? offset : 0))
 		}
 
 		return indexes

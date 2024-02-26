@@ -4,6 +4,7 @@ import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
 import nbsp from '../utils/nbsp.js'
+import walk from '../utils/walk.js'
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -255,9 +256,55 @@ export default class Builder {
 	}
 
 	split(container, offset) {
-		const firstLevelNode = container.getFirstLevelNode(offset)
+		const firstLevelNode = this.getFirstLevelNode(container, offset)
 
-		return firstLevelNode.split(offset - container.getOffset(firstLevelNode.element), this)
+		if (typeof firstLevelNode.split === 'function') {
+			return firstLevelNode.split(offset - this.core.host.getOffset(container, firstLevelNode.element), this)
+		}
+
+		return this.splitNode(firstLevelNode, offset - this.core.host.getOffset(container, firstLevelNode.element))
+	}
+
+	splitNode(target, offset) {
+		let { node: nodeChild } = this.core.host.getChildByOffset(target, offset)
+
+		while (nodeChild.parent !== target) {
+			nodeChild = nodeChild.parent
+		}
+
+		const { head, tail } = this.split(target, offset)
+
+		if (head && tail) {
+			const duplicate = target.duplicate(this)
+
+			builder.append(target.parent, duplicate, target.next)
+			builder.append(duplicate, tail)
+
+			return {
+				head: target,
+				tail: duplicate
+			}
+		} else if (head) {
+			return {
+				head: target,
+				tail: target.next
+			}
+		}
+
+		return {
+			head: null,
+			tail: target
+		}
+	}
+
+	getFirstLevelNode(container, offset) {
+		let { node: firstLevelNode } = this.core.host.getChildByOffset(container, offset)
+
+		while (!firstLevelNode.isWidget && firstLevelNode.parent !== container) {
+			firstLevelNode = firstLevelNode.parent
+		}
+
+		return firstLevelNode
 	}
 
 	push(node, target) {

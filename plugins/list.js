@@ -221,11 +221,7 @@ export class ListItemContent extends Container {
 			}
 
 			if (nextSelectableNode.isContainer) {
-				const offset = anchorContainer.getOffset()
-
-				// if (!nextSelectableNode.hasOnlyBr) {
-				// 	builder.append(anchorContainer, nextSelectableNode.first)
-				// }
+				const offset = builder.core.host.getOffset(anchorContainer)
 
 				builder.cut(nextSelectableNode)
 
@@ -566,7 +562,10 @@ export default class ListPlugin extends PluginPlugin {
 						const listItem = builder.create('list-item', params)
 						const content = builder.create('list-item-content', params)
 
-						builder.append(content, node.first)
+						if (node.first) {
+							builder.append(content, node.first)
+						}
+
 						builder.append(listItem, content)
 						builder.append(list, listItem)
 						builder.cut(node)

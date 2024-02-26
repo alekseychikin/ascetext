@@ -17,7 +17,7 @@ export default class Autocomplete {
 	}
 
 	onEdit() {
-		const { selection, editing, builder } = this
+		const { selection, editing, builder, host } = this
 
 		if (
 			!selection.focused ||
@@ -48,7 +48,7 @@ export default class Autocomplete {
 				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset - 1) {
 					editing.update()
 					plugin = this.patterns[index].plugin
-					plugin.unwrap(selection.anchorContainer.getChildByOffset(start + 1).node, builder)
+					plugin.unwrap(host.getChildByOffset(selection.anchorContainer, start + 1).node, builder)
 
 					const textNode = builder.create('text', { content: match[0] })
 					const { head, tail } = selection.cutRange(selection.anchorContainer, start, selection.anchorContainer, start + match[0].length)

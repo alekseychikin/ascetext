@@ -1,5 +1,8 @@
+import { getNodeByElement } from '../utils/map-element-to-node.js'
 import isHtmlElement from '../utils/is-html-element.js'
+import isTextElement from '../utils/is-text-element.js'
 import isElementBr from '../utils/is-element-br.js'
+import walk from '../utils/walk.js'
 
 const blockElements = [
 	'br',
@@ -80,8 +83,8 @@ const supportTags = {
 	underlined: 'u'
 }
 
-function isTextElement(element) {
-	return element.nodeType === 3 || element.nodeType === 1 && textElements.includes(element.nodeName.toLowerCase())
+function isTextTag(element) {
+	return element.nodeType === 1 && textElements.includes(element.nodeName.toLowerCase())
 }
 
 export default class DOMHost {
@@ -94,8 +97,13 @@ export default class DOMHost {
 		this.selectionHandlers = []
 		this.selectionTimeout = null
 		this.skipFocus = false
+		this.components = []
 		document.addEventListener('focus', this.focus, true)
 		document.addEventListener('selectionchange', this.selectionChange)
+	}
+
+	setComponents(components) {
+		this.components = components
 	}
 
 	getVirtualTree(node) {
@@ -105,7 +113,7 @@ export default class DOMHost {
 		let elements
 
 		while (current) {
-			if (isTextElement(current)) {
+			if (isTextElement(current) || isTextTag(current)) {
 				elements = this.getTextElement(current)
 			} else if (isHtmlElement(current)) {
 				elements = this.getHtmlElement(current)
@@ -243,7 +251,7 @@ export default class DOMHost {
 
 		tree.body.map(this.createElement).forEach((child) => node.appendChild(child))
 
-		if (containerElements.includes(tree.type) && !node.childNodes.length) {
+		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !node.childNodes.length) {
 			node.appendChild(this.getTrailingBr())
 		}
 
@@ -342,12 +350,15 @@ export default class DOMHost {
 		if (!this.skipFocus) {
 			cancelAnimationFrame(this.selectionTimeout)
 			this.selectionTimeout = requestAnimationFrame(() => {
+				const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
+
 				this.selectionUpdate({
 					anchorNode: event.srcElement,
 					focusNode: event.srcElement,
 					anchorOffset: 0,
 					focusOffset: 0,
-					isCollapsed: true
+					isCollapsed: true,
+					selectedComponent: Boolean(selectedComponent)
 				})
 			}, 1)
 		}
@@ -356,7 +367,17 @@ export default class DOMHost {
 	selectionChange(event) {
 		cancelAnimationFrame(this.selectionTimeout)
 		this.selectionTimeout = requestAnimationFrame(() => {
-			this.selectionUpdate(document.getSelection())
+			const selection = document.getSelection()
+			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
+
+			this.selectionUpdate({
+				anchorNode: selection.anchorNode,
+				focusNode: selection.focusNode,
+				anchorOffset: selection.anchorOffset,
+				focusOffset: selection.focusOffset,
+				isCollapsed: selection.isCollapsed,
+				selectedComponent: Boolean(selectedComponent)
+			})
 		}, 1)
 		this.skipFocus = true
 		setTimeout(() => (this.skipFocus = false), 50)
@@ -368,5 +389,58 @@ export default class DOMHost {
 
 	onSelectionChange(handler) {
 		this.selectionHandlers.push(handler)
+	}
+
+	getChildByOffset(target, offset) {
+		let restOffset = Math.min(offset, this.getOffset(target))
+
+		if (target.isWidget && !offset) {
+			return { node: target, element: target.element }
+		}
+
+		const element = walk(target.element, (current) => {
+			if (isTextElement(current)) {
+				if (current.length >= restOffset) {
+					return current
+				}
+
+				restOffset -= current.length
+			} else if (isElementBr(current)) {
+				if (restOffset === 0) {
+					return current
+				}
+
+				restOffset -= 1
+			}
+		})
+		const node = getNodeByElement(element)
+
+		return { node, element }
+	}
+
+	getOffset(target, element) {
+		let index = 0
+
+		if (target.isWidget) {
+			return 0
+		}
+
+		walk(target.element, (current) => {
+			if (current === element) {
+				return true
+			}
+
+			if (isTextElement(current)) {
+				index += current.length
+			} else if (isElementBr(current)) {
+				if (current === target.element.lastChild) {
+					return true
+				}
+
+				index += 1
+			}
+		})
+
+		return index
 	}
 }

@@ -71,6 +71,7 @@ export default class Ascetext {
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
+		this.host.setComponents(this.components)
 
 		const children = this.builder.parseVirtualTree(this.host.getVirtualTree(node.firstChild))
 		const container = document.createElement('div')

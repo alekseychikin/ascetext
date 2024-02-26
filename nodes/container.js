@@ -172,7 +172,7 @@ export default class Container extends Node {
 					setSelection(previousSelectableNode)
 				}
 			} else if (previousSelectableNode.isContainer) {
-				const offset = previousSelectableNode.getOffset()
+				const offset = builder.core.host.getOffset(previousSelectableNode)
 
 				if (previousSelectableNode.isEmpty) {
 					if (previousSelectableNode.parent.isSection) {
@@ -228,7 +228,7 @@ export default class Container extends Node {
 					setSelection(nextSelectableNode)
 				}
 			} else if (nextSelectableNode.isContainer) {
-				const offset = container.getOffset()
+				const offset = builder.core.host.getOffset(container)
 
 				// if (!nextSelectableNode.hasOnlyBr) {
 				// 	builder.append(container, nextSelectableNode.first)

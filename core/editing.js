@@ -167,7 +167,7 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, components } = this.core
+		const { selection, timeTravel, components, host } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
@@ -207,8 +207,9 @@ export default class Editing {
 						timeTravel.preservePreviousSelection()
 						event.preventDefault()
 
-						const { node, element } = selection.anchorContainer.getChildByOffset(selection.anchorOffset)
-						const offset = selection.anchorOffset - selection.anchorContainer.getOffset(element)
+						// это надо перенести в хост
+						const { node, element } = host.getChildByOffset(selection.anchorContainer, selection.anchorOffset)
+						const offset = selection.anchorOffset - host.getOffset(selection.anchorContainer, element)
 						const needNbsp = !offset || offset === element.nodeValue.length || element.nodeValue[offset] === ' ' || element.nodeValue[offset - 1] === ' '
 						const content = element.nodeValue.substr(0, offset) + (needNbsp ? '\u00A0' : ' ') + element.nodeValue.substr(offset)
 
@@ -528,36 +529,36 @@ export default class Editing {
 		let normalized
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
-			if (container.isContainer) {
-				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
-				const first = container.first
+			// if (container.isContainer) {
+			// 	const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
+			// 	const first = container.first
 
-				if (first) {
-					this.restorePreviousState(first)
-					builder.cutUntil(first)
-				}
+			// 	if (first) {
+			// 		this.restorePreviousState(first)
+			// 		builder.cutUntil(first)
+			// 	}
 
-				while (container.element.firstChild !== null) {
-					container.element.removeChild(container.element.firstChild)
-				}
+			// 	while (container.element.firstChild !== null) {
+			// 		container.element.removeChild(container.element.firstChild)
+			// 	}
 
-				if (content) {
-					builder.append(container, content)
-				}
-			}
+			// 	if (content) {
+			// 		builder.append(container, content)
+			// 	}
+			// }
 
-			if (container.previous && isFunction(container.previous.normalize)) {
-				if (normalized = container.previous.normalize(container, builder)) {
-					builder.replaceUntil(container.previous, normalized, container)
-				}
-			}
+			// if (container.previous && isFunction(container.previous.normalize)) {
+			// 	if (normalized = container.previous.normalize(container, builder)) {
+			// 		builder.replaceUntil(container.previous, normalized, container)
+			// 	}
+			// }
 		}
 
-		if (selection.focused) {
-			selection.restoreSelection()
-		}
+		// if (selection.focused) {
+		// 	selection.restoreSelection()
+		// }
 
-		this.core.timeTravel.commit()
+		// this.core.timeTravel.commit()
 	}
 
 	restorePreviousState(node) {

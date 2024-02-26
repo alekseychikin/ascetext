@@ -18,7 +18,6 @@ declare class Node<S = Record<string, string>> {
 	setElement(element: HTMLElement): void;
 	accept(node: Node): boolean;
 	getNodeUntil(nodeUntil: Node): Node;
-	get hasOnlyBr(): boolean;
 	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => false | undefined>;
 	getClosestContainer(): Node;
 	getPreviousSelectableNode(): false | Node | undefined;
