@@ -211,6 +211,8 @@ export default class DOMHost {
 			content = content.replace(finishSpacesRegexp, '')
 		}
 
+		content = content.replace(groupSpacesRegexp, ' ')
+
 		if (!content.length) {
 			return null
 		}
