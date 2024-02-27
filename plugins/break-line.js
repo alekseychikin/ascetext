@@ -6,6 +6,8 @@ import isElementBr from '../utils/is-element-br.js'
 class BreakLine extends InlineWidget {
 	constructor() {
 		super('breakLine')
+
+		this.length = 1
 	}
 
 	render() {

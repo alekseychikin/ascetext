@@ -383,18 +383,25 @@ export default class Builder {
 	appendHandler(node, target, anchor) {
 		const last = target.getNodeUntil()
 		let current = target
+		let parent
 
 		this.cutUntil(target, last)
 		this.prepareContainer(target)
 
 		do {
 			current.parent = node
+			parent = node
 
 			this.render(current)
 			this.render(node)
 
 			if (anchor) {
 				this.render(anchor)
+			}
+
+			while (parent) {
+				parent.length += current.length
+				parent = parent.parent
 			}
 
 			this.core.host.append(node, current, anchor)
@@ -455,9 +462,9 @@ export default class Builder {
 
 	cutUntil(node, until) {
 		const last = node.getNodeUntil(until)
-		const parent = node.parent
-		const isContainer = parent && parent.isContainer
+		const isContainer = node.parent && node.parent.isContainer
 		let current = node
+		let parent
 
 		if (node.isMount && (node.parent || node.previous || last.next)) {
 			this.core.onNodeChange({
@@ -499,6 +506,13 @@ export default class Builder {
 		delete last.next
 
 		while (current) {
+			parent = node.parent
+
+			while (parent) {
+				parent.length -= current.length
+				parent = parent.parent
+			}
+
 			this.core.host.remove(current)
 			this.handleUnmount(current)
 			delete current.parent

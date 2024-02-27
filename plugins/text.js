@@ -23,6 +23,8 @@ const groupSpacesRegexp = /[^\S\u00A0]+/g
 export class Text extends Node {
 	constructor(attributes) {
 		super('text', attributes)
+
+		this.length = attributes.content.length
 	}
 
 	render() {
