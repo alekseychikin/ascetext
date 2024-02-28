@@ -101,7 +101,6 @@ export default class Editing {
 				.concat(this.lastSelection.filter((node) => node.isContainer || node.isWidget))
 				.filter((node, index, self) => self.indexOf(node) === index)
 
-
 			if (containers.length === 1) {
 				timeTravel.preservePreviousSelection()
 				timeTravel.previousSelection = this.lastSelectionIndexes
@@ -529,29 +528,29 @@ export default class Editing {
 		let normalized
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
-			// if (container.isContainer) {
-			// 	const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
-			// 	const first = container.first
+			if (container.isContainer) {
+				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
+				const first = container.first
 
-			// 	if (first) {
-			// 		this.restorePreviousState(first)
-			// 		builder.cutUntil(first)
-			// 	}
+				if (first) {
+					this.restorePreviousState(first)
+					builder.cutUntil(first)
+				}
 
-			// 	while (container.element.firstChild !== null) {
-			// 		container.element.removeChild(container.element.firstChild)
-			// 	}
+				while (container.element.firstChild !== null) {
+					container.element.removeChild(container.element.firstChild)
+				}
 
-			// 	if (content) {
-			// 		builder.append(container, content)
-			// 	}
-			// }
+				if (content) {
+					builder.append(container, content)
+				}
+			}
 
-			// if (container.previous && isFunction(container.previous.normalize)) {
-			// 	if (normalized = container.previous.normalize(container, builder)) {
-			// 		builder.replaceUntil(container.previous, normalized, container)
-			// 	}
-			// }
+			if (container.previous && isFunction(container.previous.normalize)) {
+				if (normalized = container.previous.normalize(container, builder)) {
+					builder.replaceUntil(container.previous, normalized, container)
+				}
+			}
 		}
 
 		// if (selection.focused) {
@@ -561,6 +560,7 @@ export default class Editing {
 		// this.core.timeTravel.commit()
 	}
 
+	// может быть не нужен
 	restorePreviousState(node) {
 		let current = node
 		let next

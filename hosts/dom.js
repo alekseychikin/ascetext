@@ -343,6 +343,7 @@ export default class DOMHost {
 	getTrailingBr() {
 		const trailingBr = document.createElement('br')
 
+		trailingBr.setAttribute('data-trailing', '')
 		trailingBrs.push(trailingBr)
 
 		return trailingBr
@@ -394,7 +395,7 @@ export default class DOMHost {
 	}
 
 	getChildByOffset(target, offset) {
-		let restOffset = Math.min(offset, this.getOffset(target))
+		let restOffset = Math.min(offset, target.length)
 
 		if (target.isWidget && !offset) {
 			return { node: target, element: target.element }

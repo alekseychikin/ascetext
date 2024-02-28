@@ -27,9 +27,7 @@ declare class Node<S = Record<string, string>> {
 		node: Node;
 		element: HTMLElement;
 	};
-	getFirstLevelNode(offset: number): Node;
 	getLastNode(): Node;
-	duplicate(builder: Builder): any;
 	split(offset: number, builder: Builder): {
 		head: Node | null;
 		tail: Node | null;

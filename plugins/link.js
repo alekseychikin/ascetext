@@ -41,10 +41,6 @@ export class Link extends InlineWidget {
 		return false
 	}
 
-	duplicate(builder) {
-		return builder.create('link', { url: this.attributes.url })
-	}
-
 	stringify(children) {
 		return '<a href="' + this.attributes.url + '">' + children + '</a>'
 	}

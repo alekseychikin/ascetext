@@ -221,11 +221,9 @@ export class ListItemContent extends Container {
 			}
 
 			if (nextSelectableNode.isContainer) {
-				const offset = builder.core.host.getOffset(anchorContainer)
-
 				builder.cut(nextSelectableNode)
 
-				setSelection(anchorContainer, offset)
+				setSelection(anchorContainer, anchorContainer.length)
 			} else if (nextSelectableNode.isWidget) {
 				setSelection(nextSelectableNode)
 			}

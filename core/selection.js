@@ -101,9 +101,9 @@ export default class Selection {
 		this.focused = true
 		this.isRange = !isCollapsed
 		this.anchorAtFirstPositionInContainer = this.anchorOffset === 0
-		this.anchorAtLastPositionInContainer = this.anchorOffset === this.core.host.getOffset(this.anchorContainer)
+		this.anchorAtLastPositionInContainer = this.anchorOffset === this.anchorContainer.length
 		this.focusAtFirstPositionInContainer = this.focusOffset === 0
-		this.focusAtLastPositionInContainer = this.focusOffset === this.core.host.getOffset(this.focusContainer)
+		this.focusAtLastPositionInContainer = this.focusOffset === this.focusContainer.length
 
 		this.handleSelectedItems(anchorNode, focusNode)
 		this.onUpdateHandlers.forEach((handler) => handler(this))
@@ -165,7 +165,7 @@ export default class Selection {
 		const { element: anchorElement, index: anchorIndex } = this.getSelectionParams(
 			anchorNode,
 			typeof anchorOffset === 'undefined' ? 0 : anchorOffset < 0 ?
-				this.core.host.getOffset(anchorNode) + anchorOffset + 1 : anchorOffset
+				anchorNode.length + anchorOffset + 1 : anchorOffset
 		)
 
 		if (focusNode && (anchorNode !== focusNode || anchorOffset !== focusOffset)) {
@@ -234,6 +234,7 @@ export default class Selection {
 	}
 
 	restoreSelection() {
+		console.log('restore', this.getSelectionInIndexes())
 		this.setSelectionByIndexes(this.getSelectionInIndexes())
 	}
 

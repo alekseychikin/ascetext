@@ -130,7 +130,7 @@ export default class Container extends Node {
 			if (focusAtLastPositionInContainer) {
 				newBlock = builder.createBlock()
 			} else {
-				newBlock = this.duplicate(builder)
+				newBlock = builder.duplicate(this)
 			}
 
 			builder.append(this.parent, newBlock, this.next)
@@ -172,7 +172,7 @@ export default class Container extends Node {
 					setSelection(previousSelectableNode)
 				}
 			} else if (previousSelectableNode.isContainer) {
-				const offset = builder.core.host.getOffset(previousSelectableNode)
+				const offset = previousSelectableNode.length
 
 				if (previousSelectableNode.isEmpty) {
 					if (previousSelectableNode.parent.isSection) {
@@ -228,15 +228,13 @@ export default class Container extends Node {
 					setSelection(nextSelectableNode)
 				}
 			} else if (nextSelectableNode.isContainer) {
-				const offset = builder.core.host.getOffset(container)
-
 				// if (!nextSelectableNode.hasOnlyBr) {
 				// 	builder.append(container, nextSelectableNode.first)
 				// }
 
 				builder.cut(nextSelectableNode)
 
-				setSelection(container, offset)
+				setSelection(container, container.length)
 			} else if (nextSelectableNode.isWidget) {
 				setSelection(nextSelectableNode)
 			}

@@ -256,13 +256,19 @@ export default class Builder {
 	}
 
 	split(container, offset) {
-		const firstLevelNode = this.getFirstLevelNode(container, offset)
+		let length = offset
+		let firstLevelNode = container.first
 
-		if (typeof firstLevelNode.split === 'function') {
-			return firstLevelNode.split(offset - this.core.host.getOffset(container, firstLevelNode.element), this)
+		while (firstLevelNode && length > firstLevelNode.length) {
+			length -= firstLevelNode.length
+			firstLevelNode = firstLevelNode.next
 		}
 
-		return this.splitNode(firstLevelNode, offset - this.core.host.getOffset(container, firstLevelNode.element))
+		if (typeof firstLevelNode.split === 'function') {
+			return firstLevelNode.split(length, this)
+		}
+
+		return this.splitNode(firstLevelNode, length)
 	}
 
 	splitNode(target, offset) {
@@ -275,10 +281,10 @@ export default class Builder {
 		const { head, tail } = this.split(target, offset)
 
 		if (head && tail) {
-			const duplicate = target.duplicate(this)
+			const duplicate = this.duplicate(target)
 
-			builder.append(target.parent, duplicate, target.next)
-			builder.append(duplicate, tail)
+			this.append(target.parent, duplicate, target.next)
+			this.append(duplicate, tail)
 
 			return {
 				head: target,
@@ -297,14 +303,10 @@ export default class Builder {
 		}
 	}
 
-	getFirstLevelNode(container, offset) {
-		let { node: firstLevelNode } = this.core.host.getChildByOffset(container, offset)
-
-		while (!firstLevelNode.isWidget && firstLevelNode.parent !== container) {
-			firstLevelNode = firstLevelNode.parent
-		}
-
-		return firstLevelNode
+	duplicate(target) {
+		return isFunction(target.duplicate)
+			? target.duplicate(this)
+			: this.create(target.type, { ...target.attributes })
 	}
 
 	push(node, target) {
@@ -572,6 +574,7 @@ export default class Builder {
 		}
 	}
 
+	// возможно он больше не нужен, потому что я не восстанавливаю текстовые ноды, а создаю новые
 	handleText(current) {
 		const firstChild = current.deepesetFirstNode()
 		const lastChild = current.previous.deepesetLastNode()

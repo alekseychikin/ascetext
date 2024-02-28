@@ -72,7 +72,7 @@ export default class Widget extends WithControls {
 
 	split() {
 		return {
-			head: null,
+			head: this.previous,
 			tail: this
 		}
 	}

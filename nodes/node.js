@@ -140,10 +140,6 @@ export default class Node {
 		return current
 	}
 
-	duplicate(builder) {
-		return builder.create(this.type, this.attributes)
-	}
-
 	deepesetLastNode(node = this) {
 		if (node.last) {
 			return node.last.deepesetLastNode()

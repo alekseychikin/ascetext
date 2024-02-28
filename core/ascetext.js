@@ -87,6 +87,9 @@ export default class Ascetext {
 		window.addEventListener('load', this.sizeObserver.update)
 		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
 		this.node.addEventListener('load', this.sizeObserver.update, true)
+
+		console.log(this.model.length)
+		console.log(this.model)
 	}
 
 	stringify(first) {
