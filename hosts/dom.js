@@ -396,6 +396,11 @@ export default class DOMHost {
 
 	focus(event) {
 		if (!this.skipFocus) {
+			if (event.srcElement === this.node) {
+				return
+			}
+
+			// console.error('focus')
 			cancelAnimationFrame(this.selectionTimeout)
 			this.selectionTimeout = requestAnimationFrame(() => {
 				const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
