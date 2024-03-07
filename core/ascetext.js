@@ -5,7 +5,7 @@ import Selection from './selection.js'
 // import Navigation from './navigation.js'
 import Editing from './editing.js'
 import Autocomplete from './autocomplete.js'
-import TimeTravel from './timetravel.js'
+import TimeTravel, { operationTypes } from './timetravel.js'
 import ParagraphPlugin from '../plugins/paragraph.js'
 import BreakLinePlugin from '../plugins/break-line.js'
 import TextPlugin from '../plugins/text.js'
@@ -87,9 +87,6 @@ export default class Ascetext {
 		window.addEventListener('load', this.sizeObserver.update)
 		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
 		this.node.addEventListener('load', this.sizeObserver.update, true)
-
-		console.log(this.model.length)
-		console.log(this.model)
 	}
 
 	stringify(first) {
@@ -121,9 +118,13 @@ export default class Ascetext {
 		}
 	}
 
-	onNodeChange(changes) {
+	onNodeChange(change) {
 		if (this.init) {
-			this.timeTravel.pushChange(changes)
+			if (change.type !== operationTypes.ATTRIBUTE) {
+				this.editing.scheduleUpdate(change.container)
+			}
+
+			this.timeTravel.pushChange(change)
 			this.sizeObserver.update()
 			this.triggerChange()
 		}
