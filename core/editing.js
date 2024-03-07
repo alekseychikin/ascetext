@@ -50,6 +50,7 @@ export default class Editing {
 		this.modifyKeyHandlerParams = {}
 		this.scheduleTimer = null
 		this.isSession = false
+		this.isUpdating = false
 		this.spacesDown = false
 		this.lastSelection = null
 		this.lastSelectionIndexes = null
@@ -504,7 +505,7 @@ export default class Editing {
 	scheduleUpdate(container) {
 		this.isChanged = true
 
-		if (this.core.timeTravel.isLockPushChange) {
+		if (this.core.timeTravel.isLockPushChange || this.isUpdating) {
 			return
 		}
 
@@ -525,39 +526,82 @@ export default class Editing {
 
 		const { builder, selection, host } = this.core
 		let container
-		let normalized
+
+		this.isUpdating = true
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
-			if (container.isContainer) {
-				const content = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
-				const first = container.first
+			if (container.isContainer && container.isMount) {
+				// console.error('update', container.element)
+				const compare = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
 
-				if (first) {
-					this.restorePreviousState(first)
-					builder.cutUntil(first)
-				}
+				this.syncTrees(container.first, compare)
+				// console.log(container)
+				// нужно сравнить left и right, и сделать череду манипуляций с нодами:
+				// append, cut, setAttribute для изменённого текста
+				// left можно будет выбросить, а right обновится до актуального состояния
+				// без пересоздания реальных дом-нод
 
-				while (container.element.firstChild !== null) {
-					container.element.removeChild(container.element.firstChild)
-				}
+				// if (first) {
+				// 	this.restorePreviousState(first)
+				// 	builder.cutUntil(first)
+				// }
 
-				if (content) {
-					builder.append(container, content)
-				}
-			}
-
-			if (container.previous && isFunction(container.previous.normalize)) {
-				if (normalized = container.previous.normalize(container, builder)) {
-					builder.replaceUntil(container.previous, normalized, container)
-				}
+				// if (content) {
+				// 	builder.append(container, content)
+				// }
 			}
 		}
 
-		// if (selection.focused) {
-		// 	selection.restoreSelection()
-		// }
+		this.isUpdating = false
 
-		// this.core.timeTravel.commit()
+		if (selection.focused) {
+			selection.restoreSelection()
+		}
+
+		this.core.timeTravel.commit()
+	}
+
+	syncTrees(target, compare) {
+		const { builder } = this.core
+		let left = target
+		let right = compare
+		let next
+
+		while (left) {
+			if (!right) {
+				console.log('remove', left)
+				next = left.next
+				builder.cut(left)
+				left = next
+
+				continue
+			}
+
+			if (left.type === right.type) {
+				builder.setAttributes(left, { ...right.attributes })
+
+				this.syncTrees(left.first, right.first)
+			} else {
+				next = left.next
+				builder.cut(left)
+				left = next
+
+				continue
+			}
+
+			if (!left.next) {
+				right = right.next
+
+				break
+			}
+
+			left = left.next
+			right = right.next
+		}
+
+		if (right) {
+			builder.append(left.parent, right)
+		}
 	}
 
 	// может быть не нужен
