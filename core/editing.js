@@ -578,7 +578,9 @@ export default class Editing {
 			}
 
 			if (left.type === right.type) {
-				builder.setAttributes(left, { ...right.attributes })
+				if (!this.equalAttributes(left, right)) {
+					builder.setAttributes(left, { ...right.attributes })
+				}
 
 				this.syncTrees(left.first, right.first)
 			} else {
@@ -602,6 +604,24 @@ export default class Editing {
 		if (right) {
 			builder.append(left.parent, right)
 		}
+	}
+
+	equalAttributes(left, right) {
+		let attribute
+
+		for (attribute in left.attributes) {
+			if (right.attributes[attribute] !== left.attributes[attribute]) {
+				return false
+			}
+		}
+
+		for (attribute in right.attributes) {
+			if (right.attributes[attribute] !== left.attributes[attribute]) {
+				return false
+			}
+		}
+
+		return true
 	}
 
 	// может быть не нужен
