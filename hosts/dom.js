@@ -109,7 +109,6 @@ export default class DOMHost {
 	getVirtualTree(node) {
 		let body = []
 		let current = node
-		let type
 		let elements
 
 		while (current) {
@@ -126,7 +125,53 @@ export default class DOMHost {
 			current = current.nextSibling
 		}
 
-		return body
+		return this.normalize(body)
+	}
+
+	normalize(tree) {
+		let i
+		let current
+		let next
+
+		for (i = 0; i < tree.length - 1; i++) {
+			current = tree[i]
+			next = tree[i + 1]
+
+			if (current.type === next.type) {
+				switch (current.type) {
+					case 'a':
+						if (this.isEqualAttributes(current, next, ['href', 'target'])) {
+							current.body = this.normalize(current.body.concat(next.body))
+							tree.splice(i + 1, 1)
+							i--
+						}
+
+						break
+					case 'text':
+						if (this.isEqualAttributes(current, next, ['weight', 'style', 'strike', 'decoration'])) {
+							current.attributes.content += next.attributes.content
+							tree.splice(i + 1, 1)
+							i--
+						}
+
+						break
+				}
+			}
+		}
+
+		return tree
+	}
+
+	isEqualAttributes(left, right, attributes) {
+		let equal = true
+
+		attributes.forEach((attribute) => {
+			if (left.attributes[attribute] !== right.attributes[attribute]) {
+				equal = false
+			}
+		})
+
+		return equal
 	}
 
 	getHtmlElement(current) {
@@ -228,7 +273,7 @@ export default class DOMHost {
 	}
 
 	getAttributes(current) {
-		let attributes = {}
+		const attributes = {}
 		let i
 
 		for (i = 0; i < current.attributes.length; i++) {
