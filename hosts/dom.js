@@ -496,4 +496,16 @@ export default class DOMHost {
 
 		return index
 	}
+
+	selectElements(anchorElement, anchorOffset, focusElement, focusOffset) {
+		const selection = window.getSelection()
+
+		this.skipFocus = true
+		setTimeout(() => (this.skipFocus = false), 50)
+		selection.collapse(anchorElement, anchorOffset)
+
+		if (focusElement) {
+			selection.extend(focusElement, focusOffset)
+		}
+	}
 }

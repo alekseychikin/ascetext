@@ -160,7 +160,6 @@ export default class Selection {
 		}
 	}
 
-	// надо выделять в хосте
 	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
 		const { element: anchorElement, index: anchorIndex } = this.getSelectionParams(
 			anchorNode,
@@ -172,33 +171,16 @@ export default class Selection {
 			const { element: focusElement, index: focusIndex } =
 				this.getSelectionParams(focusNode, focusOffset)
 
-			this.selectElements(anchorElement, anchorIndex, focusElement, focusIndex)
+			this.core.host.selectElements(anchorElement, anchorIndex, focusElement, focusIndex)
 		} else if (anchorNode.isWidget) {
 			anchorNode.element.focus()
-			this.selectElements(anchorNode.element, 0)
+			this.core.host.selectElements(anchorNode.element, 0)
 		} else {
-			this.selectElements(anchorElement, anchorIndex)
+			this.core.host.selectElements(anchorElement, anchorIndex)
 		}
 
 		this.selectedItems.splice(0, this.selectedItems.length)
 		this.focusedNodes.splice(0, this.focusedNodes.length)
-	}
-
-	// не должно быть тут
-	selectElements(anchorElement, anchorOffset, focusElement, focusOffset) {
-		const selection = window.getSelection()
-
-		if (focusElement && (anchorElement !== focusElement || anchorOffset !== focusOffset)) {
-			selection.setBaseAndExtent(anchorElement, anchorOffset, focusElement, focusOffset)
-		} else {
-			selection.collapse(anchorElement, anchorOffset)
-
-			if (isHtmlElement(anchorElement) && anchorElement.getAttribute('data-widget') !== null) {
-				anchorElement.focus()
-			}
-		}
-
-		// this.update({ target: anchorElement, type: 'restore' })
 	}
 
 	// не должно быть вообще
@@ -249,7 +231,7 @@ export default class Selection {
 		const anchor = this.findElementByIndex(indexes.anchorIndex)
 		const focus = this.findElementByIndex(indexes.focusIndex)
 
-		this.selectElements(
+		this.core.host.selectElements(
 			anchor.element,
 			anchor.offset,
 			focus.element,
