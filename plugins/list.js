@@ -2,7 +2,6 @@ import PluginPlugin from './plugin.js'
 import Node from '../nodes/node.js'
 import Container from '../nodes/container.js'
 import Group from '../nodes/group.js'
-import createElement from '../utils/create-element.js'
 import isHtmlElement from '../utils/is-html-element.js'
 
 export class List extends Group {

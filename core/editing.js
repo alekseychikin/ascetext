@@ -402,7 +402,7 @@ export default class Editing {
 	}
 
 	handleBackspace(event) {
-		if (this.core.selection.anchorContainer.backspaceHandler) {
+		if (isFunction(this.core.selection.anchorContainer.backspaceHandler)) {
 			this.core.selection.anchorContainer.backspaceHandler(
 				event,
 				this.getModifyKeyHandlerParams()
@@ -430,7 +430,7 @@ export default class Editing {
 	}
 
 	handleDelete(event) {
-		if (this.core.selection.anchorContainer.deleteHandler) {
+		if (isFunction(this.core.selection.anchorContainer.deleteHandler)) {
 			this.core.selection.anchorContainer.deleteHandler(
 				event,
 				this.getModifyKeyHandlerParams()
@@ -459,7 +459,7 @@ export default class Editing {
 		event.preventDefault()
 		this.handleRemoveRange()
 
-		if (this.core.selection.anchorContainer && this.core.selection.anchorContainer.enterHandler) {
+		if (isFunction(this.core.selection.anchorContainer.enterHandler)) {
 			this.core.selection.anchorContainer.enterHandler(
 				event,
 				this.getModifyKeyHandlerParams()
@@ -470,7 +470,7 @@ export default class Editing {
 	handleEnterKeyDownSingle(event) {
 		event.preventDefault()
 
-		if (this.core.selection.anchorContainer.enterHandler) {
+		if (isFunction(this.core.selection.anchorContainer.enterHandler)) {
 			this.core.selection.anchorContainer.enterHandler(
 				event,
 				this.getModifyKeyHandlerParams()

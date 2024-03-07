@@ -1,10 +1,8 @@
 import { operationTypes } from '../core/timetravel.js'
-import isElementBr from '../utils/is-element-br.js'
 import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
 import nbsp from '../utils/nbsp.js'
-import walk from '../utils/walk.js'
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -290,7 +288,9 @@ export default class Builder {
 				head: target,
 				tail: duplicate
 			}
-		} else if (head) {
+		}
+
+		if (head) {
 			return {
 				head: target,
 				tail: target.next
@@ -464,7 +464,6 @@ export default class Builder {
 
 	cutUntil(node, until) {
 		const last = node.getNodeUntil(until)
-		const isContainer = node.parent && node.parent.isContainer
 		let current = node
 		let parent
 

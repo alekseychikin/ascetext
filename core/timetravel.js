@@ -39,28 +39,28 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = true
 	}
 
-	pushChange(event) {
+	pushChange(change) {
 		if (!this.isLockPushChange) {
 			let payload
 
-			switch (event.type) {
+			switch (change.type) {
 				case operationTypes.ATTRIBUTE:
 					this.currentBunch.push({
-						type: event.type,
-						target: this.getIndex(event.target),
-						previous: event.previous,
-						next: event.next
+						type: change.type,
+						target: this.getIndex(change.target),
+						previous: change.previous,
+						next: change.next
 					})
 					break
 				case operationTypes.APPEND:
 				case operationTypes.CUT:
-					payload = this.builder.getJson(event.target, event.last)
+					payload = this.builder.getJson(change.target, change.last)
 
 					if (payload.length) {
 						this.currentBunch.push({
-							type: event.type,
-							container: this.getIndex(event.container),
-							target: this.getIndex(event.target),
+							type: change.type,
+							container: this.getIndex(change.container),
+							target: this.getIndex(change.target),
 							payload
 						})
 					}

@@ -417,7 +417,7 @@ export default class DOMHost {
 		}
 	}
 
-	selectionChange(event) {
+	selectionChange() {
 		cancelAnimationFrame(this.selectionTimeout)
 		this.selectionTimeout = requestAnimationFrame(() => {
 			const selection = document.getSelection()

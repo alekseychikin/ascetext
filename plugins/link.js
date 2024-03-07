@@ -1,6 +1,5 @@
 import PluginPlugin from './plugin.js'
 import InlineWidget from '../nodes/inline-widget.js'
-import createElement from '../utils/create-element.js'
 import isHtmlElement from '../utils/is-html-element.js'
 
 export class Link extends InlineWidget {
@@ -25,7 +24,7 @@ export class Link extends InlineWidget {
 			return false
 		}
 
-		const fields = [ 'url' ]
+		const fields = ['href', 'target']
 		let areEqualElements = true
 
 		fields.forEach((field) => {
