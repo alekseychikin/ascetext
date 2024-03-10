@@ -3,6 +3,7 @@ import isHtmlElement from '../utils/is-html-element.js'
 import isTextElement from '../utils/is-text-element.js'
 import isElementBr from '../utils/is-element-br.js'
 import walk from '../utils/walk.js'
+import { operationTypes } from '../core/timetravel.js'
 
 const blockElements = [
 	'br',
@@ -88,22 +89,88 @@ function isTextTag(element) {
 }
 
 export default class DOMHost {
-	constructor(node) {
-		this.node = node
+	constructor(core) {
+		this.core = core
 
 		this.createElement = this.createElement.bind(this)
 		this.focus = this.focus.bind(this)
 		this.selectionChange = this.selectionChange.bind(this)
+		this.onChange = this.onChange.bind(this)
+
 		this.selectionHandlers = []
 		this.selectionTimeout = null
 		this.skipFocus = false
 		this.components = []
+		this.mapNodeIdToElement = {
+			[this.core.model.id]: this.core.node
+		}
+		this.mapNodeIdToNode = {
+			[this.core.model.id]: this.core.model
+		}
+
 		document.addEventListener('focus', this.focus, true)
 		document.addEventListener('selectionchange', this.selectionChange)
 	}
 
 	setComponents(components) {
 		this.components = components
+	}
+
+	onChange(change) {
+		let tree
+		let elements
+		let container
+
+		switch (change.type) {
+			case operationTypes.APPEND:
+				tree = this.render(change.target, change.last)
+				container = this.mapNodeIdToElement[change.container.id]
+				elements = tree.map((element) => this.createElement(element))
+				elements.forEach((element) => container.appendChild(element))
+
+				break
+			case operationTypes.CUT:
+				console.log(change)
+
+				break
+			case operationTypes.ATTRIBUTE:
+				console.log(change)
+
+				break
+		}
+	}
+
+	render(target, last = null) {
+		const body = []
+		let current = target
+		let element
+
+		while (current) {
+			element = current.render(this.render(current.first))
+
+			if (current.isContainer || current.isWidget || current.isSection) {
+				element.id = current.id
+				this.mapNodeIdToNode[current.id] = current
+			}
+
+			if ((current.isContainer || current.isWidget) && !containerElements.includes(element.type)) {
+				element.attributes.tabIndex = '0'
+			}
+
+			if (current.isWidget) {
+				element.isWidget = true
+			}
+
+			body.push(element)
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
+		}
+
+		return body
 	}
 
 	getVirtualTree(node) {
@@ -283,32 +350,44 @@ export default class DOMHost {
 		return attributes
 	}
 
-	// добавить lookahead
-	createElement(tree) {
+	createElement(tree, lookahead = []) {
 		if (tree.type === 'text') {
-			return this.createText(tree, this.generateModifiers(tree))
+			return this.createText(tree, this.generateModifiers(tree), lookahead)
 		}
 
-		const node = document.createElement(tree.type)
+		const lookaheadElement = this.findLookahead(lookahead, tree.type)
+		const lookaheadChildren = lookaheadElement ? Array.prototype.slice.call(lookaheadElement.childNodes) : []
+		const element = lookaheadElement || document.createElement(tree.type)
 		let attributeName
 
 		for (attributeName in tree.attributes) {
-			node.setAttribute(attributeName, tree.attributes[attributeName])
+			element.setAttribute(attributeName, tree.attributes[attributeName])
 		}
 
-		tree.body.map(this.createElement).forEach((child) => node.appendChild(child))
-
-		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !node.childNodes.length) {
-			node.appendChild(this.getTrailingBr())
+		if (tree.id) {
+			element.dataset.nodeId = tree.id
+			this.mapNodeIdToElement[tree.id] = element
 		}
 
-		return node
+		if (tree.isWidget) {
+			element.dataset.widget = ''
+		}
+
+		tree.body
+			.map((child) => this.createElement(child, lookaheadChildren))
+			.forEach((child) => element.appendChild(child))
+
+		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !element.childNodes.length) {
+			element.appendChild(this.getTrailingBr())
+		}
+
+		lookaheadChildren.forEach((child) => element.removeChild(child))
+
+		return element
 	}
 
-	// TODO: вызвать this.createElement с лукахедом в виде node.element
-	// нужно сделать создание по аналогии того, что я делал gutt-browser-stringifier
 	update(node) {
-		const element = this.createElement(node.render())
+		const element = this.createElement(node.render(), [node.element])
 		let current = node.first
 
 		while (current) {
@@ -316,23 +395,57 @@ export default class DOMHost {
 			current = current.next
 		}
 
-		node.element.parentNode.insertBefore(element, node.element)
-		node.element.parentNode.removeChild(node.element)
-		node.setElement(element)
+		if (element !== node.element) {
+			node.element.parentNode.insertBefore(element, node.element)
+			node.element.parentNode.removeChild(node.element)
+			node.setElement(element)
+		}
 	}
 
-	createText(tree, modifiers) {
+	createText(tree, modifiers, lookahead = []) {
 		let modifier
 
 		if (modifier = modifiers.shift()) {
-			const node = document.createElement(mapModifierToTag[modifier])
+			const type = mapModifierToTag[modifier]
+			const element = document.createElement(type)
 
-			node.appendChild(this.createText(tree, modifiers))
+			element.appendChild(this.createText(tree, modifiers))
 
-			return node
+			return element
+		}
+
+		const lookaheadElement = this.findLookahead(lookahead, 'text')
+
+		if (lookaheadElement) {
+			if (lookaheadElement.nodeValue !== tree.attributes.content) {
+				lookaheadElement.nodeValue = tree.attributes.content
+			}
+
+			return lookaheadElement
 		}
 
 		return document.createTextNode(tree.attributes.content)
+	}
+
+	findLookahead(lookahead, type) {
+		let i
+
+		for (i = 0; i < lookahead.length; i++) {
+			switch (type) {
+				case 'text':
+					if (isTextElement(lookahead[i])) {
+						return lookahead.splice(i, 1)[0]
+					}
+
+					break
+				default:
+					if (lookahead[i].nodeName.toLowerCase() === type) {
+						return lookahead.splice(i, 1)[0]
+					}
+			}
+		}
+
+		return null
 	}
 
 	generateModifiers(element) {
@@ -370,6 +483,13 @@ export default class DOMHost {
 	}
 
 	append(node, target, anchor) {
+		this.render(node)
+		this.render(target)
+
+		if (anchor) {
+			this.render(anchor)
+		}
+
 		const lastChild = node.element.lastChild
 		const trailingIndex = lastChild && isElementBr(lastChild) ? trailingBrs.indexOf(lastChild) : -1
 

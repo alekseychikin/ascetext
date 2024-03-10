@@ -15,6 +15,7 @@ export default class SizeObserver {
 		this.middleware = middleware
 
 		this.core.selection.onUpdate(this.update)
+		this.core.builder.onChange(this.update)
 		window.addEventListener('resize', this.update)
 	}
 

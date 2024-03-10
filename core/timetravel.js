@@ -7,6 +7,7 @@ export const operationTypes = {
 export default class TimeTravel {
 	constructor(selection, builder, root) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.pushChange = this.pushChange.bind(this)
 		this.commit = this.commit.bind(this)
 
 		this.timeline = []
@@ -20,6 +21,7 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = false
 
 		this.selection.onUpdate(this.onSelectionChange)
+		this.builder.onChange(this.pushChange)
 	}
 
 	reset() {

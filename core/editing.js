@@ -1,6 +1,6 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
-import { Text } from '../plugins/text.js'
+import { operationTypes } from './timetravel.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -67,6 +67,11 @@ export default class Editing {
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
 
 		this.core.selection.onUpdate(() => setTimeout(this.selectionUpdate, 0))
+		this.core.builder.onChange((change) => {
+			if (change.type !== operationTypes.ATTRIBUTE) {
+				this.scheduleUpdate(change.container)
+			}
+		})
 	}
 
 	selectionUpdate() {

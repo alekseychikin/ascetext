@@ -5,7 +5,7 @@ import Selection from './selection.js'
 // import Navigation from './navigation.js'
 import Editing from './editing.js'
 import Autocomplete from './autocomplete.js'
-import TimeTravel, { operationTypes } from './timetravel.js'
+import TimeTravel from './timetravel.js'
 import ParagraphPlugin from '../plugins/paragraph.js'
 import BreakLinePlugin from '../plugins/break-line.js'
 import TextPlugin from '../plugins/text.js'
@@ -22,10 +22,9 @@ import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
 import DOMHost from '../hosts/dom.js'
 
 class Root extends Section {
-	constructor(element) {
+	constructor() {
 		super('root')
 
-		this.element = element
 		this.isMount = true
 	}
 }
@@ -34,7 +33,7 @@ export default class Ascetext {
 	constructor(node, params = {}) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
-		this.onNodeChange = this.onNodeChange.bind(this)
+		this.triggerChange = this.triggerChange.bind(this)
 
 		this.node = node
 		this.onChangeHandlers = []
@@ -55,9 +54,9 @@ export default class Ascetext {
 
 			return icons
 		}, {}), params.icons || {})
-		this.host = params.host || new DOMHost(node)
+		this.model = new Root()
+		this.host = params.host || new DOMHost(this)
 		this.placeholder = extractPlaceholderParams(params.placeholder)
-		this.model = new Root(node)
 		// this.navigation = new Navigation(this)
 		this.builder = new Builder(this)
 		this.selection = new Selection(this)
@@ -72,17 +71,18 @@ export default class Ascetext {
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
 		this.host.setComponents(this.components)
+		this.builder.onChange(this.host.onChange)
 
 		const children = this.builder.parseVirtualTree(this.host.getVirtualTree(node.firstChild))
-		const container = document.createElement('div')
 
 		while (node.childNodes.length) {
-			container.appendChild(node.childNodes[0])
+			node.removeChild(node.childNodes[0])
 		}
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
+		this.builder.onChange(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
 		window.addEventListener('load', this.sizeObserver.update)
 		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
@@ -115,18 +115,6 @@ export default class Ascetext {
 
 		return () => {
 			this.onChangeHandlers.splice(this.onChangeHandlers.indexOf(callback), 1)
-		}
-	}
-
-	onNodeChange(change) {
-		if (this.init) {
-			if (change.type !== operationTypes.ATTRIBUTE) {
-				this.editing.scheduleUpdate(change.container)
-			}
-
-			this.timeTravel.pushChange(change)
-			this.sizeObserver.update()
-			this.triggerChange()
 		}
 	}
 

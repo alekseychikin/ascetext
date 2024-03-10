@@ -16,6 +16,7 @@ export default class Builder {
 		this.appendHandler = this.appendHandler.bind(this)
 		this.handleMount = this.handleMount.bind(this)
 		this.handleUnmount = this.handleUnmount.bind(this)
+		this.onChangeHandlers = []
 	}
 
 	create(name, ...params) {
@@ -48,13 +49,13 @@ export default class Builder {
 	}
 
 	handleAttributes(target, previous, next) {
-		this.core.onNodeChange({
+		this.dispatch({
 			type: operationTypes.ATTRIBUTE,
 			target,
 			previous,
 			next
 		})
-		this.core.host.update(target)
+		// this.core.host.update(target)
 	}
 
 	parse(element, ctx = {}) {
@@ -388,25 +389,18 @@ export default class Builder {
 		let parent
 
 		this.cutUntil(target, last)
-		this.prepareContainer(target)
+		// this.prepareContainer(target)
 
 		do {
 			current.parent = node
 			parent = node
-
-			this.render(current)
-			this.render(node)
-
-			if (anchor) {
-				this.render(anchor)
-			}
 
 			while (parent) {
 				parent.length += current.length
 				parent = parent.parent
 			}
 
-			this.core.host.append(node, current, anchor)
+			// this.core.host.append(node, current, anchor)
 
 			if (node.isMount && isFunction(node.inputHandler)) {
 				node.inputHandler()
@@ -444,7 +438,7 @@ export default class Builder {
 		}
 
 		if (node.isMount) {
-			this.core.onNodeChange({
+			this.dispatch({
 				type: operationTypes.APPEND,
 				container: node,
 				target,
@@ -468,7 +462,7 @@ export default class Builder {
 		let parent
 
 		if (node.isMount && (node.parent || node.previous || last.next)) {
-			this.core.onNodeChange({
+			this.dispatch({
 				type: operationTypes.CUT,
 				container: node.parent,
 				last,
@@ -480,7 +474,7 @@ export default class Builder {
 		}
 
 		if (current.previous) {
-			this.handleText(current)
+			// this.handleText(current)
 
 			if (current.parent && current.parent.last === last) {
 				current.parent.last = current.previous
@@ -514,7 +508,7 @@ export default class Builder {
 				parent = parent.parent
 			}
 
-			this.core.host.remove(current)
+			// this.core.host.remove(current)
 			this.handleUnmount(current)
 			delete current.parent
 
@@ -543,7 +537,7 @@ export default class Builder {
 			node.isMount = true
 
 			if (isFunction(node.onMount)) {
-				node.onMount(this.core)
+				// node.onMount(this.core)
 			}
 
 			current = node.first
@@ -560,7 +554,7 @@ export default class Builder {
 
 		if (node.isMount) {
 			if (isFunction(node.onUnmount)) {
-				node.onUnmount(this.core)
+				// node.onUnmount(this.core)
 			}
 
 			node.isMount = false
@@ -627,18 +621,12 @@ export default class Builder {
 		}
 	}
 
-	render(node) {
-		if (!node.element) {
-			node.setElement(this.core.host.createElement(node.render()))
-		}
-	}
-
-	prepareContainer(node) {
-		if (node.isWidget) {
-			node.element.setAttribute('tabindex', '0')
-			node.element.setAttribute('data-widget', '')
-		}
-	}
+	// prepareContainer(node) {
+	// 	if (node.isWidget) {
+	// 		node.element.setAttribute('tabindex', '0')
+	// 		node.element.setAttribute('data-widget', '')
+	// 	}
+	// }
 
 	registerPlugins() {
 		this.core.plugins.forEach((plugin) => {
@@ -650,5 +638,13 @@ export default class Builder {
 				})
 			}
 		})
+	}
+
+	dispatch(change) {
+		this.onChangeHandlers.forEach((handler) => handler(change))
+	}
+
+	onChange(handler) {
+		this.onChangeHandlers.push(handler)
 	}
 }
