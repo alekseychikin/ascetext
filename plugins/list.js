@@ -11,11 +11,11 @@ export class List extends Group {
 		this.isDeleteEmpty = true
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: this.attributes.decor === 'numerable' ? 'ol' : 'ul',
 			attributes: {},
-			body: []
+			body
 		}
 	}
 
@@ -45,11 +45,11 @@ export class ListItem extends Node {
 		this.params = params
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'li',
 			attributes: {},
-			body: []
+			body
 		}
 	}
 
@@ -125,13 +125,13 @@ export class ListItemContent extends Container {
 		this.params = params
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'div',
 			attributes: {
 				tabIndex: 0
 			},
-			body: []
+			body
 		}
 	}
 

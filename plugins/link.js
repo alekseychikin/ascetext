@@ -9,13 +9,13 @@ export class Link extends InlineWidget {
 		this.isDeleteEmpty = true
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'a',
 			attributes: {
 				href: this.attributes.url
 			},
-			body: []
+			body
 		}
 	}
 

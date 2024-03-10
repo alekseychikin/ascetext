@@ -14,7 +14,7 @@ export class Image extends Widget {
 		return node.type === 'image-caption'
 	}
 
-	render() {
+	render(body = []) {
 		return {
 			type: 'figure',
 			attributes: {
@@ -27,7 +27,7 @@ export class Image extends Widget {
 					src: this.attributes.src
 				},
 				body: []
-			}]
+			}].concat(body)
 		}
 	}
 

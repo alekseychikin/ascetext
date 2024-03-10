@@ -1,17 +1,16 @@
 import PluginPlugin from './plugin.js'
 import Container from '../nodes/container.js'
-import createElement from '../utils/create-element.js'
 
 export class Header extends Container {
 	constructor(attributes) {
 		super('header', attributes)
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: `h${this.attributes.level}`,
 			attributes: {},
-			body: []
+			body
 		}
 	}
 
@@ -85,7 +84,10 @@ export default class HeaderPlugin extends PluginPlugin {
 				if (item.isContainer && item.parent.isSection && (item.type !== 'header' || item.level !== level)) {
 					const header = builder.create('header', { level })
 
-					builder.append(header, item.first)
+					if (item.first) {
+						builder.append(header, item.first)
+					}
+
 					builder.replace(item, header)
 				}
 			})

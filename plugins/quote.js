@@ -8,11 +8,11 @@ export class Quote extends Container {
 		super('quote')
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'blockquote',
 			attributes: {},
-			body: []
+			body
 		}
 	}
 

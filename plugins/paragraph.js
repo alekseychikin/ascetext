@@ -1,6 +1,5 @@
 import PluginPlugin from './plugin.js'
 import Container from '../nodes/container.js'
-import createElement from '../utils/create-element.js'
 import isHtmlElement from '../utils/is-html-element.js'
 
 export class Paragraph extends Container {
@@ -8,11 +7,11 @@ export class Paragraph extends Container {
 		super('paragraph')
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'p',
 			attributes: {},
-			body: []
+			body
 		}
 	}
 
@@ -57,7 +56,10 @@ export default class ParagraphPlugin extends PluginPlugin {
 			if (item.isContainer && item.parent.isSection && item.type !== 'paragraph') {
 				const paragraph = builder.create('paragraph')
 
-				builder.append(paragraph, item.first)
+				if (item.first) {
+					builder.append(paragraph, item.first)
+				}
+
 				builder.replace(item, paragraph)
 			}
 		})
