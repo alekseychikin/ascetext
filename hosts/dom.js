@@ -3,6 +3,8 @@ import isHtmlElement from '../utils/is-html-element.js'
 import isTextElement from '../utils/is-text-element.js'
 import isElementBr from '../utils/is-element-br.js'
 import walk from '../utils/walk.js'
+import createElement from '../utils/create-element.js'
+import getStyle from '../utils/get-style.js'
 import { operationTypes } from '../core/timetravel.js'
 
 const blockElements = [
@@ -107,9 +109,20 @@ export default class DOMHost {
 		this.mapNodeIdToNode = {
 			[this.core.model.id]: this.core.model
 		}
+		this.containerAvatar = createElement('div', {
+			style: {
+				position: 'fixed',
+				bottom: '0',
+				left: '0',
+				maxWidth: '100%',
+				opacity: '0',
+				pointerEvents: 'none'
+			}
+		})
 
 		document.addEventListener('focus', this.focus, true)
 		document.addEventListener('selectionchange', this.selectionChange)
+		document.body.appendChild(this.containerAvatar)
 	}
 
 	setComponents(components) {
@@ -627,5 +640,46 @@ export default class DOMHost {
 		if (focusElement) {
 			selection.extend(focusElement, focusOffset)
 		}
+	}
+
+	getBoundings(node) {
+		return this.mapNodeIdToElement[node.id].getBoundingClientRect()
+	}
+
+	getSelectedBoundings(anchorContainer, anchorOffset, focusContainer, focusOffset) {
+		const selectedLength = anchorContainer === focusContainer ? focusOffset - anchorOffset : anchorContainer.length - anchorOffset
+		const anchorElement = this.mapNodeIdToElement[anchorContainer.id]
+		const content = anchorElement.outerText
+		const styles = getStyle(anchorElement)
+
+		this.containerAvatar.style.display = ''
+		this.containerAvatar.style.width = `${anchorElement.offsetWidth}px`
+		this.containerAvatar.style.fontFamily = styles.fontFamily
+		this.containerAvatar.style.fontSize = styles.fontSize
+		this.containerAvatar.style.lineHeight = styles.lineHeight
+		this.containerAvatar.style.letterSpacing = styles.letterSpacing
+		this.containerAvatar.style.padding = styles.padding
+		this.containerAvatar.style.boxSizing = styles.boxSizing
+		this.containerAvatar.style.textAlign = styles.textAlign
+
+		const fakeContent = content.substr(0, anchorOffset) +
+			'<span style="background: blue" data-selected-text>' +
+			content.substr(anchorOffset, selectedLength) +
+			'</span>' +
+		content.substr(anchorOffset + selectedLength)
+		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+		const span = this.containerAvatar.querySelector('span[data-selected-text]')
+
+		// нужно возвращать прокси
+		return {
+			left: span.offsetLeft,
+			top: span.offsetTop,
+			width: span.offsetWidth,
+			height: span.offsetHeight
+		}
+	}
+
+	hideAvatar() {
+		this.containerAvatar.style.display = 'none'
 	}
 }
