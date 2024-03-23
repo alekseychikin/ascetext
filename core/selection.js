@@ -31,40 +31,11 @@ export default class Selection {
 		this.anchorOffset = 0
 		this.focusOffset = 0
 
-		// document.addEventListener('click', this.update, true)
-		// document.addEventListener('keyup', this.update, true)
-		// document.addEventListener('input', this.update, true)
-		// document.addEventListener('selectionchange', this.update)
 		this.core.host.onSelectionChange(this.update)
 	}
 
 	update(event) {
-		// if (event.type !== 'selectionchange') {
-		// 	if (this.core.node.contains(event.target)) {
-		// 		const anchorNode = getNodeByElement(event.target)
-
-		// 		if (anchorNode && anchorNode.isWidget) {
-		// 			anchorNode.element.focus()
-		// 			document.getSelection().collapse(anchorNode.element, 0)
-		// 		}
-		// 	} else if (!this.core.components.find((component) => component.checkSelection(event.target))) {
-		// 		return this.blur()
-		// 	}
-		// }
-
-		// В этот модуль должны приходить данные firstNode, lastNode и остальные сразу.
-		// А ещё должен быть маркер isComponentFocused, если клик был произведён в тулбар
-		// и определяться это должно в хосте
-
-		const {
-			isCollapsed,
-			anchorElement,
-			focusElement,
-			anchorOffset,
-			focusOffset
-		} = this.getPreparedSelection(event)
-
-		if ((!this.core.node.contains(anchorElement) || !this.core.node.contains(focusElement)) && !event.selectedComponent) {
+		if (!event.focused && !event.selectedComponent) {
 			return this.blur()
 		}
 
@@ -73,14 +44,11 @@ export default class Selection {
 			return
 		}
 
-		const firstNode = getNodeByElement(anchorElement)
-		const lastNode = getNodeByElement(focusElement)
-		const firstContainer = firstNode.getClosestContainer()
-		const lastContainer = lastNode.getClosestContainer()
-		const firstIndex = this.getIndex(firstContainer, anchorElement, anchorOffset)
-		const lastIndex = this.getIndex(lastContainer, focusElement, focusOffset)
+		const firstContainer = event.anchorContainer
+		const lastContainer = event.focusContainer
+		const firstIndex = this.getIndex(firstContainer, event.anchorOffset)
+		const lastIndex = this.getIndex(lastContainer, event.focusOffset)
 		const isForwardDirection = this.getDirection(firstIndex, lastIndex) === 'forward'
-		const [ anchorNode, focusNode ] = isForwardDirection ? [ firstNode, lastNode ] : [ lastNode, firstNode ]
 
 		if (isForwardDirection) {
 			this.anchorContainer = firstContainer
@@ -99,34 +67,17 @@ export default class Selection {
 		}
 
 		this.focused = true
-		this.isRange = !isCollapsed
+		this.isRange = !event.isCollapsed
 		this.anchorAtFirstPositionInContainer = this.anchorOffset === 0
 		this.anchorAtLastPositionInContainer = this.anchorOffset === this.anchorContainer.length
 		this.focusAtFirstPositionInContainer = this.focusOffset === 0
 		this.focusAtLastPositionInContainer = this.focusOffset === this.focusContainer.length
 
-		this.handleSelectedItems(anchorNode, focusNode)
+		this.handleSelectedItems(
+			this.getNodeByOffset(this.anchorContainer, this.anchorOffset),
+			this.getNodeByOffset(this.focusContainer, this.focusOffset)
+		)
 		this.onUpdateHandlers.forEach((handler) => handler(this))
-	}
-
-	getPreparedSelection(event) {
-		const {
-			isCollapsed,
-			anchorNode,
-			focusNode,
-			anchorOffset,
-			focusOffset
-		} = event
-		const anchor = this.findSelectableElement(anchorNode, anchorOffset)
-		const focus = this.findSelectableElement(focusNode, focusOffset)
-
-		return {
-			isCollapsed,
-			anchorElement: anchor.element,
-			anchorOffset: anchor.offset,
-			focusElement: focus.element,
-			focusOffset: focus.offset
-		}
 	}
 
 	blur() {

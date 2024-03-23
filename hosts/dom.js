@@ -583,26 +583,28 @@ export default class DOMHost {
 	}
 
 	focus(event) {
-		if (!this.skipFocus) {
-			if (event.srcElement === this.node) {
-				return
-			}
-
-			// console.error('focus')
-			cancelAnimationFrame(this.selectionTimeout)
-			this.selectionTimeout = requestAnimationFrame(() => {
-				const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
-
-				this.selectionUpdate({
-					anchorNode: event.srcElement,
-					focusNode: event.srcElement,
-					anchorOffset: 0,
-					focusOffset: 0,
-					isCollapsed: true,
-					selectedComponent: Boolean(selectedComponent)
-				})
-			}, 1)
+		if (!document.body.contains(event.srcElement)) {
+			return
 		}
+
+		if (this.core.node.contains(event.srcElement) && (typeof event.srcElement.dataset.widget === 'undefined' || this.core.node === event.srcElement)) {
+			return
+		}
+
+		cancelAnimationFrame(this.selectionTimeout)
+		this.selectionTimeout = requestAnimationFrame(() => {
+			const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
+
+			this.selectionUpdate({
+				type: 'focus',
+				anchorNode: event.srcElement,
+				focusNode: event.srcElement,
+				anchorOffset: 0,
+				focusOffset: 0,
+				isCollapsed: true,
+				selectedComponent: Boolean(selectedComponent)
+			})
+		})
 	}
 
 	selectionChange() {
@@ -612,6 +614,7 @@ export default class DOMHost {
 			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
 
 			this.selectionUpdate({
+				type: 'selectionchange',
 				anchorNode: selection.anchorNode,
 				focusNode: selection.focusNode,
 				anchorOffset: selection.anchorOffset,
@@ -619,13 +622,92 @@ export default class DOMHost {
 				isCollapsed: selection.isCollapsed,
 				selectedComponent: Boolean(selectedComponent)
 			})
-		}, 1)
-		this.skipFocus = true
-		setTimeout(() => (this.skipFocus = false), 50)
+		})
 	}
 
 	selectionUpdate(event) {
-		this.selectionHandlers.forEach((handler) => handler(event))
+		const { container: anchorContainer, offset: anchorOffset} = this.getContainerAndOffset(event.anchorNode, event.anchorOffset)
+		let focusContainer = anchorContainer
+		let focusOffset = anchorOffset
+
+		if (!event.isCollapsed) {
+			const focus = this.getContainerAndOffset(event.focusNode, event.focusOffset)
+
+			focusContainer = focus.container
+			focusOffset = focus.offset
+		}
+
+		const focused = this.core.node.contains(anchorContainer) && this.core.node.contains(focusContainer)
+
+		this.selectionHandlers.forEach((handler) => handler({
+			anchorContainer: focused ? this.mapNodeIdToNode[anchorContainer.dataset.nodeId] : null,
+			anchorOffset,
+			focusContainer: focused ? this.mapNodeIdToNode[focusContainer.dataset.nodeId] : null,
+			focusOffset,
+			isCollapsed: event.isCollapsed,
+			focused,
+			selectedComponent: event.selectedComponent
+		}))
+	}
+
+	getContainerAndOffset(node, offset) {
+		let container = node
+		let element = node
+		let length = offset
+
+		if (isHtmlElement(element) && element.dataset.nodeId) {
+			if (element.childNodes[offset] && isElementBr(element.childNodes[offset])) {
+				return this.getContainerAndOffset(element.childNodes[offset], 0)
+			}
+
+			return {
+				container,
+				offset
+			}
+		}
+
+		while (element.previousSibling || element.parentNode) {
+			if (!element.previousSibling) {
+				element = element.parentNode
+
+				if (isHtmlElement(element) && element.dataset.nodeId) {
+					container = element
+
+					break
+				}
+
+				continue
+			}
+
+			element = element.previousSibling
+			length += this.getLength(element)
+		}
+
+		return {
+			container,
+			offset: length
+		}
+	}
+
+	getLength(node) {
+		if (isTextElement(node)) {
+			return node.length
+		}
+
+		if (isElementBr(node)) {
+			return 1
+		}
+
+		let length = 0
+		let child = node.firstChild
+
+		while (child) {
+			length += this.getLength(child)
+
+			child = child.nextSibling
+		}
+
+		return length
 	}
 
 	onSelectionChange(handler) {
