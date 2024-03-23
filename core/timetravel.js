@@ -1,7 +1,8 @@
 export const operationTypes = {
 	CUT: 'cut',
 	APPEND: 'append',
-	ATTRIBUTE: 'attribute'
+	ATTRIBUTE: 'attribute',
+	UPDATE: 'update'
 }
 
 export default class TimeTravel {

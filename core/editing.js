@@ -532,125 +532,27 @@ export default class Editing {
 		const { builder, selection, host } = this.core
 		let container
 
+		if (this.isUpdating) {
+			return
+		}
+
 		this.isUpdating = true
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer && container.isMount) {
-				// console.error('update', container.element)
-				const compare = builder.parseVirtualTree(host.getVirtualTree(container.element.firstChild)).first
+				const replacement = builder.parseVirtualTree(host.getVirtualTree(host.mapNodeIdToElement[container.id].firstChild)).first
 
-				this.syncTrees(container.first, compare)
-				// console.log(container)
-				// нужно сравнить left и right, и сделать череду манипуляций с нодами:
-				// append, cut, setAttribute для изменённого текста
-				// left можно будет выбросить, а right обновится до актуального состояния
-				// без пересоздания реальных дом-нод
-
-				// if (first) {
-				// 	this.restorePreviousState(first)
-				// 	builder.cutUntil(first)
-				// }
-
-				// if (content) {
-				// 	builder.append(container, content)
-				// }
+				builder.update(container, replacement)
 			}
 		}
 
 		this.isUpdating = false
 
-		if (selection.focused) {
-			selection.restoreSelection()
-		}
+		// if (selection.focused) {
+		// 	selection.restoreSelection()
+		// }
 
-		this.core.timeTravel.commit()
-	}
-
-	syncTrees(target, compare) {
-		const { builder } = this.core
-		let left = target
-		let right = compare
-		let next
-
-		while (left) {
-			if (!right) {
-				console.log('remove', left)
-				next = left.next
-				builder.cut(left)
-				left = next
-
-				continue
-			}
-
-			if (left.type === right.type) {
-				if (!this.equalAttributes(left, right)) {
-					builder.setAttributes(left, { ...right.attributes })
-				}
-
-				this.syncTrees(left.first, right.first)
-			} else {
-				next = left.next
-				builder.cut(left)
-				left = next
-
-				continue
-			}
-
-			if (!left.next) {
-				right = right.next
-
-				break
-			}
-
-			left = left.next
-			right = right.next
-		}
-
-		if (right) {
-			builder.append(left.parent, right)
-		}
-	}
-
-	equalAttributes(left, right) {
-		let attribute
-
-		for (attribute in left.attributes) {
-			if (right.attributes[attribute] !== left.attributes[attribute]) {
-				return false
-			}
-		}
-
-		for (attribute in right.attributes) {
-			if (right.attributes[attribute] !== left.attributes[attribute]) {
-				return false
-			}
-		}
-
-		return true
-	}
-
-	// может быть не нужен
-	restorePreviousState(node) {
-		let current = node
-		let next
-
-		while (current) {
-			if (!current.element.parentNode) {
-				if (next = this.findNextElement(current)) {
-					current.parent.element.insertBefore(current.element, next)
-				} else {
-					current.parent.element.appendChild(current.element)
-				}
-			}
-
-			if (current.type === 'text') {
-				current.setNodeValue(current.attributes.content)
-			} else if (current.first) {
-				this.restorePreviousState(current.first)
-			}
-
-			current = current.next
-		}
+		// this.core.timeTravel.commit()
 	}
 
 	findNextElement(node) {

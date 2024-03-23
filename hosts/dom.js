@@ -5,6 +5,7 @@ import isElementBr from '../utils/is-element-br.js'
 import walk from '../utils/walk.js'
 import createElement from '../utils/create-element.js'
 import getStyle from '../utils/get-style.js'
+import findParent from '../utils/find-parent.js'
 import { operationTypes } from '../core/timetravel.js'
 
 const blockElements = [
@@ -130,26 +131,70 @@ export default class DOMHost {
 	}
 
 	onChange(change) {
-		let tree
-		let elements
-		let container
+		const parent = findParent(change.container || change.target, (parent) => parent.isContainer)
 
-		switch (change.type) {
-			case operationTypes.APPEND:
-				tree = this.render(change.target, change.last)
-				container = this.mapNodeIdToElement[change.container.id]
-				elements = tree.map((element) => this.createElement(element))
-				elements.forEach((element) => container.appendChild(element))
+		if (parent) {
+			this.onUpdate(parent)
+		} else {
+			switch (change.type) {
+				case operationTypes.APPEND:
+					this.onAppend(change)
 
+					break
+				case operationTypes.CUT:
+					this.onCut(change)
+
+					break
+				case operationTypes.ATTRIBUTE:
+					this.onAttribute(change)
+
+					break
+			}
+		}
+	}
+
+	onUpdate(node) {
+		const tree = this.render(node.first, node.last)
+		const container = this.mapNodeIdToElement[node.id]
+		const lookahead = Array.prototype.slice.call(container.childNodes)
+
+		const elements = tree.map((element) => this.createElement(element, lookahead))
+
+		elements.forEach((element) => container.appendChild(element))
+		lookahead.forEach((element) => container.removeChild(element))
+	}
+
+	onAppend(change) {
+		const container = this.mapNodeIdToElement[change.container.id]
+		const tree = this.render(change.target, change.last)
+		const elements = tree.map((element) => this.createElement(element))
+
+		elements.forEach((element) => container.appendChild(element))
+	}
+
+	onAttribute(change) {
+		const tree = this.render(change.target, change.target)[0]
+		let container = this.mapNodeIdToElement[change.target.id]
+
+		if (tree.type !== container.nodeName.toLowerCase()) {
+			this.mapNodeIdToElement[change.target.id] = container = this.replaceNode(tree, container)
+		}
+
+		this.applyAttributes(container, tree)
+	}
+
+	onCut(change) {
+		const container = this.mapNodeIdToElement[change.container.id]
+		let element = change.target
+
+		while (element) {
+			container.removeChild(this.mapNodeIdToElement[element.id])
+
+			if (element === change.last) {
 				break
-			case operationTypes.CUT:
-				console.log(change)
+			}
 
-				break
-			case operationTypes.ATTRIBUTE:
-				console.log(change)
-
-				break
+			element = element.next
 		}
 	}
 
@@ -157,11 +202,13 @@ export default class DOMHost {
 		const body = []
 		let current = target
 		let element
+		let parent
 
 		while (current) {
 			element = current.render(this.render(current.first))
+			parent = findParent(current.parent, (parent) => parent.isContainer)
 
-			if (current.isContainer || current.isWidget || current.isSection) {
+			if (!parent || current.isContainer) {
 				element.id = current.id
 				this.mapNodeIdToNode[current.id] = current
 			}
@@ -371,19 +418,11 @@ export default class DOMHost {
 		const lookaheadElement = this.findLookahead(lookahead, tree.type)
 		const lookaheadChildren = lookaheadElement ? Array.prototype.slice.call(lookaheadElement.childNodes) : []
 		const element = lookaheadElement || document.createElement(tree.type)
-		let attributeName
 
-		for (attributeName in tree.attributes) {
-			element.setAttribute(attributeName, tree.attributes[attributeName])
-		}
+		this.applyAttributes(element, tree)
 
 		if (tree.id) {
-			element.dataset.nodeId = tree.id
 			this.mapNodeIdToElement[tree.id] = element
-		}
-
-		if (tree.isWidget) {
-			element.dataset.widget = ''
 		}
 
 		tree.body
@@ -397,22 +436,6 @@ export default class DOMHost {
 		lookaheadChildren.forEach((child) => element.removeChild(child))
 
 		return element
-	}
-
-	update(node) {
-		const element = this.createElement(node.render(), [node.element])
-		let current = node.first
-
-		while (current) {
-			element.appendChild(current.element)
-			current = current.next
-		}
-
-		if (element !== node.element) {
-			node.element.parentNode.insertBefore(element, node.element)
-			node.element.parentNode.removeChild(node.element)
-			node.setElement(element)
-		}
 	}
 
 	createText(tree, modifiers, lookahead = []) {
@@ -438,6 +461,38 @@ export default class DOMHost {
 		}
 
 		return document.createTextNode(tree.attributes.content)
+	}
+
+	applyAttributes(element, tree) {
+		const currentsAttributes = this.getAttributes(element)
+		let attributeName
+
+		for (attributeName in currentsAttributes) {
+			if (typeof tree.attributes[attributeName] === 'undefined' || tree.attributes[attributeName] === null) {
+				element.removeAttribute(attributeName)
+			}
+		}
+
+		for (attributeName in tree.attributes) {
+			element.setAttribute(attributeName, tree.attributes[attributeName])
+		}
+
+		if (tree.id) {
+			element.dataset.nodeId = tree.id
+		}
+
+		if (tree.isWidget) {
+			element.dataset.widget = ''
+		}
+	}
+
+	replaceNode(tree, container) {
+		const node = this.createElement(tree)
+
+		container.parentNode.insertBefore(node, container)
+		container.parentNode.removeChild(container)
+
+		return node
 	}
 
 	findLookahead(lookahead, type) {

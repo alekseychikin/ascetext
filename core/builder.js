@@ -2,7 +2,6 @@ import { operationTypes } from '../core/timetravel.js'
 import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
-import nbsp from '../utils/nbsp.js'
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -17,6 +16,7 @@ export default class Builder {
 		this.handleMount = this.handleMount.bind(this)
 		this.handleUnmount = this.handleUnmount.bind(this)
 		this.onChangeHandlers = []
+		this.isUpdating = false
 	}
 
 	create(name, ...params) {
@@ -55,7 +55,6 @@ export default class Builder {
 			previous,
 			next
 		})
-		// this.core.host.update(target)
 	}
 
 	parse(element, ctx = {}) {
@@ -437,7 +436,7 @@ export default class Builder {
 			current = current.next
 		}
 
-		if (node.isMount) {
+		if (node.isMount && !this.isUpdating) {
 			this.dispatch({
 				type: operationTypes.APPEND,
 				container: node,
@@ -461,7 +460,7 @@ export default class Builder {
 		let current = node
 		let parent
 
-		if (node.isMount && (node.parent || node.previous || last.next)) {
+		if (node.isMount && !this.isUpdating) {
 			this.dispatch({
 				type: operationTypes.CUT,
 				container: node.parent,
@@ -474,8 +473,6 @@ export default class Builder {
 		}
 
 		if (current.previous) {
-			// this.handleText(current)
-
 			if (current.parent && current.parent.last === last) {
 				current.parent.last = current.previous
 			}
@@ -518,6 +515,24 @@ export default class Builder {
 
 			current = current.next
 		}
+	}
+
+	update(container, replacement) {
+		this.isUpdating = true
+
+		if (container.first) {
+			this.cutUntil(container.first)
+		}
+
+		this.append(container, replacement)
+		this.isUpdating = false
+
+		this.dispatch({
+			type: operationTypes.UPDATE,
+			container,
+			target: replacement,
+			previous: container.first
+		})
 	}
 
 	handleMount(node) {
@@ -564,22 +579,6 @@ export default class Builder {
 				this.handleUnmount(current)
 				current = current.next
 			}
-		}
-	}
-
-	// возможно он больше не нужен, потому что я не восстанавливаю текстовые ноды, а создаю новые
-	handleText(current) {
-		const firstChild = current.deepesetFirstNode()
-		const lastChild = current.previous.deepesetLastNode()
-
-		if (firstChild && firstChild.type === 'text' && firstChild.attributes.content[0] === ' ') {
-			firstChild.attributes.content = nbsp + firstChild.attributes.content.substr(1)
-			firstChild.setNodeValue(firstChild.attributes.content)
-		}
-
-		if (lastChild && lastChild.type === 'text' && lastChild.attributes.content[lastChild.attributes.content.length - 1] === ' ') {
-			lastChild.attributes.content = lastChild.attributes.content.substr(0, lastChild.attributes.content.length - 1) + nbsp
-			lastChild.setNodeValue(lastChild.attributes.content)
 		}
 	}
 
