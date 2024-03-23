@@ -64,7 +64,7 @@ export default class Ascetext {
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
-		this.autocomplete = new Autocomplete(this)
+		// this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 		this.init = false
@@ -84,9 +84,6 @@ export default class Ascetext {
 		this.init = true
 		this.builder.onChange(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
-		window.addEventListener('load', this.sizeObserver.update)
-		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
-		this.node.addEventListener('load', this.sizeObserver.update, true)
 	}
 
 	stringify(first) {

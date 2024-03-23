@@ -552,7 +552,11 @@ export default class Builder {
 			node.isMount = true
 
 			if (isFunction(node.onMount)) {
-				// node.onMount(this.core)
+				if (node.isContainer || node.isWidget) {
+					node.onMount(this.core)
+				} else {
+					console.error('onMount method only for containers and widgets')
+				}
 			}
 
 			current = node.first
@@ -569,7 +573,11 @@ export default class Builder {
 
 		if (node.isMount) {
 			if (isFunction(node.onUnmount)) {
-				// node.onUnmount(this.core)
+				if (node.isContainer || node.isWidget) {
+					node.onUnmount(this.core)
+				} else {
+					console.error('onUnmount method only for containers and widgets')
+				}
 			}
 
 			node.isMount = false

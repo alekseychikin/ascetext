@@ -109,8 +109,6 @@ export default class Toolbar extends ComponentComponent {
 		document.addEventListener('input', this.checkToolbarVisibility)
 
 		this.unsubscribe = this.selection.onUpdate(this.onSelectionChange)
-		visualViewport.addEventListener('resize', this.viewportResize)
-		visualViewport.addEventListener('scroll', this.viewportResize)
 		this.bindViewportChange()
 	}
 
@@ -583,7 +581,7 @@ export default class Toolbar extends ComponentComponent {
 
 	updateBoundings(container) {
 		this.stopUpdateBoundings()
-		this.cancelObserver = this.sizeObserver.observe(container.element, (entry) => {
+		this.cancelObserver = this.sizeObserver.observe(container, (entry) => {
 			if (this.isShowToggleButtonHolder) {
 				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
 					? entry.element.top + entry.scrollTop + 40
@@ -679,8 +677,6 @@ export default class Toolbar extends ComponentComponent {
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)
 		document.removeEventListener('input', this.checkToolbarVisibility)
-		visualViewport.removeEventListener('resize', this.viewportResize)
-		visualViewport.removeEventListener('scroll', this.viewportResize)
 		this.unsubscribe()
 		this.unbindViewportChange()
 		this.stopUpdateBoundings()

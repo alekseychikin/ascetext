@@ -16,7 +16,12 @@ export default class SizeObserver {
 
 		this.core.selection.onUpdate(this.update)
 		this.core.builder.onChange(this.update)
+		window.addEventListener('load', this.update)
+		this.core.node.addEventListener('load', this.update, true)
+		document.addEventListener('DOMContentLoaded', this.update)
 		window.addEventListener('resize', this.update)
+		visualViewport.addEventListener('resize', this.update)
+		visualViewport.addEventListener('scroll', this.update)
 	}
 
 	observe(element, handler) {
@@ -61,12 +66,15 @@ export default class SizeObserver {
 		return {
 			scrollTop: document.body.scrollTop || document.documentElement.scrollTop || 0,
 			scrollLeft: document.body.scrollLeft || document.documentElement.scrollLeft || 0,
-			element: element.getBoundingClientRect(),
+			element: this.core.host.getBoundings(element),
 			root: this.core.node.getBoundingClientRect()
 		}
 	}
 
 	destroy() {
 		window.removeEventListener('resize', this.update)
+		visualViewport.removeEventListener('resize', this.update)
+		visualViewport.removeEventListener('scroll', this.update)
+		this.core.node.removeEventListener('load', this.update, true)
 	}
 }

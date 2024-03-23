@@ -92,6 +92,7 @@ export class ImageCaption extends Container {
 			},
 			class: 'contenteditor__image-placeholder'
 		})
+		this.removeObserver = null
 	}
 
 	render() {
@@ -107,7 +108,7 @@ export class ImageCaption extends Container {
 	onMount({ controls, sizeObserver }) {
 		this.imagePlaceholder.appendChild(document.createTextNode(this.attributes.placeholder))
 
-		this.removeObserver = sizeObserver.observe(this.element, (entry) => {
+		this.removeObserver = sizeObserver.observe(this, (entry) => {
 			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
 			this.imagePlaceholder.style.width = `${entry.element.width}px`
 		})
@@ -116,7 +117,11 @@ export class ImageCaption extends Container {
 	}
 
 	onUnmount({ controls }) {
-		this.removeObserver()
+		if (this.removeObserver) {
+			this.removeObserver()
+			this.removeObserver = null
+		}
+
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 
@@ -128,7 +133,7 @@ export class ImageCaption extends Container {
 	}
 
 	inputHandler() {
-		this.imagePlaceholder.style.display = this.element.innerText.trim() ? 'none' : ''
+		this.imagePlaceholder.style.display = this.length ? 'none' : ''
 	}
 
 	stringify(children) {

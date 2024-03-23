@@ -70,7 +70,7 @@ export default class Container extends Node {
 		this.cancelPlaceholderHandler()
 		this.placeholderHandler(this.placeholder, this, focused)
 
-		if (!this.element.innerText.trim().length) {
+		if (!this.length) {
 			this.showPlaceholder()
 		} else {
 			this.hidePlaceholder()
@@ -79,7 +79,7 @@ export default class Container extends Node {
 
 	showPlaceholder() {
 		if (this.placeholder) {
-			this.removeObserver = this.sizeObserver.observe(this.element, (entry) => {
+			this.removeObserver = this.sizeObserver.observe(this, (entry) => {
 				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
 				this.placeholder.style.width = `${entry.element.width}px`
 			})
