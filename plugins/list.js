@@ -1,10 +1,10 @@
 import PluginPlugin from './plugin.js'
 import Node from '../nodes/node.js'
 import Container from '../nodes/container.js'
-import Group from '../nodes/group.js'
+import Section from '../nodes/section.js'
 import isHtmlElement from '../utils/is-html-element.js'
 
-export class List extends Group {
+export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
 		super('list', attributes)
 
@@ -514,7 +514,7 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseTreeElement(element, builder) {
 		if (element.type === 'ul' || element.type === 'ol') {
-			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'unordered' })
+			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'marker' })
 		}
 
 		if (element.type === 'li') {

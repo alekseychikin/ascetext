@@ -4,12 +4,7 @@ export default class Controls {
 
 		this.container = document.createElement('div')
 		this.controls = []
-
-		if (this.core.node.nextSibling) {
-			this.core.node.parentNode.insertBefore(this.container, this.core.node.nextSibling)
-		} else {
-			this.core.node.parentNode.appendChild(this.container)
-		}
+		this.core.node.parentNode.insertBefore(this.container, this.core.node.nextSibling)
 	}
 
 	registerControl(control) {
