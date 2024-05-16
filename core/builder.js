@@ -1,7 +1,13 @@
-import { operationTypes } from '../core/timetravel.js'
 import isHtmlElement from '../utils/is-html-element.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
+import findParent from '../utils/find-parent.js'
+
+export const operationTypes = {
+	CUT: 'cut',
+	APPEND: 'append',
+	ATTRIBUTE: 'attribute'
+}
 
 const ignoreParsingElements = ['style', 'script']
 
@@ -11,12 +17,9 @@ export default class Builder {
 
 		this.registeredNodes = {}
 		this.registerPlugins()
-		this.parse = this.parse.bind(this)
+		// this.parse = this.parse.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
-		this.handleMount = this.handleMount.bind(this)
-		this.handleUnmount = this.handleUnmount.bind(this)
 		this.onChangeHandlers = []
-		this.isUpdating = false
 	}
 
 	create(name, ...params) {
@@ -57,42 +60,13 @@ export default class Builder {
 		})
 	}
 
-	parse(element, ctx = {}) {
-		const fragment = this.createTree(element, ctx)
+	// parse(element, ctx = {}) {
+	// 	const fragment = this.createTree(element, ctx)
 
-		this.normalize(fragment)
+	// 	this.normalize(fragment)
 
-		return fragment
-	}
-
-	normalize(node) {
-		let current = node.first
-		let next
-		let previous
-		let normalized
-
-		while (current) {
-			next = current.next
-			previous = current.previous
-
-			if (previous && isFunction(previous.normalize) && (normalized = previous.normalize(current, this))) {
-				if (previous.first) {
-					this.append(normalized, previous.first)
-				}
-
-				if (current.first) {
-					this.append(normalized, current.first)
-				}
-
-				this.replaceUntil(previous, normalized, current)
-				this.normalize(normalized)
-			} else {
-				this.normalize(current)
-			}
-
-			current = next
-		}
-	}
+	// 	return fragment
+	// }
 
 	parseJson(body) {
 		const container = this.createFragment()
@@ -155,62 +129,62 @@ export default class Builder {
 		return content
 	}
 
-	createTree(element, ctx) {
-		const fragment = this.createFragment()
-		const lastElement = element.lastChild
-		let currentElement = element.firstChild
-		let nextElement
-		let children = null
-		let current
+	// createTree(element, ctx) {
+	// 	const fragment = this.createFragment()
+	// 	const lastElement = element.lastChild
+	// 	let currentElement = element.firstChild
+	// 	let nextElement
+	// 	let children = null
+	// 	let current
 
-		while (currentElement) {
-			const context = { ...ctx }
+	// 	while (currentElement) {
+	// 		const context = { ...ctx }
 
-			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-				currentElement = currentElement.nextSibling
+	// 		if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
+	// 			currentElement = currentElement.nextSibling
 
-				continue
-			}
+	// 			continue
+	// 		}
 
-			nextElement = currentElement.nextSibling
-			children = null
-			current = this.core.plugins.reduce((parsed, plugin) => {
-				if (parsed) return parsed
+	// 		nextElement = currentElement.nextSibling
+	// 		children = null
+	// 		current = this.core.plugins.reduce((parsed, plugin) => {
+	// 			if (parsed) return parsed
 
-				return plugin.parse(currentElement, this, context)
-			}, null)
+	// 			return plugin.parse(currentElement, this, context)
+	// 		}, null)
 
-			if (
-				isHtmlElement(currentElement) &&
-				currentElement.childNodes.length &&
-				(!current || !current.isWidget && current.type !== 'text')
-			) {
-				children = this.createTree(currentElement, { ...context })
-			}
+	// 		if (
+	// 			isHtmlElement(currentElement) &&
+	// 			currentElement.childNodes.length &&
+	// 			(!current || !current.isWidget && current.type !== 'text')
+	// 		) {
+	// 			children = this.createTree(currentElement, { ...context })
+	// 		}
 
-			if (current) {
-				this.append(fragment, current)
+	// 		if (current) {
+	// 			this.append(fragment, current)
 
-				if (children && children.first) {
-					this.append(current, children.first)
-				}
+	// 			if (children && children.first) {
+	// 				this.append(current, children.first)
+	// 			}
 
-				if (current.isDeleteEmpty && !current.first) {
-					this.cut(current)
-				}
-			} else if (children && children.first) {
-				this.append(fragment, children.first)
-			}
+	// 			if (current.isDeleteEmpty && !current.first) {
+	// 				this.cut(current)
+	// 			}
+	// 		} else if (children && children.first) {
+	// 			this.append(fragment, children.first)
+	// 		}
 
-			if (currentElement === lastElement) {
-				break
-			}
+	// 		if (currentElement === lastElement) {
+	// 			break
+	// 		}
 
-			currentElement = nextElement
-		}
+	// 		currentElement = nextElement
+	// 	}
 
-		return fragment
-	}
+	// 	return fragment
+	// }
 
 	parseVirtualTree(tree, ctx = {}) {
 		const fragment = this.createFragment()
@@ -238,20 +212,49 @@ export default class Builder {
 			if (current) {
 				this.append(fragment, current)
 
-				if (children && children.first) {
+				if (children) {
 					this.append(current, children.first)
 				}
 
 				if (current.isDeleteEmpty && !current.first) {
 					this.cut(current)
 				}
-			} else if (children && children.first) {
+			} else if (children) {
 				this.append(fragment, children.first)
 			}
 		}
 
 		return fragment
 	}
+
+	// normalize(node) {
+	// 	let current = node.first
+	// 	let next
+	// 	let previous
+	// 	let normalized
+
+	// 	while (current) {
+	// 		next = current.next
+	// 		previous = current.previous
+
+	// 		if (previous && isFunction(previous.normalize) && (normalized = previous.normalize(current, this))) {
+	// 			if (previous.first) {
+	// 				this.append(normalized, previous.first)
+	// 			}
+
+	// 			if (current.first) {
+	// 				this.append(normalized, current.first)
+	// 			}
+
+	// 			this.replaceUntil(previous, normalized, current)
+	// 			this.normalize(normalized)
+	// 		} else {
+	// 			this.normalize(current)
+	// 		}
+
+	// 		current = next
+	// 	}
+	// }
 
 	split(container, offset) {
 		let length = offset
@@ -262,7 +265,14 @@ export default class Builder {
 			firstLevelNode = firstLevelNode.next
 		}
 
-		if (typeof firstLevelNode.split === 'function') {
+		if (!firstLevelNode) {
+			return {
+				head: undefined,
+				tail: undefined
+			}
+		}
+
+		if (isFunction(firstLevelNode.split)) {
 			return firstLevelNode.split(length, this)
 		}
 
@@ -270,12 +280,6 @@ export default class Builder {
 	}
 
 	splitNode(target, offset) {
-		let { node: nodeChild } = this.core.host.getChildByOffset(target, offset)
-
-		while (nodeChild.parent !== target) {
-			nodeChild = nodeChild.parent
-		}
-
 		const { head, tail } = this.split(target, offset)
 
 		if (head && tail) {
@@ -298,7 +302,7 @@ export default class Builder {
 		}
 
 		return {
-			head: null,
+			head: undefined,
 			tail: target
 		}
 	}
@@ -325,9 +329,7 @@ export default class Builder {
 		}
 
 		if (target.type === 'fragment') {
-			if (target.first) {
-				this.append(node, target.first, anchor)
-			}
+			this.append(node, target.first, anchor)
 		} else {
 			if (node.isContainer && node.isEmpty) {
 				if (tail && tail === node.first) {
@@ -389,24 +391,18 @@ export default class Builder {
 	appendHandler(node, target, anchor) {
 		const last = target.getNodeUntil()
 		let current = target
-		let parent
 
 		this.cutUntil(target, last)
 		// this.prepareContainer(target)
 
 		do {
 			current.parent = node
-			parent = node
-
-			while (parent) {
+			findParent(current.parent, (parent) => {
 				parent.length += current.length
-				parent = parent.parent
-			}
+			})
 
-			// this.core.host.append(node, current, anchor)
-
-			if (node.isMount && isFunction(node.inputHandler)) {
-				node.inputHandler()
+			if (current === last) {
+				break
 			}
 
 			current = current.next
@@ -433,14 +429,7 @@ export default class Builder {
 			node.last = last
 		}
 
-		current = target
-
-		while (current) {
-			this.handleMount(current)
-			current = current.next
-		}
-
-		if (node.isMount && !this.isUpdating) {
+		if (findParent(target, (item) => item.type === 'root')) {
 			this.dispatch({
 				type: operationTypes.APPEND,
 				container: node,
@@ -452,6 +441,10 @@ export default class Builder {
 	}
 
 	cut(node) {
+		if (!node) {
+			return
+		}
+
 		if (isFunction(node.cut)) {
 			node.cut({ builder: this })
 		} else {
@@ -460,11 +453,14 @@ export default class Builder {
 	}
 
 	cutUntil(node, until) {
+		if (!node) {
+			return
+		}
+
 		const last = node.getNodeUntil(until)
 		let current = node
-		let parent
 
-		if (node.isMount && !this.isUpdating) {
+		if (findParent(node, (item) => item.type === 'root')) {
 			this.dispatch({
 				type: operationTypes.CUT,
 				container: node.parent,
@@ -502,15 +498,9 @@ export default class Builder {
 		delete last.next
 
 		while (current) {
-			parent = node.parent
-
-			while (parent) {
-				parent.length -= current.length
-				parent = parent.parent
-			}
-
-			// this.core.host.remove(current)
-			this.handleUnmount(current)
+			findParent(current.parent, (item) => {
+				item.length -= current.length
+			})
 			delete current.parent
 
 			if (current === last) {
@@ -518,79 +508,6 @@ export default class Builder {
 			}
 
 			current = current.next
-		}
-	}
-
-	update(container, replacement) {
-		this.isUpdating = true
-
-		if (container.first) {
-			this.cutUntil(container.first)
-		}
-
-		this.append(container, replacement)
-		this.isUpdating = false
-
-		this.dispatch({
-			type: operationTypes.UPDATE,
-			container,
-			target: replacement,
-			previous: container.first
-		})
-	}
-
-	handleMount(node) {
-		let current = node
-		let hasRoot = false
-
-		do {
-			if (current.type === 'root') {
-				hasRoot = true
-				break
-			}
-
-			current = current.parent
-		} while (current)
-
-		if (hasRoot && !node.isMount) {
-			node.isMount = true
-
-			if (isFunction(node.onMount)) {
-				if (node.isContainer || node.isWidget) {
-					node.onMount(this.core)
-				} else {
-					console.error('onMount method only for containers and widgets')
-				}
-			}
-
-			current = node.first
-
-			while (current) {
-				this.handleMount(current)
-				current = current.next
-			}
-		}
-	}
-
-	handleUnmount(node) {
-		let current
-
-		if (node.isMount) {
-			if (isFunction(node.onUnmount)) {
-				if (node.isContainer || node.isWidget) {
-					node.onUnmount(this.core)
-				} else {
-					console.error('onUnmount method only for containers and widgets')
-				}
-			}
-
-			node.isMount = false
-			current = node.first
-
-			while (current) {
-				this.handleUnmount(current)
-				current = current.next
-			}
 		}
 	}
 

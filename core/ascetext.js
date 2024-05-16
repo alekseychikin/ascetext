@@ -24,8 +24,6 @@ import DOMHost from '../hosts/dom.js'
 class Root extends Section {
 	constructor() {
 		super('root')
-
-		this.isMount = true
 	}
 }
 

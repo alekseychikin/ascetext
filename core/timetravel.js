@@ -1,9 +1,4 @@
-export const operationTypes = {
-	CUT: 'cut',
-	APPEND: 'append',
-	ATTRIBUTE: 'attribute',
-	UPDATE: 'update'
-}
+import { operationTypes } from './builder.js'
 
 export default class TimeTravel {
 	constructor(selection, builder, root) {
@@ -20,6 +15,7 @@ export default class TimeTravel {
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
+		this.timer = null
 
 		this.selection.onUpdate(this.onSelectionChange)
 		this.builder.onChange(this.pushChange)
@@ -70,6 +66,9 @@ export default class TimeTravel {
 
 					break
 			}
+
+			clearTimeout(this.timer)
+			this.timer = setTimeout(this.commit, 100)
 		}
 	}
 
@@ -79,6 +78,7 @@ export default class TimeTravel {
 		}
 
 		const nextSelection = this.selection.getSelectionInIndexes()
+		console.log('nextSelection', nextSelection.anchorIndex)
 
 		if (this.timeindex < this.timeline.length - 1) {
 			this.timeline.splice(this.timeindex + 1)
@@ -93,6 +93,7 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.previousSelection = nextSelection
 		this.timeindex++
+		console.log('commit', this.timeline)
 	}
 
 	goBack() {

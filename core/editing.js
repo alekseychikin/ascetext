@@ -1,6 +1,6 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
-import { operationTypes } from './timetravel.js'
+import { operationTypes } from './builder.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -67,11 +67,6 @@ export default class Editing {
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
 
 		this.core.selection.onUpdate(() => setTimeout(this.selectionUpdate, 0))
-		this.core.builder.onChange((change) => {
-			if (change.type !== operationTypes.ATTRIBUTE) {
-				this.scheduleUpdate(change.container)
-			}
-		})
 	}
 
 	selectionUpdate() {
@@ -213,14 +208,14 @@ export default class Editing {
 						event.preventDefault()
 
 						// это надо перенести в хост
-						const { node, element } = host.getChildByOffset(selection.anchorContainer, selection.anchorOffset)
-						const offset = selection.anchorOffset - host.getOffset(selection.anchorContainer, element)
-						const needNbsp = !offset || offset === element.nodeValue.length || element.nodeValue[offset] === ' ' || element.nodeValue[offset - 1] === ' '
-						const content = element.nodeValue.substr(0, offset) + (needNbsp ? '\u00A0' : ' ') + element.nodeValue.substr(offset)
+						// const { node, element } = host.getChildByOffset(selection.anchorContainer, selection.anchorOffset)
+						// const offset = selection.anchorOffset - host.getOffset(selection.anchorContainer, element)
+						// const needNbsp = !offset || offset === element.nodeValue.length || element.nodeValue[offset] === ' ' || element.nodeValue[offset - 1] === ' '
+						// const content = element.nodeValue.substr(0, offset) + (needNbsp ? '\u00A0' : ' ') + element.nodeValue.substr(offset)
 
-						node.attributes.content = content
-						element.nodeValue = content
-						selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
+						// node.attributes.content = content
+						// element.nodeValue = content
+						// selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
 						this.spacesDown = true
 					}
 
@@ -287,6 +282,13 @@ export default class Editing {
 		}
 
 		const selectedItems = this.core.selection.getSelectedItems()
+		console.log('selectedItems', selectedItems)
+		selectedItems.forEach((item) => {
+			if (item.isContainer) {
+				console.log(this.core.host.mapNodeIdToElement[item.id])
+			}
+		})
+		// return ''
 		const containersForRemove = []
 		let index
 		let firstContainer
@@ -362,11 +364,9 @@ export default class Editing {
 		}
 
 		if (firstContainer && firstContainer.isContainer) {
-			this.scheduleUpdate(firstContainer)
-			this.core.selection.setSelection(
-				firstContainer,
-				this.core.selection.anchorIndex[this.core.selection.anchorIndex.length - 1]
-			)
+			// TODO: здесь должна быть нормализация, а не обновление
+			// this.scheduleUpdate(firstContainer)
+			this.core.selection.setSelection(firstContainer, this.core.selection.anchorOffset)
 		} else if (nextSelectableNode) {
 			this.core.selection.setSelection(nextSelectableNode)
 		}
@@ -381,16 +381,19 @@ export default class Editing {
 		const since = items[startIndex]
 		let until = since
 		let index = startIndex
+		let item
 
 		for (; index < items.length; index++) {
-			if (items[index].isWidget || items[index].isContainer || items[index].isGroup) {
+			item = items[index]
+
+			if (item.isWidget || item.isContainer || item.isGroup) {
 				break
 			}
 
-			if (items[index].parent && (
-				items[index].parent.isWidget || items[index].parent.isContainer || items[index].parent.isGroup
+			if (item.parent && (
+				item.parent.isWidget || item.parent.isContainer || item.parent.isGroup
 			)) {
-				until = items[index]
+				until = item
 			}
 		}
 
@@ -429,7 +432,7 @@ export default class Editing {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
-			this.core.timeTravel.commit()
+			// this.core.timeTravel.commit()
 		} else {
 			this.handleDelete(event)
 		}
@@ -481,7 +484,7 @@ export default class Editing {
 				event,
 				this.getModifyKeyHandlerParams()
 			)
-			this.core.timeTravel.commit()
+			// this.core.timeTravel.commit()
 		} else {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
@@ -525,32 +528,43 @@ export default class Editing {
 		this.scheduleTimer = setTimeout(this.update, 350)
 	}
 
-	update() {
-		clearTimeout(this.scheduleTimer)
-		this.scheduleTimer = null
-
+	// эта функция синхронизирует модель с тем, что набрал пользователь
+	// её нужно вызывать перед тем, как делать какие-то манипуляции с кнопками модификации
+	// чтобы сохранить состояние
+	// обновлять нужно раз в 350мс
+	update(node) {
 		const { builder, selection, host } = this.core
 		let container
+
+		clearTimeout(this.scheduleTimer)
+		this.scheduleTimer = null
 
 		if (this.isUpdating) {
 			return
 		}
 
+		if (node && this.updatingContainers.indexOf(node) === -1) {
+			this.updatingContainers.push(node)
+		}
+
 		this.isUpdating = true
 
+		console.log('updatingContainers', this.updatingContainers)
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer && container.isMount) {
 				const replacement = builder.parseVirtualTree(host.getVirtualTree(host.mapNodeIdToElement[container.id].firstChild)).first
 
-				builder.update(container, replacement)
+				builder.cutUntil(container.first)
+				builder.append(container, replacement)
 			}
 		}
 
+		console.error('update')
 		this.isUpdating = false
 
-		// if (selection.focused) {
-		// 	selection.restoreSelection()
-		// }
+		if (selection.focused) {
+			// selection.restoreSelection()
+		}
 
 		// this.core.timeTravel.commit()
 	}
@@ -601,15 +615,17 @@ export default class Editing {
 
 		doc.innerHTML = paste
 
-		const result = this.core.builder.parse(doc)
+		const result = this.core.builder.parseVirtualTree(this.core.host.getVirtualTree(doc.firstChild))
 
 		this.handleRemoveRange()
 		this.core.timeTravel.preservePreviousSelection()
 
-		this.core.builder.insert(this.core.selection.anchorContainer, result, this.core.selection.anchorOffset)
+		this.core.builder.insert(result)
+		// тут нужно выделить вставляемый фрагмент
+		// с позивии anchorContainer.anchorOffset по самый последний элемент
 
-		this.core.selection.restoreSelection()
-		this.core.timeTravel.commit()
+		// this.core.selection.restoreSelection()
+		// this.core.timeTravel.commit()
 		event.preventDefault()
 	}
 

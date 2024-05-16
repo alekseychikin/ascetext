@@ -6,7 +6,8 @@ import walk from '../utils/walk.js'
 import createElement from '../utils/create-element.js'
 import getStyle from '../utils/get-style.js'
 import findParent from '../utils/find-parent.js'
-import { operationTypes } from '../core/timetravel.js'
+import isFunction from '../utils/is-function.js'
+import { operationTypes } from '../core/builder.js'
 
 const blockElements = [
 	'br',
@@ -99,11 +100,13 @@ export default class DOMHost {
 		this.focus = this.focus.bind(this)
 		this.selectionChange = this.selectionChange.bind(this)
 		this.onChange = this.onChange.bind(this)
+		this.render = this.render.bind(this)
 
 		this.selectionHandlers = []
 		this.selectionTimeout = null
-		this.skipFocus = false
 		this.components = []
+		this.timer = null
+		this.queue = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
 		}
@@ -135,49 +138,148 @@ export default class DOMHost {
 	}
 
 	onChange(change) {
-		const parent = findParent(change.container || change.target, (parent) => parent.isContainer)
+		let parent
 
-		if (parent) {
-			this.onUpdate(parent)
-		} else {
-			switch (change.type) {
+		switch (change.type) {
+			case operationTypes.APPEND:
+				parent = findParent(change.container, (parent) => parent.isContainer)
+
+				if (parent) {
+					parent.isRendered = false
+					this.queue.push({
+						type: 'update',
+						container: parent
+					})
+				} else {
+					this.queue.push({
+						type: change.type,
+						container: change.container,
+						target: change.target,
+						last: change.last,
+						anchor: change.anchor
+					})
+				}
+
+				break
+			case operationTypes.CUT:
+				parent = findParent(change.container, (parent) => parent.isContainer)
+
+				if (parent) {
+					parent.isRendered = false
+					this.queue.push({
+						type: 'update',
+						container: parent
+					})
+				} else {
+					this.queue.push({
+						type: change.type,
+						container: change.container,
+						target: change.target,
+						last: change.last
+					})
+				}
+
+				break
+		}
+
+		cancelAnimationFrame(this.timer)
+		this.timer = requestAnimationFrame(this.render)
+	}
+
+	render() {
+		const queue = this.queue.splice(0).reduce((result, current, index, array) => {
+			if (index) {
+				const previous = array[index - 1]
+
+				if (current.type === 'update' && previous.type === current.type && current.container === previous.container) {
+					return result
+				}
+			}
+
+			result.push(current)
+
+			return result
+		}, [])
+		let event
+
+		while (event = queue.shift()) {
+			switch (event.type) {
 				case operationTypes.APPEND:
-					this.onAppend(change)
+					this.onAppend(event)
 
 					break
 				case operationTypes.CUT:
-					this.onCut(change)
+					this.onCut(event)
 
 					break
-				case operationTypes.ATTRIBUTE:
-					this.onAttribute(change)
-
-					break
+				default:
+					this.onUpdate(event.container)
 			}
 		}
 	}
 
+	// если происходит обновление ноды, которая находится в фокусе,
+	// нужно это обновление восстанавливать
 	onUpdate(node) {
-		const tree = this.render(node.first, node.last)
+		console.info('rendered', node)
+		// перепроверить переиспользование реальных нодов
+		const tree = this.createTree(node.first, node.last)
 		const container = this.mapNodeIdToElement[node.id]
 		const lookahead = Array.prototype.slice.call(container.childNodes)
-
 		const elements = tree.map((element) => this.createElement(element, lookahead))
 
 		elements.forEach((element) => container.appendChild(element))
-		lookahead.forEach((element) => container.removeChild(element))
+		lookahead.forEach((element) => {
+			if (isElementBr(element)) {
+				const index = trailingBrs.indexOf(element)
+
+				if (index > -1) {
+					trailingBrs.splice(index, 1)
+				}
+			}
+
+			container.removeChild(element)
+		})
+
+		if (!container.childNodes.length || isElementBr(container.lastChild)) {
+			container.appendChild(this.getTrailingBr())
+		}
+
+		node.isRendered = true
+
+		if (this.anchorNode === node || this.focusNode === node) {
+			this.setSelection()
+		}
 	}
 
-	onAppend(change) {
-		const container = this.mapNodeIdToElement[change.container.id]
-		const tree = this.render(change.target, change.last)
+	onAppend(event) {
+		const container = this.mapNodeIdToElement[event.container.id]
+		const tree = this.createTree(event.target, event.last)
 		const elements = tree.map((element) => this.createElement(element))
 
-		elements.forEach((element) => container.appendChild(element))
+		elements.forEach((element) => container.insertBefore(element, event.anchor ? this.mapNodeIdToElement[event.anchor.id] : null))
+		this.handleMount(event.target, event.last)
+	}
+
+	onCut(event) {
+		const container = this.mapNodeIdToElement[event.container.id]
+		let element = event.target
+
+		this.handleUnmount(event.target, event.last)
+
+		while (element) {
+			container.removeChild(this.mapNodeIdToElement[element.id])
+
+			if (element === event.last) {
+				break
+			}
+
+			element = element.next
+		}
 	}
 
 	onAttribute(change) {
-		const tree = this.render(change.target, change.target)[0]
+		const tree = this.createTree(change.target, change.target)[0]
 		let container = this.mapNodeIdToElement[change.target.id]
 
 		if (tree.type !== container.nodeName.toLowerCase()) {
@@ -187,29 +289,14 @@ export default class DOMHost {
 		this.applyAttributes(container, tree)
 	}
 
-	onCut(change) {
-		const container = this.mapNodeIdToElement[change.container.id]
-		let element = change.target
-
-		while (element) {
-			container.removeChild(this.mapNodeIdToElement[element.id])
-
-			if (element === change.last) {
-				break
-			}
-
-			element = element.next
-		}
-	}
-
-	render(target, last = null) {
+	createTree(target, last = null) {
 		const body = []
 		let current = target
 		let element
 		let parent
 
 		while (current) {
-			element = current.render(this.render(current.first))
+			element = current.render(this.createTree(current.first))
 			parent = findParent(current.parent, (parent) => parent.isContainer)
 
 			if (!parent || current.isContainer) {
@@ -237,6 +324,192 @@ export default class DOMHost {
 		return body
 	}
 
+	createElement(tree, lookahead = []) {
+		// сделать поддержку ref-ов, которые должны представлять собой прокси
+
+		if (tree.type === 'text') {
+			return this.createText(tree, this.generateModifiers(tree), lookahead)
+		}
+
+		const lookaheadElement = this.findLookahead(lookahead, tree.type)
+		const lookaheadChildren = lookaheadElement ? Array.prototype.slice.call(lookaheadElement.childNodes) : []
+		const element = lookaheadElement || document.createElement(tree.type)
+
+		this.applyAttributes(element, tree)
+
+		if (tree.id) {
+			this.mapNodeIdToElement[tree.id] = element
+		}
+
+		tree.body
+			.map((child) => this.createElement(child, lookaheadChildren))
+			.forEach((child) => element.appendChild(child))
+
+		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !element.childNodes.length) {
+			element.appendChild(this.getTrailingBr())
+		}
+
+		lookaheadChildren.forEach((child) => element.removeChild(child))
+
+		return element
+	}
+
+	createText(tree, modifiers, lookahead = []) {
+		let modifier
+
+		if (modifier = modifiers.shift()) {
+			const type = mapModifierToTag[modifier]
+			const element = document.createElement(type)
+
+			element.appendChild(this.createText(tree, modifiers))
+
+			return element
+		}
+
+		const lookaheadElement = this.findLookahead(lookahead, 'text')
+
+		if (lookaheadElement) {
+			if (lookaheadElement.nodeValue !== tree.attributes.content) {
+				lookaheadElement.nodeValue = tree.attributes.content
+			}
+
+			return lookaheadElement
+		}
+
+		return document.createTextNode(tree.attributes.content)
+	}
+
+	applyAttributes(element, tree) {
+		const currentsAttributes = this.getAttributes(element)
+		let attributeName
+
+		for (attributeName in currentsAttributes) {
+			if (typeof tree.attributes[attributeName] === 'undefined' || tree.attributes[attributeName] === null) {
+				element.removeAttribute(attributeName)
+			}
+		}
+
+		for (attributeName in tree.attributes) {
+			element.setAttribute(attributeName, tree.attributes[attributeName])
+		}
+
+		if (tree.id) {
+			element.dataset.nodeId = tree.id
+		}
+
+		if (tree.isWidget) {
+			element.dataset.widget = ''
+		}
+	}
+
+	replaceNode(tree, container) {
+		const node = this.createElement(tree)
+
+		container.parentNode.insertBefore(node, container)
+		container.parentNode.removeChild(container)
+
+		return node
+	}
+
+	findLookahead(lookahead, type) {
+		let i
+
+		for (i = 0; i < lookahead.length; i++) {
+			switch (type) {
+				case 'text':
+					if (isTextElement(lookahead[i])) {
+						return lookahead.splice(i, 1)[0]
+					}
+
+					break
+				default:
+					if (isElementBr(lookahead[i]) && trailingBrs.indexOf(lookahead[i]) > -1) {
+						return null
+					}
+
+					if (lookahead[i].nodeName.toLowerCase() === type) {
+						return lookahead.splice(i, 1)[0]
+					}
+			}
+		}
+
+		return null
+	}
+
+	generateModifiers(element) {
+		const modifiers = []
+
+		if (element.attributes.weight) {
+			modifiers.push('bold')
+		}
+
+		if (element.attributes.style) {
+			modifiers.push('italic')
+		}
+
+		if (element.attributes.decoration) {
+			modifiers.push('underlined')
+		}
+
+		if (element.attributes.strike) {
+			modifiers.push('strike')
+		}
+
+		return modifiers
+	}
+
+	handleMount(node, last) {
+		let current = node
+
+		while (current) {
+			current.isRendered = true
+
+			if (isFunction(current.onMount)) {
+				if (current.isContainer || current.isWidget) {
+					current.onMount(this.core)
+				} else {
+					console.error('onMount method only for containers and widgets')
+				}
+			}
+
+			if (this.anchorNode === current || this.focusNode === current) {
+				this.setSelection()
+			}
+
+			this.handleMount(current.first)
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
+		}
+	}
+
+	handleUnmount(node, last) {
+		let current = node
+
+		while (current) {
+			current.isRendered = false
+
+			if (isFunction(current.onUnmount)) {
+				if (current.isContainer || current.isWidget) {
+					current.onUnmount(this.core)
+				} else {
+					console.error('onUnmount method only for containers and widgets')
+				}
+			}
+
+			this.handleMount(current.first)
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
+		}
+	}
+
 	getVirtualTree(node) {
 		let body = []
 		let current = node
@@ -256,7 +529,8 @@ export default class DOMHost {
 			current = current.nextSibling
 		}
 
-		return this.normalize(body)
+		// console.log(body)
+		return this.normalize(body.filter(Boolean))
 	}
 
 	normalize(tree) {
@@ -375,14 +649,14 @@ export default class DOMHost {
 		}
 
 		if (
-			!current.previousSibling ||
-			isHtmlElement(current.previousSibling) && blockElements.includes(current.previousSibling.nodeName.toLowerCase())
+			!current.previousSibling && blockElements.includes(current.parentNode.nodeName.toLowerCase()) ||
+			current.previousSibling && isHtmlElement(current.previousSibling) && blockElements.includes(current.previousSibling.nodeName.toLowerCase())
 		) {
 			content = content.replace(beginSpacesRegexp, '')
 		}
 
-		if (!current.nextSibling ||
-			isHtmlElement(current.nextSibling) && blockElements.includes(current.nextSibling.nodeName.toLowerCase())
+		if (!current.nextSibling && blockElements.includes(current.parentNode.nodeName.toLowerCase()) ||
+			current.nextSibling && isHtmlElement(current.nextSibling) && blockElements.includes(current.nextSibling.nodeName.toLowerCase())
 		) {
 			content = content.replace(finishSpacesRegexp, '')
 		}
@@ -414,168 +688,40 @@ export default class DOMHost {
 		return attributes
 	}
 
-	createElement(tree, lookahead = []) {
-		if (tree.type === 'text') {
-			return this.createText(tree, this.generateModifiers(tree), lookahead)
-		}
+	// remove(current) {
+	// 	if (current.element && current.element.parentNode) {
+	// 		const parent = current.element.parentNode
 
-		const lookaheadElement = this.findLookahead(lookahead, tree.type)
-		const lookaheadChildren = lookaheadElement ? Array.prototype.slice.call(lookaheadElement.childNodes) : []
-		const element = lookaheadElement || document.createElement(tree.type)
+	// 		parent.removeChild(current.element)
 
-		this.applyAttributes(element, tree)
+	// 		if (containerElements.includes(parent.nodeName.toLowerCase()) && !parent.childNodes.length) {
+	// 			parent.appendChild(this.getTrailingBr())
+	// 		}
+	// 	}
+	// }
 
-		if (tree.id) {
-			this.mapNodeIdToElement[tree.id] = element
-		}
+	// append(node, target, anchor) {
+	// 	this.render(node)
+	// 	this.render(target)
 
-		tree.body
-			.map((child) => this.createElement(child, lookaheadChildren))
-			.forEach((child) => element.appendChild(child))
+	// 	if (anchor) {
+	// 		this.render(anchor)
+	// 	}
 
-		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !element.childNodes.length) {
-			element.appendChild(this.getTrailingBr())
-		}
+	// 	const lastChild = node.element.lastChild
+	// 	const trailingIndex = lastChild && isElementBr(lastChild) ? trailingBrs.indexOf(lastChild) : -1
 
-		lookaheadChildren.forEach((child) => element.removeChild(child))
+	// 	if (!anchor && trailingIndex >= 0) {
+	// 		trailingBrs.splice(trailingIndex, 1)
+	// 		node.element.removeChild(lastChild)
+	// 	}
 
-		return element
-	}
+	// 	node.element.insertBefore(target.element, anchor ? anchor.element : null)
 
-	createText(tree, modifiers, lookahead = []) {
-		let modifier
-
-		if (modifier = modifiers.shift()) {
-			const type = mapModifierToTag[modifier]
-			const element = document.createElement(type)
-
-			element.appendChild(this.createText(tree, modifiers))
-
-			return element
-		}
-
-		const lookaheadElement = this.findLookahead(lookahead, 'text')
-
-		if (lookaheadElement) {
-			if (lookaheadElement.nodeValue !== tree.attributes.content) {
-				lookaheadElement.nodeValue = tree.attributes.content
-			}
-
-			return lookaheadElement
-		}
-
-		return document.createTextNode(tree.attributes.content)
-	}
-
-	applyAttributes(element, tree) {
-		const currentsAttributes = this.getAttributes(element)
-		let attributeName
-
-		for (attributeName in currentsAttributes) {
-			if (typeof tree.attributes[attributeName] === 'undefined' || tree.attributes[attributeName] === null) {
-				element.removeAttribute(attributeName)
-			}
-		}
-
-		for (attributeName in tree.attributes) {
-			element.setAttribute(attributeName, tree.attributes[attributeName])
-		}
-
-		if (tree.id) {
-			element.dataset.nodeId = tree.id
-		}
-
-		if (tree.isWidget) {
-			element.dataset.widget = ''
-		}
-	}
-
-	replaceNode(tree, container) {
-		const node = this.createElement(tree)
-
-		container.parentNode.insertBefore(node, container)
-		container.parentNode.removeChild(container)
-
-		return node
-	}
-
-	findLookahead(lookahead, type) {
-		let i
-
-		for (i = 0; i < lookahead.length; i++) {
-			switch (type) {
-				case 'text':
-					if (isTextElement(lookahead[i])) {
-						return lookahead.splice(i, 1)[0]
-					}
-
-					break
-				default:
-					if (lookahead[i].nodeName.toLowerCase() === type) {
-						return lookahead.splice(i, 1)[0]
-					}
-			}
-		}
-
-		return null
-	}
-
-	generateModifiers(element) {
-		const modifiers = []
-
-		if (element.attributes.weight) {
-			modifiers.push('bold')
-		}
-
-		if (element.attributes.style) {
-			modifiers.push('italic')
-		}
-
-		if (element.attributes.decoration) {
-			modifiers.push('underlined')
-		}
-
-		if (element.attributes.strike) {
-			modifiers.push('strike')
-		}
-
-		return modifiers
-	}
-
-	remove(current) {
-		if (current.element && current.element.parentNode) {
-			const parent = current.element.parentNode
-
-			parent.removeChild(current.element)
-
-			if (containerElements.includes(parent.nodeName.toLowerCase()) && !parent.childNodes.length) {
-				parent.appendChild(this.getTrailingBr())
-			}
-		}
-	}
-
-	append(node, target, anchor) {
-		this.render(node)
-		this.render(target)
-
-		if (anchor) {
-			this.render(anchor)
-		}
-
-		const lastChild = node.element.lastChild
-		const trailingIndex = lastChild && isElementBr(lastChild) ? trailingBrs.indexOf(lastChild) : -1
-
-		if (!anchor && trailingIndex >= 0) {
-			trailingBrs.splice(trailingIndex, 1)
-			node.element.removeChild(lastChild)
-		}
-
-		node.element.insertBefore(target.element, anchor ? anchor.element : null)
-
-		if (!anchor && isElementBr(target.element)) {
-			node.element.appendChild(this.getTrailingBr())
-		}
-	}
+	// 	if (!anchor && isElementBr(target.element)) {
+	// 		node.element.appendChild(this.getTrailingBr())
+	// 	}
+	// }
 
 	getTrailingBr() {
 		const trailingBr = document.createElement('br')
