@@ -182,7 +182,7 @@ export default class Ascetext {
 	}
 
 	focus() {
-		this.selection.setSelection(this.model.first, 0)
+		this.selection.setSelection(this.model.first)
 	}
 
 	refreshComponent() {

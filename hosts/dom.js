@@ -120,6 +120,10 @@ export default class DOMHost {
 				pointerEvents: 'none'
 			}
 		})
+		this.anchorNode = null
+		this.anchorOffset = null
+		this.focusNode = null
+		this.focusOffset = null
 
 		document.addEventListener('focus', this.focus, true)
 		document.addEventListener('selectionchange', this.selectionChange)
@@ -639,15 +643,15 @@ export default class DOMHost {
 
 		const focused = this.core.node.contains(anchorContainer) && this.core.node.contains(focusContainer)
 
-		this.selectionHandlers.forEach((handler) => handler({
-			anchorContainer: focused ? this.mapNodeIdToNode[anchorContainer.dataset.nodeId] : null,
+		this.emitUpdateSelection(
+			focused ? this.mapNodeIdToNode[anchorContainer.dataset.nodeId] : null,
 			anchorOffset,
-			focusContainer: focused ? this.mapNodeIdToNode[focusContainer.dataset.nodeId] : null,
+			focused ? this.mapNodeIdToNode[focusContainer.dataset.nodeId] : null,
 			focusOffset,
-			isCollapsed: event.isCollapsed,
+			event.isCollapsed,
 			focused,
-			selectedComponent: event.selectedComponent
-		}))
+			event.selectedComponent
+		)
 	}
 
 	getContainerAndOffset(node, offset) {
@@ -710,18 +714,34 @@ export default class DOMHost {
 		return length
 	}
 
+	emitUpdateSelection(anchorContainer, anchorOffset, focusContainer, focusOffset, isCollapsed, focused, selectedComponent) {
+		this.selectionHandlers.forEach((handler) => handler({
+			anchorContainer,
+			anchorOffset,
+			focusContainer,
+			focusOffset,
+			isCollapsed,
+			focused,
+			selectedComponent
+		}))
+	}
+
 	onSelectionChange(handler) {
 		this.selectionHandlers.push(handler)
 	}
 
 	getChildByOffset(target, offset) {
+		const element = this.mapNodeIdToElement[target.id]
 		let restOffset = Math.min(offset, target.length)
 
 		if (target.isWidget && !offset) {
-			return { node: target, element: target.element }
+			return {
+				element: this.mapNodeIdToElement[target.id],
+				restOffset: 0
+			}
 		}
 
-		const element = walk(target.element, (current) => {
+		const result = walk(element, (current) => {
 			if (isTextElement(current)) {
 				if (current.length >= restOffset) {
 					return current
@@ -736,9 +756,11 @@ export default class DOMHost {
 				restOffset -= 1
 			}
 		})
-		const node = getNodeByElement(element)
 
-		return { node, element }
+		return {
+			element: result,
+			restOffset
+		}
 	}
 
 	getOffset(target, element) {
@@ -767,15 +789,42 @@ export default class DOMHost {
 		return index
 	}
 
-	selectElements(anchorElement, anchorOffset, focusElement, focusOffset) {
+	selectElements(anchorNode, anchorOffset, focusNode, focusOffset) {
+		console.error('select elements', anchorNode, anchorOffset, focusNode, focusOffset)
+		console.log(anchorNode.isRendered, focusNode ? focusNode.isRendered : null)
+		this.anchorNode = anchorNode
+		this.anchorOffset = anchorOffset
+		this.focusNode = focusNode
+		this.focusOffset = focusOffset
+
+		if (anchorNode.isRendered && (!focusNode || focusNode.isRendered)) {
+			this.setSelection()
+		}
+
+		this.emitUpdateSelection(
+			anchorNode,
+			anchorOffset,
+			focusNode || anchorNode,
+			focusNode ? focusOffset : anchorOffset,
+			focusNode ? anchorNode === focusNode && anchorOffset === focusOffset : true,
+			true,
+			false
+		)
+	}
+
+	setSelection() {
+		console.log('set selection')
+
 		const selection = window.getSelection()
+		const { element: anchorElement, restOffset: anchorRestOffset } = this.getChildByOffset(this.anchorNode, this.anchorOffset)
 
-		this.skipFocus = true
-		setTimeout(() => (this.skipFocus = false), 50)
-		selection.collapse(anchorElement, anchorOffset)
+		selection.collapse(anchorElement, anchorRestOffset)
 
-		if (focusElement) {
-			selection.extend(focusElement, focusOffset)
+		if (this.focusNode) {
+			const { element: focusElement, restOffset: focusRestOffset } = this.getChildByOffset(this.focusNode, this.focusOffset)
+
+			console.log('focusElement', focusElement, focusRestOffset)
+			selection.extend(focusElement, focusRestOffset)
 		}
 	}
 

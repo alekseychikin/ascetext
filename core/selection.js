@@ -1,8 +1,6 @@
-import { getNodeByElement } from '../utils/map-element-to-node.js'
 import isElementBr from '../utils/is-element-br.js'
 import isTextElement from '../utils/is-text-element.js'
 import walk from '../utils/walk.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 export default class Selection {
 	constructor(core) {
@@ -43,6 +41,9 @@ export default class Selection {
 			// TODO: make fake selection
 			return
 		}
+
+		console.error('selection update')
+		console.log(event.anchorContainer, event.anchorOffset, event.focusContainer, event.focusOffset, event.isCollapsed)
 
 		const firstContainer = event.anchorContainer
 		const lastContainer = event.focusContainer
@@ -111,63 +112,18 @@ export default class Selection {
 		}
 	}
 
-	setSelection(anchorNode, anchorOffset, focusNode, focusOffset) {
-		const { element: anchorElement, index: anchorIndex } = this.getSelectionParams(
-			anchorNode,
-			typeof anchorOffset === 'undefined' ? 0 : anchorOffset < 0 ?
-				anchorNode.length + anchorOffset + 1 : anchorOffset
-		)
-
-		if (focusNode && (anchorNode !== focusNode || anchorOffset !== focusOffset)) {
-			const { element: focusElement, index: focusIndex } =
-				this.getSelectionParams(focusNode, focusOffset)
-
-			this.core.host.selectElements(anchorElement, anchorIndex, focusElement, focusIndex)
-		} else if (anchorNode.isWidget) {
-			anchorNode.element.focus()
-			this.core.host.selectElements(anchorNode.element, 0)
-		} else {
-			this.core.host.selectElements(anchorElement, anchorIndex)
-		}
-
+	setSelection(anchorNode, anchorOffset = 0, focusNode, focusOffset) {
+		console.warn('setSelection', anchorNode, anchorOffset, focusNode, focusOffset)
 		this.selectedItems.splice(0)
 		this.focusedNodes.splice(0)
-	}
-
-	// не должно быть вообще
-	getSelectionParams(node, offset) {
-		const { host } = this.core
-		const { element: childByOffset } = host.getChildByOffset(node, offset)
-		let element = node.element
-		let index = offset
-
-		if (node.isWidget && offset === 0) {
-			return { element: node.element, index: 0 }
-		} else if (isTextElement(childByOffset)) {
-			element = childByOffset
-			index -= host.getOffset(node, childByOffset)
-		} else {
-			const parentNode = childByOffset.parentNode
-
-			for (let i = 0; i < parentNode.childNodes.length; i++) {
-				if (parentNode.childNodes[i] === childByOffset) {
-					element = parentNode
-					index = i
-
-					break
-				}
-			}
-		}
-
-		if (isTextElement(element)) {
-			index = Math.min(index, element.nodeValue.length)
-		}
-
-		return { element, index }
+		this.core.host.selectElements(anchorNode, anchorOffset, focusNode, focusOffset)
 	}
 
 	restoreSelection() {
-		console.log('restore', this.getSelectionInIndexes())
+		const indexes = this.getSelectionInIndexes()
+
+		console.error('restore', indexes.anchorIndex, indexes.focusIndex)
+
 		this.setSelectionByIndexes(this.getSelectionInIndexes())
 	}
 
@@ -182,15 +138,14 @@ export default class Selection {
 		const anchor = this.findElementByIndex(indexes.anchorIndex)
 		const focus = this.findElementByIndex(indexes.focusIndex)
 
-		this.core.host.selectElements(
-			anchor.element,
+		this.setSelection(
+			anchor.node,
 			anchor.offset,
-			focus.element,
+			focus.node,
 			focus.offset
 		)
 	}
 
-	// не должно быть тут
 	getDirection(anchorIndex, focusIndex) {
 		for (let i = 0; i < anchorIndex.length; i++) {
 			if (focusIndex[i] < anchorIndex[i]) {
@@ -203,88 +158,69 @@ export default class Selection {
 		return 'forward'
 	}
 
-	getIndex(container, element, offset) {
-		const { host } = this.core
+	getIndex(container, offset) {
 		const indexes = []
 		let index
-		let current = container.element
+		let current = container
 
-		while (current !== this.core.model.element) {
+		while (current !== this.core.model) {
 			index = 0
 
-			while (current.previousSibling) {
+			while (current.previous) {
 				index++
-				current = current.previousSibling
+				current = current.previous
 			}
 
 			indexes.unshift(index)
-			current = current.parentNode
+			current = current.parent
 		}
 
-		if (container.element === element) {
-			element = container.element.childNodes[offset]
-			indexes.push(host.getOffset(container, element))
-		} else {
-			indexes.push(host.getOffset(container, element) + (isTextElement(element) ? offset : 0))
-		}
+		indexes.push(offset)
 
 		return indexes
 	}
 
 	findElementByIndex(indexes) {
-		let current = this.core.model.element
+		let current = this.core.model
 
 		for (let i = 0; i < indexes.length - 1; i++) {
-			if (!current.childNodes[indexes[i]]) {
-				return this.findSelectableElement(current, indexes[i])
+			current = current.first
+
+			for (let j = 0; j < indexes[i]; j++) {
+				current = current.next
 			}
-
-			current = current.childNodes[indexes[i]]
-		}
-
-		if (current.getAttribute('data-widget') === null) {
-			const result = this.findElementByOffset(current, indexes[indexes.length - 1])
-
-			if (!isTextElement(result.element)) {
-				return {
-					element: result.element.parentNode,
-					offset: Array.prototype.indexOf.call(result.element.parentNode.childNodes, result.element)
-				}
-			}
-
-			return result
 		}
 
 		return {
-			element: current,
-			offset: 0
+			node: current,
+			offset: indexes[indexes.length - 1]
 		}
 	}
 
-	findElementByOffset(node, offset) {
+	getNodeByOffset(node, offset) {
 		let restOffset = offset
+		let current = node.first
 
-		const element = walk(node, (current) => {
-			if (isTextElement(current)) {
-				if (current.length >= restOffset) {
-					return current
+		while (current && restOffset >= 0) {
+			if (restOffset <= current.length) {
+
+				if (current.first) {
+					return this.getNodeByOffset(current, restOffset)
 				}
 
-				restOffset -= current.length
-			} else if (isElementBr(current)) {
-				if (restOffset === 0) {
-					return current
-				}
-
-				restOffset -= 1
+				return current
 			}
-		})
 
-		return { element, offset: restOffset }
+			restOffset -= current.length
+			current = current.next
+		}
+
+		return current
 	}
 
 	getSelectedItems() {
 		const { head, tail } = this.cutRange()
+		console.log('aftercut', head, tail)
 
 		return this.getArrayRangeItems(head, tail)
 	}
@@ -296,29 +232,36 @@ export default class Selection {
 		focusOffset = this.focusOffset
 	) {
 		const focus = this.core.builder.split(focusContainer, focusOffset)
+		const selectedSingleElement = focus.head === this.getNodeByOffset(anchorContainer, anchorOffset)
 		const anchor = this.core.builder.split(anchorContainer, anchorOffset)
 		const anchorNextContainer = anchorContainer.getNextSelectableNode()
 		const focusPreviousContainer = focusContainer.getPreviousSelectableNode()
+		const selectedFromFirstPositionToFirstPosition = !anchor.head && !focus.head
+
+		if (selectedFromFirstPositionToFirstPosition) {
+			return {
+				head: anchorContainer,
+				tail: focusPreviousContainer.last
+					? focusPreviousContainer.last
+					: focusPreviousContainer
+			}
+		}
 
 		return {
-			head: !anchor.head && !focus.head
-				? anchorContainer
-				: !anchor.tail
-					? anchorNextContainer
-					: anchor.tail,
-			tail: !focus.head && !anchor.head
-				? focusPreviousContainer.last || focusPreviousContainer
-				: !focus.head
-					? focusContainer
-					: !focus.head.element.parentNode || focus.head === anchor.head
-						? anchor.tail.deepesetLastNode()
-						: focus.head.deepesetLastNode()
+			head: anchor.tail
+				? anchor.tail
+				: anchorNextContainer,
+			tail: focus.head
+				? selectedSingleElement
+					? anchor.tail.deepesetLastNode()
+					: focus.head.deepesetLastNode()
+				: focusContainer
 		}
 	}
 
 	getArrayRangeItems(since, until) {
-		let current = since
 		const selectedItems = []
+		let current = since
 
 		while (current) {
 			selectedItems.push(current)
@@ -396,57 +339,6 @@ export default class Selection {
 		itemsToFocus.forEach((item) => {
 			item.onFocus(this)
 		})
-	}
-
-	findSelectableElement(node, offset) {
-		if (!node) return {
-			element: null,
-			offset
-		}
-
-		let result
-
-		if (!isTextElement(node) && (result = this.findSelectableChildNode(node, offset))) {
-			return result
-		}
-
-		return {
-			element: node,
-			offset
-		}
-	}
-
-	findSelectableChildNode(node, offset) {
-		const findFirst = Boolean(node.childNodes[offset])
-		const current = findFirst ? node.childNodes[offset] : node.childNodes[offset - 1]
-
-		if (current && current.childNodes.length) {
-			const result = this.findTextElement(current, findFirst)
-
-			if (isTextElement(result)) {
-				return {
-					element: result,
-					offset: findFirst ? 0 : result.nodeValue.length
-				}
-			}
-
-			return {
-				element: current,
-				offset: 0
-			}
-		}
-
-		return null
-	}
-
-	findTextElement(node, findFirst) {
-		let current = node
-
-		while (current.firstChild) {
-			current = findFirst ? current.firstChild : current.lastChild
-		}
-
-		return current
 	}
 
 	destroy() {
