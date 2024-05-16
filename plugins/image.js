@@ -227,10 +227,7 @@ export default class ImagePlugin extends PluginPlugin {
 				})
 
 				builder.append(image, caption)
-
-				if (content) {
-					builder.append(caption, content)
-				}
+				builder.append(caption, content)
 
 				return image
 			}

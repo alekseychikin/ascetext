@@ -240,10 +240,7 @@ export class ListItemContent extends Container {
 		}
 
 		builder.append(parentList.parent.parent, item, parentList.parent.next)
-
-		if (subList) {
-			builder.append(item, subList)
-		}
+		builder.append(item, subList)
 
 		if (!parentList.first) {
 			builder.cut(parentList)
@@ -284,10 +281,7 @@ export class ListItemContent extends Container {
 					next = item.next
 				}
 
-				if (container.first) {
-					builder.append(newBlock, container.first)
-				}
-
+				builder.append(newBlock, container.first)
 				builder.cut(item)
 
 				while (!parentSection.isSection) {

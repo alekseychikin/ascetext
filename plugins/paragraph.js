@@ -56,10 +56,7 @@ export default class ParagraphPlugin extends PluginPlugin {
 			if (item.isContainer && item.parent.isSection && item.type !== 'paragraph') {
 				const paragraph = builder.create('paragraph')
 
-				if (item.first) {
-					builder.append(paragraph, item.first)
-				}
-
+				builder.append(paragraph, item.first)
 				builder.replace(item, paragraph)
 			}
 		})
