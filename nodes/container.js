@@ -107,17 +107,13 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorOffset,
-			anchorContainer,
-			setSelection,
 			focusAtLastPositionInContainer
 		}
 	) {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			builder.insert(this, builder.create('breakLine'), anchorOffset)
-
-			setSelection(anchorContainer, anchorOffset + 1)
+			builder.insert(builder.create('breakLine'))
 		} else {
 			let newBlock
 
@@ -135,7 +131,6 @@ export default class Container extends Node {
 
 			builder.append(this.parent, newBlock, this.next)
 			builder.moveTail(this, newBlock, anchorOffset)
-			setSelection(newBlock)
 		}
 	}
 
@@ -144,7 +139,6 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorAtFirstPositionInContainer,
-			anchorAtLastPositionInContainer,
 			anchorContainer,
 			setSelection
 		}
@@ -152,7 +146,7 @@ export default class Container extends Node {
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
+			if (!anchorContainer.parent.isSection) {
 				return false
 			}
 
@@ -163,7 +157,7 @@ export default class Container extends Node {
 				return false
 			}
 
-			if (anchorAtLastPositionInContainer) {
+			if (this.isEmpty) {
 				builder.cut(container)
 
 				if (previousSelectableNode.isContainer) {
@@ -184,10 +178,7 @@ export default class Container extends Node {
 						setSelection(previousSelectableNode)
 					}
 				} else {
-					if (container.first) {
-						builder.append(previousSelectableNode, container.first)
-					}
-
+					builder.append(previousSelectableNode, container.first)
 					builder.cut(container)
 					setSelection(previousSelectableNode, offset)
 				}
@@ -228,10 +219,7 @@ export default class Container extends Node {
 					setSelection(nextSelectableNode)
 				}
 			} else if (nextSelectableNode.isContainer) {
-				// if (!nextSelectableNode.hasOnlyBr) {
-				// 	builder.append(container, nextSelectableNode.first)
-				// }
-
+				builder.append(container, nextSelectableNode.first)
 				builder.cut(nextSelectableNode)
 
 				setSelection(container, container.length)

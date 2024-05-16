@@ -189,8 +189,7 @@ export class ListItemContent extends Container {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			builder.insert(this, builder.create('breakLine'), anchorOffset)
-			setSelection(anchorContainer, anchorOffset + 1)
+			builder.insert(builder.create('breakLine'))
 		} else if (anchorContainer.isEmpty) {
 			if (parent.parent.type === 'list-item') {
 				this.indentLeft(event, { anchorContainer, setSelection, builder })
@@ -204,8 +203,6 @@ export class ListItemContent extends Container {
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
 			builder.moveTail(this, content, anchorOffset)
-
-			setSelection(nextItem)
 		}
 	}
 

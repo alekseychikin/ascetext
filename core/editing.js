@@ -137,7 +137,7 @@ export default class Editing {
 				this.handleRemoveRange()
 				timeTravel.preservePreviousSelection()
 
-				builder.insert(selection.anchorContainer, insertNode, selection.anchorOffset)
+				builder.insert(insertNode)
 				this.lastSelection = null
 				this.lastSelectionIndexes = null
 			}

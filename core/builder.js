@@ -618,18 +618,21 @@ export default class Builder {
 		return false
 	}
 
-	insert(node, target, offset) {
-		const { tail } = this.split(node, offset)
+	insert(target) {
+		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
+		const { tail } = this.split(anchorContainer, anchorOffset)
 
-		this.append(node, target, tail)
+		console.log('insert')
+		this.append(anchorContainer, target, tail)
+		// посчитать длину вставляемого таргета и поставить каретку в последнее положение
+		setSelection(anchorContainer, anchorOffset + 1)
 	}
 
 	moveTail(container, target, offset) {
 		const { tail } = this.split(container, offset)
 
-		if (tail) {
-			this.append(target, tail)
-		}
+		this.append(target, tail, target.first)
+		this.core.selection.setSelection(target)
 	}
 
 	// prepareContainer(node) {
