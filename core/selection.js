@@ -88,8 +88,8 @@ export default class Selection {
 				item.onBlur(this)
 			}
 		})
-		this.selectedItems.splice(0, this.selectedItems.length)
-		this.focusedNodes.splice(0, this.focusedNodes.length)
+		this.selectedItems.splice(0)
+		this.focusedNodes.splice(0)
 		this.focused = false
 		this.anchorContainer = null
 		this.focusContainer = null
@@ -130,8 +130,8 @@ export default class Selection {
 			this.core.host.selectElements(anchorElement, anchorIndex)
 		}
 
-		this.selectedItems.splice(0, this.selectedItems.length)
-		this.focusedNodes.splice(0, this.focusedNodes.length)
+		this.selectedItems.splice(0)
+		this.focusedNodes.splice(0)
 	}
 
 	// не должно быть вообще

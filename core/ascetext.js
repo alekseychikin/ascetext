@@ -191,7 +191,7 @@ export default class Ascetext {
 	}
 
 	destroy() {
-		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
+		this.onChangeHandlers.splice(0)
 		this.node.setAttribute('contenteditable', false)
 		this.editing.destroy()
 		this.selection.destroy()

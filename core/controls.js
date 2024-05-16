@@ -19,6 +19,6 @@ export default class Controls {
 
 	destroy() {
 		this.container.parentNode.removeChild(this.container)
-		this.controls.splice(0, this.controls.length)
+		this.controls.splice(0)
 	}
 }
