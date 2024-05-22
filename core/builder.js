@@ -1,4 +1,4 @@
-import isHtmlElement from '../utils/is-html-element.js'
+import Publisher from './publisher.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
 import findParent from '../utils/find-parent.js'
@@ -9,17 +9,14 @@ export const operationTypes = {
 	ATTRIBUTE: 'attribute'
 }
 
-const ignoreParsingElements = ['style', 'script']
-
-export default class Builder {
+export default class Builder extends Publisher {
 	constructor(core) {
+		super()
 		this.core = core
 
 		this.registeredNodes = {}
 		this.registerPlugins()
-		// this.parse = this.parse.bind(this)
 		this.appendHandler = this.appendHandler.bind(this)
-		this.onChangeHandlers = []
 	}
 
 	create(name, ...params) {
@@ -52,21 +49,13 @@ export default class Builder {
 	}
 
 	handleAttributes(target, previous, next) {
-		this.dispatch({
+		this.sendMessage({
 			type: operationTypes.ATTRIBUTE,
 			target,
 			previous,
 			next
 		})
 	}
-
-	// parse(element, ctx = {}) {
-	// 	const fragment = this.createTree(element, ctx)
-
-	// 	this.normalize(fragment)
-
-	// 	return fragment
-	// }
 
 	parseJson(body) {
 		const container = this.createFragment()
@@ -128,63 +117,6 @@ export default class Builder {
 
 		return content
 	}
-
-	// createTree(element, ctx) {
-	// 	const fragment = this.createFragment()
-	// 	const lastElement = element.lastChild
-	// 	let currentElement = element.firstChild
-	// 	let nextElement
-	// 	let children = null
-	// 	let current
-
-	// 	while (currentElement) {
-	// 		const context = { ...ctx }
-
-	// 		if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-	// 			currentElement = currentElement.nextSibling
-
-	// 			continue
-	// 		}
-
-	// 		nextElement = currentElement.nextSibling
-	// 		children = null
-	// 		current = this.core.plugins.reduce((parsed, plugin) => {
-	// 			if (parsed) return parsed
-
-	// 			return plugin.parse(currentElement, this, context)
-	// 		}, null)
-
-	// 		if (
-	// 			isHtmlElement(currentElement) &&
-	// 			currentElement.childNodes.length &&
-	// 			(!current || !current.isWidget && current.type !== 'text')
-	// 		) {
-	// 			children = this.createTree(currentElement, { ...context })
-	// 		}
-
-	// 		if (current) {
-	// 			this.append(fragment, current)
-
-	// 			if (children && children.first) {
-	// 				this.append(current, children.first)
-	// 			}
-
-	// 			if (current.isDeleteEmpty && !current.first) {
-	// 				this.cut(current)
-	// 			}
-	// 		} else if (children && children.first) {
-	// 			this.append(fragment, children.first)
-	// 		}
-
-	// 		if (currentElement === lastElement) {
-	// 			break
-	// 		}
-
-	// 		currentElement = nextElement
-	// 	}
-
-	// 	return fragment
-	// }
 
 	parseVirtualTree(tree, ctx = {}) {
 		const fragment = this.createFragment()
@@ -393,7 +325,6 @@ export default class Builder {
 		let current = target
 
 		this.cutUntil(target, last)
-		// this.prepareContainer(target)
 
 		do {
 			current.parent = node
@@ -430,7 +361,7 @@ export default class Builder {
 		}
 
 		if (findParent(target, (item) => item.type === 'root')) {
-			this.dispatch({
+			this.sendMessage({
 				type: operationTypes.APPEND,
 				container: node,
 				target,
@@ -461,7 +392,7 @@ export default class Builder {
 		let current = node
 
 		if (findParent(node, (item) => item.type === 'root')) {
-			this.dispatch({
+			this.sendMessage({
 				type: operationTypes.CUT,
 				container: node.parent,
 				last,
@@ -539,25 +470,17 @@ export default class Builder {
 		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
 		const { tail } = this.split(anchorContainer, anchorOffset)
 
-		console.log('insert')
 		this.append(anchorContainer, target, tail)
-		// посчитать длину вставляемого таргета и поставить каретку в последнее положение
 		setSelection(anchorContainer, anchorOffset + 1)
 	}
 
 	moveTail(container, target, offset) {
 		const { tail } = this.split(container, offset)
+		const anchotOffset = target.length
 
-		this.append(target, tail, target.first)
-		this.core.selection.setSelection(target)
+		this.append(target, tail)
+		this.core.selection.setSelection(target, anchotOffset)
 	}
-
-	// prepareContainer(node) {
-	// 	if (node.isWidget) {
-	// 		node.element.setAttribute('tabindex', '0')
-	// 		node.element.setAttribute('data-widget', '')
-	// 	}
-	// }
 
 	registerPlugins() {
 		this.core.plugins.forEach((plugin) => {
@@ -569,13 +492,5 @@ export default class Builder {
 				})
 			}
 		})
-	}
-
-	dispatch(change) {
-		this.onChangeHandlers.forEach((handler) => handler(change))
-	}
-
-	onChange(handler) {
-		this.onChangeHandlers.push(handler)
 	}
 }

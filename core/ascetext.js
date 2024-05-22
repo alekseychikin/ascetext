@@ -4,7 +4,7 @@ import Builder from './builder.js'
 import Selection from './selection.js'
 // import Navigation from './navigation.js'
 import Editing from './editing.js'
-import Autocomplete from './autocomplete.js'
+// import Autocomplete from './autocomplete.js'
 import TimeTravel from './timetravel.js'
 import ParagraphPlugin from '../plugins/paragraph.js'
 import BreakLinePlugin from '../plugins/break-line.js'
@@ -18,8 +18,9 @@ import Toolbar from '../components/toolbar.js'
 import Controls from './controls.js'
 import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
+import Render from './render.js'
+import Parser from './parser.js'
 import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
-import DOMHost from '../hosts/dom.js'
 
 class Root extends Section {
 	constructor() {
@@ -53,10 +54,11 @@ export default class Ascetext {
 			return icons
 		}, {}), params.icons || {})
 		this.model = new Root()
-		this.host = params.host || new DOMHost(this)
+		this.builder = new Builder(this)
+		this.render = new Render(this)
+		this.parser = new Parser(this.render)
 		this.placeholder = extractPlaceholderParams(params.placeholder)
 		// this.navigation = new Navigation(this)
-		this.builder = new Builder(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
@@ -68,10 +70,9 @@ export default class Ascetext {
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
-		this.host.setComponents(this.components)
-		this.builder.onChange(this.host.onChange)
+		this.selection.setComponents(this.components)
 
-		const children = this.builder.parseVirtualTree(this.host.getVirtualTree(node.firstChild))
+		const children = this.builder.parseVirtualTree(this.parser.getVirtualTree(node.firstChild))
 
 		while (node.childNodes.length) {
 			node.removeChild(node.childNodes[0])
@@ -80,7 +81,7 @@ export default class Ascetext {
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()
 		this.init = true
-		this.builder.onChange(this.triggerChange)
+		this.builder.subscribe(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
 	}
 

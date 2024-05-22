@@ -17,8 +17,8 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.timer = null
 
-		this.selection.onUpdate(this.onSelectionChange)
-		this.builder.onChange(this.pushChange)
+		this.selection.subscribe(this.onSelectionChange)
+		this.builder.subscribe(this.pushChange)
 	}
 
 	reset() {
@@ -78,7 +78,6 @@ export default class TimeTravel {
 		}
 
 		const nextSelection = this.selection.getSelectionInIndexes()
-		console.log('nextSelection', nextSelection.anchorIndex)
 
 		if (this.timeindex < this.timeline.length - 1) {
 			this.timeline.splice(this.timeindex + 1)
@@ -93,7 +92,6 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.previousSelection = nextSelection
 		this.timeindex++
-		console.log('commit', this.timeline)
 	}
 
 	goBack() {

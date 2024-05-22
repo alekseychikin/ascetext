@@ -42,6 +42,7 @@ export class ListItem extends Node {
 	constructor(params = {}) {
 		super('list-item')
 
+		this.isDeleteEmpty = true
 		this.params = params
 	}
 
@@ -135,44 +136,23 @@ export class ListItemContent extends Container {
 		}
 	}
 
-	cut({ builder }) {
-		if (this.parent && this.parent.parent) {
-			const list = this.parent.parent
+	// cut({ builder }) {
+	// 	if (this.parent && this.parent.parent) {
+	// 		const list = this.parent.parent
 
-			if (this.next && this.next.type === 'list') {
-				builder.append(list, this.next.first, this.parent.next)
-			}
+	// 		if (this.next && this.next.type === 'list') {
+	// 			builder.append(list, this.next.first, this.parent.next)
+	// 		}
 
-			builder.cut(this.parent)
+	// 		builder.cut(this.parent)
 
-			if (list.type === 'list' && !list.first) {
-				builder.cut(list)
-			}
-		} else {
-			builder.cutUntil(this, this)
-		}
-	}
-
-	backspaceHandler(event, {
-		builder,
-		anchorContainer,
-		anchorAtFirstPositionInContainer,
-		setSelection,
-		focusedNodes
-	}) {
-		const item = this.parent
-		const parent = item.parent
-
-		if (anchorAtFirstPositionInContainer) {
-			event.preventDefault()
-
-			if (parent.parent.type === 'list-item') {
-				this.indentLeft(event, { builder, anchorContainer, setSelection })
-			} else if (parent.parent.isSection) {
-				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
-			}
-		}
-	}
+	// 		if (list.type === 'list' && !list.first) {
+	// 			builder.cut(list)
+	// 		}
+	// 	} else {
+	// 		builder.cutUntil(this, this)
+	// 	}
+	// }
 
 	enterHandler(event, {
 		builder,
@@ -206,7 +186,28 @@ export class ListItemContent extends Container {
 		}
 	}
 
-	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer, setSelection }) {
+	backspaceHandler(event, {
+		builder,
+		anchorContainer,
+		anchorAtFirstPositionInContainer,
+		setSelection,
+		focusedNodes
+	}) {
+		const item = this.parent
+		const parent = item.parent
+
+		if (anchorAtFirstPositionInContainer) {
+			event.preventDefault()
+
+			if (parent.parent.type === 'list-item') {
+				this.indentLeft(event, { builder, anchorContainer, setSelection })
+			} else if (parent.parent.isSection) {
+				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
+			}
+		}
+	}
+
+	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer }) {
 		if (focusAtLastPositionInContainer) {
 			event.preventDefault()
 
@@ -216,17 +217,23 @@ export class ListItemContent extends Container {
 				return false
 			}
 
-			if (nextSelectableNode.isContainer) {
-				builder.cut(nextSelectableNode)
+			builder.moveTail(nextSelectableNode, this, 0)
 
-				setSelection(anchorContainer, anchorContainer.length)
-			} else if (nextSelectableNode.isWidget) {
-				setSelection(nextSelectableNode)
+			if (nextSelectableNode.parent.isSection) {
+				builder.cut(nextSelectableNode)
+			} else if (nextSelectableNode.type === 'list-item-content') {
+				const parent = nextSelectableNode.parent.parent
+
+				if (nextSelectableNode.next && nextSelectableNode.next.type === 'list') {
+					builder.append(parent, nextSelectableNode.next.first)
+				}
+
+				builder.cut(nextSelectableNode)
 			}
 		}
 	}
 
-	indentLeft(event, { builder, anchorContainer, setSelection }) {
+	indentLeft(event, { builder, anchorContainer, anchorOffset, setSelection }) {
 		const item = anchorContainer.parent
 		const parentList = item.parent
 		let subList
@@ -243,10 +250,10 @@ export class ListItemContent extends Container {
 			builder.cut(parentList)
 		}
 
-		setSelection(anchorContainer)
+		setSelection(anchorContainer, anchorOffset)
 	}
 
-	indentRight(event, { builder, anchorContainer, setSelection }) {
+	indentRight(event, { builder, anchorContainer, anchorOffset, setSelection }) {
 		const item = anchorContainer.parent
 		let list
 
@@ -259,7 +266,7 @@ export class ListItemContent extends Container {
 			builder.push(list, item)
 		}
 
-		setSelection(anchorContainer)
+		setSelection(anchorContainer, anchorOffset)
 	}
 
 	convertListItemToBlock(event, { builder, setSelection, focusedNodes }) {
@@ -535,9 +542,11 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	setList(type) {
-		return (event, { builder, focusedNodes }) => {
+		return (event, { builder, setSelection, focusedNodes, anchorOffset, focusOffset }) => {
 			const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
 			const { params } = this
+			let since
+			let until
 			let previous
 			let group = []
 
@@ -550,13 +559,15 @@ export default class ListPlugin extends PluginPlugin {
 						const listItem = builder.create('list-item', params)
 						const content = builder.create('list-item-content', params)
 
-						if (node.first) {
-							builder.append(content, node.first)
-						}
-
 						builder.append(listItem, content)
 						builder.append(list, listItem)
+						builder.moveTail(node, content, 0)
 						builder.cut(node)
+						until = content
+
+						if (!since) {
+							since = content
+						}
 					})
 				}
 			}
@@ -573,6 +584,7 @@ export default class ListPlugin extends PluginPlugin {
 			})
 
 			convertGroup(group)
+			setSelection(since, anchorOffset, until, focusOffset)
 		}
 	}
 }

@@ -1,6 +1,6 @@
-import WithControls from './with-controls.js'
+import Node from './node.js'
 
-export default class InlineWidget extends WithControls {
+export default class InlineWidget extends Node {
 	constructor(type, attributes = {}) {
 		super(type, attributes)
 

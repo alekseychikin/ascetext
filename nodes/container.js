@@ -107,6 +107,7 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorOffset,
+			anchorAtFirstPositionInContainer,
 			focusAtLastPositionInContainer
 		}
 	) {
@@ -123,14 +124,18 @@ export default class Container extends Node {
 
 			event.preventDefault()
 
-			if (focusAtLastPositionInContainer) {
-				newBlock = builder.createBlock()
+			if (anchorAtFirstPositionInContainer) {
+				builder.append(this.parent, builder.createBlock(), this)
 			} else {
-				newBlock = builder.duplicate(this)
-			}
+				if (focusAtLastPositionInContainer) {
+					newBlock = builder.createBlock()
+				} else {
+					newBlock = builder.duplicate(this)
+				}
 
-			builder.append(this.parent, newBlock, this.next)
-			builder.moveTail(this, newBlock, anchorOffset)
+				builder.append(this.parent, newBlock, this.next)
+				builder.moveTail(this, newBlock, anchorOffset)
+			}
 		}
 	}
 
@@ -138,52 +143,26 @@ export default class Container extends Node {
 		event,
 		{
 			builder,
-			anchorAtFirstPositionInContainer,
-			anchorContainer,
-			setSelection
+			anchorAtFirstPositionInContainer
 		}
 	) {
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			if (!anchorContainer.parent.isSection) {
-				return false
-			}
-
-			const container = anchorContainer
-			const previousSelectableNode = container.getPreviousSelectableNode()
+			const previousSelectableNode = this.getPreviousSelectableNode()
 
 			if (!previousSelectableNode) {
 				return false
 			}
 
-			if (this.isEmpty) {
-				builder.cut(container)
+			if (previousSelectableNode.isEmpty && previousSelectableNode.parent.isSection) {
+				builder.cut(previousSelectableNode)
+			} else {
+				builder.moveTail(this, previousSelectableNode, 0)
 
-				if (previousSelectableNode.isContainer) {
-					setSelection(previousSelectableNode, -1)
-				} else if (previousSelectableNode.isWidget) {
-					setSelection(previousSelectableNode)
+				if (this.parent.isSection) {
+					builder.cut(this)
 				}
-			} else if (previousSelectableNode.isContainer) {
-				const offset = previousSelectableNode.length
-
-				if (previousSelectableNode.isEmpty) {
-					if (previousSelectableNode.parent.isSection) {
-						builder.cut(previousSelectableNode)
-						setSelection(container)
-					} else {
-						builder.append(previousSelectableNode, container.first)
-						builder.cut(container)
-						setSelection(previousSelectableNode)
-					}
-				} else {
-					builder.append(previousSelectableNode, container.first)
-					builder.cut(container)
-					setSelection(previousSelectableNode, offset)
-				}
-			} else if (previousSelectableNode.isWidget) {
-				setSelection(previousSelectableNode)
 			}
 		}
 	}
@@ -194,37 +173,27 @@ export default class Container extends Node {
 			builder,
 			anchorAtLastPositionInContainer,
 			anchorAtFirstPositionInContainer,
-			anchorContainer,
 			setSelection
 		}
 	) {
 		if (anchorAtLastPositionInContainer) {
 			event.preventDefault()
 
-			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
-				return false
-			}
-
-			const container = anchorContainer
-			const nextSelectableNode = container.getNextSelectableNode()
+			const nextSelectableNode = this.getNextSelectableNode()
 
 			if (!nextSelectableNode) {
 				return false
 			}
 
-			if (anchorAtFirstPositionInContainer) {
-				builder.cut(container)
-
-				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					setSelection(nextSelectableNode)
-				}
-			} else if (nextSelectableNode.isContainer) {
-				builder.append(container, nextSelectableNode.first)
-				builder.cut(nextSelectableNode)
-
-				setSelection(container, container.length)
-			} else if (nextSelectableNode.isWidget) {
+			if (anchorAtFirstPositionInContainer && this.parent.isSection) {
+				builder.cut(this)
 				setSelection(nextSelectableNode)
+			} else {
+				builder.moveTail(nextSelectableNode, this, 0)
+
+				if (nextSelectableNode.parent.isSection) {
+					builder.cut(nextSelectableNode)
+				}
 			}
 		}
 	}

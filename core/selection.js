@@ -1,13 +1,21 @@
+import Publisher from './publisher.js'
 import isElementBr from '../utils/is-element-br.js'
 import isTextElement from '../utils/is-text-element.js'
 import walk from '../utils/walk.js'
+import isHtmlElement from '../utils/is-html-element.js'
+import getStyle from '../utils/get-style.js'
+import isFunction from '../utils/is-function.js'
 
-export default class Selection {
+export default class Selection extends Publisher {
 	constructor(core) {
+		super()
+
 		this.update = this.update.bind(this)
-		this.onUpdate = this.onUpdate.bind(this)
 		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
+		this.focus = this.focus.bind(this)
+		this.selectionChange = this.selectionChange.bind(this)
+		this.onRender = this.onRender.bind(this)
 
 		this.core = core
 		this.selection = {}
@@ -15,9 +23,9 @@ export default class Selection {
 		this.focusIndex = null
 		this.focused = false
 		this.skipUpdate = false
-		this.onUpdateHandlers = []
 		this.selectedItems = []
 		this.focusedNodes = []
+		this.components = []
 		this.timer = null
 		this.anchorAtFirstPositionInContainer = null
 		this.anchorAtLastPositionInContainer = false
@@ -29,7 +37,257 @@ export default class Selection {
 		this.anchorOffset = 0
 		this.focusOffset = 0
 
-		this.core.host.onSelectionChange(this.update)
+		document.addEventListener('focus', this.focus, true)
+		document.addEventListener('selectionchange', this.selectionChange)
+		this.core.render.subscribe(this.onRender)
+	}
+
+	setComponents(components) {
+		this.components = components
+	}
+
+	focus(event) {
+		if (!document.body.contains(event.srcElement)) {
+			return
+		}
+
+		if (this.core.node.contains(event.srcElement) && (typeof event.srcElement.dataset.widget === 'undefined' || this.core.node === event.srcElement)) {
+			return
+		}
+
+		cancelAnimationFrame(this.selectionTimeout)
+		this.selectionTimeout = requestAnimationFrame(() => {
+			const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
+
+			this.selectionUpdate({
+				type: 'focus',
+				anchorNode: event.srcElement,
+				focusNode: event.srcElement,
+				anchorOffset: 0,
+				focusOffset: 0,
+				isCollapsed: true,
+				selectedComponent: Boolean(selectedComponent)
+			})
+		})
+	}
+
+	selectionChange() {
+		cancelAnimationFrame(this.selectionTimeout)
+		this.selectionTimeout = requestAnimationFrame(() => {
+			const selection = document.getSelection()
+			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
+
+			this.selectionUpdate({
+				type: 'selectionchange',
+				anchorNode: selection.anchorNode,
+				focusNode: selection.focusNode,
+				anchorOffset: selection.anchorOffset,
+				focusOffset: selection.focusOffset,
+				isCollapsed: selection.isCollapsed,
+				selectedComponent: Boolean(selectedComponent)
+			})
+		})
+	}
+
+	selectionUpdate(event) {
+		const { container: anchorContainer, offset: anchorOffset} = this.getContainerAndOffset(event.anchorNode, event.anchorOffset)
+		let focusContainer = anchorContainer
+		let focusOffset = anchorOffset
+
+		if (!event.isCollapsed) {
+			const focus = this.getContainerAndOffset(event.focusNode, event.focusOffset)
+
+			focusContainer = focus.container
+			focusOffset = focus.offset
+		}
+
+		const focused = this.core.node.contains(anchorContainer) && this.core.node.contains(focusContainer)
+
+		this.update({
+			anchorContainer: focused ? this.core.render.getNodeById(anchorContainer.dataset.nodeId) : null,
+			anchorOffset,
+			focusContainer: focused ? this.core.render.getNodeById(focusContainer.dataset.nodeId) : null,
+			focusOffset,
+			isCollapsed: event.isCollapsed,
+			focused,
+			selectedComponent: event.selectedComponent
+		})
+	}
+
+	getContainerAndOffset(node, offset) {
+		let container = node
+		let element = node
+		let length = offset
+
+		if (isHtmlElement(element) && element.dataset.nodeId) {
+			if (element.childNodes[offset] && isElementBr(element.childNodes[offset])) {
+				return this.getContainerAndOffset(element.childNodes[offset], 0)
+			}
+
+			return {
+				container,
+				offset
+			}
+		}
+
+		while (element.previousSibling || element.parentNode) {
+			if (!element.previousSibling) {
+				element = element.parentNode
+
+				if (isHtmlElement(element) && element.dataset.nodeId) {
+					container = element
+
+					break
+				}
+
+				continue
+			}
+
+			element = element.previousSibling
+			length += this.getLength(element)
+		}
+
+		return {
+			container,
+			offset: length
+		}
+	}
+
+	getLength(node) {
+		if (isTextElement(node)) {
+			return node.length
+		}
+
+		if (isElementBr(node)) {
+			return 1
+		}
+
+		let length = 0
+		let child = node.firstChild
+
+		while (child) {
+			length += this.getLength(child)
+
+			child = child.nextSibling
+		}
+
+		return length
+	}
+
+	setSelection(anchorNode, anchorOffset = 0, focusNode, focusOffset) {
+		const correctAnchorOffset = anchorOffset < 0 ? anchorNode.length : anchorOffset
+		const correctFocusOffset = focusNode ? focusOffset < 0 ? focusNode.length : focusOffset : correctAnchorOffset
+
+		this.update({
+			anchorContainer: anchorNode,
+			anchorOffset: correctAnchorOffset,
+			focusContainer: focusNode || anchorNode,
+			focusOffset: correctFocusOffset,
+			isCollapsed: focusNode ? anchorNode === focusNode && correctAnchorOffset === correctFocusOffset : true,
+			focused: true,
+			selectedComponent: false
+		})
+
+		if (anchorNode.isRendered && (!focusNode || focusNode.isRendered)) {
+			this.selectElements()
+		}
+	}
+
+	onRender(node) {
+		if (node === this.anchorContainer || node === this.focusContainer) {
+			this.selectElements()
+		}
+	}
+
+	selectElements() {
+		if (!this.anchorContainer.isRendered) {
+			return
+		}
+
+		const selection = window.getSelection()
+		const { element: anchorElement, restOffset: anchorRestOffset } = this.getChildByOffset(this.anchorContainer, this.anchorOffset)
+
+		console.log(anchorElement, anchorRestOffset)
+		selection.collapse(anchorElement, anchorRestOffset)
+
+		if (this.anchorContainer.isWidget) {
+			anchorElement.focus()
+		}
+
+		if (this.focusContainer.isRendered) {
+			const { element: focusElement, restOffset: focusRestOffset } = this.getChildByOffset(this.focusContainer, this.focusOffset)
+
+			selection.extend(focusElement, focusRestOffset)
+		}
+	}
+
+	getChildByOffset(target, offset) {
+		let restOffset = Math.min(offset, target.length)
+
+		if (target.isWidget && !offset) {
+			return {
+				element: target.element,
+				restOffset: 0
+			}
+		}
+
+		const result = walk(target.element, (current) => {
+			if (isTextElement(current)) {
+				if (current.length >= restOffset) {
+					return current
+				}
+
+				restOffset -= current.length
+			} else if (isElementBr(current)) {
+				if (restOffset === 0) {
+					return current
+				}
+
+				restOffset -= 1
+			}
+		})
+
+		return {
+			element: result,
+			restOffset
+		}
+	}
+
+	getBoundings(node) {
+		return this.mapNodeIdToElement[node.id].getBoundingClientRect()
+	}
+
+	getSelectedBoundings(anchorContainer, anchorOffset, focusContainer, focusOffset) {
+		const selectedLength = anchorContainer === focusContainer ? focusOffset - anchorOffset : anchorContainer.length - anchorOffset
+		const anchorElement = this.mapNodeIdToElement[anchorContainer.id]
+		const content = anchorElement.outerText
+		const styles = getStyle(anchorElement)
+
+		this.containerAvatar.style.display = ''
+		this.containerAvatar.style.width = `${anchorElement.offsetWidth}px`
+		this.containerAvatar.style.fontFamily = styles.fontFamily
+		this.containerAvatar.style.fontSize = styles.fontSize
+		this.containerAvatar.style.lineHeight = styles.lineHeight
+		this.containerAvatar.style.letterSpacing = styles.letterSpacing
+		this.containerAvatar.style.padding = styles.padding
+		this.containerAvatar.style.boxSizing = styles.boxSizing
+		this.containerAvatar.style.textAlign = styles.textAlign
+
+		const fakeContent = content.substr(0, anchorOffset) +
+			'<span style="background: blue" data-selected-text>' +
+			content.substr(anchorOffset, selectedLength) +
+			'</span>' +
+		content.substr(anchorOffset + selectedLength)
+		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
+		const span = this.containerAvatar.querySelector('span[data-selected-text]')
+
+		// нужно возвращать прокси
+		return {
+			left: span.offsetLeft,
+			top: span.offsetTop,
+			width: span.offsetWidth,
+			height: span.offsetHeight
+		}
 	}
 
 	update(event) {
@@ -41,9 +299,6 @@ export default class Selection {
 			// TODO: make fake selection
 			return
 		}
-
-		console.error('selection update')
-		console.log(event.anchorContainer, event.anchorOffset, event.focusContainer, event.focusOffset, event.isCollapsed)
 
 		const firstContainer = event.anchorContainer
 		const lastContainer = event.focusContainer
@@ -74,11 +329,8 @@ export default class Selection {
 		this.focusAtFirstPositionInContainer = this.focusOffset === 0
 		this.focusAtLastPositionInContainer = this.focusOffset === this.focusContainer.length
 
-		this.handleSelectedItems(
-			this.getNodeByOffset(this.anchorContainer, this.anchorOffset),
-			this.getNodeByOffset(this.focusContainer, this.focusOffset)
-		)
-		this.onUpdateHandlers.forEach((handler) => handler(this))
+		this.handleSelectedItems()
+		this.sendMessage(this)
 	}
 
 	blur() {
@@ -96,34 +348,10 @@ export default class Selection {
 		this.focusContainer = null
 		this.anchorOffset = null
 		this.focusOffset = null
-
-		if (this.anchorContainer) {
-			this.core.editing.update(this.anchorContainer)
-		}
-
-		this.onUpdateHandlers.forEach((handler) => handler(this))
-	}
-
-	onUpdate(handler) {
-		this.onUpdateHandlers.push(handler)
-
-		return () => {
-			this.onUpdateHandlers.splice(this.onUpdateHandlers.indexOf(handler), 1)
-		}
-	}
-
-	setSelection(anchorNode, anchorOffset = 0, focusNode, focusOffset) {
-		console.warn('setSelection', anchorNode, anchorOffset, focusNode, focusOffset)
-		this.selectedItems.splice(0)
-		this.focusedNodes.splice(0)
-		this.core.host.selectElements(anchorNode, anchorOffset, focusNode, focusOffset)
+		this.sendMessage(this)
 	}
 
 	restoreSelection() {
-		const indexes = this.getSelectionInIndexes()
-
-		console.error('restore', indexes.anchorIndex, indexes.focusIndex)
-
 		this.setSelectionByIndexes(this.getSelectionInIndexes())
 	}
 
@@ -201,6 +429,14 @@ export default class Selection {
 		let restOffset = offset
 		let current = node.first
 
+		if (node.isWidget && !offset) {
+			return node
+		}
+
+		if (!node.first) {
+			return node
+		}
+
 		while (current && restOffset >= 0) {
 			if (restOffset <= current.length) {
 
@@ -220,7 +456,6 @@ export default class Selection {
 
 	getSelectedItems() {
 		const { head, tail } = this.cutRange()
-		console.log('aftercut', head, tail)
 
 		return this.getArrayRangeItems(head, tail)
 	}
@@ -310,8 +545,11 @@ export default class Selection {
 		return selectedItems
 	}
 
-	handleSelectedItems(anchorNode, focusNode) {
-		const selectedItems = this.getArrayRangeItems(anchorNode, focusNode)
+	handleSelectedItems() {
+		const selectedItems = this.getArrayRangeItems(
+			this.getNodeByOffset(this.anchorContainer, this.anchorOffset),
+			this.getNodeByOffset(this.focusContainer, this.focusOffset)
+		)
 		const itemsToFocus = []
 		let focusedNodes = selectedItems.slice(0)
 		let firstNode = focusedNodes[0]
@@ -329,7 +567,13 @@ export default class Selection {
 		})
 		this.focusedNodes.forEach((item) => {
 			if ((item.isWidget || item.isContainer) && focusedNodes.indexOf(item) === -1) {
-				item.onBlur(this)
+				if (isFunction(item.onBlur)) {
+					item.onBlur(this)
+				}
+
+				if (item.isWidget && item.isRendered) {
+					item.element.removeAttribute('data-focus')
+				}
 			}
 		})
 
@@ -337,7 +581,14 @@ export default class Selection {
 		this.focusedNodes = focusedNodes
 
 		itemsToFocus.forEach((item) => {
-			item.onFocus(this)
+			if (isFunction(item.onFocus)) {
+				item.onFocus(this)
+			}
+		})
+		this.focusedNodes.forEach((item) => {
+			if (item.isWidget && item.isRendered) {
+				item.element.setAttribute('data-focus', '')
+			}
 		})
 	}
 

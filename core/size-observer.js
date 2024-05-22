@@ -9,13 +9,14 @@ export default class SizeObserver {
 
 		this.id = 0
 		this.ids = []
-		this.observedElements = []
+		this.observedNodes = []
 		this.handlers = []
 		this.timer = null
 		this.middleware = middleware
 
-		this.core.selection.onUpdate(this.update)
-		this.core.builder.onChange(this.update)
+		this.core.selection.subscribe(this.update)
+		this.core.builder.subscribe(this.update)
+		this.core.render.subscribe(this.update)
 		window.addEventListener('load', this.update)
 		this.core.node.addEventListener('load', this.update, true)
 		document.addEventListener('DOMContentLoaded', this.update)
@@ -24,11 +25,11 @@ export default class SizeObserver {
 		visualViewport.addEventListener('scroll', this.update)
 	}
 
-	observe(element, handler) {
+	observe(node, handler) {
 		const id = ++this.id
 
 		this.ids.push(id)
-		this.observedElements.push(element)
+		this.observedNodes.push(node)
 		this.handlers.push(handler)
 		this.update()
 
@@ -36,7 +37,7 @@ export default class SizeObserver {
 			const index = this.ids.indexOf(id)
 
 			this.ids.splice(index, 1)
-			this.observedElements.splice(index, 1)
+			this.observedNodes.splice(index, 1)
 			this.handlers.splice(index, 1)
 		}
 	}
@@ -50,14 +51,16 @@ export default class SizeObserver {
 	}
 
 	updateHandler() {
-		this.observedElements.forEach((element, index) => {
-			let boundings = this.calculateBoundings(element)
+		this.observedNodes.forEach((node, index) => {
+			if (node.isRendered) {
+				let boundings = this.calculateBoundings(node.element)
 
-			if (isFunction(this.middleware)) {
-				boundings = this.middleware(boundings)
+				if (isFunction(this.middleware)) {
+					boundings = this.middleware(boundings)
+				}
+
+				this.handlers[index](boundings)
 			}
-
-			this.handlers[index](boundings)
 		})
 		this.timer = null
 	}
@@ -66,7 +69,7 @@ export default class SizeObserver {
 		return {
 			scrollTop: document.body.scrollTop || document.documentElement.scrollTop || 0,
 			scrollLeft: document.body.scrollLeft || document.documentElement.scrollLeft || 0,
-			element: this.core.host.getBoundings(element),
+			element: element.getBoundingClientRect(),
 			root: this.core.node.getBoundingClientRect()
 		}
 	}

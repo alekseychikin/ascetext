@@ -1,6 +1,6 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
-import { operationTypes } from './builder.js'
+import findParent from '../utils/find-parent.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -66,7 +66,7 @@ export default class Editing {
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
 
-		this.core.selection.onUpdate(() => setTimeout(this.selectionUpdate, 0))
+		this.core.selection.subscribe(() => setTimeout(this.selectionUpdate, 0))
 	}
 
 	selectionUpdate() {
@@ -98,7 +98,7 @@ export default class Editing {
 		if (!this.hadKeydown && !this.isSession) {
 			let nextNode
 			let parentNode
-			const containers = [this.lastSelection[0].getClosestContainer()]
+			const containers = [findParent(this.lastSelection[0], (parent) => parent.isContainer)]
 				.concat(this.lastSelection.filter((node) => node.isContainer || node.isWidget))
 				.filter((node, index, self) => self.indexOf(node) === index)
 
@@ -167,16 +167,16 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, components, host } = this.core
+		const { selection, timeTravel, components } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
-
-		this.setKeydown()
 
 		if (selection.focused) {
 			const undoRepeat = event.keyCode === zKey && (isMac && event.metaKey || !isMac && event.ctrlKey)
 			const singleKeyPessed = !metaKeyCodes.includes(event.keyCode) && !event.metaKey && !event.altKey && !event.ctrlKey
 			const modifyKeyPressed = modifyKeyCodes.includes(event.keyCode)
+
+			this.setKeydown()
 
 			if (undoRepeat) {
 				event.preventDefault()
@@ -282,13 +282,6 @@ export default class Editing {
 		}
 
 		const selectedItems = this.core.selection.getSelectedItems()
-		console.log('selectedItems', selectedItems)
-		selectedItems.forEach((item) => {
-			if (item.isContainer) {
-				console.log(this.core.host.mapNodeIdToElement[item.id])
-			}
-		})
-		// return ''
 		const containersForRemove = []
 		let index
 		let firstContainer
@@ -304,7 +297,7 @@ export default class Editing {
 		if (!selectedItems[0].isContainer && !selectedItems[0].isWidget) {
 			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
 
-			firstContainer = selectedItems[0].getClosestContainer()
+			firstContainer = findParent(selectedItems[0], (parent) => parent.isContainer)
 
 			if (!firstContainer.isEmpty) {
 				this.core.builder.cutUntil(since, until)
@@ -336,7 +329,7 @@ export default class Editing {
 
 				if (since) {
 					if (!firstContainer) {
-						firstContainer = selectedItems[0].getClosestContainer().getPreviousSelectableNode()
+						firstContainer = findParent(selectedItems[0], (parent) => parent.isContainer).getPreviousSelectableNode()
 					}
 
 					if (firstContainer.isContainer) {
@@ -528,12 +521,8 @@ export default class Editing {
 		this.scheduleTimer = setTimeout(this.update, 350)
 	}
 
-	// эта функция синхронизирует модель с тем, что набрал пользователь
-	// её нужно вызывать перед тем, как делать какие-то манипуляции с кнопками модификации
-	// чтобы сохранить состояние
-	// обновлять нужно раз в 350мс
 	update(node) {
-		const { builder, selection, host } = this.core
+		const { builder, parser } = this.core
 		let container
 
 		clearTimeout(this.scheduleTimer)
@@ -549,24 +538,16 @@ export default class Editing {
 
 		this.isUpdating = true
 
-		console.log('updatingContainers', this.updatingContainers)
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
-			if (container.isContainer && container.isMount) {
-				const replacement = builder.parseVirtualTree(host.getVirtualTree(host.mapNodeIdToElement[container.id].firstChild)).first
+			if (container.isContainer) {
+				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
 
 				builder.cutUntil(container.first)
 				builder.append(container, replacement)
 			}
 		}
 
-		console.error('update')
 		this.isUpdating = false
-
-		if (selection.focused) {
-			// selection.restoreSelection()
-		}
-
-		// this.core.timeTravel.commit()
 	}
 
 	findNextElement(node) {
@@ -604,8 +585,9 @@ export default class Editing {
 	}
 
 	onPaste(event) {
-		let paste = (event.clipboardData || window.clipboardData).getData('text/html')
 		const doc = document.createElement('div')
+		const { builder } = this.core
+		let paste = (event.clipboardData || window.clipboardData).getData('text/html')
 
 		if (!paste.length) {
 			paste = (event.clipboardData || window.clipboardData).getData('text')
@@ -615,12 +597,11 @@ export default class Editing {
 
 		doc.innerHTML = paste
 
-		const result = this.core.builder.parseVirtualTree(this.core.host.getVirtualTree(doc.firstChild))
+		const result = builder.parseVirtualTree(this.core.parser.getVirtualTree(doc.firstChild))
 
 		this.handleRemoveRange()
-		this.core.timeTravel.preservePreviousSelection()
 
-		this.core.builder.insert(result)
+		builder.insert(result)
 		// тут нужно выделить вставляемый фрагмент
 		// с позивии anchorContainer.anchorOffset по самый последний элемент
 

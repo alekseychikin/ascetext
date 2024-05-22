@@ -87,8 +87,8 @@ export default class QuotePlugin extends PluginPlugin {
 			if (item.isContainer && item.parent.isSection && item.type !== 'quote') {
 				const quote = builder.create('quote')
 
-				builder.append(quote, item.first)
 				builder.replace(item, quote)
+				builder.moveTail(item, quote, 0)
 			}
 		})
 	}

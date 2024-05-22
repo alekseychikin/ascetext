@@ -1,6 +1,6 @@
-import WithControls from './with-controls.js'
+import Node from './node.js'
 
-export default class Widget extends WithControls {
+export default class Widget extends Node {
 	constructor(type, attributes) {
 		super(type, attributes)
 

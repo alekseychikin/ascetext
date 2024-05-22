@@ -58,16 +58,6 @@ export default class Node {
 		return {}
 	}
 
-	getClosestContainer() {
-		let container = this
-
-		while (container && !container.isContainer && !container.isWidget) {
-			container = container.parent
-		}
-
-		return container
-	}
-
 	getPreviousSelectableNode() {
 		let current = this
 
@@ -90,10 +80,7 @@ export default class Node {
 				}
 			}
 
-			if (
-				(current.parent.isSection || hasGroupParent(current)) &&
-				(current.isContainer || current.isWidget)
-			) {
+			if (current.isContainer) {
 				return current
 			}
 		}
@@ -121,23 +108,10 @@ export default class Node {
 				}
 			}
 
-			if (
-				(current.parent.isSection || hasGroupParent(current)) &&
-				(current.isContainer || current.isWidget)
-			) {
+			if (current.isContainer) {
 				return current
 			}
 		}
-	}
-
-	getLastNode() {
-		let current = this
-
-		while (current.next) {
-			current = current.next
-		}
-
-		return current
 	}
 
 	deepesetLastNode(node = this) {

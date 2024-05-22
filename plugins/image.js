@@ -125,11 +125,11 @@ export class ImageCaption extends Container {
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 
-	enterHandler(event, { builder, setSelection }) {
+	enterHandler(event, { builder, anchorOffset }) {
 		const emptyParagraph = builder.createBlock()
 
 		builder.append(this.parent.parent, emptyParagraph, this.parent.next)
-		setSelection(emptyParagraph)
+		builder.moveTail(this, emptyParagraph, anchorOffset)
 	}
 
 	inputHandler() {
