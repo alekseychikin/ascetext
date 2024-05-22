@@ -2,20 +2,6 @@ import { setNode } from '../utils/map-element-to-node.js'
 
 let id = 1
 
-function hasGroupParent(node) {
-	let current = node
-
-	while (current) {
-		if (current.isGroup) {
-			return true
-		}
-
-		current = current.parent
-	}
-
-	return false
-}
-
 export default class Node {
 	constructor(type, attributes = {}) {
 		this.id = id++
