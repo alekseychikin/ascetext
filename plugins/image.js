@@ -257,7 +257,7 @@ export default class ImagePlugin extends PluginPlugin {
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 			const children = builder.parseVirtualTree(element.body)
 
-			builder.append(caption, children)
+			builder.append(caption, children.first)
 			builder.append(image, caption)
 
 			return image
