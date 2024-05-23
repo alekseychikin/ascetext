@@ -88,54 +88,16 @@ export default class Editing {
 		this.update()
 	}
 
-	onInput(event) {
-		const { selection, timeTravel, builder } = this.core
+	onInput() {
+		const { selection } = this.core
 
-		if (selection.anchorContainer && selection.anchorContainer.inputHandler) {
+		if (selection.anchorContainer && isFunction(selection.anchorContainer.inputHandler)) {
 			selection.anchorContainer.inputHandler()
 		}
 
 		if (!this.hadKeydown && !this.isSession) {
-			let nextNode
-			let parentNode
-			const containers = [findParent(this.lastSelection[0], (parent) => parent.isContainer)]
-				.concat(this.lastSelection.filter((node) => node.isContainer || node.isWidget))
-				.filter((node, index, self) => self.indexOf(node) === index)
-
-			if (containers.length === 1) {
-				timeTravel.preservePreviousSelection()
-				timeTravel.previousSelection = this.lastSelectionIndexes
-				this.scheduleUpdate(containers[0])
-				this.update()
-			} else if (containers.length > 1) {
-				const insertNode = builder.create('text', { content: event.data || '' })
-				const topNodes = this.lastSelection.map(this.getTopNode)
-					.filter((node, index, self) => self.indexOf(node) === index)
-
-				topNodes.forEach((node) => {
-					nextNode = node.next
-					parentNode = node.parent
-
-					if (node.element.parentNode) {
-						node.element.parentNode.removeChild(node.element)
-					}
-				})
-				topNodes.forEach(this.rerender)
-				topNodes.forEach((node) => {
-					if (nextNode) {
-						parentNode.element.insertBefore(node.element, nextNode.element)
-					} else {
-						parentNode.element.appendChild(node.element)
-					}
-				})
-				selection.setSelectionByIndexes(this.lastSelectionIndexes)
-				this.handleRemoveRange()
-				timeTravel.preservePreviousSelection()
-
-				builder.insert(insertNode)
-				this.lastSelection = null
-				this.lastSelectionIndexes = null
-			}
+			this.handleRemoveRange()
+			this.update(selection.anchorContainer)
 		}
 	}
 
