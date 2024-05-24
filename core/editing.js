@@ -165,19 +165,9 @@ export default class Editing {
 
 					if (event.keyCode === spaceKey && !this.spacesDown) {
 						this.update()
+						this.core.render.dropRender()
 						timeTravel.commit()
 						timeTravel.preservePreviousSelection()
-						event.preventDefault()
-
-						// это надо перенести в хост
-						// const { node, element } = host.getChildByOffset(selection.anchorContainer, selection.anchorOffset)
-						// const offset = selection.anchorOffset - host.getOffset(selection.anchorContainer, element)
-						// const needNbsp = !offset || offset === element.nodeValue.length || element.nodeValue[offset] === ' ' || element.nodeValue[offset - 1] === ' '
-						// const content = element.nodeValue.substr(0, offset) + (needNbsp ? '\u00A0' : ' ') + element.nodeValue.substr(offset)
-
-						// node.attributes.content = content
-						// element.nodeValue = content
-						// selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
 						this.spacesDown = true
 					}
 
@@ -188,13 +178,8 @@ export default class Editing {
 	}
 
 	onKeyUp(event) {
-		const { timeTravel } = this.core
-
 		if (event.keyCode === spaceKey) {
-			this.update()
 			this.spacesDown = false
-			timeTravel.commit()
-			timeTravel.preservePreviousSelection()
 		}
 	}
 

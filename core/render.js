@@ -114,8 +114,12 @@ export default class Render extends Publisher {
 			}
 		}
 
-		cancelAnimationFrame(this.timer)
+		this.dropRender()
 		this.timer = requestAnimationFrame(this.render)
+	}
+
+	dropRender() {
+		cancelAnimationFrame(this.timer)
 	}
 
 	render() {
