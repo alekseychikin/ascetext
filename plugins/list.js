@@ -183,6 +183,10 @@ export class ListItemContent extends Container {
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
 			builder.moveTail(this, content, anchorOffset)
+
+			if (this.next && this.next.type === 'list') {
+				builder.append(nextItem, this.next)
+			}
 		}
 	}
 
