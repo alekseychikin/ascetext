@@ -343,10 +343,11 @@ export default class Render extends Publisher {
 	}
 
 	replaceNode(tree, container) {
+		const parent = container.parentNode
+		const next = container.nextSibling
 		const node = this.createElement(tree)
 
-		container.parentNode.insertBefore(node, container)
-		container.parentNode.removeChild(container)
+		parent.insertBefore(node, next)
 
 		return node
 	}
