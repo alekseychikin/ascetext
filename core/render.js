@@ -50,7 +50,6 @@ export default class Render extends Publisher {
 		this.mapNodeIdToNode = {
 			[this.core.model.id]: this.core.model
 		}
-		this.trailingBrs = []
 		this.containerAvatar = createElement('div', {
 			style: {
 				position: 'fixed',
@@ -167,14 +166,6 @@ export default class Render extends Publisher {
 
 		elements.forEach((element) => container.appendChild(element))
 		lookahead.forEach((element) => {
-			if (isElementBr(element)) {
-				const index = this.trailingBrs.indexOf(element)
-
-				if (index > -1) {
-					this.trailingBrs.splice(index, 1)
-				}
-			}
-
 			container.removeChild(element)
 		})
 
@@ -372,10 +363,6 @@ export default class Render extends Publisher {
 
 					break
 				default:
-					if (isElementBr(lookahead[i]) && this.trailingBrs.includes(lookahead[i])) {
-						return null
-					}
-
 					if (lookahead[i].nodeName.toLowerCase() === type) {
 						return lookahead.splice(i, 1)[0]
 					}
@@ -462,7 +449,6 @@ export default class Render extends Publisher {
 		const trailingBr = document.createElement('br')
 
 		trailingBr.setAttribute('data-trailing', '')
-		this.trailingBrs.push(trailingBr)
 
 		return trailingBr
 	}

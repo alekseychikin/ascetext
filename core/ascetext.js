@@ -56,7 +56,7 @@ export default class Ascetext {
 		this.model = new Root()
 		this.builder = new Builder(this)
 		this.render = new Render(this)
-		this.parser = new Parser(this.render)
+		this.parser = new Parser(node)
 		this.placeholder = extractPlaceholderParams(params.placeholder)
 		// this.navigation = new Navigation(this)
 		this.selection = new Selection(this)
@@ -72,11 +72,14 @@ export default class Ascetext {
 		this.components.forEach((component) => component.register(this))
 		this.selection.setComponents(this.components)
 
-		const children = this.builder.parseVirtualTree(this.parser.getVirtualTree(node.firstChild))
+		const container = document.createElement('div')
 
 		while (node.childNodes.length) {
-			node.removeChild(node.childNodes[0])
+			container.appendChild(node.childNodes[0])
 		}
+
+		const tree = this.parser.getVirtualTree(container.firstChild)
+		const children = this.builder.parseVirtualTree(tree)
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.timeTravel.reset()

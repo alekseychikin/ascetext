@@ -90,7 +90,7 @@ export default class Selection extends Publisher {
 	}
 
 	selectionUpdate(event) {
-		const { container: anchorContainer, offset: anchorOffset} = this.getContainerAndOffset(event.anchorNode, event.anchorOffset)
+		const { container: anchorContainer, offset: anchorOffset } = this.getContainerAndOffset(event.anchorNode, event.anchorOffset)
 		let focusContainer = anchorContainer
 		let focusOffset = anchorOffset
 
@@ -119,14 +119,24 @@ export default class Selection extends Publisher {
 		let element = node
 		let length = offset
 
-		if (isHtmlElement(element) && element.dataset.nodeId) {
-			if (element.childNodes[offset] && isElementBr(element.childNodes[offset])) {
+		if (isHtmlElement(element)) {
+			if (element.dataset.nodeId) {
+				if (element.childNodes[offset] && isElementBr(element.childNodes[offset])) {
+					return this.getContainerAndOffset(element.childNodes[offset], 0)
+				}
+
+				return {
+					container,
+					offset
+				}
+			}
+
+			if (element.childNodes.length > offset) {
 				return this.getContainerAndOffset(element.childNodes[offset], 0)
 			}
 
-			return {
-				container,
-				offset
+			if (element.childNodes[offset - 1]) {
+				return this.getContainerAndOffset(element.childNodes[offset - 1], this.getLength(element.childNodes[offset - 1]))
 			}
 		}
 
@@ -207,7 +217,6 @@ export default class Selection extends Publisher {
 		const selection = window.getSelection()
 		const { element: anchorElement, restOffset: anchorRestOffset } = this.getChildByOffset(this.anchorContainer, this.anchorOffset)
 
-		console.log(anchorElement, anchorRestOffset)
 		selection.collapse(anchorElement, anchorRestOffset)
 
 		if (this.anchorContainer.isWidget) {

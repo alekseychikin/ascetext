@@ -65,8 +65,8 @@ function isTextTag(element) {
 }
 
 export default class Parser {
-	constructor(render) {
-		this.render = render
+	constructor(root) {
+		this.root = root
 	}
 
 	getVirtualTree(node) {
@@ -88,8 +88,19 @@ export default class Parser {
 			current = current.nextSibling
 		}
 
-		// console.log(body)
-		return this.normalize(body.filter(Boolean))
+		return this.normalize(this.removeTrailingBr(body.filter(Boolean)))
+	}
+
+	removeTrailingBr(body) {
+		if (body.length > 0 && body[body.length - 1].type === 'br') {
+			if (body.length > 1 && body[body.length - 2].type === 'text') {
+				body[body.length - 2].attributes.content += '\u00A0'
+			}
+
+			return body.slice(0, body.length - 1)
+		}
+
+		return body
 	}
 
 	normalize(tree) {
@@ -139,10 +150,6 @@ export default class Parser {
 	}
 
 	getHtmlElement(current) {
-		if (isElementBr(current) && this.render.trailingBrs.includes(current)) {
-			return null
-		}
-
 		if (ignoreParsingElements.includes(current.nodeName.toLowerCase())) {
 			return null
 		}
@@ -156,6 +163,10 @@ export default class Parser {
 
 	getTextElement(current, context = {}) {
 		let content = current.nodeValue
+
+		if (isElementBr(current)) {
+			return this.getHtmlElement(current)
+		}
 
 		if (isHtmlElement(current)) {
 			const tagName = current.nodeName.toLowerCase()
@@ -238,5 +249,19 @@ export default class Parser {
 			},
 			body: []
 		}]
+	}
+
+	isInsideEditor(element) {
+		let current = element
+
+		while (current) {
+			if (current === this.root) {
+				return true
+			}
+
+			current = current.parentNode
+		}
+
+		return false
 	}
 }
