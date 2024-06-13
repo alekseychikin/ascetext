@@ -40,8 +40,6 @@ export default class Editing {
 		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
-		this.getTopNode = this.getTopNode.bind(this)
-		this.rerender = this.rerender.bind(this)
 		this.selectionUpdate = this.selectionUpdate.bind(this)
 
 		this.node = core.node
@@ -98,33 +96,6 @@ export default class Editing {
 		if (!this.hadKeydown && !this.isSession) {
 			this.handleRemoveRange()
 			this.update(selection.anchorContainer)
-		}
-	}
-
-	getTopNode(node) {
-		let current = node
-
-		while (current.parent.type !== 'root') {
-			current = current.parent
-		}
-
-		return current
-	}
-
-	rerender(node) {
-		let current = node.first
-
-		if (node.element.parentNode) {
-			node.element.parentNode.removeChild(node.element)
-		}
-
-		node.setElement(node.render())
-
-		while (current) {
-			this.rerender(current)
-
-			node.element.appendChild(current.element)
-			current = current.next
 		}
 	}
 
@@ -223,92 +194,88 @@ export default class Editing {
 		}
 	}
 
+	findCommonParent() {
+		let parent = this.core.selection.anchorContainer.parent
+
+		while (parent && (!parent.contains(this.core.selection.focusContainer) || !parent.isSection)) {
+			parent = parent.parent
+		}
+
+		return parent
+	}
+
+	getOffsetToParent(parent, target) {
+		let offset = 0
+		let current = target
+
+		while (current !== parent) {
+			while (current.previous) {
+				current = current.previous
+
+				offset += current.length
+			}
+
+			current = current.parent
+		}
+
+
+		return offset
+	}
 	handleRemoveRange() {
 		if (!this.core.selection.isRange) {
 			return ''
 		}
 
-		const selectedItems = this.core.selection.getSelectedItems()
-		const containersForRemove = []
-		let index
-		let firstContainer
-		let nextSelectableNode
-		let children
+		const commonParent = this.findCommonParent()
+		console.log('commonParent', commonParent)
+		console.log(this.getOffsetToParent(commonParent, this.core.selection.anchorContainer) + this.core.selection.anchorOffset)
+		console.log(this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset)
+		const anchorOffset = this.getOffsetToParent(commonParent, this.core.selection.anchorContainer) + this.core.selection.anchorOffset
+		const focusOffset = this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset
+		const anchor =  this.core.builder.split(commonParent, anchorOffset)
+		const since = anchor.tail
+		let until = anchor.tail
+		let focus
+		let current = since
 		let returnHtmlValue = ''
 		let returnTextValue = ''
 
-		if (!selectedItems.length) {
-			return ''
+		if (anchorOffset !== focusOffset) {
+			focus = this.core.builder.split(commonParent, focusOffset)
+			until = focus.head
 		}
 
-		if (!selectedItems[0].isContainer && !selectedItems[0].isWidget) {
-			const { since, until } = this.captureSinceAndUntil(selectedItems, 0)
+		console.log(since)
+		console.log(until)
 
-			firstContainer = findParent(selectedItems[0], (parent) => parent.isContainer)
+		while (current) {
+			console.log('current', current)
+			const children = this.core.stringify(current.first)
 
-			if (!firstContainer.isEmpty) {
-				this.core.builder.cutUntil(since, until)
-				children = this.core.stringify(since)
-				returnHtmlValue += children
-				returnTextValue += children
-					.replace(/<br\s*?\/?>/g, '\n')
-					.replace(/(<([^>]+)>)/ig, '') + '\n'
-			}
-		}
-
-		selectedItems.forEach((item) => {
-			if (item.isContainer || item.isWidget) {
-				containersForRemove.push(item)
-			}
-		})
-
-		if (containersForRemove.length) {
-			const lastContainer = containersForRemove[containersForRemove.length - 1]
-
-			nextSelectableNode = lastContainer.getNextSelectableNode()
-			index = selectedItems.indexOf(lastContainer)
-
-			if (lastContainer.isContainer) {
-				const { until } = this.captureSinceAndUntil(selectedItems, index + 1)
-				const since = until
-					? until.next
-					: lastContainer.isContainer && !lastContainer.isEmpty && lastContainer.first
-
-				if (since) {
-					if (!firstContainer) {
-						firstContainer = findParent(selectedItems[0], (parent) => parent.isContainer).getPreviousSelectableNode()
-					}
-
-					if (firstContainer.isContainer) {
-						this.core.builder.append(firstContainer, since)
-
-						if (firstContainer.inputHandler) {
-							firstContainer.inputHandler()
-						}
-					}
-				}
-			}
-		}
-
-		containersForRemove.forEach((container) => {
-			const children = this.core.stringify(container.first)
-
-			returnHtmlValue += container.stringify(children)
+			returnHtmlValue += current.stringify(children)
 			returnTextValue += children
 				.replace(/<br\s*?\/?>/g, '\n')
 				.replace(/(<([^>]+)>)/ig, '') + '\n'
-		})
 
-		for (index = containersForRemove.length - 1; index >= 0; index--) {
-			this.core.builder.cut(containersForRemove[index])
+			if (current === until) {
+				break
+			}
+
+			current = current.next
 		}
 
-		if (firstContainer && firstContainer.isContainer) {
-			// TODO: здесь должна быть нормализация, а не обновление
-			// this.scheduleUpdate(firstContainer)
-			this.core.selection.setSelection(firstContainer, this.core.selection.anchorOffset)
-		} else if (nextSelectableNode) {
-			this.core.selection.setSelection(nextSelectableNode)
+		this.core.builder.cutUntil(since, until)
+		console.log(returnHtmlValue)
+		console.log(returnTextValue)
+
+		const previousSelectableNode = anchor.head.next.getPreviousSelectableNode()
+		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
+
+		if (previousSelectableNode && nextSelectableNode) {
+			this.core.builder.combine(previousSelectableNode, nextSelectableNode)
+			// this.core.builder.append(previousSelectableNode.parent, nextSelectableNode, previousSelectableNode.next)
+			// this.core.builder.moveTail(nextSelectableNode, previousSelectableNode, 0)
+			// this.core.builder.cut(nextSelectableNode)
 		}
 
 		return {

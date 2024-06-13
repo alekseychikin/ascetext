@@ -23,7 +23,11 @@ export default class Node {
 	}
 
 	accept() {
-		return false
+		return true
+	}
+
+	fit() {
+		return true
 	}
 
 	getNodeUntil(nodeUntil) {

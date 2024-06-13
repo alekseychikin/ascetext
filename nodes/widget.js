@@ -7,6 +7,14 @@ export default class Widget extends Node {
 		this.isWidget = true
 	}
 
+	fit(node) {
+		return node.isSection
+	}
+
+	accept() {
+		return false
+	}
+
 	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
 		event.preventDefault()
 
@@ -76,6 +84,4 @@ export default class Widget extends Node {
 			tail: this
 		}
 	}
-
-	scheduleUpdate() {}
 }

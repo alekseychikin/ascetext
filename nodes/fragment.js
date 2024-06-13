@@ -6,8 +6,4 @@ export default class Fragment extends Node {
 
 		this.isFragment = true
 	}
-
-	accept() {
-		return true
-	}
 }

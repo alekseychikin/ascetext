@@ -7,8 +7,12 @@ export default class InlineWidget extends Node {
 		this.isInlineWidget = true
 	}
 
+	fit(node) {
+		return node.isContainer || node.isInlineWidget
+	}
+
 	accept(node) {
-		return node.type === 'text'
+		return node.type === 'text' || node.isInlineWidget
 	}
 
 	wrapper(builder) {

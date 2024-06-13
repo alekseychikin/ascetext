@@ -10,10 +10,6 @@ export class Image extends Widget {
 		super('image', Object.assign({ size: '', float: 'none' }, attributes))
 	}
 
-	accept(node) {
-		return node.type === 'image-caption'
-	}
-
 	render(body = []) {
 		return {
 			type: 'figure',
@@ -29,6 +25,10 @@ export class Image extends Widget {
 				body: []
 			}].concat(body)
 		}
+	}
+
+	accept(node) {
+		return this.first === this.last && this.first === node && node.type === 'image-caption'
 	}
 
 	getClassName() {
@@ -105,8 +105,13 @@ export class ImageCaption extends Container {
 		}
 	}
 
+	fit(node) {
+		return node.type === 'image' && node.last === node.first && node.last === this
+	}
+
 	onMount({ controls, sizeObserver }) {
-		this.imagePlaceholder.appendChild(document.createTextNode(this.attributes.placeholder))
+		// console.log('mount image placeholder')
+		this.imagePlaceholder.innerHTML = this.attributes.placeholder
 
 		this.removeObserver = sizeObserver.observe(this, (entry) => {
 			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
@@ -122,6 +127,7 @@ export class ImageCaption extends Container {
 			this.removeObserver = null
 		}
 
+		// console.log('UNmount image placeholder')
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 

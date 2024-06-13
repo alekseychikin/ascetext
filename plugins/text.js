@@ -61,15 +61,15 @@ export class Text extends Node {
 		return modifiers
 	}
 
-	accept() {
-		return false
+	accept(node) {
+		return node.isContainer
 	}
 
 	wrapper(builder) {
 		return builder.createBlock()
 	}
 
-	normalize(target, builder) {
+	join(target, builder) {
 		if (target.type === 'text' && this.isEqual(target)) {
 			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
 		}

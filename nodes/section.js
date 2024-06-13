@@ -6,8 +6,4 @@ export default class Section extends Node {
 
 		this.isSection = true
 	}
-
-	accept(node) {
-		return node.isWidget || node.isContainer || node.isGroup || node.isSection
-	}
 }

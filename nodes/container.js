@@ -1,5 +1,4 @@
 import Node from './node.js'
-import InlineWidget from '../nodes/inline-widget.js'
 import createElement from '../utils/create-element.js'
 
 export default class Container extends Node {
@@ -19,8 +18,12 @@ export default class Container extends Node {
 		return !this.first// || this.first === this.last && this.first.type === 'line-holder'
 	}
 
+	fit(node) {
+		return node.isSection
+	}
+
 	accept(node) {
-		return node.type === 'text' || node.isInlineWidget
+		return node.isInlineWidget || node.type === 'text'
 	}
 
 	onFocus(selection) {
@@ -54,6 +57,12 @@ export default class Container extends Node {
 
 	onUnmount() {
 		this.hidePlaceholder()
+	}
+
+	onCombine(builder) {
+		if (this.parent.isSection) {
+			builder.cut(this)
+		}
 	}
 
 	inputHandler() {
@@ -155,15 +164,7 @@ export default class Container extends Node {
 				return false
 			}
 
-			if (previousSelectableNode.isEmpty && previousSelectableNode.parent.isSection) {
-				builder.cut(previousSelectableNode)
-			} else {
-				builder.moveTail(this, previousSelectableNode, 0)
-
-				if (this.parent.isSection) {
-					builder.cut(this)
-				}
-			}
+			builder.combine(previousSelectableNode, this)
 		}
 	}
 
@@ -172,8 +173,6 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorAtLastPositionInContainer,
-			anchorAtFirstPositionInContainer,
-			setSelection
 		}
 	) {
 		if (anchorAtLastPositionInContainer) {
@@ -185,16 +184,7 @@ export default class Container extends Node {
 				return false
 			}
 
-			if (anchorAtFirstPositionInContainer && this.parent.isSection) {
-				builder.cut(this)
-				setSelection(nextSelectableNode)
-			} else {
-				builder.moveTail(nextSelectableNode, this, 0)
-
-				if (nextSelectableNode.parent.isSection) {
-					builder.cut(nextSelectableNode)
-				}
-			}
+			builder.combine(this, nextSelectableNode)
 		}
 	}
 }

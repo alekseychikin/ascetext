@@ -1,5 +1,5 @@
 import PluginPlugin from './plugin.js'
-import Node from '../nodes/node.js'
+import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
 import Section from '../nodes/section.js'
 import isHtmlElement from '../utils/is-html-element.js'
@@ -23,6 +23,18 @@ export class List extends Section {
 		return node.type === 'list-item'
 	}
 
+	fit(node) {
+		return node.isSection || node.type === 'list-item' && node.first.next === node.last && node.last === this
+	}
+
+	join(node, builder) {
+		if (node.type === 'list' && this.attributes.decor === node.attributes.decor) {
+			return builder.create('list', { decor: this.attributes.decor })
+		}
+
+		return false
+	}
+
 	stringify(children) {
 		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
 
@@ -38,7 +50,7 @@ export class List extends Section {
 	}
 }
 
-export class ListItem extends Node {
+export class ListItem extends Widget {
 	constructor(params = {}) {
 		super('list-item')
 
@@ -54,23 +66,33 @@ export class ListItem extends Node {
 		}
 	}
 
-	append(target, anchor, { builder, appendDefault }) {
-		if (target.type === 'text' || target.isInlineWidget) {
-			builder.append(this.first, target)
-		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
-			appendDefault(this, target.first.first, anchor)
-			builder.cut(target)
-		} else {
-			appendDefault(this, target, anchor)
+	split(offset, builder) {
+		if (offset < this.first.length) {
+			const item = builder.create('list-item', this.params)
+			const { tail } = builder.split(this, offset)
+
+			builder.append(item, tail)
+			builder.append(this.parent, item, this.next)
+
+			return {
+				head: this,
+				tail: item
+			}
+		}
+
+		const { tail } = builder.split(this, offset)
+		const item = tail.first
+
+		builder.append(this.parent, item, this.next)
+
+		return {
+			head: this,
+			tail: item
 		}
 	}
 
-	wrapper() {
-		return new List()
-	}
-
 	accept(node) {
-		if (node.type === 'list' && this.last && this.last.type === 'list-item-content') {
+		if (node.type === 'list' && this.first.next === this.last && this.last === node) {
 			if (this.params.maxDepth !== null) {
 				const depth = this.getDepth(this, node)
 
@@ -82,7 +104,11 @@ export class ListItem extends Node {
 			return true
 		}
 
-		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
+		return node.type === 'list-item-content' && this.first === node
+	}
+
+	fit(node) {
+		return node.type === 'list'
 	}
 
 	getDepth(container, node) {
@@ -136,23 +162,25 @@ export class ListItemContent extends Container {
 		}
 	}
 
-	// cut({ builder }) {
-	// 	if (this.parent && this.parent.parent) {
-	// 		const list = this.parent.parent
+	fit(node) {
+		return node.first === this && node.type === 'list-item'
+	}
 
-	// 		if (this.next && this.next.type === 'list') {
-	// 			builder.append(list, this.next.first, this.parent.next)
-	// 		}
+	join(node, builder) {
+		if (node.type === 'list-item-content') {
+			return builder.create('list-item-content')
+		}
 
-	// 		builder.cut(this.parent)
+		return false
+	}
 
-	// 		if (list.type === 'list' && !list.first) {
-	// 			builder.cut(list)
-	// 		}
-	// 	} else {
-	// 		builder.cutUntil(this, this)
-	// 	}
-	// }
+	onCombine(builder) {
+		if (this.parent.last.type === 'list') {
+			builder.append(this.parent.parent, this.parent.last.first, this.parent.next)
+		}
+
+		builder.cut(this.parent)
+	}
 
 	enterHandler(event, {
 		builder,
@@ -221,19 +249,7 @@ export class ListItemContent extends Container {
 				return false
 			}
 
-			builder.moveTail(nextSelectableNode, this, 0)
-
-			if (nextSelectableNode.parent.isSection) {
-				builder.cut(nextSelectableNode)
-			} else if (nextSelectableNode.type === 'list-item-content') {
-				const parent = nextSelectableNode.parent.parent
-
-				if (nextSelectableNode.next && nextSelectableNode.next.type === 'list') {
-					builder.append(parent, nextSelectableNode.next.first)
-				}
-
-				builder.cut(nextSelectableNode)
-			}
+			builder.combine(this, nextSelectableNode)
 		}
 	}
 
@@ -522,8 +538,10 @@ export default class ListPlugin extends PluginPlugin {
 		if (element.type === 'li') {
 			const listItem =  builder.create('list-item', this.params)
 			const content = builder.create('list-item-content', this.params)
+			const children = builder.parseVirtualTree(element.body)
 
 			builder.append(listItem, content)
+			builder.append(content, children.first)
 
 			return listItem
 		}

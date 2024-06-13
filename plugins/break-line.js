@@ -18,10 +18,6 @@ class BreakLine extends InlineWidget {
 		}
 	}
 
-	accept(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
 	split() {
 		return {
 			head: this.previous,

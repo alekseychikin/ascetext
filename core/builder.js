@@ -17,6 +17,7 @@ export default class Builder extends Publisher {
 		this.registeredNodes = {}
 		this.registerPlugins()
 		this.appendHandler = this.appendHandler.bind(this)
+		this.unnormalizedNodes = []
 	}
 
 	create(name, ...params) {
@@ -147,10 +148,6 @@ export default class Builder extends Publisher {
 				if (children) {
 					this.append(current, children.first)
 				}
-
-				if (current.isDeleteEmpty && !current.first) {
-					this.cut(current)
-				}
 			} else if (children) {
 				this.append(fragment, children.first)
 			}
@@ -158,35 +155,6 @@ export default class Builder extends Publisher {
 
 		return fragment
 	}
-
-	// normalize(node) {
-	// 	let current = node.first
-	// 	let next
-	// 	let previous
-	// 	let normalized
-
-	// 	while (current) {
-	// 		next = current.next
-	// 		previous = current.previous
-
-	// 		if (previous && isFunction(previous.normalize) && (normalized = previous.normalize(current, this))) {
-	// 			if (previous.first) {
-	// 				this.append(normalized, previous.first)
-	// 			}
-
-	// 			if (current.first) {
-	// 				this.append(normalized, current.first)
-	// 			}
-
-	// 			this.replaceUntil(previous, normalized, current)
-	// 			this.normalize(normalized)
-	// 		} else {
-	// 			this.normalize(current)
-	// 		}
-
-	// 		current = next
-	// 	}
-	// }
 
 	split(container, offset) {
 		let length = offset
@@ -214,7 +182,7 @@ export default class Builder extends Publisher {
 	splitNode(target, offset) {
 		const { head, tail } = this.split(target, offset)
 
-		if (head && tail) {
+		// if (head && tail) {
 			const duplicate = this.duplicate(target)
 
 			this.append(target.parent, duplicate, target.next)
@@ -224,19 +192,19 @@ export default class Builder extends Publisher {
 				head: target,
 				tail: duplicate
 			}
-		}
+		// }
 
-		if (head) {
-			return {
-				head: target,
-				tail: target.next
-			}
-		}
+		// if (head) {
+		// 	return {
+		// 		head: target,
+		// 		tail: target.next
+		// 	}
+		// }
 
-		return {
-			head: undefined,
-			tail: target
-		}
+		// return {
+		// 	head: undefined,
+		// 	tail: target
+		// }
 	}
 
 	duplicate(target) {
@@ -263,66 +231,62 @@ export default class Builder extends Publisher {
 		if (target.type === 'fragment') {
 			this.append(node, target.first, anchor)
 		} else {
-			if (node.isContainer && node.isEmpty) {
-				if (tail && tail === node.first) {
-					tail = node.first.next
-				}
+			// while (current) {
+			// 	next = current.next
 
-				if (node.first) {
-					this.cut(node.first)
-				}
-			}
+				// if (this.canAccept(container, current)) {
+					// while (!container.accept(current)) {
+					// 	// if (tail && (!container.isContainer || !container.isEmpty)) {
+					// 	// 	duplicate = container.duplicate(this)
+					// 	// 	this.append(duplicate, tail)
+					// 	// }
 
-			while (current) {
-				next = current.next
+					// 	tail = container.next
+					// 	container = container.parent
+					// }
 
-				if (this.canAccept(container, current)) {
-					while (!container.accept(current)) {
-						// if (tail && (!container.isContainer || !container.isEmpty)) {
-						// 	duplicate = container.duplicate(this)
-						// 	this.append(duplicate, tail)
-						// }
+					// this.cut(current)
 
-						tail = container.next
-						container = container.parent
-					}
+			// 		if (isFunction(container.append)) {
+			// 			container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
+			// 		} else {
+					this.appendHandler(container, current, tail)
+			// 		}
+				// } else {
+			// 		if (isFunction(current.wrapper)) {
+			// 			const wrapper = current.wrapper(this)
 
-					this.cut(current)
+			// 			if (this.canAccept(container, wrapper)) {
+			// 				this.append(container, wrapper, tail)
+			// 				this.cut(current)
+			// 				this.append(wrapper, current)
 
-					if (isFunction(container.append)) {
-						container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
-					} else {
-						this.appendHandler(container, current, tail)
-					}
-				} else {
-					if (isFunction(current.wrapper)) {
-						const wrapper = current.wrapper(this)
+			// 				container = wrapper
+			// 				current = next
+			// 				tail = null
 
-						if (this.canAccept(container, wrapper)) {
-							this.append(container, wrapper, tail)
-							this.cut(current)
-							this.append(wrapper, current)
+			// 				continue
+			// 			}
+			// 		}
 
-							container = wrapper
-							current = next
-							tail = null
+				// 	this.cut(current)
+				// 	console.log('can not accept', container, current)
+				// }
 
-							continue
-						}
-					}
-
-					this.cut(current)
-					console.log('can not accept', container, current)
-				}
-
-				current = next
-			}
+			// 	current = next
+			// }
 		}
 	}
 
 	appendHandler(node, target, anchor) {
 		const last = target.getNodeUntil()
 		let current = target
+
+		if (anchor && anchor.parent !== node) {
+			console.error('anchor is not child of node', anchor)
+
+			return
+		}
 
 		this.cutUntil(target, last)
 
@@ -454,8 +418,217 @@ export default class Builder extends Publisher {
 		this.append(parent, target, next)
 	}
 
+	normalize(node) {
+		let current
+		let limit = 1000
+
+		this.unnormalizedNodes.push(node)
+
+		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
+			if (!this.normalizeWalkUp(current)) {
+				// console.log('walk down', current)
+				this.normalizeWalkDown(current)
+			}
+		}
+
+			// console.log('check', current)
+			// current = current.parent
+
+			// console.log('check', current)
+			// current = current.previous
+			// if (joined = this.join(current)) {
+			// 	console.log('joined', joined)
+			// 	console.log(current.previous, joined, current)
+			// 	return this.normalize(joined)
+			// }
+
+			// if (current.previous) {
+			// 	current = current.previous
+			// } else {
+			// 	current = current.parent
+			// }
+	}
+
+	normalizeWalkUp(node) {
+		let current = node
+
+		while (current && current !== this.core.model) {
+			current = current.deepesetLastNode()
+
+			while (current.previous) {
+				if (this.normalizeEmpty(node, current)) {
+					return true
+				}
+
+				if (this.normalizeJoin(node, current)) {
+					return true
+				}
+
+				current = current.previous
+			}
+
+			if (this.normalizeEmpty(node, current)) {
+				return true
+			}
+
+			while (!current.previous) {
+				current = current.parent
+
+				if (current === this.core.model) {
+					break
+				}
+
+				if (this.normalizeJoin(node, current)) {
+					return true
+				}
+
+			}
+
+			current = current.previous
+		}
+
+		return false
+	}
+
+	normalizeWalkDown(node) {
+		let current = node
+
+		while (current && current !== this.core.model) {
+			current = current.deepesetFirstNode()
+
+			while (current.next) {
+				// console.log('current', current)
+
+				if (current.first) {
+					// console.log(current)
+					current = current.deepesetFirstNode()
+					break
+				}
+
+				if (this.normalizeAccept(node, current)) {
+					return true
+				}
+
+				// if (this.normalizeJoin(node, current)) {
+				// 	return true
+				// }
+
+				current = current.next
+			}
+
+			// console.log('current', current)
+
+			if (this.normalizeAccept(node, current)) {
+				return true
+			}
+
+			while (!current.next) {
+				current = current.parent
+
+				if (current === this.core.model) {
+					break
+				}
+
+				if (this.normalizeAccept(node, current)) {
+					return true
+				}
+			}
+
+			current = current.next
+		}
+
+		return false
+	}
+
+	// нужно пойти в самую последнюю ноду и попробовать соединить с предыдущей
+	// если они соединяются, соединить и начать нормализацию заново
+
+	// проверить, может ли нода здесь быть
+	// если не может, продублировать родителя и переместить в него node.next (если есть)
+	// вставить ноду в родителя между двумя продублированными элементами и начать нормализацию заново
+
+	normalizeEmpty(node, current) {
+		if (current.isDeleteEmpty && !current.first) {
+			// console.log('delete empty', current)
+			this.cut(current)
+
+			if (node !== current) {
+				this.unnormalizedNodes.push(node)
+			}
+
+			return true
+		}
+
+		return false
+	}
+
+	normalizeAccept(node, current) {
+		// console.log('normalizeAccept', current.parent, current)
+		if (!current.parent.accept(current) || !current.fit(current.parent)) {
+			// надо проверить, что вообще возможно поместить этот current хоть во что-то из родителей
+			// если нет, то нужно попробовать поместить дочерние элементы
+			let next = current.parent.next
+
+			if (current.next) {
+				const duplicated = this.duplicate(current.parent)
+
+				this.append(current.parent.parent, duplicated, current.parent.next)
+				this.append(duplicated, current.next)
+				next = duplicated
+			}
+
+			this.append(current.parent.parent, current, next)
+			this.unnormalizedNodes.push(node)
+
+			return true
+		}
+
+		return false
+	}
+
+	normalizeJoin(node, current) {
+		// console.log('current', current)
+		let joined
+
+		// if (node === current) {
+		// 	console.log('equal', node)
+		// 	return false
+		// }
+
+		if (joined = this.join(current)) {
+			// console.log('joined', joined)
+			// console.log(node.previous, joined, node)
+			if (current === node) {
+				this.unnormalizedNodes.push(joined)
+			} else {
+				this.unnormalizedNodes.push(node)
+			}
+
+			return true
+		}
+
+		return false
+	}
+
+	join(node) {
+		const previous = node.previous
+		let joined
+
+		// console.log('previous', previous)
+
+		if (previous && isFunction(previous.join) && (joined = previous.join(node, this))) {
+			this.append(joined, previous.first)
+			this.append(joined, node.first)
+			this.replaceUntil(previous, joined, node)
+
+			return joined
+		}
+
+		return null
+	}
+
 	canAccept(container, current) {
-		if (container.accept(current)) {
+		if (container.accept(current) && current.fit(container)) {
 			return container
 		}
 
@@ -480,6 +653,19 @@ export default class Builder extends Publisher {
 
 		this.append(target, tail)
 		this.core.selection.setSelection(target, anchotOffset)
+	}
+
+	combine(container, target) {
+		if (container.isEmpty && container.parent.isSection && target.parent.isSection) {
+			this.cut(container)
+			this.core.selection.setSelection(target)
+		} else {
+			this.moveTail(target, container, 0)
+
+			if (isFunction(target.onCombine)) {
+				target.onCombine(this)
+			}
+		}
 	}
 
 	registerPlugins() {

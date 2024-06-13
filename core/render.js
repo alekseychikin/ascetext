@@ -35,6 +35,8 @@ export default class Render extends Publisher {
 		super()
 
 		this.core = core
+		this.core.model.element = this.core.node
+		this.core.model.isRendered = true
 
 		this.createElement = this.createElement.bind(this)
 		this.onChange = this.onChange.bind(this)
@@ -44,6 +46,9 @@ export default class Render extends Publisher {
 		this.selectionTimeout = null
 		this.timer = null
 		this.queue = []
+		this.updatedContainers = []
+		this.removedNodes = []
+		this.updatedNodes = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
 		}
@@ -70,6 +75,7 @@ export default class Render extends Publisher {
 	}
 
 	onChange(change) {
+		// console.log(change)
 		let parent
 
 		switch (change.type) {
@@ -84,30 +90,36 @@ export default class Render extends Publisher {
 				break
 		}
 
-		if (parent) {
-			parent.isRendered = false
-			this.queue.push({
-				type: 'update',
-				container: parent
-			})
+		// console.log('parent', parent, change.target)
+
+		if (change.target.type === 'text' || change.target.isInlineWidget) {
+			this.pushUpdateNode(parent)
 		} else {
 			switch (change.type) {
 				case operationTypes.APPEND:
+					// console.log(change)
+					this.pushContainer(change.container)
+					this.markUnrendered(change.target, change.last)
+					// this.queue.push({
+					// 	type: change.type,
+					// 	container: change.container,
+					// 	target: change.target,
+					// 	last: change.last,
+					// 	anchor: change.anchor
+					// })
+
+					break
 				case operationTypes.CUT:
-					this.queue.push({
-						type: change.type,
-						container: change.container,
-						target: change.target,
-						last: change.last,
-						anchor: change.anchor
-					})
+					// console.log(change)
+					this.pushRemoveNodes(change)
 
 					break
 				case operationTypes.ATTRIBUTE:
-					this.queue.push({
-						type: change.type,
-						target: change.target
-					})
+					console.log(change)
+					// this.queue.push({
+					// 	type: change.type,
+					// 	target: change.target
+					// })
 
 					break
 			}
@@ -117,50 +129,224 @@ export default class Render extends Publisher {
 		this.timer = requestAnimationFrame(this.render)
 	}
 
+	pushContainer(container) {
+		if (container.isRendered && !this.updatedContainers.includes(container)) {
+			this.updatedContainers.push(container)
+		}
+	}
+
+	pushRemoveNodes(event) {
+		let current = event.target
+
+		while (current) {
+			if (!this.removedNodes.includes(current)) {
+				this.removedNodes.push(current)
+			}
+
+			if (event.last && current === event.last) {
+				break
+			}
+
+			current = current.next
+		}
+	}
+
+	pushUpdateNode(node) {
+		if (!this.updatedNodes.includes(node)) {
+			this.updatedNodes.push(node)
+		}
+	}
+
+	markUnrendered(target, last) {
+		let current = target
+
+		while (current) {
+			current.isRendered = false
+
+			this.markUnrendered(current.first, current.last)
+
+			if (last && current === last) {
+				break
+			}
+
+			current = current.next
+		}
+	}
+
 	dropRender() {
 		cancelAnimationFrame(this.timer)
 	}
 
 	render() {
-		const queue = this.queue.splice(0).reduce((result, current, index, array) => {
-			if (index) {
-				const previous = array[index - 1]
+		// const getTextLog = (node, until) => {
+		// 	const output = []
+		// 	let current = node
 
-				if (current.type === 'update' && previous.type === current.type && current.container === previous.container) {
-					return result
+		// 	while (current) {
+		// 		output.push(`${current.type} (${current.id})`)
+
+		// 		if (!until || current === until) {
+		// 			break
+		// 		}
+
+		// 		current = current.next
+		// 	}
+
+		// 	return output.join(' | ')
+		// }
+
+		// const queue = this.queue.splice(0).reduce((result, current) => {
+		// 	let i
+
+		// 	for (i = 0; i < result.length; i++) {
+		// 		if (current.type === 'update' && result[i].type === current.type && current.container === result[i].container) {
+		// 			console.log('skip update')
+		// 			return result
+		// 		}
+
+		// 		// if (current.type === 'append' && result[i].type === current.type && result[i].target !== current.target) {
+		// 		// 	if (result[i].target.contains(current.target)) {
+		// 		// 		console.log('skip append', `${current.container.type} (${current.container.id}) → ${current.target.type} (${current.target.id})` + (current.target !== current.last ? ` × ${current.last.type} (${current.last.id})` : ''))
+		// 		// 		console.log('»', `${result[i].container.type} (${result[i].container.id}) → ${result[i].target.type} (${result[i].target.id})` + (result[i].target !== result[i].last ? ` × ${result[i].last.type} (${result[i].last.id})` : ''))
+		// 		// 		return result
+		// 		// 	} else if (current.target.contains(result[i].target)) {
+		// 		// 		console.log('handle this append')
+		// 		// 		console.log(current)
+		// 		// 		console.log(result[i])
+		// 		// 	}
+		// 		// }
+		// 	}
+
+		// 	result.push(current)
+
+		// 	return result
+		// }, [])
+		// let event
+
+		// queue.forEach((item) => {
+		// 	switch (item.type) {
+		// 		case 'update':
+		// 			console.log('upd', getTextLog(item.container))
+		// 			break
+		// 		case 'append':
+		// 			console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target, item.last)}`)
+		// 			break
+		// 		case 'cut':
+		// 			console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target, item.last)}`)
+		// 			break
+		// 	}
+		// })
+
+		// while (event = queue.shift()) {
+		// 	switch (event.type) {
+		// 		case operationTypes.APPEND:
+		// 			this.onAppend(event)
+
+		// 			break
+		// 		case operationTypes.CUT:
+		// 			this.onCut(event)
+
+		// 			break
+		// 		case operationTypes.ATTRIBUTE:
+		// 			this.onAttribute(event)
+
+		// 			break
+		// 		default:
+		// 			this.onUpdate(event.container)
+		// 	}
+		// }
+
+		let container
+		let node
+		let index
+		// console.log('removed nodes')
+		// console.log(this.removedNodes)
+
+		// console.log('updated containers')
+		// console.log(this.updatedContainers)
+
+		// console.log('updated nodes')
+		// console.log(this.updatedNodes)
+
+		while (node = this.removedNodes.shift()) {
+			if (this.mapNodeIdToElement[node.id] && this.mapNodeIdToElement[node.id].parentNode) {
+				this.mapNodeIdToElement[node.id].parentNode.removeChild(this.mapNodeIdToElement[node.id])
+			}
+
+			this.handleUnmount(node, node)
+			index = this.updatedNodes.indexOf(node)
+
+			if (index > -1) {
+				this.updatedNodes.splice(index, 1)
+			}
+		}
+
+		while(container = this.updatedContainers.shift()) {
+			let current = container.first
+
+			while (current) {
+				if (!current.isRendered) {
+					// console.log('append', container, current)
+					this.append(container, current)
 				}
+
+				current = current.next
 			}
+		}
 
-			result.push(current)
-
-			return result
-		}, [])
-		let event
-
-		while (event = queue.shift()) {
-			switch (event.type) {
-				case operationTypes.APPEND:
-					this.onAppend(event)
-
-					break
-				case operationTypes.CUT:
-					this.onCut(event)
-
-					break
-				case operationTypes.ATTRIBUTE:
-					this.onAttribute(event)
-
-					break
-				default:
-					this.onUpdate(event.container)
-			}
+		while (node = this.updatedNodes.shift()) {
+			this.update(node)
 		}
 	}
 
+	append({ element: container }, node) {
+		const tree = this.createTree(node, node)
+		const elements = tree.map((element) => this.createElement(element))
+
+		elements.forEach((element) => container.insertBefore(element, this.findAnchor(node)))
+		this.handleMount(node, node)
+	}
+
+	update(node) {
+		const tree = this.createTree(node.first, node.last)
+		const container = this.mapNodeIdToElement[node.id]
+		// console.log(container)
+		const lookahead = Array.prototype.slice.call(container.childNodes)
+		const elements = tree.map((element) => this.createElement(element, lookahead))
+
+		elements.forEach((element) => container.appendChild(element))
+		lookahead.forEach((element) => {
+			container.removeChild(element)
+		})
+
+		if (!container.childNodes.length || isElementBr(container.lastChild)) {
+			container.appendChild(this.getTrailingBr())
+		}
+
+		node.isRendered = true
+		this.sendMessage(node)
+	}
+
+	findAnchor(node) {
+		let current = node.next
+
+		while (current) {
+			if (current.isRendered) {
+				return current.element
+			}
+
+			current = current.next
+		}
+
+		return null
+	}
+
 	onUpdate(node) {
+		// console.log(node)
 		// make sure that used already existed nodes
 		const tree = this.createTree(node.first, node.last)
 		const container = this.mapNodeIdToElement[node.id]
+		// console.log(container)
 		const lookahead = Array.prototype.slice.call(container.childNodes)
 		const elements = tree.map((element) => this.createElement(element, lookahead))
 
@@ -179,9 +365,9 @@ export default class Render extends Publisher {
 	}
 
 	onAppend(event) {
-		if (event.target.isRendered) {
-			return
-		}
+		// if (event.target.isRendered) {
+		// 	return
+		// }
 
 		const container = this.mapNodeIdToElement[event.container.id]
 		const tree = this.createTree(event.target, event.last)
@@ -231,13 +417,11 @@ export default class Render extends Publisher {
 		const body = []
 		let current = target
 		let element
-		let parent
 
 		while (current) {
 			element = current.render(this.createTree(current.first))
-			parent = findParent(current.parent, (parent) => parent.isContainer)
 
-			if (!parent || current.isContainer) {
+			if (current.type !== 'text' && !current.isInlineWidget) {
 				element.id = current.id
 				this.mapNodeIdToNode[current.id] = current
 			}
