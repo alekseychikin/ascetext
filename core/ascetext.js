@@ -94,6 +94,8 @@ export default class Ascetext {
 		let children = ''
 
 		while (current) {
+			children = ''
+
 			if (current.first) {
 				children = this.stringify(current.first)
 			}
