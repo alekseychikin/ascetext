@@ -38,6 +38,7 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = true
 	}
 
+	// поправить работу с якорями
 	pushChange(change) {
 		if (!this.isLockPushChange) {
 			let payload
@@ -128,7 +129,10 @@ export default class TimeTravel {
 				}
 			}
 
-			this.selection.setSelectionByIndexes(selectionIndexes)
+			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
+				this.selection.setSelectionByIndexes(selectionIndexes)
+			}
+
 			this.isLockPushChange = false
 			this.timeindex--
 		}
@@ -148,6 +152,7 @@ export default class TimeTravel {
 			for (; i < nextEvents.length; i++) {
 				nextEvent = nextEvents[i]
 
+				console.log(nextEvent)
 				switch (nextEvent.type) {
 					case operationTypes.CUT:
 						this.builder.cutUntil(
@@ -156,10 +161,12 @@ export default class TimeTravel {
 						)
 						break
 					case operationTypes.APPEND:
+						console.log(nextEvent)
+						console.log(this.findByOffset(nextEvent.target, nextEvent.payload.length))
 						this.builder.append(
 							this.findByIndex(nextEvent.container),
 							this.builder.parseJson(nextEvent.payload),
-							this.findByOffset(nextEvent.target, nextEvent.payload.length)
+							this.findByIndex(nextEvent.target)
 						)
 						break
 					case operationTypes.ATTRIBUTE:
@@ -168,7 +175,10 @@ export default class TimeTravel {
 				}
 			}
 
-			this.selection.setSelectionByIndexes(selectionIndexes)
+			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
+				this.selection.setSelectionByIndexes(selectionIndexes)
+			}
+
 			this.isLockPushChange = false
 			this.timeindex++
 		}
@@ -210,6 +220,10 @@ export default class TimeTravel {
 			index = path.shift()
 
 			for (i = 0; i < index; i++) {
+				if (!current) {
+					return null
+				}
+
 				current = current.next
 			}
 		}

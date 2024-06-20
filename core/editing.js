@@ -271,6 +271,9 @@ export default class Editing {
 		const previousSelectableNode = anchor.head.next.getPreviousSelectableNode()
 		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
 
+		console.log(previousSelectableNode)
+		console.log(nextSelectableNode)
+
 		if (previousSelectableNode && nextSelectableNode) {
 			this.core.builder.combine(previousSelectableNode, nextSelectableNode)
 			// this.core.builder.append(previousSelectableNode.parent, nextSelectableNode, previousSelectableNode.next)

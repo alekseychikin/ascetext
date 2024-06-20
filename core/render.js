@@ -49,6 +49,7 @@ export default class Render extends Publisher {
 		this.updatedContainers = []
 		this.removedNodes = []
 		this.updatedNodes = []
+		this.changedAttributes = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
 		}
@@ -116,6 +117,7 @@ export default class Render extends Publisher {
 					break
 				case operationTypes.ATTRIBUTE:
 					console.log(change)
+					this.changedAttributes.push(change.target)
 					// this.queue.push({
 					// 	type: change.type,
 					// 	target: change.target
@@ -154,6 +156,7 @@ export default class Render extends Publisher {
 	pushUpdateNode(node) {
 		if (!this.updatedNodes.includes(node)) {
 			this.updatedNodes.push(node)
+			node.isRendered = false
 		}
 	}
 
@@ -259,14 +262,14 @@ export default class Render extends Publisher {
 		let container
 		let node
 		let index
-		// console.log('removed nodes')
-		// console.log(this.removedNodes)
+		console.log('removed nodes')
+		console.log(this.removedNodes)
 
-		// console.log('updated containers')
-		// console.log(this.updatedContainers)
+		console.log('updated containers')
+		console.log(this.updatedContainers)
 
-		// console.log('updated nodes')
-		// console.log(this.updatedNodes)
+		console.log('updated nodes')
+		console.log(this.updatedNodes)
 
 		while (node = this.removedNodes.shift()) {
 			if (this.mapNodeIdToElement[node.id] && this.mapNodeIdToElement[node.id].parentNode) {
@@ -295,7 +298,15 @@ export default class Render extends Publisher {
 		}
 
 		while (node = this.updatedNodes.shift()) {
-			this.update(node)
+			if (node.element) {
+				this.update(node)
+			}
+		}
+
+		while (node = this.changedAttributes.shift()) {
+			if (node.element) {
+				this.attribute(node)
+			}
 		}
 	}
 
@@ -325,6 +336,23 @@ export default class Render extends Publisher {
 
 		node.isRendered = true
 		this.sendMessage(node)
+	}
+
+	attribute(target) {
+		const tree = this.createTree(target, target)[0]
+		let container = target.element
+
+		if (tree.type !== container.nodeName.toLowerCase()) {
+			this.handleUnmount(target, target)
+			target.element = this.mapNodeIdToElement[target.id] = container = this.replaceNode(tree, container)
+			this.handleMount(target, target)
+		}
+
+		this.applyAttributes(container, tree)
+
+		if (tree.type === container.nodeName.toLowerCase()) {
+			this.sendMessage(target)
+		}
 	}
 
 	findAnchor(node) {
@@ -394,23 +422,6 @@ export default class Render extends Publisher {
 		}
 
 		this.handleUnmount(event.target, event.last)
-	}
-
-	onAttribute({ target }) {
-		const tree = this.createTree(target, target)[0]
-		let container = target.element
-
-		if (tree.type !== container.nodeName.toLowerCase()) {
-			this.handleUnmount(target, target)
-			target.element = this.mapNodeIdToElement[target.id] = container = this.replaceNode(tree, container)
-			this.handleMount(target, target)
-		}
-
-		this.applyAttributes(container, tree)
-
-		if (tree.type === container.nodeName.toLowerCase()) {
-			this.sendMessage(target)
-		}
 	}
 
 	createTree(target, last = null) {

@@ -8,7 +8,7 @@ declare class Node<S = Record<string, string>> {
 	isSection: boolean;
 	isGroup: boolean;
 	isDeleteEmpty: boolean;
-	isMount: boolean;
+	isRendered: boolean;
 	element: HTMLElement;
 	parent?: Node;
 	next?: Node;
@@ -137,7 +137,6 @@ export default class Ascetext {
 	});
 	stringify(first: Node): string;
 	onChange(callback: any): () => void;
-	onNodeChange(changes: any): void;
 	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
 	node: HTMLElement;
 	controlsContainer: HTMLElement;
@@ -208,7 +207,6 @@ declare class Builder {
 	append(node: Node, target: Node, anchor?: Node): void;
 	cut(node: any): void;
 	cutUntil(node: any, until: any): void;
-	handleText(current: any): void;
 	replace(node: any, target: any): void;
 	replaceUntil(node: any, target: any, until: any): void;
 	canAccept(container: any, current: any): any;

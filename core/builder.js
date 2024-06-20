@@ -663,7 +663,7 @@ export default class Builder extends Publisher {
 			this.moveTail(target, container, 0)
 
 			if (isFunction(target.onCombine)) {
-				target.onCombine(this)
+				target.onCombine(this, container)
 			}
 		}
 	}

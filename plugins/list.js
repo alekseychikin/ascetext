@@ -174,9 +174,13 @@ export class ListItemContent extends Container {
 		return false
 	}
 
-	onCombine(builder) {
+	onCombine(builder, container) {
 		if (this.parent.last.type === 'list') {
-			builder.append(this.parent.parent, this.parent.last.first, this.parent.next)
+			if (container.parent.type === 'list-item') {
+				builder.append(container.parent, this.parent.last)
+			} else {
+				builder.append(this.parent.parent, this.parent.last.first, this.parent.next)
+			}
 		}
 
 		builder.cut(this.parent)
@@ -289,6 +293,7 @@ export class ListItemContent extends Container {
 		setSelection(anchorContainer, anchorOffset)
 	}
 
+	// поправить
 	convertListItemToBlock(event, { builder, setSelection, focusedNodes }) {
 		focusedNodes.forEach((container) => {
 			if (container.type === 'list-item-content') {
@@ -308,7 +313,7 @@ export class ListItemContent extends Container {
 				builder.append(newBlock, container.first)
 				builder.cut(item)
 
-				while (!parentSection.isSection) {
+				while (['list', 'list-item', 'list-item-content'].includes(parentSection.type)) {
 					parentNext = parentSection.next
 					parentSection = parentSection.parent
 
