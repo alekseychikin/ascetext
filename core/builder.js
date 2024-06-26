@@ -17,7 +17,9 @@ export default class Builder extends Publisher {
 		this.registeredNodes = {}
 		this.registerPlugins()
 		this.appendHandler = this.appendHandler.bind(this)
+		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.unnormalizedNodes = []
+		this.timer = null
 	}
 
 	create(name, ...params) {
@@ -156,7 +158,7 @@ export default class Builder extends Publisher {
 		return fragment
 	}
 
-	split(container, offset) {
+	splitByOffset(container, offset) {
 		let length = offset
 		let firstLevelNode = container.first
 
@@ -180,20 +182,9 @@ export default class Builder extends Publisher {
 	}
 
 	splitNode(target, offset) {
-		const { head, tail } = this.split(target, offset)
+		const { tail } = this.splitByOffset(target, offset)
 
-		// if (head && tail) {
-			const duplicate = this.duplicate(target)
-
-			this.append(target.parent, duplicate, target.next)
-			this.append(duplicate, tail)
-
-			return {
-				head: target,
-				tail: duplicate
-			}
-		// }
-
+		return this.splitByTail(target, tail)
 		// if (head) {
 		// 	return {
 		// 		head: target,
@@ -205,6 +196,32 @@ export default class Builder extends Publisher {
 		// 	head: undefined,
 		// 	tail: target
 		// }
+	}
+
+	splitByTail(parent, tail) {
+		let currentTail = tail
+		let container = tail.parent
+		let duplicate
+
+		while (container) {
+			duplicate = this.duplicate(container)
+
+			this.append(container.parent, duplicate, container.next)
+			this.append(duplicate, currentTail)
+
+			currentTail = duplicate
+
+			if (container.parent === parent) {
+				break
+			}
+
+			container = container.parent
+		}
+
+		return {
+			head: container,
+			tail: duplicate
+		}
 	}
 
 	duplicate(target) {
@@ -332,6 +349,7 @@ export default class Builder extends Publisher {
 				last,
 				anchor
 			})
+			this.normalize(last)
 		}
 	}
 
@@ -365,6 +383,7 @@ export default class Builder extends Publisher {
 				next: last.next,
 				target: node
 			})
+			this.normalize(node.parent)
 		}
 
 		if (current.previous) {
@@ -419,34 +438,28 @@ export default class Builder extends Publisher {
 	}
 
 	normalize(node) {
+		if (!this.unnormalizedNodes.includes(node)) {
+			this.unnormalizedNodes.push(node)
+		}
+
+		clearTimeout(this.timer)
+		this.timer = setTimeout(this.normalizeHandle, 0)
+	}
+
+	normalizeHandle() {
 		let current
 		let limit = 1000
 
-		this.unnormalizedNodes.push(node)
+		// console.warn('normalize', this.unnormalizedNodes)
 
 		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
-			if (!this.normalizeWalkUp(current)) {
-				// console.log('walk down', current)
-				this.normalizeWalkDown(current)
+			if (findParent(current, (item) => item.type === 'root')) {
+				if (!this.normalizeWalkUp(current)) {
+					// console.log('walk down', current)
+					this.normalizeWalkDown(current)
+				}
 			}
 		}
-
-			// console.log('check', current)
-			// current = current.parent
-
-			// console.log('check', current)
-			// current = current.previous
-			// if (joined = this.join(current)) {
-			// 	console.log('joined', joined)
-			// 	console.log(current.previous, joined, current)
-			// 	return this.normalize(joined)
-			// }
-
-			// if (current.previous) {
-			// 	current = current.previous
-			// } else {
-			// 	current = current.parent
-			// }
 	}
 
 	normalizeWalkUp(node) {
@@ -478,10 +491,15 @@ export default class Builder extends Publisher {
 					break
 				}
 
+				// console.log(node, current)
+
 				if (this.normalizeJoin(node, current)) {
 					return true
 				}
 
+				if (this.normalizeEmpty(node, current)) {
+					return true
+				}
 			}
 
 			current = current.previous
@@ -548,13 +566,14 @@ export default class Builder extends Publisher {
 	// вставить ноду в родителя между двумя продублированными элементами и начать нормализацию заново
 
 	normalizeEmpty(node, current) {
-		if (current.isDeleteEmpty && !current.first) {
-			// console.log('delete empty', current)
-			this.cut(current)
-
+		if (current.canDelete()) {
 			if (node !== current) {
-				this.unnormalizedNodes.push(node)
+				this.normalize(node)
+			} else if (current.previous) {
+				this.normalize(current.previous)
 			}
+
+			this.cut(current)
 
 			return true
 		}
@@ -578,7 +597,7 @@ export default class Builder extends Publisher {
 			}
 
 			this.append(current.parent.parent, current, next)
-			this.unnormalizedNodes.push(node)
+			this.normalize(node)
 
 			return true
 		}
@@ -599,9 +618,9 @@ export default class Builder extends Publisher {
 			// console.log('joined', joined)
 			// console.log(node.previous, joined, node)
 			if (current === node) {
-				this.unnormalizedNodes.push(joined)
+				this.normalize(joined)
 			} else {
-				this.unnormalizedNodes.push(node)
+				this.normalize(node)
 			}
 
 			return true
@@ -641,14 +660,14 @@ export default class Builder extends Publisher {
 
 	insert(target) {
 		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
-		const { tail } = this.split(anchorContainer, anchorOffset)
+		const { tail } = this.splitByOffset(anchorContainer, anchorOffset)
 
 		this.append(anchorContainer, target, tail)
 		setSelection(anchorContainer, anchorOffset + 1)
 	}
 
 	moveTail(container, target, offset) {
-		const { tail } = this.split(container, offset)
+		const { tail } = this.splitByOffset(container, offset)
 		const anchotOffset = target.length
 
 		this.append(target, tail)

@@ -77,6 +77,8 @@ export default class Selection extends Publisher {
 			const selection = document.getSelection()
 			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
 
+			console.log(selection)
+
 			this.selectionUpdate({
 				type: 'selectionchange',
 				anchorNode: selection.anchorNode,
@@ -475,9 +477,9 @@ export default class Selection extends Publisher {
 		focusContainer = this.focusContainer,
 		focusOffset = this.focusOffset
 	) {
-		const focus = this.core.builder.split(focusContainer, focusOffset)
+		const focus = this.core.builder.splitByOffset(focusContainer, focusOffset)
 		const selectedSingleElement = focus.head === this.getNodeByOffset(anchorContainer, anchorOffset)
-		const anchor = this.core.builder.split(anchorContainer, anchorOffset)
+		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
 		const anchorNextContainer = anchorContainer.getNextSelectableNode()
 		const focusPreviousContainer = focusContainer.getPreviousSelectableNode()
 		const selectedFromFirstPositionToFirstPosition = !anchor.head && !focus.head
@@ -602,9 +604,7 @@ export default class Selection extends Publisher {
 	}
 
 	destroy() {
-		document.removeEventListener('click', this.update, true)
-		document.removeEventListener('keyup', this.update, true)
-		document.removeEventListener('input', this.update, true)
-		document.removeEventListener('selectionchange', this.update)
+		document.removeEventListener('focus', this.focus, true)
+		document.removeEventListener('selectionchange', this.selectionChange)
 	}
 }

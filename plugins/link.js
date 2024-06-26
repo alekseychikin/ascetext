@@ -5,8 +5,6 @@ import isHtmlElement from '../utils/is-html-element.js'
 export class Link extends InlineWidget {
 	constructor(attributes) {
 		super('link', attributes)
-
-		this.isDeleteEmpty = true
 	}
 
 	render(body) {
@@ -38,6 +36,10 @@ export class Link extends InlineWidget {
 		}
 
 		return false
+	}
+
+	canDelete() {
+		return !this.first
 	}
 
 	stringify(children) {

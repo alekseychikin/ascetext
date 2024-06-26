@@ -7,10 +7,17 @@ import findElement from '../utils/find-element.js'
 
 export class Image extends Widget {
 	constructor(attributes = {}) {
-		super('image', Object.assign({ size: '', float: 'none' }, attributes))
+		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes))
+
+		this.init = false
 	}
 
 	render(body = []) {
+		if (!this.init && this.attributes.src) {
+			this.init = true
+			console.log('init true')
+		}
+
 		return {
 			type: 'figure',
 			attributes: {
@@ -20,7 +27,7 @@ export class Image extends Widget {
 			body: [{
 				type: 'img',
 				attributes: {
-					src: this.attributes.src
+					src: this.init ? this.attributes.src : this.attributes.preview
 				},
 				body: []
 			}].concat(body)
@@ -29,6 +36,10 @@ export class Image extends Widget {
 
 	accept(node) {
 		return this.first === this.last && this.first === node && node.type === 'image-caption'
+	}
+
+	canDelete() {
+		return this.init && !this.attributes.src
 	}
 
 	getClassName() {
@@ -110,7 +121,7 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		// console.log('mount image placeholder')
+		console.log('mount image placeholder')
 		this.imagePlaceholder.innerHTML = this.attributes.placeholder
 
 		this.removeObserver = sizeObserver.observe(this, (entry) => {
@@ -127,7 +138,7 @@ export class ImageCaption extends Container {
 			this.removeObserver = null
 		}
 
-		// console.log('UNmount image placeholder')
+		console.log('UNmount image placeholder')
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 
@@ -178,7 +189,11 @@ export default class ImagePlugin extends PluginPlugin {
 		this.insertImage = this.insertImage.bind(this)
 		this.updateImage = this.updateImage.bind(this)
 		this.params = Object.assign({
-			onSelectFile: (file, image) => Promise.resolve(image.image.src),
+			onSelectFile: (file, image) => new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(image.attributes.preview)
+				}, 1000)
+			}),
 			placeholder: 'Add image caption (optional)'
 		}, params)
 	}
@@ -330,12 +345,12 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	insertImage(container) {
-		return async (event, { builder, restoreSelection }) => {
+		return async (event, { builder }) => {
 			const { files } = event.target
 
 			if (files.length) {
-				let src = await this.generateImagePreview(files[0])
-				const image = builder.create('image', { src })
+				const preview = await this.generateImagePreview(files[0])
+				const image = builder.create('image', { src: '', preview })
 				const caption = builder.create('image-caption', {
 					placeholder: this.params.placeholder
 				})
@@ -344,14 +359,12 @@ export default class ImagePlugin extends PluginPlugin {
 				builder.replace(container, image)
 
 				try {
-					src = await this.params.onSelectFile(files[0], image)
-					image.image.src = src
-					image.attributes.src = src
-					builder.core.triggerChange()
+					const src = await this.params.onSelectFile(files[0], image)
+
+					builder.setAttribute(image, 'src', src)
 				} catch (exception) {
 					console.error('exception', exception)
 					builder.cut(image)
-					restoreSelection()
 				}
 			}
 		}
@@ -362,12 +375,8 @@ export default class ImagePlugin extends PluginPlugin {
 			const { files } = event.target
 
 			if (files.length) {
-				let src = await this.generateImagePreview(files[0])
-
-				image.image.src = src
-
 				try {
-					src = await this.params.onSelectFile(files[0], image)
+					const src = await this.params.onSelectFile(files[0], image)
 					builder.setAttribute(image, 'src', src)
 				} catch (exception) {
 					builder.cut(image)

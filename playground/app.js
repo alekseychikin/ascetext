@@ -92,8 +92,8 @@ setTimeout(() => {
 	// editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' append' }))
 	// editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' more' }))
 	// editor.builder.append(editor.model.last, listItem1)
-	console.warn('!normalize!')
-	editor.builder.normalize(editor.model.last)
+	// console.warn('!normalize!')
+	// editor.builder.normalize(editor.model.last)
 
 	// editor.builder.split(editor.model, 19)
 	// editor.builder.split(editor.model, 90)

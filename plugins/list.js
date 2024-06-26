@@ -7,8 +7,6 @@ import isHtmlElement from '../utils/is-html-element.js'
 export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
 		super('list', attributes)
-
-		this.isDeleteEmpty = true
 	}
 
 	render(body) {
@@ -35,6 +33,10 @@ export class List extends Section {
 		return false
 	}
 
+	canDelete() {
+		return !this.first
+	}
+
 	stringify(children) {
 		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
 
@@ -54,7 +56,6 @@ export class ListItem extends Widget {
 	constructor(params = {}) {
 		super('list-item')
 
-		this.isDeleteEmpty = true
 		this.params = params
 	}
 
@@ -69,7 +70,7 @@ export class ListItem extends Widget {
 	split(offset, builder) {
 		if (offset < this.first.length) {
 			const item = builder.create('list-item', this.params)
-			const { tail } = builder.split(this, offset)
+			const { tail } = builder.splitByOffset(this, offset)
 
 			builder.append(item, tail)
 			builder.append(this.parent, item, this.next)
@@ -80,7 +81,7 @@ export class ListItem extends Widget {
 			}
 		}
 
-		const { tail } = builder.split(this, offset)
+		const { tail } = builder.splitByOffset(this, offset)
 		const item = tail.first
 
 		builder.append(this.parent, item, this.next)
@@ -109,6 +110,10 @@ export class ListItem extends Widget {
 
 	fit(node) {
 		return node.type === 'list'
+	}
+
+	canDelete() {
+		return !this.first
 	}
 
 	getDepth(container, node) {
@@ -293,7 +298,6 @@ export class ListItemContent extends Container {
 		setSelection(anchorContainer, anchorOffset)
 	}
 
-	// поправить
 	convertListItemToBlock(event, { builder, setSelection, focusedNodes }) {
 		focusedNodes.forEach((container) => {
 			if (container.type === 'list-item-content') {
@@ -326,7 +330,7 @@ export class ListItemContent extends Container {
 						builder.cut(parentList)
 					}
 
-					if (!next && parentNext && !parentSection.isSection) {
+					if (!next && parentNext) {
 						next = parentNext
 					}
 				}

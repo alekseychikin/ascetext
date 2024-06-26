@@ -11,7 +11,6 @@ export default class Node {
 		this.isWidget = false
 		this.isSection = false
 		this.isGroup = false
-		this.isDeleteEmpty = false
 		this.isRendered = false
 		this.length = 0
 	}
@@ -28,6 +27,10 @@ export default class Node {
 
 	fit() {
 		return true
+	}
+
+	canDelete() {
+		return false
 	}
 
 	getNodeUntil(nodeUntil) {

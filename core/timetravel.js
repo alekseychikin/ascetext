@@ -84,6 +84,7 @@ export default class TimeTravel {
 			this.timeline.splice(this.timeindex + 1)
 		}
 
+		console.log('commit')
 		this.timeline.push({
 			bunch: this.currentBunch,
 			previousSelection: this.previousSelection,

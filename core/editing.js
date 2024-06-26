@@ -226,23 +226,21 @@ export default class Editing {
 			return ''
 		}
 
+		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
 		const commonParent = this.findCommonParent()
-		console.log('commonParent', commonParent)
-		console.log(this.getOffsetToParent(commonParent, this.core.selection.anchorContainer) + this.core.selection.anchorOffset)
-		console.log(this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset)
-		const anchorOffset = this.getOffsetToParent(commonParent, this.core.selection.anchorContainer) + this.core.selection.anchorOffset
-		const focusOffset = this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset
-		const anchor =  this.core.builder.split(commonParent, anchorOffset)
-		const since = anchor.tail
-		let until = anchor.tail
+		// const anchorOffset = this.getOffsetToParent(commonParent, ) + this.core.selection.anchorOffset
+		// const focusOffset = this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset
+		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
+		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(commonParent, anchor.tail)
+		let until = since
 		let focus
 		let current = since
 		let returnHtmlValue = ''
 		let returnTextValue = ''
 
-		if (anchorOffset !== focusOffset) {
-			focus = this.core.builder.split(commonParent, focusOffset)
-			until = focus.head
+		if (anchorContainer !== focusContainer || anchorOffset !== focusOffset) {
+			focus = this.core.builder.splitByOffset(focusContainer, focusOffset)
+			until = this.core.builder.splitByTail(commonParent, focus.tail).head
 		}
 
 		console.log(since)
@@ -268,7 +266,7 @@ export default class Editing {
 		console.log(returnHtmlValue)
 		console.log(returnTextValue)
 
-		const previousSelectableNode = anchor.head.next.getPreviousSelectableNode()
+		const previousSelectableNode = anchorHead.next.getPreviousSelectableNode()
 		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
 
 		console.log(previousSelectableNode)
