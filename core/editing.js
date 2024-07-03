@@ -53,6 +53,7 @@ export default class Editing {
 		this.lastSelection = null
 		this.lastSelectionIndexes = null
 		this.hadKeydown = false
+		this.removedRange = false
 		this.keydownTimer = null
 
 		this.node.addEventListener('mousedown', this.onMouseDown)
@@ -86,16 +87,23 @@ export default class Editing {
 		this.update()
 	}
 
-	onInput() {
+	onInput(event) {
 		const { selection } = this.core
 
 		if (selection.anchorContainer && isFunction(selection.anchorContainer.inputHandler)) {
 			selection.anchorContainer.inputHandler()
 		}
 
+		console.log('input', event)
+
 		if (!this.hadKeydown && !this.isSession) {
+			console.log('this')
 			this.handleRemoveRange()
 			this.update(selection.anchorContainer)
+		}
+
+		if (this.hadKeydown && this.removedRange && event.data) {
+			this.insertText(event.data)
 		}
 	}
 
@@ -138,11 +146,16 @@ export default class Editing {
 						this.update()
 						this.core.render.dropRender()
 						timeTravel.commit()
-						timeTravel.preservePreviousSelection()
+						// timeTravel.preservePreviousSelection()
 						this.spacesDown = true
+					} else {
+						// this.hadKeydown = false
 					}
 
-					this.scheduleUpdate(selection.anchorContainer)
+					if (!this.removedRange) {
+						console.log('scheduleUpdate')
+						this.scheduleUpdate(selection.anchorContainer)
+					}
 				}
 			}
 		}
@@ -221,33 +234,28 @@ export default class Editing {
 
 		return offset
 	}
+
 	handleRemoveRange() {
 		if (!this.core.selection.isRange) {
+			this.removedRange = false
+
 			return ''
 		}
 
 		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
 		const commonParent = this.findCommonParent()
-		// const anchorOffset = this.getOffsetToParent(commonParent, ) + this.core.selection.anchorOffset
-		// const focusOffset = this.getOffsetToParent(commonParent, this.core.selection.focusContainer) + this.core.selection.focusOffset
+		const focus = this.core.builder.splitByTail(commonParent, this.core.builder.splitByOffset(focusContainer, focusOffset).tail)
 		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
 		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(commonParent, anchor.tail)
-		let until = since
-		let focus
+		const until = anchorContainer === focusContainer ? since : focus.tail.previous
 		let current = since
 		let returnHtmlValue = ''
 		let returnTextValue = ''
 
-		if (anchorContainer !== focusContainer || anchorOffset !== focusOffset) {
-			focus = this.core.builder.splitByOffset(focusContainer, focusOffset)
-			until = this.core.builder.splitByTail(commonParent, focus.tail).head
-		}
-
-		console.log(since)
-		console.log(until)
+		console.log('since', since)
+		console.log('until', until)
 
 		while (current) {
-			console.log('current', current)
 			const children = this.core.stringify(current.first)
 
 			returnHtmlValue += current.stringify(children)
@@ -262,6 +270,7 @@ export default class Editing {
 			current = current.next
 		}
 
+		this.removedRange = true
 		this.core.builder.cutUntil(since, until)
 		console.log(returnHtmlValue)
 		console.log(returnTextValue)
@@ -316,6 +325,8 @@ export default class Editing {
 		} else {
 			this.handleBackspace(event)
 		}
+
+		this.core.selection.selectionChange()
 	}
 
 	handleBackspace(event) {
@@ -340,7 +351,6 @@ export default class Editing {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
-			// this.core.timeTravel.commit()
 		} else {
 			this.handleDelete(event)
 		}
@@ -392,7 +402,6 @@ export default class Editing {
 				event,
 				this.getModifyKeyHandlerParams()
 			)
-			// this.core.timeTravel.commit()
 		} else {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
@@ -457,26 +466,14 @@ export default class Editing {
 			if (container.isContainer) {
 				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
 
+				console.log('update replacement')
+				console.trace()
 				builder.cutUntil(container.first)
-				builder.append(container, replacement)
+				builder.append(container, replacement || builder.create('text', { content: '' }))
 			}
 		}
 
 		this.isUpdating = false
-	}
-
-	findNextElement(node) {
-		let current = node.next
-
-		while (current) {
-			if (current.element.parentNode) {
-				return current.element
-			}
-
-			current = current.next
-		}
-
-		return null
 	}
 
 	save() {
@@ -523,6 +520,39 @@ export default class Editing {
 		// this.core.selection.restoreSelection()
 		// this.core.timeTravel.commit()
 		event.preventDefault()
+	}
+
+	insertText(content) {
+		const { selection, builder } = this.core
+		const node = selection.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+		const { tail } = builder.splitByOffset(node.parent, selection.anchorOffset - this.getNodeOffset(selection.anchorContainer, node.parent))
+		let attributes = {}
+
+		if (node && node.type === 'text') {
+			attributes = { ...node.attributes }
+		}
+
+		builder.append(node.parent, builder.create('text', { ...attributes, content }), tail)
+		selection.setSelection(selection.anchorContainer, selection.anchorOffset + content.length)
+	}
+
+	getNodeOffset(container, node) {
+		let offset = 0
+		let current = node
+
+		while (current !== container) {
+			if (current.previous) {
+				current = current.previous
+			} else {
+				current = current.parent
+
+				continue
+			}
+
+			offset += current.length
+		}
+
+		return offset
 	}
 
 	getClosestContainerInSection(node) {

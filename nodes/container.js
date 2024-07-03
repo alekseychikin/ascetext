@@ -15,7 +15,7 @@ export default class Container extends Node {
 	}
 
 	get isEmpty() {
-		return !this.first// || this.first === this.last && this.first.type === 'line-holder'
+		return !this.first || this.first === this.last && this.first.type === 'text' && !this.first.length
 	}
 
 	fit(node) {
@@ -40,23 +40,29 @@ export default class Container extends Node {
 
 	onMount({ controls, placeholder, sizeObserver }) {
 		if (placeholder) {
-			this.placeholderHandler = placeholder
-			this.controls = controls
-			this.sizeObserver = sizeObserver
-			this.placeholder = createElement('div', {
-				style: {
-					'position': 'absolute',
-					'pointer-events': 'none',
-					'top': '0',
-					'left': '0'
-				}
-			})
-			this.invokePlaceholderHandler(false)
+			console.log('mount', this)
+		// 	this.placeholderHandler = placeholder
+		// 	this.controls = controls
+		// 	this.sizeObserver = sizeObserver
+		// 	this.placeholder = createElement('div', {
+		// 		style: {
+		// 			'position': 'absolute',
+		// 			'pointer-events': 'none',
+		// 			'top': '0',
+		// 			'left': '0'
+		// 		}
+		// 	})
+		// 	this.controls.registerControl(this.placeholder)
+		// 	this.invokePlaceholderHandler(false)
 		}
 	}
 
-	onUnmount() {
-		this.hidePlaceholder()
+	onUnmount({ controls, placeholder }) {
+		if (placeholder) {
+			console.log('unmount', this)
+		// 	this.hidePlaceholder()
+		// 	controls.unregisterControl(this.placeholder)
+		}
 	}
 
 	onCombine(builder) {
@@ -92,7 +98,6 @@ export default class Container extends Node {
 				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
 				this.placeholder.style.width = `${entry.element.width}px`
 			})
-			this.controls.registerControl(this.placeholder)
 		}
 	}
 
@@ -102,7 +107,6 @@ export default class Container extends Node {
 		if (this.placeholder && this.removeObserver) {
 			this.removeObserver()
 			this.removeObserver = null
-			this.controls.unregisterControl(this.placeholder)
 		}
 	}
 

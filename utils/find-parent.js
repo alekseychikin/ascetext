@@ -12,4 +12,8 @@ function findParent(node, handler) {
 	return false
 }
 
+export function hasRoot(node) {
+	return findParent(node, (item) => item.type === 'root')
+}
+
 export default findParent

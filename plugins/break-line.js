@@ -1,6 +1,5 @@
 import InlineWidget from '../nodes/inline-widget.js'
 import PluginPlugin from './plugin.js'
-import createElement from '../utils/create-element.js'
 import isElementBr from '../utils/is-element-br.js'
 
 class BreakLine extends InlineWidget {
@@ -18,10 +17,21 @@ class BreakLine extends InlineWidget {
 		}
 	}
 
-	split() {
+	split(offset, builder) {
+		if (this.next) {
+			return {
+				head: this,
+				tail: this.next
+			}
+		}
+
+		const text = builder.create('text', { content: '' })
+
+		builder.append(this.parent, text)
+
 		return {
-			head: this.previous,
-			tail: this
+			head: this,
+			tail: text
 		}
 	}
 

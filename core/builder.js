@@ -1,7 +1,7 @@
 import Publisher from './publisher.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
-import findParent from '../utils/find-parent.js'
+import findParent, { hasRoot } from '../utils/find-parent.js'
 
 export const operationTypes = {
 	CUT: 'cut',
@@ -58,6 +58,7 @@ export default class Builder extends Publisher {
 			previous,
 			next
 		})
+		this.normalize(target)
 	}
 
 	parseJson(body) {
@@ -162,40 +163,36 @@ export default class Builder extends Publisher {
 		let length = offset
 		let firstLevelNode = container.first
 
+		if (!offset) {
+			const text = this.create('text', { content: '' })
+
+			this.append(container, text, firstLevelNode)
+
+			return {
+				head: text,
+				tail: firstLevelNode
+			}
+		}
+
 		while (firstLevelNode && length > firstLevelNode.length) {
 			length -= firstLevelNode.length
 			firstLevelNode = firstLevelNode.next
-		}
-
-		if (!firstLevelNode) {
-			return {
-				head: undefined,
-				tail: undefined
-			}
 		}
 
 		if (isFunction(firstLevelNode.split)) {
 			return firstLevelNode.split(length, this)
 		}
 
-		return this.splitNode(firstLevelNode, length)
-	}
+		const { tail } = this.splitByOffset(firstLevelNode, length)
+		const duplicate = this.duplicate(firstLevelNode)
 
-	splitNode(target, offset) {
-		const { tail } = this.splitByOffset(target, offset)
+		this.append(firstLevelNode.parent, duplicate, firstLevelNode.next)
+		this.append(duplicate, tail)
 
-		return this.splitByTail(target, tail)
-		// if (head) {
-		// 	return {
-		// 		head: target,
-		// 		tail: target.next
-		// 	}
-		// }
-
-		// return {
-		// 	head: undefined,
-		// 	tail: target
-		// }
+		return {
+			head: firstLevelNode,
+			tail: duplicate
+		}
 	}
 
 	splitByTail(parent, tail) {
@@ -203,7 +200,7 @@ export default class Builder extends Publisher {
 		let container = tail.parent
 		let duplicate
 
-		while (container) {
+		while (container !== parent) {
 			duplicate = this.duplicate(container)
 
 			this.append(container.parent, duplicate, container.next)
@@ -212,15 +209,18 @@ export default class Builder extends Publisher {
 			currentTail = duplicate
 
 			if (container.parent === parent) {
-				break
+				return {
+					head: container,
+					tail: currentTail
+				}
 			}
 
 			container = container.parent
 		}
 
 		return {
-			head: container,
-			tail: duplicate
+			head: tail.previous,
+			tail
 		}
 	}
 
@@ -236,11 +236,6 @@ export default class Builder extends Publisher {
 	}
 
 	append(node, target, anchor) {
-		let container = node
-		let current = target
-		let next
-		let tail = anchor
-
 		if (!target) {
 			return
 		}
@@ -248,50 +243,7 @@ export default class Builder extends Publisher {
 		if (target.type === 'fragment') {
 			this.append(node, target.first, anchor)
 		} else {
-			// while (current) {
-			// 	next = current.next
-
-				// if (this.canAccept(container, current)) {
-					// while (!container.accept(current)) {
-					// 	// if (tail && (!container.isContainer || !container.isEmpty)) {
-					// 	// 	duplicate = container.duplicate(this)
-					// 	// 	this.append(duplicate, tail)
-					// 	// }
-
-					// 	tail = container.next
-					// 	container = container.parent
-					// }
-
-					// this.cut(current)
-
-			// 		if (isFunction(container.append)) {
-			// 			container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
-			// 		} else {
-					this.appendHandler(container, current, tail)
-			// 		}
-				// } else {
-			// 		if (isFunction(current.wrapper)) {
-			// 			const wrapper = current.wrapper(this)
-
-			// 			if (this.canAccept(container, wrapper)) {
-			// 				this.append(container, wrapper, tail)
-			// 				this.cut(current)
-			// 				this.append(wrapper, current)
-
-			// 				container = wrapper
-			// 				current = next
-			// 				tail = null
-
-			// 				continue
-			// 			}
-			// 		}
-
-				// 	this.cut(current)
-				// 	console.log('can not accept', container, current)
-				// }
-
-			// 	current = next
-			// }
+			this.appendHandler(node, target, anchor)
 		}
 	}
 
@@ -341,7 +293,7 @@ export default class Builder extends Publisher {
 			node.last = last
 		}
 
-		if (findParent(target, (item) => item.type === 'root')) {
+		if (hasRoot(target)) {
 			this.sendMessage({
 				type: operationTypes.APPEND,
 				container: node,
@@ -350,6 +302,10 @@ export default class Builder extends Publisher {
 				anchor
 			})
 			this.normalize(last)
+
+			if (last.next) {
+				this.normalize(last.next)
+			}
 		}
 	}
 
@@ -373,7 +329,7 @@ export default class Builder extends Publisher {
 		const last = node.getNodeUntil(until)
 		let current = node
 
-		if (findParent(node, (item) => item.type === 'root')) {
+		if (hasRoot(node)) {
 			this.sendMessage({
 				type: operationTypes.CUT,
 				container: node.parent,
@@ -383,7 +339,14 @@ export default class Builder extends Publisher {
 				next: last.next,
 				target: node
 			})
-			this.normalize(node.parent)
+
+			if (last.next) {
+				this.normalize(last.next)
+			}
+
+			if (node.previous) {
+				this.normalize(node.previous)
+			}
 		}
 
 		if (current.previous) {
@@ -453,7 +416,8 @@ export default class Builder extends Publisher {
 		// console.warn('normalize', this.unnormalizedNodes)
 
 		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
-			if (findParent(current, (item) => item.type === 'root')) {
+			if (hasRoot(current)) {
+				// console.log('normalize', current)
 				if (!this.normalizeWalkUp(current)) {
 					// console.log('walk down', current)
 					this.normalizeWalkDown(current)
@@ -573,9 +537,15 @@ export default class Builder extends Publisher {
 				this.normalize(current.previous)
 			}
 
+			this.core.render.dropRender()
 			this.cut(current)
 
 			return true
+		}
+
+		if (current.isContainer && current.isEmpty && !current.first) {
+			this.core.render.dropRender()
+			this.append(current, this.create('text', { content: '' }))
 		}
 
 		return false
@@ -596,6 +566,7 @@ export default class Builder extends Publisher {
 				next = duplicated
 			}
 
+			this.core.render.dropRender()
 			this.append(current.parent.parent, current, next)
 			this.normalize(node)
 
@@ -636,6 +607,7 @@ export default class Builder extends Publisher {
 		// console.log('previous', previous)
 
 		if (previous && isFunction(previous.join) && (joined = previous.join(node, this))) {
+			this.core.render.dropRender()
 			this.append(joined, previous.first)
 			this.append(joined, node.first)
 			this.replaceUntil(previous, joined, node)

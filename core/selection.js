@@ -5,6 +5,7 @@ import walk from '../utils/walk.js'
 import isHtmlElement from '../utils/is-html-element.js'
 import getStyle from '../utils/get-style.js'
 import isFunction from '../utils/is-function.js'
+import { hasRoot } from '../utils/find-parent.js'
 
 export default class Selection extends Publisher {
 	constructor(core) {
@@ -72,12 +73,13 @@ export default class Selection extends Publisher {
 	}
 
 	selectionChange() {
+		// console.log('changed')
 		cancelAnimationFrame(this.selectionTimeout)
 		this.selectionTimeout = requestAnimationFrame(() => {
 			const selection = document.getSelection()
 			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
 
-			console.log(selection)
+			// console.log(selection)
 
 			this.selectionUpdate({
 				type: 'selectionchange',
@@ -98,6 +100,7 @@ export default class Selection extends Publisher {
 
 		if (!event.isCollapsed) {
 			const focus = this.getContainerAndOffset(event.focusNode, event.focusOffset)
+			// console.log('event.focusNode', event.focusNode, event.focusOffset)
 
 			focusContainer = focus.container
 			focusOffset = focus.offset
@@ -123,7 +126,7 @@ export default class Selection extends Publisher {
 
 		if (isHtmlElement(element)) {
 			if (element.dataset.nodeId) {
-				if (element.childNodes[offset] && isElementBr(element.childNodes[offset])) {
+				if (element.childNodes[offset]) {
 					return this.getContainerAndOffset(element.childNodes[offset], 0)
 				}
 
@@ -311,6 +314,13 @@ export default class Selection extends Publisher {
 			return
 		}
 
+		if (!hasRoot(event.anchorContainer) || !hasRoot(event.focusContainer)) {
+			console.warn('skip selection')
+			return
+		}
+
+		// this.logFirstLevelNode(event.anchorContainer, event.anchorOffset)
+
 		const firstContainer = event.anchorContainer
 		const lastContainer = event.focusContainer
 		const firstIndex = this.getIndex(firstContainer, event.anchorOffset)
@@ -320,15 +330,15 @@ export default class Selection extends Publisher {
 		if (isForwardDirection) {
 			this.anchorContainer = firstContainer
 			this.focusContainer = lastContainer
-			this.anchorOffset = firstIndex[firstIndex.length - 1]
-			this.focusOffset = lastIndex[lastIndex.length - 1]
+			this.anchorOffset = event.anchorOffset
+			this.focusOffset = event.focusOffset
 			this.anchorIndex = firstIndex
 			this.focusIndex = lastIndex
 		} else {
 			this.anchorContainer = lastContainer
 			this.focusContainer = firstContainer
-			this.anchorOffset = lastIndex[lastIndex.length - 1]
-			this.focusOffset = firstIndex[firstIndex.length - 1]
+			this.anchorOffset = event.focusOffset
+			this.focusOffset = event.anchorOffset
 			this.anchorIndex = lastIndex
 			this.focusIndex = firstIndex
 		}
@@ -344,11 +354,23 @@ export default class Selection extends Publisher {
 		this.sendMessage(this)
 	}
 
+	logFirstLevelNode(container, offset) {
+		let length = offset
+		let firstLevelNode = container.first
+
+		while (firstLevelNode && length > firstLevelNode.length) {
+			length -= firstLevelNode.length
+			firstLevelNode = firstLevelNode.next
+		}
+
+		console.log(firstLevelNode)
+	}
+
 	blur() {
 		if (!this.focused) return
 
 		this.focusedNodes.forEach((item) => {
-			if (item.isWidget || item.isContainer) {
+			if ((item.isWidget || item.isContainer) && isFunction(item.onBlur)) {
 				item.onBlur(this)
 			}
 		})
@@ -480,28 +502,12 @@ export default class Selection extends Publisher {
 		const focus = this.core.builder.splitByOffset(focusContainer, focusOffset)
 		const selectedSingleElement = focus.head === this.getNodeByOffset(anchorContainer, anchorOffset)
 		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
-		const anchorNextContainer = anchorContainer.getNextSelectableNode()
-		const focusPreviousContainer = focusContainer.getPreviousSelectableNode()
-		const selectedFromFirstPositionToFirstPosition = !anchor.head && !focus.head
-
-		if (selectedFromFirstPositionToFirstPosition) {
-			return {
-				head: anchorContainer,
-				tail: focusPreviousContainer.last
-					? focusPreviousContainer.last
-					: focusPreviousContainer
-			}
-		}
 
 		return {
-			head: anchor.tail
-				? anchor.tail
-				: anchorNextContainer,
-			tail: focus.head
-				? selectedSingleElement
-					? anchor.tail.deepesetLastNode()
-					: focus.head.deepesetLastNode()
-				: focusContainer
+			head: anchor.tail,
+			tail: selectedSingleElement
+				? anchor.tail.deepesetLastNode()
+				: focus.head.deepesetLastNode()
 		}
 	}
 

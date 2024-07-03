@@ -154,7 +154,7 @@ export default class Render extends Publisher {
 
 	pushUpdateNode(node) {
 		if (!this.updatedNodes.includes(node)) {
-			console.log('push', node)
+			// console.log('push', node)
 			this.updatedNodes.push(node)
 			node.isRendered = false
 		}
@@ -302,6 +302,8 @@ export default class Render extends Publisher {
 				this.update(node)
 			}
 		}
+
+		console.log('render')
 	}
 
 	append({ element: container }, node) {
@@ -336,8 +338,8 @@ export default class Render extends Publisher {
 			container.removeChild(element)
 		})
 
-		if (!container.childNodes.length || isElementBr(container.lastChild)) {
-			container.appendChild(this.getTrailingBr())
+		if (containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') {
+			this.handleContainer(container)
 		}
 
 		node.isRendered = true
@@ -469,11 +471,11 @@ export default class Render extends Publisher {
 			.map((child) => this.createElement(child, lookaheadChildren))
 			.forEach((child) => element.appendChild(child))
 
-		if ((containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') && !element.childNodes.length) {
-			element.appendChild(this.getTrailingBr())
-		}
-
 		lookaheadChildren.forEach((child) => element.removeChild(child))
+
+		if (containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') {
+			this.handleContainer(element)
+		}
 
 		return element
 	}
@@ -577,6 +579,17 @@ export default class Render extends Publisher {
 		}
 
 		return modifiers
+	}
+
+	handleContainer(element) {
+		const isEmpty = !element.childNodes.length || isTextElement(element.childNodes[0]) && !element.childNodes[0].length
+		const hasLastBr = element.childNodes.length && isElementBr(element.lastChild)
+
+		// console.log('handleContainer', element, isEmpty, hasLastBr)
+
+		if (isEmpty || hasLastBr) {
+			element.appendChild(this.getTrailingBr())
+		}
 	}
 
 	handleMount(node, last) {

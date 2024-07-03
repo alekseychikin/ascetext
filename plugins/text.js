@@ -70,7 +70,11 @@ export class Text extends Node {
 	}
 
 	join(target, builder) {
-		if (target.type === 'text' && this.isEqual(target)) {
+		if (target.type === 'text' && (this.isEqual(target) || !this.length || !target.length)) {
+			if (!this.length) {
+				return builder.create('text', { ...target.attributes })
+			}
+
 			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
 		}
 
@@ -91,15 +95,37 @@ export class Text extends Node {
 	}
 
 	split(position, builder) {
+		const text = builder.create('text', { content: '' })
+
 		if (!position) {
+			if (this.previous) {
+				return {
+					head: this.previous,
+					tail: this
+				}
+			}
+
+			builder.append(this.parent, text, this)
+
 			return {
-				head: this.previous,
+				head: text,
 				tail: this
 			}
-		} else if (position > this.attributes.content.length - 1) {
+		}
+
+		if (position === this.length) {
+			if (this.next) {
+				return {
+					head: this,
+					tail: this.next
+				}
+			}
+
+			builder.append(this.parent, text)
+
 			return {
 				head: this,
-				tail: this.next
+				tail: text
 			}
 		}
 
@@ -115,6 +141,10 @@ export class Text extends Node {
 			head,
 			tail
 		}
+	}
+
+	canDelete() {
+		return !this.parent.isEmpty && !this.length
 	}
 
 	stringify() {

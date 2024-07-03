@@ -17,7 +17,7 @@ export class Link extends InlineWidget {
 		}
 	}
 
-	normalize(element, builder) {
+	join(element, builder) {
 		if (element.type !== 'link') {
 			return false
 		}
