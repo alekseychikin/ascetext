@@ -221,13 +221,15 @@ export default class Render extends Publisher {
 	}
 
 	render() {
-		// console.log('actual model to render', window.printTree(window.editor.model))
-
 		const queue = this.queue.splice(0).reduce((result, current) => {
 			let i
 
 			if (current.type === operationTypes.APPEND && !current.container.contains(current.target)) {
 				// console.log('→ current', current.target, current.type)
+				return result
+			}
+
+			if (current.type === 'update' && !current.target.isMount) {
 				return result
 			}
 
@@ -240,6 +242,14 @@ export default class Render extends Publisher {
 				if (current.target !== result[i].target && current.target.contains(result[i].target)) {
 					// console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
 					result.splice(i, 1)
+
+					break
+				}
+
+				if (current.type === 'update' && result[i].type === current.type && current.target === result[i].target) {
+					result.splice(i, 1)
+
+					break
 				}
 			}
 
