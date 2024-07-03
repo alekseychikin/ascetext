@@ -15,7 +15,6 @@ export class Image extends Widget {
 	render(body = []) {
 		if (!this.init && this.attributes.src) {
 			this.init = true
-			console.log('init true')
 		}
 
 		return {
@@ -99,10 +98,12 @@ export class ImageCaption extends Container {
 				'position': 'absolute',
 				'pointer-events': 'none',
 				'top': '0',
-				'left': '0'
+				'left': '0',
+				'display': 'none'
 			},
 			class: 'contenteditor__image-placeholder'
 		})
+		console.log(this.imagePlaceholder.style.display)
 		this.removeObserver = null
 	}
 
@@ -121,15 +122,15 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		console.log('mount image placeholder')
+		console.log('mount', this)
 		this.imagePlaceholder.innerHTML = this.attributes.placeholder
 
+		controls.registerControl(this.imagePlaceholder)
 		this.removeObserver = sizeObserver.observe(this, (entry) => {
 			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
 			this.imagePlaceholder.style.width = `${entry.element.width}px`
+			this.inputHandler()
 		})
-		controls.registerControl(this.imagePlaceholder)
-		this.inputHandler()
 	}
 
 	onUnmount({ controls }) {
@@ -138,7 +139,7 @@ export class ImageCaption extends Container {
 			this.removeObserver = null
 		}
 
-		console.log('UNmount image placeholder')
+		console.log('unmount', this)
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 

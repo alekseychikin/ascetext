@@ -25,6 +25,9 @@ import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
 class Root extends Section {
 	constructor() {
 		super('root')
+
+		this.isMount = true
+		this.isRendered = true
 	}
 }
 

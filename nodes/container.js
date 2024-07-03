@@ -41,27 +41,27 @@ export default class Container extends Node {
 	onMount({ controls, placeholder, sizeObserver }) {
 		if (placeholder) {
 			console.log('mount', this)
-		// 	this.placeholderHandler = placeholder
-		// 	this.controls = controls
-		// 	this.sizeObserver = sizeObserver
-		// 	this.placeholder = createElement('div', {
-		// 		style: {
-		// 			'position': 'absolute',
-		// 			'pointer-events': 'none',
-		// 			'top': '0',
-		// 			'left': '0'
-		// 		}
-		// 	})
-		// 	this.controls.registerControl(this.placeholder)
-		// 	this.invokePlaceholderHandler(false)
+			this.placeholderHandler = placeholder
+			this.controls = controls
+			this.sizeObserver = sizeObserver
+			this.placeholder = createElement('div', {
+				style: {
+					'position': 'absolute',
+					'pointer-events': 'none',
+					'top': '0',
+					'left': '0'
+				}
+			})
+			this.controls.registerControl(this.placeholder)
+			this.invokePlaceholderHandler(false)
 		}
 	}
 
 	onUnmount({ controls, placeholder }) {
 		if (placeholder) {
 			console.log('unmount', this)
-		// 	this.hidePlaceholder()
-		// 	controls.unregisterControl(this.placeholder)
+			this.hidePlaceholder()
+			controls.unregisterControl(this.placeholder)
 		}
 	}
 

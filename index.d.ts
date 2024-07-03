@@ -9,6 +9,7 @@ declare class Node<S = Record<string, string>> {
 	isGroup: boolean;
 	isDeleteEmpty: boolean;
 	isRendered: boolean;
+	isMount: boolean;
 	element: HTMLElement;
 	parent?: Node;
 	next?: Node;

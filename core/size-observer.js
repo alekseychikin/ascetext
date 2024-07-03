@@ -52,7 +52,7 @@ export default class SizeObserver {
 
 	updateHandler() {
 		this.observedNodes.forEach((node, index) => {
-			if (node.isRendered) {
+			if (node.isMount) {
 				let boundings = this.calculateBoundings(node.element)
 
 				if (isFunction(this.middleware)) {

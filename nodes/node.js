@@ -12,6 +12,7 @@ export default class Node {
 		this.isSection = false
 		this.isGroup = false
 		this.isRendered = false
+		this.isMount = false
 		this.length = 0
 	}
 

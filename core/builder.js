@@ -413,6 +413,8 @@ export default class Builder extends Publisher {
 		let current
 		let limit = 1000
 
+		// console.log(window.printTree(window.editor.model))
+
 		// console.warn('normalize', this.unnormalizedNodes)
 
 		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
