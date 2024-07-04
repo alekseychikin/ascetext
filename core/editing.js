@@ -94,10 +94,7 @@ export default class Editing {
 			selection.anchorContainer.inputHandler()
 		}
 
-		console.log('input', event)
-
 		if (!this.hadKeydown && !this.isSession) {
-			console.log('this')
 			this.handleRemoveRange()
 			this.update(selection.anchorContainer)
 		}
@@ -153,7 +150,7 @@ export default class Editing {
 					}
 
 					if (!this.removedRange) {
-						console.log('scheduleUpdate')
+						// console.log('scheduleUpdate')
 						this.scheduleUpdate(selection.anchorContainer)
 					}
 				}
@@ -466,8 +463,8 @@ export default class Editing {
 			if (container.isContainer) {
 				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
 
-				console.log('update replacement')
-				console.trace()
+				// console.log('update replacement')
+				// console.trace()
 				builder.cutUntil(container.first)
 				builder.append(container, replacement || builder.create('text', { content: '' }))
 			}

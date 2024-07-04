@@ -40,7 +40,7 @@ export default class Container extends Node {
 
 	onMount({ controls, placeholder, sizeObserver }) {
 		if (placeholder) {
-			console.log('mount', this)
+			// console.log('mount', this)
 			this.placeholderHandler = placeholder
 			this.controls = controls
 			this.sizeObserver = sizeObserver
@@ -59,7 +59,7 @@ export default class Container extends Node {
 
 	onUnmount({ controls, placeholder }) {
 		if (placeholder) {
-			console.log('unmount', this)
+			// console.log('unmount', this)
 			this.hidePlaceholder()
 			controls.unregisterControl(this.placeholder)
 		}

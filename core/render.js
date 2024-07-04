@@ -303,6 +303,7 @@ export default class Render extends Publisher {
 		}
 
 		console.log('render finished')
+		console.trace()
 	}
 
 	append({ element: container }, node) {

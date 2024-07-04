@@ -84,7 +84,7 @@ export default class TimeTravel {
 			this.timeline.splice(this.timeindex + 1)
 		}
 
-		console.log('commit')
+		// console.log('commit')
 		this.timeline.push({
 			bunch: this.currentBunch,
 			previousSelection: this.previousSelection,
@@ -153,25 +153,28 @@ export default class TimeTravel {
 			for (; i < nextEvents.length; i++) {
 				nextEvent = nextEvents[i]
 
-				console.log(nextEvent)
+				// console.log(nextEvent)
 				switch (nextEvent.type) {
 					case operationTypes.CUT:
 						this.builder.cutUntil(
 							this.findByIndex(nextEvent.target),
 							this.findByOffset(nextEvent.target, nextEvent.payload.length)
 						)
+
 						break
 					case operationTypes.APPEND:
-						console.log(nextEvent)
-						console.log(this.findByOffset(nextEvent.target, nextEvent.payload.length))
+						// console.log(nextEvent)
+						// console.log(this.findByOffset(nextEvent.target, nextEvent.payload.length))
 						this.builder.append(
 							this.findByIndex(nextEvent.container),
 							this.builder.parseJson(nextEvent.payload),
 							this.findByIndex(nextEvent.target)
 						)
+
 						break
 					case operationTypes.ATTRIBUTE:
 						this.builder.setAttributes(this.findByIndex(nextEvent.target), nextEvent.next)
+
 						break
 				}
 			}

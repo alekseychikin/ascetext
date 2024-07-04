@@ -56,8 +56,8 @@ export default class Selection extends Publisher {
 			return
 		}
 
-		cancelAnimationFrame(this.selectionTimeout)
-		this.selectionTimeout = requestAnimationFrame(() => {
+		// cancelAnimationFrame(this.selectionTimeout)
+		// this.selectionTimeout = requestAnimationFrame(() => {
 			const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
 
 			this.selectionUpdate({
@@ -69,13 +69,13 @@ export default class Selection extends Publisher {
 				isCollapsed: true,
 				selectedComponent: Boolean(selectedComponent)
 			})
-		})
+		// })
 	}
 
 	selectionChange() {
 		// console.log('changed')
-		cancelAnimationFrame(this.selectionTimeout)
-		this.selectionTimeout = requestAnimationFrame(() => {
+		// cancelAnimationFrame(this.selectionTimeout)
+		// this.selectionTimeout = requestAnimationFrame(() => {
 			const selection = document.getSelection()
 			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
 
@@ -90,7 +90,7 @@ export default class Selection extends Publisher {
 				isCollapsed: selection.isCollapsed,
 				selectedComponent: Boolean(selectedComponent)
 			})
-		})
+		// })
 	}
 
 	selectionUpdate(event) {
@@ -223,6 +223,7 @@ export default class Selection extends Publisher {
 		const { element: anchorElement, restOffset: anchorRestOffset } = this.getChildByOffset(this.anchorContainer, this.anchorOffset)
 
 		selection.collapse(anchorElement, anchorRestOffset)
+		// this.anchorContainer.element.scrollIntoView()
 
 		if (this.anchorContainer.isWidget) {
 			anchorElement.focus()
@@ -319,7 +320,7 @@ export default class Selection extends Publisher {
 			return
 		}
 
-		// this.logFirstLevelNode(event.anchorContainer, event.anchorOffset)
+		// console.log(event.anchorContainer, event.anchorOffset)
 
 		const firstContainer = event.anchorContainer
 		const lastContainer = event.focusContainer

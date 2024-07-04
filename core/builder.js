@@ -59,6 +59,7 @@ export default class Builder extends Publisher {
 			next
 		})
 		this.normalize(target)
+		this.normalize(target.next)
 	}
 
 	parseJson(body) {
@@ -302,10 +303,7 @@ export default class Builder extends Publisher {
 				anchor
 			})
 			this.normalize(last)
-
-			if (last.next) {
-				this.normalize(last.next)
-			}
+			this.normalize(last.next)
 		}
 	}
 
@@ -340,13 +338,8 @@ export default class Builder extends Publisher {
 				target: node
 			})
 
-			if (last.next) {
-				this.normalize(last.next)
-			}
-
-			if (node.previous) {
-				this.normalize(node.previous)
-			}
+			this.normalize(last.next)
+			this.normalize(node.previous)
 		}
 
 		if (current.previous) {
@@ -401,6 +394,10 @@ export default class Builder extends Publisher {
 	}
 
 	normalize(node) {
+		if (!node) {
+			return
+		}
+
 		if (!this.unnormalizedNodes.includes(node)) {
 			this.unnormalizedNodes.push(node)
 		}
@@ -535,7 +532,7 @@ export default class Builder extends Publisher {
 		if (current.canDelete()) {
 			if (node !== current) {
 				this.normalize(node)
-			} else if (current.previous) {
+			} else {
 				this.normalize(current.previous)
 			}
 

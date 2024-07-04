@@ -122,7 +122,7 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		console.log('mount', this)
+		// console.log('mount', this)
 		this.imagePlaceholder.innerHTML = this.attributes.placeholder
 
 		controls.registerControl(this.imagePlaceholder)
@@ -139,7 +139,7 @@ export class ImageCaption extends Container {
 			this.removeObserver = null
 		}
 
-		console.log('unmount', this)
+		// console.log('unmount', this)
 		controls.unregisterControl(this.imagePlaceholder)
 	}
 
