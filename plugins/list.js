@@ -337,7 +337,7 @@ export class ListItemContent extends Container {
 
 				builder.append(parentSection, newBlock, parentNext)
 
-				if (next) {
+				if (next && next.type === 'list-item') {
 					const ul = builder.create('list', next.parent.attributes)
 
 					builder.append(ul, next)

@@ -122,7 +122,7 @@ export default class Render extends Publisher {
 							container: change.container,
 							target: current
 						})
-						// console.log('append', getTextLog(change.container), window.printTree(current))
+						console.log('append', getTextLog(change.container), window.printTree(current))
 
 						if (current === change.last) {
 							break
@@ -144,7 +144,7 @@ export default class Render extends Publisher {
 							container: change.container,
 							target: current
 						})
-						// console.log('cut', getTextLog(change.container), window.printTree(current))
+						console.log('cut', getTextLog(change.container), window.printTree(current))
 
 						if (current === change.last) {
 							break
@@ -225,7 +225,7 @@ export default class Render extends Publisher {
 			let i
 
 			if (current.type === operationTypes.APPEND && !current.container.contains(current.target)) {
-				// console.log('→ current', current.target, current.type)
+				console.log('→ current', current.target, current.type)
 				return result
 			}
 
@@ -235,12 +235,12 @@ export default class Render extends Publisher {
 
 			for (i = 0; i < result.length; i++) {
 				if (current.target !== result[i].target && result[i].target.contains(current.target)) {
-					// console.log('↓ current', 'result[i]', result[i].target, current.target, result[i].type, current.type)
+					console.log('↓ current', 'result[i]', result[i].target, current.target, result[i].type, current.type)
 					return result
 				}
 
 				if (current.target !== result[i].target && current.target.contains(result[i].target)) {
-					// console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
+					console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
 					result.splice(i, 1)
 
 					break
@@ -263,47 +263,56 @@ export default class Render extends Publisher {
 		// cut list (36) → list-item (58) — и значит здесь удалять нечего
 		// cut root (1) → list (36) — получается, что с контейнерами тоже нужно что-то делать
 
-		// console.log('plan')
+		console.log('document to render')
+		console.log(window.printTree(this.core.model))
 
-		// queue.forEach((item) => {
-		// 	switch (item.type) {
-		// 		case 'update':
-		// 			console.log('upd', getTextLog(item.target))
-		// 			break
-		// 		case 'append':
-		// 			console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-		// 			break
-		// 		case 'cut':
-		// 			console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-		// 			break
-		// 	}
-		// })
+		console.log('plan')
 
-		// console.log('log')
+		queue.forEach((item) => {
+			switch (item.type) {
+				case 'update':
+					console.log('upd', getTextLog(item.target))
+					break
+				case 'append':
+					console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
+					break
+				case 'cut':
+					console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
+					break
+			}
+		})
+
+		const added = []
+		const updated = []
+
+		console.log('actions')
 
 		while (event = queue.shift()) {
 			switch (event.type) {
-				case operationTypes.APPEND:
-					// console.log('app', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
-					this.onAppend(event)
-
-					break
 				case operationTypes.CUT:
-					// console.log('cut', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
+					console.log('cut', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
 					this.onCut(event)
 
 					break
-				case operationTypes.ATTRIBUTE:
-					this.update(event.target)
+				case operationTypes.APPEND:
+					added.push(event)
 
 					break
 				default:
-					this.update(event.target)
+					updated.push(event)
 			}
 		}
 
+		while (event = added.shift()) {
+			console.log('app', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
+			this.onAppend(event)
+		}
+
+		while (event = updated.shift()) {
+			this.update(event.target)
+		}
+
 		console.log('render finished')
-		console.trace()
 	}
 
 	append({ element: container }, node) {

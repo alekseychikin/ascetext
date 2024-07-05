@@ -107,13 +107,13 @@ export class ImageCaption extends Container {
 		this.removeObserver = null
 	}
 
-	render() {
+	render(body) {
 		return {
 			type: 'figcaption',
 			attributes: {
 				contenteditable: true
 			},
-			body: []
+			body
 		}
 	}
 

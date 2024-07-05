@@ -200,3 +200,9 @@ body {
 .playground__button:hover {
 	opacity: 0.8;
 }
+
+.playground__panel {
+	position: fixed;
+	top: 50px;
+	left: 10px;
+}

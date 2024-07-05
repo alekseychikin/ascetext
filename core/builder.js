@@ -410,13 +410,14 @@ export default class Builder extends Publisher {
 		let current
 		let limit = 1000
 
-		// console.log(window.printTree(window.editor.model))
+		// console.log('before normalize document')
 
 		// console.warn('normalize', this.unnormalizedNodes)
 
 		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
 			if (hasRoot(current)) {
-				// console.log('normalize', current)
+				console.log('normalize', current)
+				console.log(window.printTree(this.core.model))
 				if (!this.normalizeWalkUp(current)) {
 					// console.log('walk down', current)
 					this.normalizeWalkDown(current)
