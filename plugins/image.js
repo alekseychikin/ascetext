@@ -121,6 +121,18 @@ export class ImageCaption extends Container {
 		return node.type === 'image' && node.last === node.first && node.last === this
 	}
 
+	split(builder, next) {
+		const paragraph = builder.createBlock()
+
+		builder.append(this.parent.parent, paragraph, this.parent.next)
+		builder.append(paragraph, next)
+
+		return {
+			head: this.parent,
+			tail: paragraph
+		}
+	}
+
 	onMount({ controls, sizeObserver }) {
 		// console.log('mount', this)
 		this.imagePlaceholder.innerHTML = this.attributes.placeholder

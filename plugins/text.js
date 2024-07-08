@@ -94,7 +94,7 @@ export class Text extends Node {
 		return areEqualElements
 	}
 
-	split(position, builder) {
+	split(builder, position) {
 		const text = builder.create('text', { content: '' })
 
 		if (!position) {

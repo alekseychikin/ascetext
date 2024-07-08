@@ -159,8 +159,12 @@ export default class Editing {
 	}
 
 	onKeyUp(event) {
-		if (event.keyCode === spaceKey) {
+		if (event.code === 'Space') {
 			this.spacesDown = false
+		}
+
+		if (event.code === 'Backspace' && !this.core.selection.isRange) {
+			this.core.selection.selectionChange()
 		}
 	}
 
@@ -322,8 +326,6 @@ export default class Editing {
 		} else {
 			this.handleBackspace(event)
 		}
-
-		this.core.selection.selectionChange()
 	}
 
 	handleBackspace(event) {

@@ -17,7 +17,7 @@ class BreakLine extends InlineWidget {
 		}
 	}
 
-	split(offset, builder) {
+	split(builder) {
 		if (this.next) {
 			return {
 				head: this,

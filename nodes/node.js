@@ -34,6 +34,18 @@ export default class Node {
 		return false
 	}
 
+	split(builder, next) {
+		const duplicate = builder.create(this.type, { ...this.attributes })
+
+		builder.append(this.parent, duplicate, this.next)
+		builder.append(duplicate, next)
+
+		return {
+			head: this,
+			tail: duplicate
+		}
+	}
+
 	getNodeUntil(nodeUntil) {
 		let current = this
 

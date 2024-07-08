@@ -78,10 +78,17 @@ export default class Widget extends Node {
 		setSelection(newBlock)
 	}
 
-	split() {
+	split(builder) {
+		let next = this.next
+
+		if (!next) {
+			next = builder.createBlock()
+			builder.append(this.parent, next)
+		}
+
 		return {
-			head: this.previous,
-			tail: this
+			head: this,
+			tail: next
 		}
 	}
 }

@@ -83,87 +83,72 @@ export default class Render extends Publisher {
 	}
 
 	onChange(change) {
-		// console.log(change)
+		const last = change.last || change.target
 		let parent
-		let current
+		let current = change.target
 
-		switch (change.type) {
-			case operationTypes.APPEND:
-			case operationTypes.CUT:
-				parent = findParent(change.container, (parent) => parent.isContainer)
-
-				break
-			case operationTypes.ATTRIBUTE:
-				parent = findParent(change.target, (parent) => parent.isContainer)
-
-				break
-		}
-
-		// console.log('parent', parent, change.target)
-
-		if (change.target.type === 'text' || change.target.isInlineWidget) {
-			this.markUnrendered(parent, parent)
-			this.queue.push({
-				type: 'update',
-				target: parent,
-			})
-			// this.pushUpdateNode(parent)
-		} else {
+		while (current) {
 			switch (change.type) {
 				case operationTypes.APPEND:
-					// console.log(change)
-					// this.pushContainer(change.container)
-					// this.markUnrendered(change.target, change.last)
-					current = change.target
-
-					while (current) {
-						this.queue.push({
-							type: change.type,
-							container: change.container,
-							target: current
-						})
-						console.log('append', getTextLog(change.container), window.printTree(current))
-
-						if (current === change.last) {
-							break
-						}
-
-						current = current.next
-					}
-
-					break
 				case operationTypes.CUT:
-					// console.log(change)
-					// this.pushRemoveNodes(change)
-					current = change.target
-					this.markUnrendered(change.target, change.last)
-
-					while (current) {
-						this.queue.push({
-							type: change.type,
-							container: change.container,
-							target: current
-						})
-						console.log('cut', getTextLog(change.container), window.printTree(current))
-
-						if (current === change.last) {
-							break
-						}
-
-						current = current.next
-					}
+					parent = findParent(change.container, (parent) => parent.isContainer)
+					this.markUnrendered(current)
 
 					break
 				case operationTypes.ATTRIBUTE:
-					// console.log(change)
-					// this.pushUpdateNode(change.target)
-					this.queue.push({
-						type: change.type,
-						target: change.target
-					})
+					parent = findParent(current, (parent) => parent.isContainer)
 
 					break
 			}
+
+			if (current.type === 'text' || current.isInlineWidget) {
+				this.markUnrendered(parent)
+				this.queue.push({
+					type: 'update',
+					target: parent,
+				})
+			} else {
+				switch (change.type) {
+					case operationTypes.APPEND:
+						// console.log(change)
+						// this.pushContainer(change.container)
+						this.queue.push({
+							type: change.type,
+							container: change.container,
+							target: current
+						})
+						// console.log('append', getTextLog(change.container), window.printTree(current))
+
+						break
+					case operationTypes.CUT:
+						// console.log(change)
+						// this.pushRemoveNodes(change)
+						// this.markUnrendered(current)
+						this.queue.push({
+							type: change.type,
+							container: change.container,
+							target: current
+						})
+						// console.log('cut', getTextLog(change.container), window.printTree(current))
+
+						break
+					case operationTypes.ATTRIBUTE:
+						// console.log(change)
+						// this.pushUpdateNode(change.target)
+						this.queue.push({
+							type: change.type,
+							target: change.target
+						})
+
+						break
+				}
+			}
+
+			if (current === last) {
+				break
+			}
+
+			current = current.next
 		}
 
 		this.dropRender()
@@ -200,7 +185,7 @@ export default class Render extends Publisher {
 		}
 	}
 
-	markUnrendered(target, last) {
+	markUnrendered(target, last = target) {
 		let current = target
 
 		while (current) {
@@ -222,10 +207,8 @@ export default class Render extends Publisher {
 
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
-			let i
-
-			if (current.type === operationTypes.APPEND && !current.container.contains(current.target)) {
-				console.log('→ current', current.target, current.type)
+			if (current.type === operationTypes.APPEND && (!current.container.contains(current.target) || !current.container.isMount)) {
+				// console.log('→ current', current.target, current.type)
 				return result
 			}
 
@@ -233,25 +216,25 @@ export default class Render extends Publisher {
 				return result
 			}
 
-			for (i = 0; i < result.length; i++) {
-				if (current.target !== result[i].target && result[i].target.contains(current.target)) {
-					console.log('↓ current', 'result[i]', result[i].target, current.target, result[i].type, current.type)
-					return result
-				}
+			// for (i = 0; i < result.length; i++) {
+			// 	if (current.target !== result[i].target && result[i].target.contains(current.target)) {
+			// 		// console.log('↓ current', 'result[i]', result[i].target, current.target, result[i].type, current.type)
+			// 		return result
+			// 	}
 
-				if (current.target !== result[i].target && current.target.contains(result[i].target)) {
-					console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
-					result.splice(i, 1)
+			// 	if (current.target !== result[i].target && current.target.contains(result[i].target)) {
+			// 		// console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
+			// 		result.splice(i, 1)
 
-					break
-				}
+			// 		break
+			// 	}
 
-				if (current.type === 'update' && result[i].type === current.type && current.target === result[i].target) {
-					result.splice(i, 1)
+			// 	if (current.type === 'update' && result[i].type === current.type && current.target === result[i].target) {
+			// 		result.splice(i, 1)
 
-					break
-				}
-			}
+			// 		break
+			// 	}
+			// }
 
 			result.push(current)
 
@@ -263,34 +246,34 @@ export default class Render extends Publisher {
 		// cut list (36) → list-item (58) — и значит здесь удалять нечего
 		// cut root (1) → list (36) — получается, что с контейнерами тоже нужно что-то делать
 
-		console.log('document to render')
-		console.log(window.printTree(this.core.model))
+		// console.log('document to render')
+		// console.log(window.printTree(this.core.model))
 
-		console.log('plan')
+		// console.log('plan')
 
-		queue.forEach((item) => {
-			switch (item.type) {
-				case 'update':
-					console.log('upd', getTextLog(item.target))
-					break
-				case 'append':
-					console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-					break
-				case 'cut':
-					console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-					break
-			}
-		})
+		// queue.forEach((item) => {
+		// 	switch (item.type) {
+		// 		case 'update':
+		// 			console.log('upd', getTextLog(item.target))
+		// 			break
+		// 		case 'append':
+		// 			console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
+		// 			break
+		// 		case 'cut':
+		// 			console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
+		// 			break
+		// 	}
+		// })
 
 		const added = []
 		const updated = []
 
-		console.log('actions')
+		// console.log('actions')
 
 		while (event = queue.shift()) {
 			switch (event.type) {
 				case operationTypes.CUT:
-					console.log('cut', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
+					// console.log('cut', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
 					this.onCut(event)
 
 					break
@@ -304,7 +287,7 @@ export default class Render extends Publisher {
 		}
 
 		while (event = added.shift()) {
-			console.log('app', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
+			// console.log('app', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
 			this.onAppend(event)
 		}
 
@@ -312,7 +295,7 @@ export default class Render extends Publisher {
 			this.update(event.target)
 		}
 
-		console.log('render finished')
+		// console.log('render finished')
 	}
 
 	append({ element: container }, node) {

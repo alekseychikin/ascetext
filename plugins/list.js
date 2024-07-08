@@ -67,28 +67,15 @@ export class ListItem extends Widget {
 		}
 	}
 
-	split(offset, builder) {
-		if (offset < this.first.length) {
-			const item = builder.create('list-item', this.params)
-			const { tail } = builder.splitByOffset(this, offset)
+	split(builder, next) {
+		const duplicate = builder.create(this.type, { ...this.attributes })
 
-			builder.append(item, tail)
-			builder.append(this.parent, item, this.next)
-
-			return {
-				head: this,
-				tail: item
-			}
-		}
-
-		const { tail } = builder.splitByOffset(this, offset)
-		const item = tail.first
-
-		builder.append(this.parent, item, this.next)
+		builder.append(this.parent, duplicate, this.next)
+		builder.append(duplicate, next)
 
 		return {
 			head: this,
-			tail: item
+			tail: duplicate
 		}
 	}
 
@@ -177,6 +164,25 @@ export class ListItemContent extends Container {
 		}
 
 		return false
+	}
+
+	split(builder, next) {
+		const item = builder.create('list-item', this.params)
+		const content = builder.create('list-item-content', this.params)
+
+		builder.append(item, content)
+		builder.append(content, next)
+
+		if (this.parent.last.type === 'list') {
+			builder.append(item, this.parent.last)
+		}
+
+		builder.append(this.parent.parent, item, this.parent.next)
+
+		return {
+			head: this.parent,
+			tail: item
+		}
 	}
 
 	onCombine(builder, container) {

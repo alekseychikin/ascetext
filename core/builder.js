@@ -180,14 +180,14 @@ export default class Builder extends Publisher {
 			firstLevelNode = firstLevelNode.next
 		}
 
-		if (isFunction(firstLevelNode.split)) {
-			return firstLevelNode.split(length, this)
+		if (firstLevelNode.type === 'text') {
+			return firstLevelNode.split(this, length)
 		}
 
 		const { tail } = this.splitByOffset(firstLevelNode, length)
-		const duplicate = this.duplicate(firstLevelNode)
+		const duplicate = firstLevelNode.split(this).tail
 
-		this.append(firstLevelNode.parent, duplicate, firstLevelNode.next)
+		// this.append(firstLevelNode.parent, duplicate, firstLevelNode.next)
 		this.append(duplicate, tail)
 
 		return {
@@ -202,21 +202,21 @@ export default class Builder extends Publisher {
 		let duplicate
 
 		while (container !== parent) {
-			duplicate = this.duplicate(container)
+			duplicate = container.split(this, currentTail)
 
-			this.append(container.parent, duplicate, container.next)
-			this.append(duplicate, currentTail)
+			// this.append(container.parent, duplicate, container.next)
+			// this.append(duplicate.tail, currentTail)
 
-			currentTail = duplicate
+			currentTail = duplicate.tail
 
-			if (container.parent === parent) {
+			if (duplicate.head.parent === parent) {
 				return {
-					head: container,
+					head: duplicate.head,
 					tail: currentTail
 				}
 			}
 
-			container = container.parent
+			container = duplicate.head.parent
 		}
 
 		return {
@@ -416,8 +416,8 @@ export default class Builder extends Publisher {
 
 		while ((current = this.unnormalizedNodes.pop()) && limit-- > 0) {
 			if (hasRoot(current)) {
-				console.log('normalize', current)
-				console.log(window.printTree(this.core.model))
+				// console.log('normalize', current)
+				// console.log(window.printTree(this.core.model))
 				if (!this.normalizeWalkUp(current)) {
 					// console.log('walk down', current)
 					this.normalizeWalkDown(current)
@@ -554,20 +554,24 @@ export default class Builder extends Publisher {
 	normalizeAccept(node, current) {
 		// console.log('normalizeAccept', current.parent, current)
 		if (!current.parent.accept(current) || !current.fit(current.parent)) {
+			// найти родителя, который может в себе содержать current
+			// сделать сплит, разместить current, запустить нормализацию заново
+
 			// надо проверить, что вообще возможно поместить этот current хоть во что-то из родителей
 			// если нет, то нужно попробовать поместить дочерние элементы
 			let next = current.parent.next
+			let parent = current.parent
 
 			if (current.next) {
-				const duplicated = this.duplicate(current.parent)
+				const duplicated = current.parent.split(this, current.next)
 
-				this.append(current.parent.parent, duplicated, current.parent.next)
-				this.append(duplicated, current.next)
-				next = duplicated
+				// this.append(current.parent.parent, duplicated, current.parent.next)
+				next = duplicated.tail
+				parent = duplicated.head
 			}
 
 			this.core.render.dropRender()
-			this.append(current.parent.parent, current, next)
+			this.append(parent.parent, current, next)
 			this.normalize(node)
 
 			return true
@@ -640,10 +644,10 @@ export default class Builder extends Publisher {
 
 	moveTail(container, target, offset) {
 		const { tail } = this.splitByOffset(container, offset)
-		const anchotOffset = target.length
+		const anchorOffset = target.length
 
 		this.append(target, tail)
-		this.core.selection.setSelection(target, anchotOffset)
+		this.core.selection.setSelection(target, anchorOffset)
 	}
 
 	combine(container, target) {
