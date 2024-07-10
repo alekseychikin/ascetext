@@ -23,13 +23,6 @@ const plugins = [
 	new QuotePlugin()
 ]
 
-const editor = new Editor(document.getElementById('app'), {
-	plugins,
-	placeholder: 'Here is where your story comes...'
-})
-
-console.log(editor.model)
-window.editor = editor
 window.printTree = (node, deep = 0) => {
 	let i
 	let output = ''
@@ -71,6 +64,14 @@ window.printTree = (node, deep = 0) => {
 	return output
 }
 
+const editor = new Editor(document.getElementById('app'), {
+	plugins,
+	placeholder: 'Here is where your story comes...'
+})
+
+console.log(editor.model)
+window.editor = editor
+
 setTimeout(() => {
 	// const list = editor.builder.create('list')
 	// const listItem1 = editor.builder.create('list-item')
@@ -80,23 +81,36 @@ setTimeout(() => {
 	// const text1 = editor.builder.create('text', { content: 'list item 1' })
 	// const text2 = editor.builder.create('text', { content: 'list item 2' })
 
-	// editor.builder.append(editor.model, list, editor.model.first)
+	// editor.builder.append(editor.model, list)
 	// editor.builder.append(list, listItem1)
 	// editor.builder.append(listItem1, content1)
 	// editor.builder.append(content1, text1)
 
-	// editor.builder.append(listItem2, content2)
+	// console.log(listItem1)
+	// console.log(listItem2)
+
 	// editor.builder.append(content2, text2)
+	// editor.builder.append(listItem2, content2)
+	// editor.builder.append(list, listItem2)
 
-	// editor.builder.cut(editor.model.first.next.first.first.first.next)
-	// editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' append' }))
-	// editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' more' }))
-	// editor.builder.append(editor.model.last, listItem1)
-	// console.warn('!normalize!')
-	// editor.builder.normalize(editor.model.last)
+	// // editor.builder.cut(editor.model.first.next.first.first.first.next)
+	// // editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' append' }))
+	// // editor.builder.append(editor.model.last.last.last, editor.builder.create('text', { content: ' more' }))
+	// // editor.builder.append(editor.model.last, listItem1)
+	// // console.warn('!normalize!')
+	// // editor.builder.normalize(editor.model.last)
 
-	// editor.builder.split(editor.model, 19)
-	// editor.builder.split(editor.model, 90)
+	// // editor.builder.split(editor.model, 19)
+	// // editor.builder.split(editor.model, 90)
+	setTimeout(() => {
+		// editor.builder.cut(content2)
+		// editor.builder.cut(listItem2)
+	// 	editor.builder.cutUntil(content1)
+	// 	editor.builder.cutUntil(content2)
+	// 	editor.builder.append(listItem1, content2)
+	// 	editor.builder.append(listItem2, content1)
+	// 	editor.builder.cutUntil(listItem1, listItem2)
+	}, 1000)
 }, 1000)
 
 setTimeout(() => {
@@ -230,3 +244,39 @@ setTimeout(() => {
 	// editor.builder.append(image, caption)
 	// editor.builder.append(editor.model, image, editor.model.first)
 }, 2000)
+
+document.getElementById('copy-paragraph').addEventListener('click', () => {
+	const data = [new window.ClipboardItem({ "text/html": new Blob([`
+		<p>Paragraph</p>
+	`], { type: "text/html" }) })]
+	navigator.clipboard.write(data)
+})
+
+document.getElementById('copy-paragraph-with-list').addEventListener('click', () => {
+	const data = [new window.ClipboardItem({ "text/html": new Blob([`
+		<p>Paragraph</p>
+		<ul>
+			<li>List item 1</li>
+		</ul>
+	`], { type: "text/html" }) })]
+	navigator.clipboard.write(data)
+})
+
+document.getElementById('copy-list').addEventListener('click', () => {
+	const blob = new Blob([`
+		<ul>
+			<li>List item 1</li>
+			<li>List item 2</li>
+		</ul>
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
+document.addEventListener('paste', (event) => {
+	let type
+
+	for (type of event.clipboardData.types) {
+		console.log(type, event.clipboardData.getData(type))
+	}
+})

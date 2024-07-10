@@ -122,14 +122,21 @@ export class ImageCaption extends Container {
 	}
 
 	split(builder, next) {
-		const paragraph = builder.createBlock()
+		if (next || !this.parent.next) {
+			const paragraph = builder.createBlock()
 
-		builder.append(this.parent.parent, paragraph, this.parent.next)
-		builder.append(paragraph, next)
+			builder.append(this.parent.parent, paragraph, this.parent.next)
+			builder.append(paragraph, next)
+
+			return {
+				head: this.parent,
+				tail: paragraph
+			}
+		}
 
 		return {
 			head: this.parent,
-			tail: paragraph
+			tail: this.parent.next
 		}
 	}
 

@@ -510,6 +510,7 @@ export default class Editing {
 
 		const result = builder.parseVirtualTree(this.core.parser.getVirtualTree(doc.firstChild))
 
+		this.core.timeTravel.preservePreviousSelection()
 		this.handleRemoveRange()
 
 		builder.insert(result)

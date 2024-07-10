@@ -180,7 +180,7 @@ export default class Builder extends Publisher {
 			firstLevelNode = firstLevelNode.next
 		}
 
-		if (firstLevelNode.type === 'text') {
+		if (firstLevelNode.type === 'text' || firstLevelNode.type === 'breakLine') {
 			return firstLevelNode.split(this, length)
 		}
 
@@ -209,7 +209,7 @@ export default class Builder extends Publisher {
 
 			currentTail = duplicate.tail
 
-			if (duplicate.head.parent === parent) {
+			if (duplicate.head.parent.contains(parent)) {
 				return {
 					head: duplicate.head,
 					tail: currentTail
@@ -634,12 +634,47 @@ export default class Builder extends Publisher {
 		return false
 	}
 
+	insertText(target, anchor) {
+		const current = target.isFragment ? target.first : target
+		let next = current
+		let last
+
+		if (current.type === 'text' || current.isInlineWidget) {
+			last = current
+
+			while (last) {
+				if (last.type !== 'text' && !last.isInlineWidget || !last.next) {
+					break
+				}
+
+				last = last.next
+			}
+
+			next = last.next
+			this.cutUntil(current, last)
+			this.append(anchor.parent, current, anchor)
+		} else if (current.isContainer) {
+			next = current.next
+			this.cut(current)
+			this.append(anchor.parent, current.first, anchor)
+		}
+
+		return next
+	}
+
 	insert(target) {
 		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
-		const { tail } = this.splitByOffset(anchorContainer, anchorOffset)
+		const splitted = this.splitByOffset(anchorContainer, anchorOffset)
+		const rest = this.insertText(target, splitted.tail)
 
-		this.append(anchorContainer, target, tail)
-		setSelection(anchorContainer, anchorOffset + 1)
+		if (rest) {
+			const { head, tail } = this.splitByTail(anchorContainer.parent, splitted.tail)
+
+			this.append(head.parent, rest, tail)
+			setSelection(tail)
+		} else {
+			setSelection(anchorContainer, this.core.editing.getOffsetToParent(anchorContainer, splitted.tail))
+		}
 	}
 
 	moveTail(container, target, offset) {
