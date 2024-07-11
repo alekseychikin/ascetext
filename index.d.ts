@@ -248,7 +248,6 @@ declare class Editing {
 	isChanged: boolean | undefined;
 	handleTextInRemoveNodes(node: Node): void;
 	save(): void;
-	getClosestContainerInSection(node: Node): any;
 	destroy(): void;
 }
 

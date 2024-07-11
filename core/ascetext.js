@@ -20,6 +20,7 @@ import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
 import Render from './render.js'
 import Parser from './parser.js'
+import Normalizer from './normalizer.js'
 import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
 
 class Root extends Section {
@@ -58,6 +59,7 @@ export default class Ascetext {
 		}, {}), params.icons || {})
 		this.model = new Root()
 		this.builder = new Builder(this)
+		this.normalizer = new Normalizer(this)
 		this.render = new Render(this)
 		this.parser = new Parser(node)
 		this.placeholder = extractPlaceholderParams(params.placeholder)

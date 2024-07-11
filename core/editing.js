@@ -1,6 +1,7 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
 import findParent from '../utils/find-parent.js'
+import Section from '../nodes/section.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -24,12 +25,8 @@ const forbiddenShortcuts = [ 'ctrl+b/meta+b', 'ctrl+i/meta+i', 'ctrl+u/meta+u' ]
 export default class Editing {
 	constructor(core) {
 		this.handleRemoveRange = this.handleRemoveRange.bind(this)
-		this.handleBackspace = this.handleBackspace.bind(this)
 		this.handleBackspaceKeyDown = this.handleBackspaceKeyDown.bind(this)
-		this.handleDelete = this.handleDelete.bind(this)
 		this.handleDeleteKeyDown = this.handleDeleteKeyDown.bind(this)
-		this.handleEnterKeyDownRange = this.handleEnterKeyDownRange.bind(this)
-		this.handleEnterKeyDownSingle = this.handleEnterKeyDownSingle.bind(this)
 		this.handleEnterKeyDown = this.handleEnterKeyDown.bind(this)
 		this.handleModifyKeyDown = this.handleModifyKeyDown.bind(this)
 		this.update = this.update.bind(this)
@@ -40,6 +37,7 @@ export default class Editing {
 		this.onInput = this.onInput.bind(this)
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
+		this.onCopy = this.onCopy.bind(this)
 		this.selectionUpdate = this.selectionUpdate.bind(this)
 
 		this.node = core.node
@@ -61,6 +59,7 @@ export default class Editing {
 		this.node.addEventListener('keyup', this.onKeyUp)
 		this.node.addEventListener('input', this.onInput)
 		this.node.addEventListener('cut', this.onCut)
+		this.node.addEventListener('copy', this.onCopy)
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
@@ -145,8 +144,6 @@ export default class Editing {
 						timeTravel.commit()
 						// timeTravel.preservePreviousSelection()
 						this.spacesDown = true
-					} else {
-						// this.hadKeydown = false
 					}
 
 					if (!this.removedRange) {
@@ -208,34 +205,6 @@ export default class Editing {
 		}
 	}
 
-	findCommonParent() {
-		let parent = this.core.selection.anchorContainer.parent
-
-		while (parent && (!parent.contains(this.core.selection.focusContainer) || !parent.isSection)) {
-			parent = parent.parent
-		}
-
-		return parent
-	}
-
-	getOffsetToParent(parent, target) {
-		let offset = 0
-		let current = target
-
-		while (current !== parent) {
-			while (current.previous) {
-				current = current.previous
-
-				offset += current.length
-			}
-
-			current = current.parent
-		}
-
-
-		return offset
-	}
-
 	handleRemoveRange() {
 		if (!this.core.selection.isRange) {
 			this.removedRange = false
@@ -244,37 +213,17 @@ export default class Editing {
 		}
 
 		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
-		const commonParent = this.findCommonParent()
+		const commonParent = this.core.model
 		const focus = this.core.builder.splitByTail(commonParent, this.core.builder.splitByOffset(focusContainer, focusOffset).tail)
 		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
 		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(commonParent, anchor.tail)
 		const until = anchorContainer === focusContainer ? since : focus.tail.previous
-		let current = since
-		let returnHtmlValue = ''
-		let returnTextValue = ''
 
 		console.log('since', since)
 		console.log('until', until)
 
-		while (current) {
-			const children = this.core.stringify(current.first)
-
-			returnHtmlValue += current.stringify(children)
-			returnTextValue += children
-				.replace(/<br\s*?\/?>/g, '\n')
-				.replace(/(<([^>]+)>)/ig, '') + '\n'
-
-			if (current === until) {
-				break
-			}
-
-			current = current.next
-		}
-
 		this.removedRange = true
 		this.core.builder.cutUntil(since, until)
-		console.log(returnHtmlValue)
-		console.log(returnTextValue)
 
 		const previousSelectableNode = anchorHead.next.getPreviousSelectableNode()
 		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
@@ -290,32 +239,9 @@ export default class Editing {
 		}
 
 		return {
-			html: returnHtmlValue,
-			text: returnTextValue
+			since,
+			until
 		}
-	}
-
-	captureSinceAndUntil(items, startIndex) {
-		const since = items[startIndex]
-		let until = since
-		let index = startIndex
-		let item
-
-		for (; index < items.length; index++) {
-			item = items[index]
-
-			if (item.isWidget || item.isContainer || item.isGroup) {
-				break
-			}
-
-			if (item.parent && (
-				item.parent.isWidget || item.parent.isContainer || item.parent.isGroup
-			)) {
-				until = item
-			}
-		}
-
-		return { since, until }
 	}
 
 	handleBackspaceKeyDown(event) {
@@ -323,13 +249,7 @@ export default class Editing {
 			event.preventDefault()
 			this.handleRemoveRange()
 			this.update()
-		} else {
-			this.handleBackspace(event)
-		}
-	}
-
-	handleBackspace(event) {
-		if (isFunction(this.core.selection.anchorContainer.backspaceHandler)) {
+		} else if (isFunction(this.core.selection.anchorContainer.backspaceHandler)) {
 			this.core.selection.anchorContainer.backspaceHandler(
 				event,
 				this.getModifyKeyHandlerParams()
@@ -350,13 +270,7 @@ export default class Editing {
 		if (this.core.selection.isRange) {
 			event.preventDefault()
 			this.handleRemoveRange()
-		} else {
-			this.handleDelete(event)
-		}
-	}
-
-	handleDelete(event) {
-		if (isFunction(this.core.selection.anchorContainer.deleteHandler)) {
+		} else if (isFunction(this.core.selection.anchorContainer.deleteHandler)) {
 			this.core.selection.anchorContainer.deleteHandler(
 				event,
 				this.getModifyKeyHandlerParams()
@@ -374,27 +288,11 @@ export default class Editing {
 	}
 
 	handleEnterKeyDown(event) {
+		event.preventDefault()
+
 		if (this.core.selection.isRange) {
-			this.handleEnterKeyDownRange(event)
-		} else {
-			this.handleEnterKeyDownSingle(event)
+			this.handleRemoveRange()
 		}
-	}
-
-	handleEnterKeyDownRange(event) {
-		event.preventDefault()
-		this.handleRemoveRange()
-
-		if (isFunction(this.core.selection.anchorContainer.enterHandler)) {
-			this.core.selection.anchorContainer.enterHandler(
-				event,
-				this.getModifyKeyHandlerParams()
-			)
-		}
-	}
-
-	handleEnterKeyDownSingle(event) {
-		event.preventDefault()
 
 		if (isFunction(this.core.selection.anchorContainer.enterHandler)) {
 			this.core.selection.anchorContainer.enterHandler(
@@ -465,8 +363,6 @@ export default class Editing {
 			if (container.isContainer) {
 				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
 
-				// console.log('update replacement')
-				// console.trace()
 				builder.cutUntil(container.first)
 				builder.append(container, replacement || builder.create('text', { content: '' }))
 			}
@@ -485,15 +381,56 @@ export default class Editing {
 		if (this.core.selection.isRange) {
 			this.core.timeTravel.preservePreviousSelection()
 
-			const removed = this.handleRemoveRange()
+			const section = new Section('root')
+			const { since } = this.handleRemoveRange()
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+			const nodes = []
+			let current = since
 
-			clipboardData.setData('text/html', '<meta charset="utf-8">' + removed.html)
-			clipboardData.setData('text/plain', removed.text)
+			while (current) {
+				nodes.push(current)
+
+				current = current.next
+			}
+
+			this.core.builder.append(section, since)
+			this.core.normalizer.normalize(nodes)
+			current = section.first
+
+			let htmlValue = ''
+			let textValue = ''
+
+			while (current) {
+				const children = this.core.stringify(current.first)
+
+				htmlValue += current.stringify(children)
+				textValue += children
+					.replace(/<br\s*?\/?>/g, '\n')
+					.replace(/(<([^>]+)>)/ig, '') + '\n'
+
+				current = current.next
+			}
+
+			clipboardData.setData('text/html', '<meta charset="utf-8">' + htmlValue)
+			clipboardData.setData('text/plain', textValue)
 		}
 
 		event.preventDefault()
 	}
+
+	onCopy(event) {
+		if (this.core.selection.isRange) {
+			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+
+			//
+
+			// clipboardData.setData('text/html', '<meta charset="utf-8">' + removed.html)
+			// clipboardData.setData('text/plain', removed.text)
+		}
+
+		event.preventDefault()
+	}
+
 
 	onPaste(event) {
 		const doc = document.createElement('div')
@@ -514,11 +451,6 @@ export default class Editing {
 		this.handleRemoveRange()
 
 		builder.insert(result)
-		// тут нужно выделить вставляемый фрагмент
-		// с позивии anchorContainer.anchorOffset по самый последний элемент
-
-		// this.core.selection.restoreSelection()
-		// this.core.timeTravel.commit()
 		event.preventDefault()
 	}
 
@@ -553,18 +485,6 @@ export default class Editing {
 		}
 
 		return offset
-	}
-
-	getClosestContainerInSection(node) {
-		let current = node
-
-		while (current) {
-			if ((current.isContainer || current.isWidget) && current.parent.isSection) {
-				return current
-			}
-
-			current = current.parent
-		}
 	}
 
 	catchShortcut(shortcutMatcher, shortcuts) {

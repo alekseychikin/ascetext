@@ -273,6 +273,31 @@ document.getElementById('copy-list').addEventListener('click', () => {
 	navigator.clipboard.write(data)
 })
 
+document.getElementById('copy-broken-list').addEventListener('click', () => {
+	const blob = new Blob([`
+		<li>List item 1</li>
+		<li>List item 2</li>
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
+document.getElementById('copy-link').addEventListener('click', () => {
+	const blob = new Blob([`
+		<a href="https://alekseychikin.ru">link anchor</a>
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
+document.getElementById('copy-text-as-link').addEventListener('click', () => {
+	const blob = new Blob([`
+		https://alekseychikin.ru
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
 document.addEventListener('paste', (event) => {
 	let type
 

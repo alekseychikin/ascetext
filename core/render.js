@@ -83,6 +83,10 @@ export default class Render extends Publisher {
 	}
 
 	onChange(change) {
+		if (!this.core.model.contains(change.target)) {
+			return
+		}
+
 		const last = change.last || change.target
 		let parent
 		let current = change.target

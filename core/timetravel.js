@@ -38,39 +38,40 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = true
 	}
 
-	// поправить работу с якорями
 	pushChange(change) {
-		if (!this.isLockPushChange) {
-			let payload
+		if (this.isLockPushChange || !this.root.contains(change.target)) {
+			return
+		}
 
-			switch (change.type) {
-				case operationTypes.ATTRIBUTE:
+		let payload
+
+		switch (change.type) {
+			case operationTypes.ATTRIBUTE:
+				this.currentBunch.push({
+					type: change.type,
+					target: this.getIndex(change.target),
+					previous: change.previous,
+					next: change.next
+				})
+				break
+			case operationTypes.APPEND:
+			case operationTypes.CUT:
+				payload = this.builder.getJson(change.target, change.last)
+
+				if (payload.length) {
 					this.currentBunch.push({
 						type: change.type,
+						container: this.getIndex(change.container),
 						target: this.getIndex(change.target),
-						previous: change.previous,
-						next: change.next
+						payload
 					})
-					break
-				case operationTypes.APPEND:
-				case operationTypes.CUT:
-					payload = this.builder.getJson(change.target, change.last)
+				}
 
-					if (payload.length) {
-						this.currentBunch.push({
-							type: change.type,
-							container: this.getIndex(change.container),
-							target: this.getIndex(change.target),
-							payload
-						})
-					}
-
-					break
-			}
-
-			clearTimeout(this.timer)
-			this.timer = setTimeout(this.commit, 100)
+				break
 		}
+
+		clearTimeout(this.timer)
+		this.timer = setTimeout(this.commit, 100)
 	}
 
 	commit() {
