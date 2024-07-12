@@ -92,7 +92,7 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, components } = this.core
+		const { selection, timeTravel, components, builder } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
@@ -130,13 +130,15 @@ export default class Editing {
 						this.update()
 						this.core.render.dropRender()
 						timeTravel.commit()
-						this.core.autocomplete.trigger()
-						// timeTravel.preservePreviousSelection()
+
+						if (this.core.autocomplete.trigger()) {
+							builder.insert(builder.create('text', { content: ' ' }))
+						}
+
 						this.spacesDown = true
 					}
 
 					if (!this.removedRange) {
-						// console.log('scheduleUpdate')
 						this.scheduleUpdate(selection.anchorContainer)
 					}
 				}
