@@ -298,6 +298,22 @@ document.getElementById('copy-text-as-link').addEventListener('click', () => {
 	navigator.clipboard.write(data)
 })
 
+document.getElementById('copy-formatted-text-as-link').addEventListener('click', () => {
+	const blob = new Blob([`
+		<strong>https://<i>alekseychikin</i>.ru</strong>
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
+document.getElementById('copy-formatted-text').addEventListener('click', () => {
+	const blob = new Blob([`
+		<strong>strong <i>italic</i> text</strong>
+	`], { type: "text/html" })
+	const data = [new window.ClipboardItem({ "text/html": blob })]
+	navigator.clipboard.write(data)
+})
+
 document.addEventListener('paste', (event) => {
 	let type
 

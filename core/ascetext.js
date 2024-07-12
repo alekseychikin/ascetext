@@ -1,10 +1,9 @@
-// import { debounce } from '../../libs/helpers.js'
 import Section from '../nodes/section.js'
 import Builder from './builder.js'
 import Selection from './selection.js'
 // import Navigation from './navigation.js'
 import Editing from './editing.js'
-// import Autocomplete from './autocomplete.js'
+import Autocomplete from './autocomplete.js'
 import TimeTravel from './timetravel.js'
 import ParagraphPlugin from '../plugins/paragraph.js'
 import BreakLinePlugin from '../plugins/break-line.js'
@@ -69,7 +68,7 @@ export default class Ascetext {
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
-		// this.autocomplete = new Autocomplete(this)
+		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
 		this.onChangeTimer = null
 		this.init = false

@@ -79,7 +79,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	get autocompleteRule() {
-		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{2,}\.[a-zA-Z]{2,}[^\s,]*/
+		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{1,}\.[a-zA-Z]{2,}[^\s,]*$/
 	}
 
 	parse(element, builder) {
@@ -210,17 +210,5 @@ export default class LinkPlugin extends PluginPlugin {
 		builder.append(link, match)
 
 		return link
-	}
-
-	unwrap(node, builder) {
-		let current = node
-
-		while (current) {
-			if (current.type === 'link') {
-				builder.replace(current, current.first)
-			}
-
-			current = current.parent
-		}
 	}
 }

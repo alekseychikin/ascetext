@@ -130,6 +130,7 @@ export default class Editing {
 						this.update()
 						this.core.render.dropRender()
 						timeTravel.commit()
+						this.core.autocomplete.trigger()
 						// timeTravel.preservePreviousSelection()
 						this.spacesDown = true
 					}
@@ -464,6 +465,7 @@ export default class Editing {
 		this.handleRemoveRange()
 
 		builder.insert(result)
+		this.core.autocomplete.trigger()
 		event.preventDefault()
 	}
 
