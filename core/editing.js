@@ -38,7 +38,6 @@ export default class Editing {
 		this.onPaste = this.onPaste.bind(this)
 		this.onCut = this.onCut.bind(this)
 		this.onCopy = this.onCopy.bind(this)
-		this.selectionUpdate = this.selectionUpdate.bind(this)
 
 		this.node = core.node
 		this.core = core
@@ -48,8 +47,6 @@ export default class Editing {
 		this.isSession = false
 		this.isUpdating = false
 		this.spacesDown = false
-		this.lastSelection = null
-		this.lastSelectionIndexes = null
 		this.hadKeydown = false
 		this.removedRange = false
 		this.keydownTimer = null
@@ -63,15 +60,6 @@ export default class Editing {
 		this.node.addEventListener('paste', this.onPaste)
 		this.node.addEventListener('compositionstart', this.onCompositionStart)
 		this.node.addEventListener('compositionend', this.onCompositionEnd)
-
-		this.core.selection.subscribe(() => setTimeout(this.selectionUpdate, 0))
-	}
-
-	selectionUpdate() {
-		const { selection } = this.core
-
-		this.lastSelection = selection.selectedItems
-		this.lastSelectionIndexes = selection.getSelectionInIndexes()
 	}
 
 	onCompositionStart() {
@@ -213,10 +201,9 @@ export default class Editing {
 		}
 
 		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
-		const commonParent = this.core.model
-		const focus = this.core.builder.splitByTail(commonParent, this.core.builder.splitByOffset(focusContainer, focusOffset).tail)
+		const focus = this.core.builder.splitByTail(this.core.model, this.core.builder.splitByOffset(focusContainer, focusOffset).tail)
 		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
-		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(commonParent, anchor.tail)
+		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(this.core.model, anchor.tail)
 		const until = anchorContainer === focusContainer ? since : focus.tail.previous
 
 		console.log('since', since)
@@ -384,35 +371,9 @@ export default class Editing {
 			const section = new Section('root')
 			const { since } = this.handleRemoveRange()
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
-			const nodes = []
-			let current = since
-
-			while (current) {
-				nodes.push(current)
-
-				current = current.next
-			}
 
 			this.core.builder.append(section, since)
-			this.core.normalizer.normalize(nodes)
-			current = section.first
-
-			let htmlValue = ''
-			let textValue = ''
-
-			while (current) {
-				const children = this.core.stringify(current.first)
-
-				htmlValue += current.stringify(children)
-				textValue += children
-					.replace(/<br\s*?\/?>/g, '\n')
-					.replace(/(<([^>]+)>)/ig, '') + '\n'
-
-				current = current.next
-			}
-
-			clipboardData.setData('text/html', '<meta charset="utf-8">' + htmlValue)
-			clipboardData.setData('text/plain', textValue)
+			this.copyToClipboard(clipboardData, section)
 		}
 
 		event.preventDefault()
@@ -422,13 +383,65 @@ export default class Editing {
 		if (this.core.selection.isRange) {
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
 
-			//
+			const { builder, selection } = this.core
+			const section = new Section('root')
+			const indexes = selection.getSelectionInIndexes()
+			const anchorIndex = indexes.anchorIndex.slice()
+			const focusIndex = indexes.focusIndex.slice()
+			const { node: first } = selection.findElementByIndex(anchorIndex.slice(0, 2))
+			const { node: last } = selection.findElementByIndex(focusIndex.slice(0, 2))
+			const payload = builder.getJson(first, last)
 
-			// clipboardData.setData('text/html', '<meta charset="utf-8">' + removed.html)
-			// clipboardData.setData('text/plain', removed.text)
+			builder.append(section, builder.parseJson(payload))
+			focusIndex[0] -= anchorIndex[0]
+			anchorIndex[0] = 0
+
+			const { node: focusContainer, offset: focusOffset } = selection.findElementByIndex(focusIndex, section)
+			const { node: anchorContainer, offset: anchorOffset } = selection.findElementByIndex(anchorIndex, section)
+			const focus = builder.splitByTail(section, builder.splitByOffset(focusContainer, focusOffset).tail)
+			const anchor = builder.splitByOffset(anchorContainer, anchorOffset)
+			const { tail: since } = builder.splitByTail(section, anchor.tail)
+			const until = anchorContainer === focusContainer ? since : focus.tail.previous
+
+			if (section.first !== since) {
+				builder.cutUntil(section.first, since.previous)
+			}
+
+			builder.cutUntil(until.next)
+			this.copyToClipboard(clipboardData, section)
 		}
 
 		event.preventDefault()
+	}
+
+	copyToClipboard(clipboardData, section) {
+		let htmlValue = ''
+		let textValue = ''
+		let current = section.first
+		const nodes = []
+
+		while (current) {
+			nodes.push(current)
+
+			current = current.next
+		}
+
+		this.core.normalizer.normalize(nodes)
+		current = section.first
+
+		while (current) {
+			const children = this.core.stringify(current.first)
+
+			htmlValue += current.stringify(children)
+			textValue += children
+				.replace(/<br\s*?\/?>/g, '\n')
+				.replace(/(<([^>]+)>)/ig, '') + '\n'
+
+			current = current.next
+		}
+
+		clipboardData.setData('text/html', '<meta charset="utf-8">' + htmlValue)
+		clipboardData.setData('text/plain', textValue)
 	}
 
 

@@ -442,8 +442,8 @@ export default class Selection extends Publisher {
 		return indexes
 	}
 
-	findElementByIndex(indexes) {
-		let current = this.core.model
+	findElementByIndex(indexes, parent = this.core.model) {
+		let current = parent
 
 		for (let i = 0; i < indexes.length - 1; i++) {
 			current = current.first
