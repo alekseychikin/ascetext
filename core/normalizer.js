@@ -1,9 +1,12 @@
+import Publisher from './publisher.js'
 import { operationTypes } from './builder.js'
 import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
-export default class Normalizer {
+export default class Normalizer extends Publisher {
 	constructor(core) {
+		super()
+
 		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.onChange = this.onChange.bind(this)
 
@@ -52,7 +55,10 @@ export default class Normalizer {
 
 	normalizeHandle() {
 		clearTimeout(this.timer)
-		this.normalize(this.unnormalizedNodes)
+
+		if (this.unnormalizedNodes.length) {
+			this.normalize(this.unnormalizedNodes)
+		}
 	}
 
 	normalize(nodes) {
@@ -82,6 +88,8 @@ export default class Normalizer {
 				}
 			}
 		}
+
+		this.sendMessage()
 	}
 
 	normalizeWalkUp(node) {

@@ -86,10 +86,9 @@ export default class Ascetext {
 		const children = this.builder.parseVirtualTree(tree)
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.timeTravel.reset()
-		this.init = true
 		this.builder.subscribe(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
+		this.finishInit()
 	}
 
 	stringify(first) {
@@ -131,24 +130,21 @@ export default class Ascetext {
 	}
 
 	setContent(content) {
-		this.unmountAll()
-		this.model = new Root(this.node)
-		this.timeTravel.root = this.model
-		this.node.innerHTML = ''
+		this.components.forEach((component) => component.unregister())
+		this.builder.cutUntil(this.model.first)
 		this.init = false
 
 		const container = document.createElement('div')
 
 		container.innerHTML = content
 
-		const children = this.builder.parse(container)
+		const tree = this.parser.getVirtualTree(container.firstChild)
+		const children = this.builder.parseVirtualTree(tree)
 
-		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.selection.setSelection(this.model.first)
-		this.timeTravel.reset()
-		this.init = true
 		this.components.forEach((component) => component.register(this))
+		this.selection.setSelection(this.model.first)
+		this.finishInit()
 	}
 
 	getContent() {
@@ -158,19 +154,16 @@ export default class Ascetext {
 	}
 
 	setJson(data) {
-		this.unmountAll()
-		this.model = new Root(this.node)
-		this.timeTravel.root = this.model
-		this.node.innerHTML = ''
+		this.components.forEach((component) => component.unregister())
+		this.builder.cutUntil(this.model.first)
 		this.init = false
 
 		const children = this.builder.parseJson(data)
 
-		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.timeTravel.reset()
-		this.init = true
 		this.components.forEach((component) => component.register(this))
+		this.selection.setSelection(this.model.first)
+		this.finishInit()
 	}
 
 	getJson() {
@@ -179,23 +172,16 @@ export default class Ascetext {
 		return this.json(this.model.first)
 	}
 
-	unmountAll() {
-		let current = this.model.first
-
-		while (current) {
-			this.builder.handleUnmount(current)
-
-			current = current.next
-		}
+	finishInit() {
+		const unsubscribe = this.normalizer.subscribe(() => {
+			this.timeTravel.reset()
+			this.init = true
+			unsubscribe()
+		})
 	}
 
 	focus() {
 		this.selection.setSelection(this.model.first)
-	}
-
-	refreshComponent() {
-		this.components.forEach((component) => component.unregister())
-		this.components.forEach((component) => component.register(this))
 	}
 
 	destroy() {
@@ -207,7 +193,5 @@ export default class Ascetext {
 		this.sizeObserver.destroy()
 		this.controls.destroy()
 		this.components.forEach((component) => component.unregister())
-		// this.node.removeEventListener('keydown', this.onKeyDown)
-		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
 }
