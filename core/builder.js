@@ -16,7 +16,6 @@ export default class Builder extends Publisher {
 
 		this.registeredNodes = {}
 		this.registerPlugins()
-		this.appendHandler = this.appendHandler.bind(this)
 	}
 
 	create(name, ...params) {
@@ -182,7 +181,6 @@ export default class Builder extends Publisher {
 		const { tail } = this.splitByOffset(firstLevelNode, length)
 		const duplicate = firstLevelNode.split(this).tail
 
-		// this.append(firstLevelNode.parent, duplicate, firstLevelNode.next)
 		this.append(duplicate, tail)
 
 		return {
@@ -198,10 +196,6 @@ export default class Builder extends Publisher {
 
 		while (container !== parent) {
 			duplicate = container.split(this, currentTail)
-
-			// this.append(container.parent, duplicate, container.next)
-			// this.append(duplicate.tail, currentTail)
-
 			currentTail = duplicate.tail
 
 			if (duplicate.head.parent.contains(parent)) {
@@ -237,13 +231,9 @@ export default class Builder extends Publisher {
 		}
 
 		if (target.type === 'fragment') {
-			this.append(node, target.first, anchor)
-		} else {
-			this.appendHandler(node, target, anchor)
+			return this.append(node, target.first, anchor)
 		}
-	}
 
-	appendHandler(node, target, anchor) {
 		const last = target.getNodeUntil()
 		let current = target
 
@@ -299,15 +289,7 @@ export default class Builder extends Publisher {
 	}
 
 	cut(node) {
-		if (!node) {
-			return
-		}
-
-		if (isFunction(node.cut)) {
-			node.cut({ builder: this })
-		} else {
-			this.cutUntil(node, node)
-		}
+		this.cutUntil(node, node)
 	}
 
 	cutUntil(node, until) {
@@ -430,13 +412,11 @@ export default class Builder extends Publisher {
 		while (current !== parent) {
 			while (current.previous) {
 				current = current.previous
-
 				offset += current.length
 			}
 
 			current = current.parent
 		}
-
 
 		return offset
 	}
