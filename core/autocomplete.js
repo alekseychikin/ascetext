@@ -49,7 +49,7 @@ export default class Autocomplete {
 			return ''
 		}
 
-		while (current && !current.isInlineWidget) {
+		while (current && current.type === 'text') {
 			content = (current.type === 'text' ? current.attributes.content : '\n') + content
 			offset = this.builder.getOffsetToParent(this.selection.anchorContainer, current)
 			current = current.previous

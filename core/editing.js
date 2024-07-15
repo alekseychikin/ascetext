@@ -466,6 +466,7 @@ export default class Editing {
 		this.core.timeTravel.preservePreviousSelection()
 		this.handleRemoveRange()
 
+		this.update()
 		builder.insert(result)
 		this.core.autocomplete.trigger()
 		event.preventDefault()

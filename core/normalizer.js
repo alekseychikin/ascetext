@@ -200,17 +200,39 @@ export default class Normalizer extends Publisher {
 	}
 
 	normalizeAccept(node, current) {
-		// console.log('normalizeAccept', current.parent, current)
-		if (!current.parent.accept(current) || !current.fit(current.parent)) {
-			// надо проверить, что вообще возможно поместить этот current хоть во что-то из родителей
-			// если нет, то нужно попробовать поместить дочерние элементы
-			let next = current.parent.next
-			let parent = current.parent
+		let parent = current.parent
+		let restored
+
+		if (!this.canAccept(parent, current)) {
+			const anchor = current.next
+
+			restored = this.core.plugins.reduce((parsed, plugin) => {
+				if (parsed) return parsed
+
+				if (isFunction(plugin.restore)) {
+					return plugin.restore(current, this.core.builder)
+				}
+
+				return false
+			}, false)
+
+			if (restored && this.canAccept(parent, restored)) {
+				this.core.builder.append(parent, restored, anchor)
+
+				return restored
+			}
+
+			this.core.builder.cut(current)
+
+			return node !== current ? node : anchor || parent
+		}
+
+		if (!parent.accept(current) || !current.fit(parent)) {
+			let next = parent.next
 
 			if (current.next) {
-				const duplicated = current.parent.split(this.core.builder, current.next)
+				const duplicated = parent.split(this.core.builder, current.next)
 
-				// this.append(current.parent.parent, duplicated, current.parent.next)
 				next = duplicated.tail
 				parent = duplicated.head
 			}

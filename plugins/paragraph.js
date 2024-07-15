@@ -33,6 +33,18 @@ export default class ParagraphPlugin extends PluginPlugin {
 		}
 	}
 
+	restore(node, builder) {
+		if (node.type === 'text' || node.isInlineWidget) {
+			const paragraph = builder.createBlock()
+
+			builder.push(paragraph, node)
+
+			return paragraph
+		}
+
+		return false
+	}
+
 	parse(element, builder) {
 		if (isHtmlElement(element) && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
 			return builder.create('paragraph')

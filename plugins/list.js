@@ -390,6 +390,18 @@ export default class ListPlugin extends PluginPlugin {
 		}
 	}
 
+	restore(node, builder) {
+		if (node.type === 'list-item') {
+			const list = builder.create('list')
+
+			builder.push(list, node)
+
+			return list
+		}
+
+		return false
+	}
+
 	getInsertControls(container) {
 		if (container.parent.isSection) {
 			return [

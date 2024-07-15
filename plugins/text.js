@@ -31,6 +31,10 @@ export class Text extends Node {
 		return this.create()
 	}
 
+	fit(node) {
+		return node.isContainer || node.isInlineWidget
+	}
+
 	create() {
 		return {
 			type: 'text',
