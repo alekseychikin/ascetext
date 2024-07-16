@@ -586,20 +586,21 @@ export default class Render extends Publisher {
 			current.isRendered = true
 			current.element = this.mapNodeIdToElement[current.id]
 
-			if (current.parent.isMount) {
+			if (current.parent.isMount && !current.isMount) {
 				current.isMount = true
-			}
 
-			if (isFunction(current.onMount)) {
-				if (current.isContainer || current.isWidget) {
-					current.onMount(this.core)
-				} else {
-					console.error('onMount method only for containers and widgets')
+				if (isFunction(current.onMount)) {
+					if (current.isContainer || current.isWidget) {
+						current.onMount(this.core)
+					} else {
+						console.error('onMount method only for containers and widgets')
+					}
 				}
+
+				this.handleMount(current.first)
 			}
 
 			this.sendMessage(current)
-			this.handleMount(current.first)
 
 			if (current === last) {
 				break
