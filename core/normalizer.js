@@ -56,12 +56,11 @@ export default class Normalizer extends Publisher {
 	normalizeHandle() {
 		clearTimeout(this.timer)
 
-		if (this.unnormalizedNodes.length) {
-			this.normalize(this.unnormalizedNodes)
-		}
+		this.normalize(this.unnormalizedNodes)
 	}
 
 	normalize(nodes) {
+		const hasItems = nodes
 		let limit = 1000
 		let node
 		let next
@@ -72,13 +71,13 @@ export default class Normalizer extends Publisher {
 				current = node
 
 				while (current && limit-- > 0) {
-					if (next = this.normalizeWalkUp(current)) {
+					if (next = this.walkUp(current)) {
 						current = next
 
 						continue
 					}
 
-					if (next = this.normalizeWalkDown(current)) {
+					if (next = this.walkDown(current)) {
 						current = next
 
 						continue
@@ -89,10 +88,14 @@ export default class Normalizer extends Publisher {
 			}
 		}
 
-		this.sendMessage()
+		this.root()
+
+		if (hasItems) {
+			this.sendMessage()
+		}
 	}
 
-	normalizeWalkUp(node) {
+	walkUp(node) {
 		let current = node
 		let next
 
@@ -100,18 +103,18 @@ export default class Normalizer extends Publisher {
 			current = current.deepesetLastNode()
 
 			while (current.previous) {
-				if (next = this.normalizeEmpty(node, current)) {
+				if (next = this.empty(node, current)) {
 					return next
 				}
 
-				if (next = this.normalizeJoin(node, current)) {
+				if (next = this.join(node, current)) {
 					return next
 				}
 
 				current = current.previous
 			}
 
-			if (next = this.normalizeEmpty(node, current)) {
+			if (next = this.empty(node, current)) {
 				return next
 			}
 
@@ -122,11 +125,11 @@ export default class Normalizer extends Publisher {
 					break
 				}
 
-				if (next = this.normalizeJoin(node, current)) {
+				if (next = this.join(node, current)) {
 					return next
 				}
 
-				if (next = this.normalizeEmpty(node, current)) {
+				if (next = this.empty(node, current)) {
 					return next
 				}
 			}
@@ -137,7 +140,7 @@ export default class Normalizer extends Publisher {
 		return false
 	}
 
-	normalizeWalkDown(node) {
+	walkDown(node) {
 		let current = node
 		let next
 
@@ -150,14 +153,14 @@ export default class Normalizer extends Publisher {
 					break
 				}
 
-				if (next = this.normalizeAccept(node, current)) {
+				if (next = this.accept(node, current)) {
 					return next
 				}
 
 				current = current.next
 			}
 
-			if (next = this.normalizeAccept(node, current)) {
+			if (next = this.accept(node, current)) {
 				return next
 			}
 
@@ -168,7 +171,7 @@ export default class Normalizer extends Publisher {
 					break
 				}
 
-				if (next = this.normalizeAccept(node, current)) {
+				if (next = this.accept(node, current)) {
 					return next
 				}
 			}
@@ -179,7 +182,7 @@ export default class Normalizer extends Publisher {
 		return false
 	}
 
-	normalizeEmpty(node, current) {
+	empty(node, current) {
 		if (current.canDelete()) {
 			const next = current.previous || current.parent
 
@@ -199,7 +202,7 @@ export default class Normalizer extends Publisher {
 		return false
 	}
 
-	normalizeAccept(node, current) {
+	accept(node, current) {
 		let parent = current.parent
 		let restored
 
@@ -245,10 +248,10 @@ export default class Normalizer extends Publisher {
 		return false
 	}
 
-	normalizeJoin(node, current) {
+	join(node, current) {
 		let joined
 
-		if (joined = this.join(current)) {
+		if (joined = this.handleJoin(current)) {
 			if (current === node) {
 				return joined
 			}
@@ -259,7 +262,7 @@ export default class Normalizer extends Publisher {
 		return false
 	}
 
-	join(node) {
+	handleJoin(node) {
 		const previous = node.previous
 		let joined
 
@@ -284,5 +287,13 @@ export default class Normalizer extends Publisher {
 		}
 
 		return false
+	}
+
+	root() {
+		const last = this.core.model.last
+
+		if (!last || !last.isContainer || !last.isEmpty) {
+			this.core.builder.append(this.core.model, this.core.builder.createBlock())
+		}
 	}
 }
