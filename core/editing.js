@@ -1,7 +1,7 @@
 import isFunction from '../utils/is-function.js'
 import createShortcutMatcher from '../utils/create-shortcut-matcher.js'
-import findParent from '../utils/find-parent.js'
 import Section from '../nodes/section.js'
+import nbsp from '../utils/nbsp.js'
 
 const backspaceKey = 8
 const deletekey = 46
@@ -78,7 +78,7 @@ export default class Editing {
 		const { selection } = this.core
 
 		if (selection.anchorContainer && isFunction(selection.anchorContainer.inputHandler)) {
-			selection.anchorContainer.inputHandler()
+			selection.anchorContainer.inputHandler(true)
 		}
 
 		if (!this.hadKeydown && !this.isSession) {
@@ -132,13 +132,13 @@ export default class Editing {
 						timeTravel.commit()
 
 						if (this.core.autocomplete.trigger()) {
-							builder.insert(builder.create('text', { content: ' ' }))
+							builder.insert(builder.create('text', { content: nbsp }))
+						} else if (!this.removedRange) {
+							this.scheduleUpdate(selection.anchorContainer)
 						}
 
 						this.spacesDown = true
-					}
-
-					if (!this.removedRange) {
+					} else if (!this.removedRange) {
 						this.scheduleUpdate(selection.anchorContainer)
 					}
 				}
@@ -209,23 +209,14 @@ export default class Editing {
 		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(this.core.model, anchor.tail)
 		const until = anchorContainer === focusContainer ? since : focus.tail.previous
 
-		console.log('since', since)
-		console.log('until', until)
-
 		this.removedRange = true
 		this.core.builder.cutUntil(since, until)
 
 		const previousSelectableNode = anchorHead.next.getPreviousSelectableNode()
 		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
 
-		console.log(previousSelectableNode)
-		console.log(nextSelectableNode)
-
 		if (previousSelectableNode && nextSelectableNode) {
 			this.core.builder.combine(previousSelectableNode, nextSelectableNode)
-			// this.core.builder.append(previousSelectableNode.parent, nextSelectableNode, previousSelectableNode.next)
-			// this.core.builder.moveTail(nextSelectableNode, previousSelectableNode, 0)
-			// this.core.builder.cut(nextSelectableNode)
 		}
 
 		return {

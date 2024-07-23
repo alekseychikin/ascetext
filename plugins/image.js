@@ -103,7 +103,6 @@ export class ImageCaption extends Container {
 			},
 			class: 'contenteditor__image-placeholder'
 		})
-		console.log(this.imagePlaceholder.style.display)
 		this.removeObserver = null
 	}
 
@@ -141,7 +140,6 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		// console.log('mount', this)
 		this.imagePlaceholder.innerHTML = this.attributes.placeholder
 
 		controls.registerControl(this.imagePlaceholder)
@@ -158,8 +156,12 @@ export class ImageCaption extends Container {
 			this.removeObserver = null
 		}
 
-		// console.log('unmount', this)
 		controls.unregisterControl(this.imagePlaceholder)
+	}
+
+	onCombine(builder, container) {
+		builder.append(container, this.first)
+		builder.cut(this.parent)
 	}
 
 	enterHandler(event, { builder, anchorOffset }) {
@@ -169,8 +171,25 @@ export class ImageCaption extends Container {
 		builder.moveTail(this, emptyParagraph, anchorOffset)
 	}
 
+	backspaceHandler(event, { builder, anchorAtFirstPositionInContainer, setSelection }) {
+		if (anchorAtFirstPositionInContainer) {
+			event.preventDefault()
+
+			const previousSelectableNode = this.getPreviousSelectableNode()
+
+			if (!previousSelectableNode) {
+				return false
+			}
+
+			const length = previousSelectableNode.length
+
+			builder.append(previousSelectableNode, this.first)
+			setSelection(previousSelectableNode, length)
+		}
+	}
+
 	inputHandler() {
-		this.imagePlaceholder.style.display = this.length ? 'none' : ''
+		this.imagePlaceholder.style.display = this.element.outerText.trim().length ? 'none' : ''
 	}
 
 	stringify(children) {
@@ -365,7 +384,7 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	insertImage(container) {
-		return async (event, { builder }) => {
+		return async (event, { builder, setSelection }) => {
 			const { files } = event.target
 
 			if (files.length) {
@@ -377,6 +396,7 @@ export default class ImagePlugin extends PluginPlugin {
 
 				builder.append(image, caption)
 				builder.replace(container, image)
+				setSelection(image)
 
 				try {
 					const src = await this.params.onSelectFile(files[0], image)
@@ -391,13 +411,15 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	updateImage(image) {
-		return async (event, { builder, restoreSelection }) => {
+		return async (event, { builder, setSelection, restoreSelection }) => {
 			const { files } = event.target
 
 			if (files.length) {
 				try {
 					const src = await this.params.onSelectFile(files[0], image)
+
 					builder.setAttribute(image, 'src', src)
+					setSelection(image)
 				} catch (exception) {
 					builder.cut(image)
 					restoreSelection()

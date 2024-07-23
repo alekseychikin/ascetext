@@ -31,7 +31,7 @@ export default class SizeObserver {
 		this.ids.push(id)
 		this.observedNodes.push(node)
 		this.handlers.push(handler)
-		this.update()
+		this.handleNode(this.observedNodes.length - 1)
 
 		return () => {
 			const index = this.ids.indexOf(id)
@@ -52,17 +52,23 @@ export default class SizeObserver {
 
 	updateHandler() {
 		this.observedNodes.forEach((node, index) => {
-			if (node.isMount) {
-				let boundings = this.calculateBoundings(node.element)
-
-				if (isFunction(this.middleware)) {
-					boundings = this.middleware(boundings)
-				}
-
-				this.handlers[index](boundings)
-			}
+			this.handleNode(index)
 		})
 		this.timer = null
+	}
+
+	handleNode(index) {
+		const node = this.observedNodes[index]
+
+		if (node.isMount) {
+			let boundings = this.calculateBoundings(node.element)
+
+			if (isFunction(this.middleware)) {
+				boundings = this.middleware(boundings)
+			}
+
+			this.handlers[index](boundings)
+		}
 	}
 
 	calculateBoundings(element) {

@@ -32,8 +32,8 @@ export default class Toolbar extends ComponentComponent {
 		this.showSideToolbar = this.showSideToolbar.bind(this)
 		this.hideSideToolbar = this.hideSideToolbar.bind(this)
 		this.renderSideControls = this.renderSideControls.bind(this)
+		this.setSelection = this.setSelection.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
-		this.getSelectedItems = this.getSelectedItems.bind(this)
 		this.toggleSideToolbar = this.toggleSideToolbar.bind(this)
 		this.checkToolbarVisibility = this.checkToolbarVisibility.bind(this)
 		this.wrapControls = this.wrapControls.bind(this)
@@ -68,6 +68,7 @@ export default class Toolbar extends ComponentComponent {
 		this.centeredControls = []
 		this.sideMode = 'insert'
 		this.cancelObserver = null
+		this.setSelectionInvoked = false
 
 		this.containerAvatar = createElement('div', {
 			style: {
@@ -437,10 +438,12 @@ export default class Toolbar extends ComponentComponent {
 
 	async controlHandler(action, event, keep = false) {
 		if (!keep) {
-			// this.selection.restoreSelection()
 			this.timeTravel.preservePreviousSelection()
 			this.customMode = false
 		}
+
+		this.setSelectionInvoked = false
+		this.previousSelection = this.selection.getSelectionInIndexes()
 
 		const controls = await action(event, this.getActionHandlerParams())
 
@@ -451,11 +454,11 @@ export default class Toolbar extends ComponentComponent {
 		} else if (keep) {
 			this.showCenteredToolbar()
 		} else {
+			if (!this.setSelectionInvoked) {
+				this.selection.setSelectionByIndexes(this.previousSelection)
+			}
+
 			this.previousSideMode = ''
-			this.restoreSelection()
-			// this.editing.scheduleUpdate(this.selection.anchorContainer)
-			// this.editing.scheduleUpdate(this.selection.focusContainer)
-			// this.editing.update()
 			this.hideSideToolbar()
 		}
 	}
@@ -483,24 +486,22 @@ export default class Toolbar extends ComponentComponent {
 			anchorOffset: this.selection.anchorOffset,
 			focusOffset: this.selection.focusOffset,
 			restoreSelection: this.restoreSelection,
-			setSelection: this.selection.setSelection,
-			getSelectedItems: this.getSelectedItems,
+			setSelection: this.setSelection,
+			getSelectedItems: this.selection.getSelectedItems,
 			focusedNodes: this.selection.focusedNodes
 		}
+	}
+
+	setSelection(...params) {
+		this.setSelectionInvoked = true
+		this.selection.setSelection(...params)
 	}
 
 	restoreSelection() {
 		if (this.previousSelection !== null) {
 			this.lastRangeFocused = false
 			this.focusedNodes = []
-			// this.selection.restoreSelection()
 		}
-	}
-
-	getSelectedItems() {
-		// this.restoreSelection()
-
-		return this.selection.getSelectedItems()
 	}
 
 	emptySideToolbar() {

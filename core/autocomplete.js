@@ -22,14 +22,13 @@ export default class Autocomplete {
 
 		for (index = 0; index < this.patterns.length; index++) {
 			if (match = content.match(this.patterns[index].rule)) {
-				console.log('match', match[0])
 				const { head, tail } = selection.cutRange(selection.anchorContainer, selection.anchorOffset - match[0].length, selection.anchorContainer, selection.anchorOffset)
 				const plugin = this.patterns[index].plugin
 				const anchor = tail.next
 
 				builder.cutUntil(head, tail)
 
-				const node = plugin.wrap(head, builder)
+				const node = plugin.wrap(tail, builder, selection)
 
 				builder.append(selection.anchorContainer, node, anchor)
 

@@ -17,6 +17,7 @@ export default class Selection extends Publisher {
 		this.focus = this.focus.bind(this)
 		this.selectionChange = this.selectionChange.bind(this)
 		this.onRender = this.onRender.bind(this)
+		this.getSelectedItems = this.getSelectedItems.bind(this)
 
 		this.core = core
 		this.selection = {}
@@ -53,33 +54,29 @@ export default class Selection extends Publisher {
 		}
 
 		if (this.core.node.contains(event.srcElement) && (typeof event.srcElement.dataset.widget === 'undefined' || this.core.node === event.srcElement)) {
+			this.selectionChange()
+
 			return
 		}
 
-		// cancelAnimationFrame(this.selectionTimeout)
-		// this.selectionTimeout = requestAnimationFrame(() => {
-			const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
+		const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
 
-			this.selectionUpdate({
-				type: 'focus',
-				anchorNode: event.srcElement,
-				focusNode: event.srcElement,
-				anchorOffset: 0,
-				focusOffset: 0,
-				isCollapsed: true,
-				selectedComponent: Boolean(selectedComponent)
-			})
-		// })
+		this.selectionUpdate({
+			type: 'focus',
+			anchorNode: event.srcElement,
+			focusNode: event.srcElement,
+			anchorOffset: 0,
+			focusOffset: 0,
+			isCollapsed: true,
+			selectedComponent: Boolean(selectedComponent)
+		})
 	}
 
 	selectionChange() {
-		// console.log('changed')
-		// cancelAnimationFrame(this.selectionTimeout)
-		// this.selectionTimeout = requestAnimationFrame(() => {
-			const selection = document.getSelection()
-			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
+		const selection = document.getSelection()
 
-			// console.log(selection)
+		if (this.core.node.contains(selection.anchorNode) && this.core.node.contains(selection.focusNode)) {
+			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
 
 			this.selectionUpdate({
 				type: 'selectionchange',
@@ -90,7 +87,7 @@ export default class Selection extends Publisher {
 				isCollapsed: selection.isCollapsed,
 				selectedComponent: Boolean(selectedComponent)
 			})
-		// })
+		}
 	}
 
 	selectionUpdate(event) {
@@ -100,7 +97,6 @@ export default class Selection extends Publisher {
 
 		if (!event.isCollapsed) {
 			const focus = this.getContainerAndOffset(event.focusNode, event.focusOffset)
-			// console.log('event.focusNode', event.focusNode, event.focusOffset)
 
 			focusContainer = focus.container
 			focusOffset = focus.offset
@@ -202,10 +198,7 @@ export default class Selection extends Publisher {
 			focused: true,
 			selectedComponent: false
 		})
-
-		if (anchorNode.isRendered && (!focusNode || focusNode.isRendered)) {
-			this.selectElements()
-		}
+		this.selectElements()
 	}
 
 	onRender(node) {
@@ -215,24 +208,18 @@ export default class Selection extends Publisher {
 	}
 
 	selectElements() {
-		if (!this.anchorContainer.isRendered) {
+		if (!this.anchorContainer.isRendered || !this.focusContainer.isRendered) {
 			return
 		}
 
 		const selection = window.getSelection()
 		const { element: anchorElement, restOffset: anchorRestOffset } = this.getChildByOffset(this.anchorContainer, this.anchorOffset)
+		const { element: focusElement, restOffset: focusRestOffset } = this.getChildByOffset(this.focusContainer, this.focusOffset)
 
-		selection.collapse(anchorElement, anchorRestOffset)
-		// this.anchorContainer.element.scrollIntoView()
+		selection.setBaseAndExtent(anchorElement, anchorRestOffset, focusElement, focusRestOffset)
 
 		if (this.anchorContainer.isWidget) {
 			anchorElement.focus()
-		}
-
-		if (this.focusContainer.isRendered) {
-			const { element: focusElement, restOffset: focusRestOffset } = this.getChildByOffset(this.focusContainer, this.focusOffset)
-
-			selection.extend(focusElement, focusRestOffset)
 		}
 	}
 
@@ -296,7 +283,6 @@ export default class Selection extends Publisher {
 		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
 		const span = this.containerAvatar.querySelector('span[data-selected-text]')
 
-		// нужно возвращать прокси
 		return {
 			left: span.offsetLeft,
 			top: span.offsetTop,
@@ -319,8 +305,6 @@ export default class Selection extends Publisher {
 			console.warn('skip selection')
 			return
 		}
-
-		// console.log(event.anchorContainer, event.anchorOffset)
 
 		const firstContainer = event.anchorContainer
 		const lastContainer = event.focusContainer
@@ -353,18 +337,6 @@ export default class Selection extends Publisher {
 
 		this.handleSelectedItems()
 		this.sendMessage(this)
-	}
-
-	logFirstLevelNode(container, offset) {
-		let length = offset
-		let firstLevelNode = container.first
-
-		while (firstLevelNode && length > firstLevelNode.length) {
-			length -= firstLevelNode.length
-			firstLevelNode = firstLevelNode.next
-		}
-
-		console.log(firstLevelNode)
 	}
 
 	blur() {

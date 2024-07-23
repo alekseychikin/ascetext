@@ -30,14 +30,6 @@ const mapModifierToTag = {
 	underlined: 'u'
 }
 
-const getTextLog = (node) => {
-	const output = []
-
-	output.push(`${node.type} (${node.id})`)
-
-	return output.join(' | ')
-}
-
 export default class Render extends Publisher {
 	constructor(core) {
 		super()
@@ -54,9 +46,6 @@ export default class Render extends Publisher {
 		this.selectionTimeout = null
 		this.timer = null
 		this.queue = []
-		this.updatedContainers = []
-		this.removedNodes = []
-		this.updatedNodes = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
 		}
@@ -114,31 +103,15 @@ export default class Render extends Publisher {
 			} else {
 				switch (change.type) {
 					case operationTypes.APPEND:
-						// console.log(change)
-						// this.pushContainer(change.container)
-						this.queue.push({
-							type: change.type,
-							container: change.container,
-							target: current
-						})
-						// console.log('append', getTextLog(change.container), window.printTree(current))
-
-						break
 					case operationTypes.CUT:
-						// console.log(change)
-						// this.pushRemoveNodes(change)
-						// this.markUnrendered(current)
 						this.queue.push({
 							type: change.type,
 							container: change.container,
 							target: current
 						})
-						// console.log('cut', getTextLog(change.container), window.printTree(current))
 
 						break
 					case operationTypes.ATTRIBUTE:
-						// console.log(change)
-						// this.pushUpdateNode(change.target)
 						this.queue.push({
 							type: change.type,
 							target: change.target
@@ -157,36 +130,6 @@ export default class Render extends Publisher {
 
 		this.dropRender()
 		this.timer = requestAnimationFrame(this.render)
-	}
-
-	pushContainer(container) {
-		if (container.isRendered && !this.updatedContainers.includes(container)) {
-			this.updatedContainers.push(container)
-		}
-	}
-
-	pushRemoveNodes(event) {
-		let current = event.target
-
-		while (current) {
-			if (!this.removedNodes.includes(current)) {
-				this.removedNodes.push(current)
-			}
-
-			if (event.last && current === event.last) {
-				break
-			}
-
-			current = current.next
-		}
-	}
-
-	pushUpdateNode(node) {
-		if (!this.updatedNodes.includes(node)) {
-			// console.log('push', node)
-			this.updatedNodes.push(node)
-			node.isRendered = false
-		}
 	}
 
 	markUnrendered(target, last = target) {
@@ -211,74 +154,25 @@ export default class Render extends Publisher {
 
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
-			if (current.type === operationTypes.APPEND && (!current.container.contains(current.target) || !current.container.isMount)) {
-				// console.log('→ current', current.target, current.type)
+			if (
+				current.type === operationTypes.APPEND && (!current.container.contains(current.target) || !current.container.isMount) ||
+				current.type === 'update' && !current.target.isMount
+			) {
 				return result
 			}
-
-			if (current.type === 'update' && !current.target.isMount) {
-				return result
-			}
-
-			// for (i = 0; i < result.length; i++) {
-			// 	if (current.target !== result[i].target && result[i].target.contains(current.target)) {
-			// 		// console.log('↓ current', 'result[i]', result[i].target, current.target, result[i].type, current.type)
-			// 		return result
-			// 	}
-
-			// 	if (current.target !== result[i].target && current.target.contains(result[i].target)) {
-			// 		// console.log('↑ current', current.target, 'result[i]', result[i].target, current.type, result[i].type)
-			// 		result.splice(i, 1)
-
-			// 		break
-			// 	}
-
-			// 	if (current.type === 'update' && result[i].type === current.type && current.target === result[i].target) {
-			// 		result.splice(i, 1)
-
-			// 		break
-			// 	}
-			// }
 
 			result.push(current)
 
 			return result
 		}, [])
 		let event
-
-		// app root (1) → list (36) — я добавляю лист, и на момент добавления в нём есть list-item (58), но так как дальше я его удаляю, то здесь его уже нет
-		// cut list (36) → list-item (58) — и значит здесь удалять нечего
-		// cut root (1) → list (36) — получается, что с контейнерами тоже нужно что-то делать
-
-		// console.log('document to render')
-		// console.log(window.printTree(this.core.model))
-
-		// console.log('plan')
-
-		// queue.forEach((item) => {
-		// 	switch (item.type) {
-		// 		case 'update':
-		// 			console.log('upd', getTextLog(item.target))
-		// 			break
-		// 		case 'append':
-		// 			console.log('app', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-		// 			break
-		// 		case 'cut':
-		// 			console.log('cut', `${getTextLog(item.container)} → ${getTextLog(item.target)}`)
-		// 			break
-		// 	}
-		// })
-
 		const added = []
 		const updated = []
-
-		// console.log('actions')
 
 		while (event = queue.shift()) {
 			switch (event.type) {
 				case operationTypes.CUT:
-					// console.log('cut', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
-					this.onCut(event)
+					this.cut(event)
 
 					break
 				case operationTypes.APPEND:
@@ -291,23 +185,31 @@ export default class Render extends Publisher {
 		}
 
 		while (event = added.shift()) {
-			// console.log('app', `${getTextLog(event.container)} → ${getTextLog(event.target)}`)
-			this.onAppend(event)
+			this.append(event)
 		}
 
 		while (event = updated.shift()) {
 			this.update(event.target)
 		}
-
-		// console.log('render finished')
 	}
 
-	append({ element: container }, node) {
-		const tree = this.createTree(node, node)
+	cut(event) {
+		const element = this.mapNodeIdToElement[event.target.id]
+
+		if (event.target.isMount) {
+			element.parentNode.removeChild(element)
+			this.handleUnmount(event.target, event.target)
+		}
+	}
+
+	append(event) {
+		const container = this.mapNodeIdToElement[event.container.id]
+		const tree = this.createTree(event.target, event.target)
 		const elements = tree.map((element) => this.createElement(element))
 
-		elements.forEach((element) => container.insertBefore(element, this.findAnchor(node)))
-		this.handleMount(node, node)
+		elements.forEach((element) => container.insertBefore(element, this.findAnchor(event.target)))
+		this.handleMount(event.target, event.target)
+		this.handleInput(event.target)
 	}
 
 	update(node) {
@@ -339,6 +241,8 @@ export default class Render extends Publisher {
 		}
 
 		node.isRendered = true
+		this.handleMount(node.first)
+		this.handleInput(node)
 		this.sendMessage(node)
 	}
 
@@ -354,52 +258,6 @@ export default class Render extends Publisher {
 		}
 
 		return null
-	}
-
-	onUpdate(node) {
-		// console.log(node)
-		// make sure that used already existed nodes
-		const tree = this.createTree(node.first, node.last)
-		const container = this.mapNodeIdToElement[node.id]
-		// console.log(container)
-		const lookahead = Array.prototype.slice.call(container.childNodes)
-		const elements = tree.map((element) => this.createElement(element, lookahead))
-
-		elements.forEach((element) => container.appendChild(element))
-		lookahead.forEach((element) => {
-			container.removeChild(element)
-		})
-
-		if (!container.childNodes.length || isElementBr(container.lastChild)) {
-			container.appendChild(this.getTrailingBr())
-		}
-
-		node.isRendered = true
-
-		this.sendMessage(node)
-	}
-
-	onAppend(event) {
-		// if (event.target.isRendered) {
-		// 	return
-		// }
-
-		const container = this.mapNodeIdToElement[event.container.id]
-		const tree = this.createTree(event.target, event.target)
-		// console.log('tree', tree)
-		const elements = tree.map((element) => this.createElement(element))
-
-		elements.forEach((element) => container.insertBefore(element, this.findAnchor(event.target)))
-		this.handleMount(event.target, event.target)
-	}
-
-	onCut(event) {
-		const element = this.mapNodeIdToElement[event.target.id]
-
-		if (event.target.isMount) {
-			element.parentNode.removeChild(element)
-			this.handleUnmount(event.target, event.target)
-		}
 	}
 
 	createTree(target, last = null) {
@@ -503,7 +361,9 @@ export default class Render extends Publisher {
 		}
 
 		for (attributeName in tree.attributes) {
-			element.setAttribute(attributeName, tree.attributes[attributeName])
+			if (currentsAttributes[attributeName] !== tree.attributes[attributeName]) {
+				element.setAttribute(attributeName, tree.attributes[attributeName])
+			}
 		}
 
 		if (tree.id) {
@@ -572,8 +432,6 @@ export default class Render extends Publisher {
 		const isEmpty = !element.childNodes.length || isTextElement(element.childNodes[0]) && !element.childNodes[0].length
 		const hasLastBr = element.childNodes.length && isElementBr(element.lastChild)
 
-		// console.log('handleContainer', element, isEmpty, hasLastBr)
-
 		if (isEmpty || hasLastBr) {
 			element.appendChild(this.getTrailingBr())
 		}
@@ -593,7 +451,7 @@ export default class Render extends Publisher {
 					if (current.isContainer || current.isWidget) {
 						current.onMount(this.core)
 					} else {
-						console.error('onMount method only for containers and widgets')
+						console.error('onMount method only for containers and widgets', current)
 					}
 				}
 
@@ -618,7 +476,7 @@ export default class Render extends Publisher {
 				if (current.isContainer || current.isWidget) {
 					current.onUnmount(this.core)
 				} else {
-					console.error('onUnmount method only for containers and widgets')
+					console.error('onUnmount method only for containers and widgets', current)
 				}
 			}
 
@@ -629,6 +487,21 @@ export default class Render extends Publisher {
 			if (current === last) {
 				break
 			}
+
+			current = current.next
+		}
+	}
+
+	handleInput(node) {
+		let current = node.first
+
+		if (isFunction(node.inputHandler)) {
+			// console.log('input handler', node, node === this.core.selection.anchorContainer)
+			node.inputHandler(node === this.core.selection.anchorContainer)
+		}
+
+		while (current) {
+			this.handleInput(current)
 
 			current = current.next
 		}

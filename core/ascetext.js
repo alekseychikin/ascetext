@@ -143,7 +143,6 @@ export default class Ascetext {
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.components.forEach((component) => component.register(this))
-		this.selection.setSelection(this.model.first)
 		this.finishInit()
 	}
 
@@ -162,7 +161,6 @@ export default class Ascetext {
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.components.forEach((component) => component.register(this))
-		this.selection.setSelection(this.model.first)
 		this.finishInit()
 	}
 

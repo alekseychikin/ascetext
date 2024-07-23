@@ -11,7 +11,6 @@ export default class Container extends Node {
 		this.removeObserver = null
 		this.sizeObserver = null
 		this.controls = null
-		this.inputHandlerTimer = null
 	}
 
 	get isEmpty() {
@@ -28,19 +27,18 @@ export default class Container extends Node {
 
 	onFocus(selection) {
 		if (!selection.isRange && this.placeholder) {
-			this.invokePlaceholderHandler(true)
+			this.inputHandler(true)
 		}
 	}
 
 	onBlur() {
 		if (this.placeholder) {
-			this.invokePlaceholderHandler(false)
+			this.inputHandler(false)
 		}
 	}
 
 	onMount({ controls, placeholder, sizeObserver }) {
 		if (placeholder) {
-			// console.log('mount', this)
 			this.placeholderHandler = placeholder
 			this.controls = controls
 			this.sizeObserver = sizeObserver
@@ -49,17 +47,17 @@ export default class Container extends Node {
 					'position': 'absolute',
 					'pointer-events': 'none',
 					'top': '0',
-					'left': '0'
-				}
+					'left': '0',
+					'display': 'none'
+				},
+				'data-id': this.id
 			})
 			this.controls.registerControl(this.placeholder)
-			this.invokePlaceholderHandler(false)
 		}
 	}
 
-	onUnmount({ controls, placeholder }) {
-		if (placeholder) {
-			// console.log('unmount', this)
+	onUnmount({ controls }) {
+		if (this.placeholder) {
 			this.hidePlaceholder()
 			controls.unregisterControl(this.placeholder)
 		}
@@ -71,21 +69,10 @@ export default class Container extends Node {
 		}
 	}
 
-	inputHandler() {
-		if (this.placeholder) {
-			if (this.inputHandlerTimer) {
-				return null
-			}
+	inputHandler(focused) {
+		const show = this.placeholderHandler(this.placeholder, this, focused)
 
-			this.inputHandlerTimer = requestAnimationFrame(() => this.invokePlaceholderHandler(true))
-		}
-	}
-
-	invokePlaceholderHandler(focused) {
-		this.cancelPlaceholderHandler()
-		this.placeholderHandler(this.placeholder, this, focused)
-
-		if (!this.length) {
+		if (!this.element.outerText.trim().length && show) {
 			this.showPlaceholder()
 		} else {
 			this.hidePlaceholder()
@@ -98,21 +85,16 @@ export default class Container extends Node {
 				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
 				this.placeholder.style.width = `${entry.element.width}px`
 			})
+			this.placeholder.style.display = ''
 		}
 	}
 
 	hidePlaceholder() {
-		this.cancelPlaceholderHandler()
-
 		if (this.placeholder && this.removeObserver) {
+			this.placeholder.style.display = 'none'
 			this.removeObserver()
 			this.removeObserver = null
 		}
-	}
-
-	cancelPlaceholderHandler() {
-		cancelAnimationFrame(this.inputHandlerTimer)
-		this.inputHandlerTimer = null
 	}
 
 	enterHandler(
@@ -177,6 +159,7 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorAtLastPositionInContainer,
+			setSelection
 		}
 	) {
 		if (anchorAtLastPositionInContainer) {
@@ -188,7 +171,12 @@ export default class Container extends Node {
 				return false
 			}
 
-			builder.combine(this, nextSelectableNode)
+			if (this.isEmpty) {
+				builder.cut(this)
+				setSelection(nextSelectableNode)
+			} else {
+				builder.combine(this, nextSelectableNode)
+			}
 		}
 	}
 }

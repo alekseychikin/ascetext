@@ -300,15 +300,17 @@ export default class Builder extends Publisher {
 		const last = node.getNodeUntil(until)
 		let current = node
 
-		this.sendMessage({
-			type: operationTypes.CUT,
-			container: node.parent,
-			last,
-			anchor: last.next,
-			previous: node.previous,
-			next: last.next,
-			target: node
-		})
+		if (node.parent) {
+			this.sendMessage({
+				type: operationTypes.CUT,
+				container: node.parent,
+				last,
+				anchor: last.next,
+				previous: node.previous,
+				next: last.next,
+				target: node
+			})
+		}
 
 		if (current.previous) {
 			if (current.parent && current.parent.last === last) {
