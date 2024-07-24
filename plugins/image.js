@@ -250,7 +250,7 @@ export default class ImagePlugin extends PluginPlugin {
 		if (element.type === 'image') {
 			const image = builder.create('image', { src: element.src })
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
-			const children = element.figcaption ? builder.parseJson(element.figcaption) : builder.create('line-holder')
+			const children = element.figcaption ? builder.parseJson(element.figcaption) : undefined
 
 			builder.append(caption, children)
 			builder.append(image, caption)
