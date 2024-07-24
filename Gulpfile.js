@@ -34,14 +34,14 @@ function watchTask() {
 	})
 
 	gulp.watch([
-		'./{components,controls,core,hosts,nodes,playground,plugins,utils}/*.js',
+		'./{components,controls,core,nodes,playground,plugins,utils}/*.js',
 		'playground/*.html'
 	]).on('change', browserSync.reload)
 	gulp.watch(['./icons/*.svg', './*.css'], watchParams, assets)
 
 	gulp.watch([
 		'./playground/app.js',
-		'./{components,controls,core,nodes,plugins,utils,hosts}/*.js'
+		'./{components,controls,core,nodes,plugins,utils}/*.js'
 	], watchParams, scriptsTask(true))
 }
 
