@@ -5,10 +5,5 @@ export default class Fragment extends Node {
 		super('fragment')
 
 		this.isFragment = true
-		this.setElement(new DocumentFragment())
-	}
-
-	accept() {
-		return true
 	}
 }

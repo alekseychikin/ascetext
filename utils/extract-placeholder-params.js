@@ -47,7 +47,8 @@ function extractPlaceholderParams(params) {
 
 		element.innerHTML = label
 		element.className = className
-		element.style.display = hasOnlyOneChild && container.type === 'paragraph' ? '' : 'none'
+
+		return hasOnlyOneChild && container.type === 'paragraph'
 	}
 }
 

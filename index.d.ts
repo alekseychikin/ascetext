@@ -8,59 +8,283 @@ declare class Node {
 	isContainer: boolean;
 	isWidget: boolean;
 	isSection: boolean;
-	isGroup: boolean;
-	isDeleteEmpty: boolean;
+	isRendered: boolean;
 	isMount: boolean;
-	element: HTMLElement;
+	length: number;
+	element?: HTMLElement;
 	parent?: Node;
-	next?: Node;
 	previous?: Node;
+	next?: Node;
 	first?: Node;
 	last?: Node;
-	setElement(element: HTMLElement): void;
+	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
 	accept(node: Node): boolean;
+	fit(node: Node): boolean;
+	canDelete(): boolean;
+	split(builder: Builder, next: Node | number): { head: Node; tail: Node | null };
 	getNodeUntil(nodeUntil: Node): Node;
-	get hasOnlyBr(): boolean;
-	getClosestContainer(): Node;
-	getPreviousSelectableNode(): false | Node | undefined;
-	getNextSelectableNode(): false | Node | undefined;
-	getOffset(element: any): number;
-	getChildByOffset(offset: number): {
-		node: Node;
-		element: HTMLElement;
-	};
-	getFirstLevelNode(offset: number): Node;
-	getLastNode(): Node;
-	duplicate(builder: Builder): any;
-	split(offset: number, builder: Builder): {
-		head: Node | null;
-		tail: Node | null;
-	};
-	deepesetLastNode(node?: Node): Node | undefined;
-	deepesetFirstNode(node?: Node): Node | undefined;
+	getPreviousSelectableNode(): Node | undefined;
+	getNextSelectableNode(): Node | undefined;
+	deepesetLastNode(node?: Node): Node;
+	deepesetFirstNode(node?: Node): Node;
 	contains(childNode: Node): boolean;
+	stringify(children: string): string;
 }
 
-class UsefullNode extends Node {
-  constructor(attributes?: Attributes);
+declare class UsefullNode extends Node {
+	constructor(attributes?: Attributes);
 }
 
 declare class Section extends Node {
 	isSection: true;
-	constructor(type: string);
-	append(node: Node, anchor: Node, { builder, appendDefault }: {
-		builder: Builder;
-		appendDefault: Builder["appendHandler"];
-	}): void;
 }
 
-declare class WithControls extends Node {
-	onFocus(): void;
-	onBlur(): void;
-}
-
-declare class InlineWidget extends WithControls {
+declare class InlineWidget extends Node {
 	isInlineWidget: true;
+}
+
+declare class Widget extends Node {
+	isWidget: true;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): void;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): void;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
+}
+
+declare class Container extends Node {
+	isContainer: true;
+	get isEmpty(): boolean;
+	onFocus(selection: Selection): void;
+	onBlur(selection: Selection): void;
+	onMount(core: Ascetext<Array<PluginPlugin>>): void;
+	onUnmount(core: Ascetext<Array<PluginPlugin>>): void;
+	onCombine(builder: Builder, container: Container): void;
+	inputHandler(focused: boolean): void;
+	showPlaceholder(): void;
+	hidePlaceholder(): void;
+	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
+	backspaceHandler(event: KeyboardEvent, params: HandlerParams): void;
+	deleteHandler(event: KeyboardEvent, params: HandlerParams): void;
+}
+
+declare class Root extends Section {
+	type: 'root'
+}
+
+declare class Fragment extends Node {
+	isFragment: true;
+}
+
+type Timer = ReturnType<typeof setInterval> | null
+
+declare class Ascetext<P extends Array<PluginPlugin>> {
+	constructor(node: HTMLElement, params?: {
+		plugins?: P;
+		components?: Array<ComponentComponent>;
+		icons?: Record<string, string>;
+		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
+		placeholder?: string | {
+			label: string;
+			className: string;
+		} | ((element: HTMLElement, container: Container, focused: boolean) => boolean);
+	});
+	node: HTMLElement;
+	onChangeHandlers: Array<() => void>;
+	plugins: P;
+	model: Root;
+	builder: Builder;
+	normalizer: Normalizer;
+	render: Render;
+	parser: Parser;
+	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
+	selection: Selection;
+	editing: Editing;
+	timeTravel: TimeTravel;
+	sizeObserver: SizeObserver;
+	controls: Controls;
+	autocomplete: Autocomplete;
+	dragndrop: Dragndrop;
+	icons: IconsGetter;
+	onChangeTimer: Timer;
+	init: boolean;
+	components: Array<ComponentComponent>;
+	stringify(first: Node): string;
+	json(first: Node): any;
+	onChange(callback: () => void): () => void;
+	triggerChange(): void;
+	setContent(content: string): void;
+	getContent(): string;
+	setJson(data: any): void;
+	getJson<T>(): T;
+	finishInit(): void;
+	focus(): void;
+	destroy(): void;
+}
+
+export default Ascetext
+
+declare class Publisher {
+	subscribers: Array<(...params: unknown[]) => void>;
+	subscribe(handler: (...params: unknown[]) => void): () => void;
+	sendMessage(...params: unknown[]): void;
+}
+
+declare class Controls {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	container: HTMLDivElement;
+	controls: Array<HTMLElement>;
+	registerControl(control: HTMLElement): void;
+	unregisterControl(control: HTMLElement): void;
+	destroy(): void;
+}
+
+declare class Normalizer extends Publisher {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	core: Ascetext<Array<PluginPlugin>>;
+	unnormalizedNodes: Array<Node>;
+	timer: Timer;
+	onChange(event: BuilderChangeEvent): void;
+	pushNode(node: Node): void;
+	normalizeHandle(): void;
+	normalize(nodes: Array<Node>): void;
+	walkUp(node: Node): Node | false;
+	walkDown(node: Node): Node | false;
+	empty(node: Node, current: Node): Node | false;
+	accept(node: Node, current: Node): Node | false;
+	join(node: Node, current: Node): Node | false;
+	handleJoin(node: Node, current: Node): Node | null;
+	canAccept(node: Node, current: Node): Node | false;
+	root(): void;
+}
+
+type RenderEvent = {
+	type: 'append' | 'cut';
+	container: Node;
+	target: Node;
+} | {
+	type: 'update';
+	target: Node;
+}
+
+interface VirtualTree {
+	type: string;
+	attributes: Record<string, string | boolean | number>;
+	body: Array<VirtualTree>;
+}
+
+declare class Render extends Publisher {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	core: Ascetext<Array<PluginPlugin>>;
+	timer: Timer;
+	queue: Array<RenderEvent>;
+	mapNodeIdToElement: Record<number, HTMLElement>;
+	mapNodeIdToNode: Record<number, Node>;
+	containerAvatar: HTMLDivElement;
+	onChange(change: BuilderChangeEvent): void;
+	markUnrendered(target: Node, last?: Node): void;
+	dropRender(): void;
+	render(): void;
+	cut(event: RenderEvent): void;
+	append(event: RenderEvent): void;
+	update(event: RenderEvent): void;
+	findAnchor(node: Node): Node | null;
+	createTree(target: Node, last?: Node): Array<VirtualTree>;
+	createElement(tree: VirtualTree, lookahead: Array<HTMLElement | Text>): HTMLElement | Text;
+	createText(tree: VirtualTree, modifiers: Array<string>, lookahead: Array<HTMLElement | Text>): Text;
+	applyAttributes(element: HTMLElement, tree: VirtualTree): void;
+	replaceNode(tree: VirtualTree, container: HTMLElement): HTMLElement;
+	findLookahead(lookahead: Array<HTMLElement | Text>): HTMLElement | Text | null;
+	generateModifiers(element: HTMLElement): Array<string>;
+	handleContainer(element: HTMLElement): void;
+	handleMount(node: Node, last: Node): void;
+	handleUnmount(node: Node, last: Node): void;
+	handleInput(node: Node): void;
+	getTrailingBr(): void;
+	getNodeById(id: number): Node;
+}
+
+declare class Parser {
+	constructor(root: HTMLElement);
+	getVirtualTree(node: HTMLElement | Text): Array<VirtualTree>;
+	removeTrailingBr(body: Array<VirtualTree>): Array<VirtualTree>;
+	normalize(body: Array<VirtualTree>): Array<VirtualTree>;
+	isEqualAttributes(left: Record<string, string>, right: Record<string, string>, attributes: Record<string, string>): boolean;
+	getHtmlElement(current: HTMLElement): Array<VirtualTree>;
+	getTextElement(current: Text, content?: Record<string, string>): Array<VirtualTree>;
+	isInsideEditor(element: HTMLElement | Text): boolean;
+}
+
+declare class Dragndrop {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	core: Ascetext<Array<PluginPlugin>>;
+	node: HTMLElement;
+	dragStartHandler(event: DragEvent): void;
+	destroy(): void;
+	drop(): void;
+}
+
+declare class Autocomplete {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	node: HTMLElement;
+	plugins: Array<PluginPlugin>;
+	selection: Selection;
+	builder: Builder;
+	patterns: Array<{
+		plugin: string;
+		rule: RegExp;
+	}>;
+	trigger(): boolean;
+	getContent(): string;
+}
+
+type BuilderChangeEvent = {
+	type: 'cut';
+	container: Node;
+	target: Node;
+	last: Node;
+	anchor?: Node;
+	previous?: Node;
+	next?: Node;
+} | {
+	type: 'append';
+	container: Node;
+	target: Node;
+	last: Node;
+	anchor?: Node;
+} | {
+	type: 'attribute';
+	target: Node;
+	previous?: Node;
+	next?: Node;
+};
+
+declare class Builder extends Publisher {
+	constructor(core: Ascetext<Array<PluginPlugin>>);
+	core: Ascetext<Array<PluginPlugin>>;
+	registeredNodes: Record<string, Node>
+	create<T extends UsefullNode>(name: string, ...params: any[]): T;
+	createBlock(): Container;
+	createFragment(): Fragment;
+	setAttribute<T>(node: Node, name: string, value: T): void;
+	setAttributes<T>(node: Node, attributes: T): void;
+	handleAttributes(target: Node, previous?: Node, next?: Node): void;
+	parseJson(body: any): Fragment;
+	getJson(first: Node, last?: Node): any;
+	parseVirtualTree(tree: Tree): Fragment;
+	splitByOffset(container: Container, offset: number): { head: Node, tail: Node };
+	splitByTail(parent: Node, tail: Node): { head: Node, tail: Node };
+	duplicate(target: Node): Node;
+	push(node: Node, target?: Node): void;
+	append(node: Node, target?: Node, anchor?: Node): void;
+	cut(node?: Node): void;
+	cutUntil(node?: Node, until?: Node): void;
+	replace(node: Node, target: Node): void;
+	replaceUntil(node: Node, target: Node, until?: Node): void;
+	insertText(target: Node, anchor?: Node): Node;
+	insert(target: Node): void;
+	getOffsetToParent(parent: Node, target: Node): number;
+	moveTail(container: Node, target: Node, offset: number): void;
+	combine(container: Node, target: Node): void;
+	registerPlugins(): void;
 }
 
 interface HandlerParams {
@@ -77,7 +301,6 @@ interface HandlerParams {
 	focusOffset: number;
 	focused: boolean;
 	focusedNodes: Selection["focusedNodes"];
-	isLockPushChange: boolean;
 }
 
 interface ActionParams {
@@ -90,229 +313,124 @@ interface ActionParams {
 	focusedNodes: Selection["focusedNodes"];
 }
 
-declare class Widget extends WithControls {
-	isWidget: true;
-	constructor(type: string, attributes?: Attributes);
-	backspaceHandler(event: KeyboardEvent, params: HandlerParams): void;
-	deleteHandler(event: KeyboardEvent, params: HandlerParams): void;
-	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
-	scheduleUpdate(): void;
-	update(previous: any): void;
-}
-
-declare class Container extends Node {
-	isContainer: true;
-	get isEmpty(): boolean;
-	append(target: Node, anchor: Node, { builder, appendDefault }: {
-		builder: Builder;
-		appendDefault: Builder["appendHandler"];
-	}): void;
-	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
-	backspaceHandler(event: KeyboardEvent, params: HandlerParams): void;
-	deleteHandler(event: KeyboardEvent, params: HandlerParams): void;
-	showPlaceholder: () => void;
-	hidePlaceholder: () => void;
-}
-
-declare class Root extends Section {
-	json(): {
-		type: 'root';
-	};
-	json<T extends { type: string }[]>(children: T): {
-		type: 'root';
-		body: T;
-	};
-	json<T extends { type: string }[]>(children: T): {
-		type: 'root';
-		body?: T;
-	};
-}
-
-declare class Fragment extends Node {
-	isFragment: true;
-}
-
-declare class Group extends Node {
-	isGroup: true;
-}
-
-declare class Ascetext<P extends Array<PluginPlugin>> {
-	constructor(node: HTMLElement, params?: {
-		plugins?: P;
-		components?: Array<ComponentComponent>;
-		icons?: Record<string, string>;
-		sizeObserver?: (entry: SizeObserverEntry) => SizeObserverEntry;
-		placeholder?: string | {
-			label: string;
-			className: string;
-		} | ((element: HTMLElement, container: Container, focused: boolean) => void);
-	});
-	stringify(first: Node): string;
-	onChange(callback: any): () => void;
-	onNodeChange(changes: any): void;
-	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
-	node: HTMLElement;
-	controlsContainer: HTMLElement;
-	onChangeHandlers: any[];
-	plugins: P;
-	components: Array<ComponentComponent>;
-	icons: any;
-	model: Root;
-	builder: Builder;
-	editing: Editing;
-	selection: Selection;
-	timeTravel: TimeTravel;
-	sizeObserver: SizeObserver;
-	controls: any;
-	autocomplete: Autocomplete;
-	onChangeTimer: number | null;
-	init: boolean;
-	json(first: any): any;
-	setContent(content: any): void;
-	getContent(): string;
-	triggerChange(): void;
-	setJson(data: any): void;
-	getJson<T>(): T;
-	unmountAll(): void;
-	focus(): void;
-	destroy(): void;
-}
-
-export default Ascetext
-
-declare class Autocomplete {
-	constructor(core: Ascetext<Array<PluginPlugin>>);
-	onEdit(): void;
-	node: HTMLElement;
-	plugins: Array<PluginPlugin>;
-	selection: Selection;
-	builder: Builder;
-	editing: Editing;
-	patterns: ({
-		plugin: string;
-		rule: any;
-	} | null)[];
-	lastAnchorContainer: any;
-	lastAnchorOffset: any;
-	getRangeOffsets(selection: Selection, start: any, finish: any): {
-		left: any;
-		top: any;
-		width: any;
-		height: any;
-	};
-}
-
-declare class Builder {
-	constructor(core: Ascetext<Array<PluginPlugin>>);
-	core: Ascetext<Array<PluginPlugin>>;
-	parse(element: any): Fragment;
-	appendHandler(node: any, target: any, anchor: any): void;
-	handleMount(node: any): void;
-	handleUnmount(node: any): void;
-	create<T>(name: string, ...params: any[]): T;
-	createBlock(): Container;
-	createFragment(): Fragment;
-	setAttribute<T>(node: Node, name: string, value: T): void;
-	setAttributes<T>(node: Node, attributes: T): void;
-	handleAttributes(target: any, previous: any, next: any): void;
-	normalize(node: Node): void;
-	parseJson(body: any): Fragment;
-	split(container: Node, offset: number): any;
-	push(node: Node, target: Node): void;
-	append(node: Node, target: Node, anchor?: Node): void;
-	cut(node: any): void;
-	cutUntil(node: any, until: any): void;
-	handleText(current: any): void;
-	replace(node: any, target: any): void;
-	replaceUntil(node: any, target: any, until: any): void;
-	canAccept(container: any, current: any): any;
-	insert(node: any, target: any, offset: any): void;
-	moveTail(container: any, target: any, offset: any): void;
-	render(node: Node): void;
-}
-
 declare class Editing {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
-	handleRemoveRange(): "" | {
-		html: string;
-		text: string;
-	};
-	handleBackspace(event: any): void;
-	handleBackspaceKeyDown(event: any): void;
-	handleDelete(event: any): void;
-	handleDeleteKeyDown(event: any): void;
-	handleEnterKeyDownRange(event: any): void;
-	handleEnterKeyDownSingle(event: any): void;
-	handleEnterKeyDown(event: any): void;
-	handleModifyKeyDown(event: any): void;
-	update(): void;
-	onKeyDown(event: any): void;
-	onInput(event: any): void;
-	onPaste(event: any): void;
-	onCut(event: any): void;
-	node: any;
+	node: Node;
 	core: Ascetext<Array<PluginPlugin>>;
-	updatingContainers: any[];
-	modifyKeyHandlerParams: {};
-	scheduleTimer: number | null;
-	captureSinceAndUntil(items: any, startIndex: any): {
-		since: any;
-		until: any;
-	};
-	getModifyKeyHandlerParams(): {};
+	updatingContainers: Array<Container>;
+	modifyKeyHandlerParams: HandlerParams;
+	scheduleTimer: Timer;
+	keydownTimer: Timer;
+	isSession: boolean;
+	isUpdating: boolean;
+	spacesDown: boolean;
+	hadKeydown: boolean;
+	removedRange: boolean;
+	onCompositionStart(): void;
+	onCompositionEnd(): void;
+	onInput(event: Event): void;
+	onKeyDown(event: KeyboardEvent): void;
+	onKeyUp(event: KeyboardEvent): void;
+	setKeydown(): void;
+	handleModifyKeyDown(event: KeyboardEvent): void;
+	handleRemoveRange(): {
+		since: Node;
+		until: Node;
+	} | undefined;
+	handleBackspaceKeyDown(event: KeyboardEvent): void;
+	handleDeleteKeyDown(event: KeyboardEvent): void;
+	handleEnterKeyDown(event: KeyboardEvent): void;
+	getModifyKeyHandlerParams(): HandlerParams;
 	scheduleUpdate(container: Node): void;
-	isChanged: boolean | undefined;
-	handleTextInRemoveNodes(node: Node): void;
+	update(node?: Node): void;
 	save(): void;
-	getClosestContainerInSection(node: Node): any;
+	onCut(event: ClipboardEvent): void;
+	onCopy(event: ClipboardEvent): void;
+	copyToClipboard(clipboardData: ClipboardItemData, section: Section): void;
+	onPaste(event: ClipboardEvent): void;
+	insertText(content: string): void;
+	getNodeOffset(container: Node, node: Node): number;
+	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Record<string, (event: KeyboardEvent, params: HandlerParams) => void>): null | ((event: KeyboardEvent, params: HandlerParams) => void);
 	destroy(): void;
 }
 
-declare class Selection {
+declare class Selection extends Publisher {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
-	update(event: any): void;
-	onUpdate(handler: (selection: Selection) => void): () => void;
-	setSelection(anchorNode: any, anchorOffset?: any, focusNode?: any, focusOffset?: any): void;
-	restoreSelection(): void;
 	core: Ascetext<Array<PluginPlugin>>;
-	selection: {};
-	anchorIndex: any[] | null;
-	focusIndex: any[] | null;
+	anchorIndex: Array<number> | null;
+	focusIndex: Array<number> | null;
 	focused: boolean;
-	skipUpdate: boolean;
-	onUpdateHandlers: ((selection: Selection) => void)[];
-	selectedItems: Node[];
-	focusedNodes: Node[];
-	timer: any;
+	selectedItems: Array<Node>;
+	focusedNodes: Array<Node>;
+	components: Array<ComponentComponent>;
+	timer: Timer;
+	onUpdateHandlers: Array<(selection: Selection) => void>;
+	anchorAtFirstPositionInContainer: boolean;
+	anchorAtLastPositionInContainer: boolean;
+	focusAtFirstPositionInContainer: boolean;
+	focusAtLastPositionInContainer: boolean;
 	isRange: boolean;
-	anchorAtFirstPositionInContainer: boolean | undefined;
-	anchorAtLastPositionInContainer: boolean | undefined;
-	focusAtFirstPositionInContainer: boolean | undefined;
-	focusAtLastPositionInContainer: boolean | undefined;
-	anchorContainer: Container | Widget;
-	focusContainer: Container | Widget;
+	anchorContainer: Container | Widget | null;
+	focusContainer: Container | Widget | null;
 	anchorOffset: number;
 	focusOffset: number;
-	blur(): null | undefined;
-	getSelectionParams(node: any, offset: any): {
-		element: any;
-		index: any;
+	setComponents(components: Array<ComponentComponent>): void;
+	focus(event: FocusEvent): void;
+	selectionChange(): void;
+	selectionUpdate(event: {
+		type: string;
+		anchorNode: HTMLElement;
+		focusNode: HTMLElement;
+		anchorOffset: 0;
+		focusOffset: 0;
+		isCollapsed: boolean;
+		selectedComponent: boolean;
+	}): void;
+	getContainerAndOffset(node: Node, offset: number): {
+		container: Node;
+		offset: number;
 	};
+	getLength(node: Node): number;
+	setSelection(anchorNode: Node, anchorOffset?: number, focusNode?: Node, focusOffset?: number): void;
+	onRender(node: Node): void;
+	selectElements(): void;
+	getChildByOffset(target: Node, offset: number): {
+		element: HTMLElement;
+		restOffset: number;
+	};
+	update(event: {
+		focused: boolean;
+		selectedComponent: boolean;
+		anchorContainer: Node;
+		anchorOffset: number;
+		focusContainer: Node;
+		focusOffset: number;
+		isCollapsed: boolean;
+	}): void;
+	blur(): void;
+	restoreSelection(): void;
 	getSelectionInIndexes(): {
-		anchorIndex: any[] | null;
-		focusIndex: any[] | null;
+		anchorIndex: Array<string> | null;
+		focusIndex: Array<string> | null;
 	};
-	setSelectionByIndexes(indexes: any): void;
+	setSelectionByIndexes(indexes: {
+		anchorIndex: Array<string> | null;
+		focusIndex: Array<string> | null;
+	}): void;
 	getDirection(anchorIndex: any, focusIndex: any): "backward" | "forward";
-	getIndex(container: any, element: any, offset: any): any[];
-	findElementByIndex(indexes: number[]): HTMLElement | Text;
-	getSelectedItems(): Node[];
-	cutRange(anchorContainer?: any, anchorOffset?: any, focusContainer?: any, focusOffset?: any): {
-		head: any;
-		tail: any;
+	getIndex(container: Node, offset: number): Array<string>;
+	findElementByIndex(indexes: Array<string>, parent?: Node): {
+		node: Node;
+		offset: number;
 	};
-	getArrayRangeItems(since: any, until: any): any[];
-	handleSelectedItems(anchorNode: any, focusNode: any): void;
+	getNodeByOffset(node: Node, offset: number): Node;
+	getSelectedItems(): Array<Node>;
+	cutRange(anchorContainer?: Node, anchorOffset?: number, focusContainer?: Node, focusOffset?: number): {
+		head: Node;
+		tail: Node;
+	};
+	getArrayRangeItems(since: Node, until: Node): Array<Node>;
+	handleSelectedItems(): void;
 	destroy(): void;
 }
 
@@ -325,60 +443,70 @@ interface SizeObserverEntry {
 
 interface SizeObserverConstructor {
 	core: Ascetext<Array<PluginPlugin>>;
-	update(): null | undefined;
-	updateHandler(): void;
 	id: number;
-	ids: number[];
-	observedElements: any[];
-	handlers: any[];
-	timer: number | null;
-	observe(element: HTMLElement, handler: (entry: SizeObserverEntry) => void): () => void;
-	calculateBoundings(element: any): {
+	ids: Array<number>;
+	observedNodes: Array<Node>;
+	handlers: Array<(entry: SizeObserverEntry) => void>;
+	timer: Timer;
+	middleware?: (entry: SizeObserverEntry) => SizeObserverEntry;
+	observe(node: Node, handler: (entry: SizeObserverEntry) => void): () => void;
+	update(): void;
+	updateHandler(): void;
+	handleNode(index: number): void;
+	calculateBoundings(element: HTMLElement): {
 		scrollTop: number;
 		scrollLeft: number;
-		element: any;
-		root: any;
+		element: DOMRect;
+		root: DOMRect;
 	};
 	destroy(): void;
 }
 
 declare class SizeObserver implements SizeObserverConstructor {
-	constructor(core: Ascetext<Array<PluginPlugin>>);
+	constructor(core: Ascetext<Array<PluginPlugin>>, middleware?: (entry: SizeObserverEntry) => SizeObserverEntry);
 	core: Ascetext<Array<PluginPlugin>>;
-	update(): null | undefined;
-	updateHandler(): void;
 	id: number;
-	ids: number[];
-	observedElements: any[];
-	handlers: any[];
-	timer: number | null;
-	observe(element: HTMLElement, handler: (entry: SizeObserverEntry) => void): () => void;
-	calculateBoundings(element: any): {
+	ids: Array<number>;
+	observedNodes: Array<Node>;
+	handlers: Array<(entry: SizeObserverEntry) => void>;
+	timer: Timer;
+	middleware?: (entry: SizeObserverEntry) => SizeObserverEntry;
+	observe(node: Node, handler: (entry: SizeObserverEntry) => void): () => void;
+	update(): void;
+	updateHandler(): void;
+	handleNode(index: number): void;
+	calculateBoundings(element: HTMLElement): {
 		scrollTop: number;
 		scrollLeft: number;
-		element: any;
-		root: any;
+		element: DOMRect;
+		root: DOMRect;
 	};
 	destroy(): void;
 }
 
 declare class TimeTravel {
-	constructor(selection: Selection, builder: Builder);
-	onSelectionChange(selection: Selection): void;
-	commit(): void;
+	constructor(selection: Selection, builder: Builder, root: Root);
 	timeline: any[];
 	timeindex: number;
 	isLockPushChange: boolean;
 	currentBunch: any[];
 	builder: Builder;
 	selection: Selection;
-	previousSelection: any;
+	previousSelection: null | {
+		anchorIndex: Array<string> | null;
+		focusIndex: Array<string> | null;
+	};
 	preservedPreviousSelection: boolean;
 	reset(): void;
+	onSelectionChange(selection: Selection): void;
 	preservePreviousSelection(): void;
-	pushChange(event: any): void;
+	pushChange(event: BuilderChangeEvent): void;
+	commit(): void;
 	goBack(): void;
 	goForward(): void;
+	getIndex(node: Node): Array<number>;
+	findByIndex(input: Array<number>): Node;
+	findByOffset(input: Array<number>, offset: number): Node;
 }
 
 type CSSGetter = Record<string, string>;
@@ -419,7 +547,7 @@ declare class Toolbar extends ComponentComponent {
 	getSelectedItems(): any;
 	toggleSideToolbar(): void;
 	checkToolbarVisibility(event: any): void;
-	wrapControls(controls: Control[]): any;
+	wrapControls(controls: Array<Control>): any;
 	updateBoundings(container: any): void;
 	viewportChange(event: any): void;
 	viewportResize(): void;
@@ -526,14 +654,14 @@ declare class PluginPlugin {
 	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
 	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
-	getInsertControls(container: Node): Control[];
-	getSelectControls(focusedNodes: Node[], isRange: boolean): Control[];
-	getReplaceControls(focusedNodes: Node[]): Control[];
+	getInsertControls(container: Node): Array<Control>;
+	getSelectControls(focusedNodes: Array<Node>, isRange: boolean): Control[];
+	getReplaceControls(focusedNodes: Array<Node>): Array<Control>;
 }
 
 declare class BreakLine extends InlineWidget {
 	constructor();
-	render(): HTMLElement;
+	render(): VirtualTree;
 	split(): {
 		head: any;
 		tail: any;
@@ -544,15 +672,15 @@ declare class BreakLine extends InlineWidget {
 }
 
 declare class BreakLinePlugin extends PluginPlugin {
-	parse(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
-	parseJson(element: HTMLElement | Text, builder: Builder): BreakLine | undefined;
+	parseTree(element: VirtualTree, builder: Builder): BreakLine | undefined;
+	parseJson(element: { type: string }, builder: Builder): BreakLine | undefined;
 }
 
 declare class Header extends Container {
 	constructor(attributes: {
     level: number;
   });
-	render(): HTMLElement;
+	render(): VirtualTree;
 	json(): {
 		type: 'header';
 		level: number;
@@ -562,7 +690,7 @@ declare class Header extends Container {
 		level: number;
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'header';
 		level: number;
 		body?: T;
@@ -571,15 +699,15 @@ declare class Header extends Container {
 
 declare class HeaderPlugin extends PluginPlugin {
 	params: {
-		allowLevels: number[];
+		allowLevels: Array<number>;
 	};
-	supportHeaders: string[];
+	supportHeaders: Array<string>;
 	get icons(): IconsGetter;
 	constructor(params?: {
-		allowLevels: number[];
+		allowLevels: Array<number>;
 	});
-	parse(element: HTMLElement | Text, builder: Builder): Header | undefined;
-	parseJson(element: HTMLElement | Text, builder: Builder): Header | undefined;
+	parseTree(element: VirtualTree, builder: Builder): Header | undefined;
+	parseJson(element: { type: string }, builder: Builder): Header | undefined;
 	setHeader(level: number): (event: MouseEvent, params: ActionParams) => void;
 }
 
@@ -587,8 +715,7 @@ declare class Image extends Widget {
 	image: HTMLImageElement;
 	attributes: Attributes;
 	constructor(attributes: Attributes);
-	render(): HTMLElement;
-	update(previous: any): void;
+	render(body: Array<VirtualTree>): VirtualTree;
 	getClassName(): string;
 	json(): {
 		type: 'image';
@@ -607,18 +734,13 @@ declare class Image extends Widget {
 }
 
 declare class ImageCaption extends Container {
+	constructor(params: any);
 	removeObserver: any;
 	attributes: Record<string, string>;
-	constructor(params: any);
-	render(): HTMLElement;
-	onMount({ controls, sizeObserver }: {
-		controls: any;
-		sizeObserver: any;
-	}): void;
 	imagePlaceholder: HTMLElement;
-	onUnmount({ controls }: {
-		controls: any;
-	}): void;
+	render(): VirtualTree;
+	onMount(core: Ascetext<Array<PluginPlugin>>): void;
+	onUnmount(core: Ascetext<Array<PluginPlugin>>): void;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
 	inputHandler(): void;
 	json(): {
@@ -628,7 +750,7 @@ declare class ImageCaption extends Container {
 		type: 'image-caption';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'image-caption';
 		body?: T;
 	};
@@ -647,15 +769,15 @@ declare class ImagePlugin extends PluginPlugin {
 		placeholder?: string;
 	};
 	get icons(): IconsGetter;
-	parse(element: HTMLElement | Text, builder: Builder): Image | undefined;
-	parseJson(element: any, builder: Builder): Image | undefined;
+	parseTree(element: VirtualTree, builder: Builder): Image | undefined;
+	parseJson(element: { type: string }, builder: Builder): Image | undefined;
 	generateImagePreview(file: File): Promise<string>;
 }
 
 declare class Link extends InlineWidget {
 	type: 'link';
 	constructor(attributes: Attributes);
-	render(): HTMLAnchorElement;
+	render(): VirtualTree;
 	normalize(element: any, builder: Builder): any;
 	json(): {
 		type: 'link';
@@ -664,7 +786,7 @@ declare class Link extends InlineWidget {
 		type: 'link';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'link';
 		body?: T;
 	};
@@ -681,17 +803,17 @@ declare class LinkPlugin extends PluginPlugin {
 	removeLinks(event: MouseEvent, params: ActionParams): void;
 	setLink(event: MouseEvent, params: ActionParams): void;
 	removeLink(event: MouseEvent, params: ActionParams): void;
-	parse(element: HTMLElement | Text, builder: Builder): Link | undefined;
-	parseJson(element: HTMLElement | Text, builder: Builder): Link | undefined;
+	parseTree(element: VirtualTree, builder: Builder): Link | undefined;
+	parseJson(element: { type: string }, builder: Builder): Link | undefined;
 	wrap(match: any, builder: Builder): any;
 	unwrap(node: any, builder: Builder): void;
 }
 
-declare class List extends Group {
+declare class List extends Section {
 	constructor(attributes: {
 		decor: string;
 	});
-	render(): any;
+	render(): VirtualTree;
 	normalize(element: any, builder: Builder): any;
 	json(): {
 		type: 'list';
@@ -702,21 +824,17 @@ declare class List extends Group {
 		decor: 'numerable' | 'marker';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'list';
 		decor: 'numerable' | 'marker';
 		body?: T;
 	};
 }
 
-declare class ListItem extends Group {
+declare class ListItem extends Widget {
 	constructor(params?: {});
 	params: {};
-	render(): any;
-	append(target: any, anchor: any, { builder, appendDefault }: {
-		builder: Builder;
-		appendDefault: any;
-	}): void;
+	render(): VirtualTree;
 	getDepth(container: any, node: any): number;
 	json(): {
 		type: 'list-item';
@@ -725,7 +843,7 @@ declare class ListItem extends Group {
 		type: 'list-item';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'list-item';
 		body?: T;
 	};
@@ -734,15 +852,12 @@ declare class ListItem extends Group {
 declare class ListItemContent extends Container {
 	constructor(params?: {});
 	params: {};
-	render(): any;
-	cut({ builder }: {
-		builder: Builder;
-	}): void;
+	render(): VirtualTree;
 	backspaceHandler(event: KeyboardEvent, params: HandlerParams): void;
 	enterHandler(event: KeyboardEvent, params: HandlerParams): void;
 	deleteHandler(event: KeyboardEvent, params: HandlerParams): void;
-	indentLeft(event: any, params: ActionParams): void;
-	indentRight(event: any, params: ActionParams): void;
+	indentLeft(event: MouseEvent, params: ActionParams): void;
+	indentRight(event: MouseEvent, params: ActionParams): void;
 	putEmptyBlockInMiddle(builder: Builder, setSelection: Selection["setSelection"]): void;
 	json(): {
 		type: 'list-item-content';
@@ -751,7 +866,7 @@ declare class ListItemContent extends Container {
 		type: 'list-item-content';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'list-item-content';
 		body?: T;
 	};
@@ -765,15 +880,15 @@ declare class ListPlugin extends PluginPlugin {
 		maxDepth: number | null;
 	};
 	get icons(): IconsGetter;
-	parse(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
-	parseJson(element: any, builder: Builder): List | ListItem | ListItemContent | undefined;
+	parseTree(element: VirtualTree, builder: Builder): List | ListItem | ListItemContent | undefined;
+	parseJson(element: { type: string }, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(event: MouseEvent, params: ActionParams): void;
 	setMarkerList(event: MouseEvent, params: ActionParams): void;
 }
 
 declare class Paragraph extends Container {
 	constructor();
-	render(): HTMLElement;
+	render(): VirtualTree;
 	json(): {
 		type: 'paragraph';
 	};
@@ -781,7 +896,7 @@ declare class Paragraph extends Container {
 		type: 'paragraph';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'paragraph';
 		body?: T;
 	};
@@ -789,14 +904,14 @@ declare class Paragraph extends Container {
 
 declare class ParagraphPlugin extends PluginPlugin {
 	get icons(): IconsGetter;
-	parse(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
-	parseJson(element: HTMLElement | Text, builder: Builder): Paragraph | undefined;
+	parseTree(element: VirtualTree, builder: Builder): Paragraph | undefined;
+	parseJson(element: { type: string }, builder: Builder): Paragraph | undefined;
 	setParagraph(event: MouseEvent, params: ActionParams): void;
 }
 
 declare class Quote extends Container {
 	constructor();
-	render(): HTMLElement;
+	render(): VirtualTree;
 	json(): {
 		type: 'quote';
 	};
@@ -804,7 +919,7 @@ declare class Quote extends Container {
 		type: 'quote';
 		body: T;
 	};
-	json<T extends { type: string }[]>(children: T): {
+	json<T extends { type: string }[]>(children?: T): {
 		type: 'quote';
 		body?: T;
 	};
@@ -827,20 +942,13 @@ export interface TextAttributes {
 
 declare class TextNode extends Node {
 	constructor(attributes: TextAttributes);
-	render(): any;
-	update(): void;
-	create(modifiers: any): any;
-	generateModifiers(): string[];
-	normalize(target: any, builder: any): any;
-	isEqual(target: any): boolean;
-	split(position: any, builder: any): {
-		head: any;
-		tail: any;
-	};
-	stringifyWithModifiers(modifiers: any): any;
+	render(): VirtualTree;
+	generateModifiers(): Array<string>;
+	isEqual(target: Node): boolean;
+	stringifyWithModifiers(modifiers: Array<string>): string;
 	json(): {
 		type: 'text';
-		modifiers: string[];
+		modifiers: Array<string>;
 		content: string;
 	};
 }
@@ -848,9 +956,9 @@ declare class TextNode extends Node {
 declare class TextPlugin extends PluginPlugin {
 	constructor(params?: {});
 	params: {
-		allowModifiers: string[];
+		allowModifiers: Array<string>;
 	};
-	supportTags: string[];
+	supportTags: Array<string>;
 	get icons(): IconsGetter;
 	parse(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
@@ -866,13 +974,18 @@ declare class TextPlugin extends PluginPlugin {
 
 declare function getIcon(source: string): HTMLElement;
 
-export type InferNodes<T extends Array<PluginPlugin>> = T extends Array<{ parse: (...params: any) => infer U}> ? Exclude<U, undefined> : never
+export type InferNodes<T extends Array<PluginPlugin>> = T extends Array<{ parseJson: (...params: any) => infer U}> ? Exclude<U, undefined> : never
 
 export {
 	Ascetext,
 	Builder,
+	Controls,
 	Selection,
 	Editing,
+	Render,
+	VirtualTree,
+	Parser,
+	Dragndrop,
 	TimeTravel,
 	SizeObserverConstructor,
 	SizeObserver,
@@ -889,7 +1002,6 @@ export {
 	Group,
 	InlineWidget,
 	Widget,
-	WithControls,
 	Node,
 	Container,
 	ActionParams,

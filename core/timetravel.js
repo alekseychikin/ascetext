@@ -1,12 +1,9 @@
-export const operationTypes = {
-	CUT: 'cut',
-	APPEND: 'append',
-	ATTRIBUTE: 'attribute'
-}
+import { operationTypes } from './builder.js'
 
 export default class TimeTravel {
 	constructor(selection, builder, root) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
+		this.pushChange = this.pushChange.bind(this)
 		this.commit = this.commit.bind(this)
 
 		this.timeline = []
@@ -18,8 +15,10 @@ export default class TimeTravel {
 		this.selection = selection
 		this.previousSelection = null
 		this.preservedPreviousSelection = false
+		this.timer = null
 
-		this.selection.onUpdate(this.onSelectionChange)
+		this.selection.subscribe(this.onSelectionChange)
+		this.builder.subscribe(this.pushChange)
 	}
 
 	reset() {
@@ -39,35 +38,40 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = true
 	}
 
-	pushChange(event) {
-		if (!this.isLockPushChange) {
-			let payload
-
-			switch (event.type) {
-				case operationTypes.ATTRIBUTE:
-					this.currentBunch.push({
-						type: event.type,
-						target: this.getIndex(event.target),
-						previous: event.previous,
-						next: event.next
-					})
-					break
-				case operationTypes.APPEND:
-				case operationTypes.CUT:
-					payload = this.builder.getJson(event.target, event.last)
-
-					if (payload.length) {
-						this.currentBunch.push({
-							type: event.type,
-							container: this.getIndex(event.container),
-							target: this.getIndex(event.target),
-							payload
-						})
-					}
-
-					break
-			}
+	pushChange(change) {
+		if (this.isLockPushChange || !this.root.contains(change.target)) {
+			return
 		}
+
+		let payload
+
+		switch (change.type) {
+			case operationTypes.ATTRIBUTE:
+				this.currentBunch.push({
+					type: change.type,
+					target: this.getIndex(change.target),
+					previous: change.previous,
+					next: change.next
+				})
+				break
+			case operationTypes.APPEND:
+			case operationTypes.CUT:
+				payload = this.builder.getJson(change.target, change.last)
+
+				if (payload.length) {
+					this.currentBunch.push({
+						type: change.type,
+						container: this.getIndex(change.container),
+						target: this.getIndex(change.target),
+						payload
+					})
+				}
+
+				break
+		}
+
+		clearTimeout(this.timer)
+		this.timer = setTimeout(this.commit, 100)
 	}
 
 	commit() {
@@ -126,7 +130,10 @@ export default class TimeTravel {
 				}
 			}
 
-			this.selection.setSelectionByIndexes(selectionIndexes)
+			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
+				this.selection.setSelectionByIndexes(selectionIndexes)
+			}
+
 			this.isLockPushChange = false
 			this.timeindex--
 		}
@@ -152,21 +159,27 @@ export default class TimeTravel {
 							this.findByIndex(nextEvent.target),
 							this.findByOffset(nextEvent.target, nextEvent.payload.length)
 						)
+
 						break
 					case operationTypes.APPEND:
 						this.builder.append(
 							this.findByIndex(nextEvent.container),
 							this.builder.parseJson(nextEvent.payload),
-							this.findByOffset(nextEvent.target, nextEvent.payload.length)
+							this.findByIndex(nextEvent.target)
 						)
+
 						break
 					case operationTypes.ATTRIBUTE:
 						this.builder.setAttributes(this.findByIndex(nextEvent.target), nextEvent.next)
+
 						break
 				}
 			}
 
-			this.selection.setSelectionByIndexes(selectionIndexes)
+			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
+				this.selection.setSelectionByIndexes(selectionIndexes)
+			}
+
 			this.isLockPushChange = false
 			this.timeindex++
 		}
@@ -208,6 +221,10 @@ export default class TimeTravel {
 			index = path.shift()
 
 			for (i = 0; i < index; i++) {
+				if (!current) {
+					return null
+				}
+
 				current = current.next
 			}
 		}

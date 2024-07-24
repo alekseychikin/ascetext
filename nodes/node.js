@@ -1,23 +1,4 @@
-import isElementBr from '../utils/is-element-br.js'
-import isTextElement from '../utils/is-text-element.js'
-import { setNode, getNodeByElement } from '../utils/map-element-to-node.js'
-import walk from '../utils/walk.js'
-
 let id = 1
-
-function hasGroupParent(node) {
-	let current = node
-
-	while (current) {
-		if (current.isGroup) {
-			return true
-		}
-
-		current = current.parent
-	}
-
-	return false
-}
 
 export default class Node {
 	constructor(type, attributes = {}) {
@@ -27,19 +8,37 @@ export default class Node {
 		this.isContainer = false
 		this.isWidget = false
 		this.isSection = false
-		this.isGroup = false
-		this.isDeleteEmpty = false
+		this.isRendered = false
 		this.isMount = false
+		this.length = 0
 	}
 
-	setElement(element) {
-		this.element = element
-		this.element.nodeId = this.id
-		setNode(this)
+	get shortrcuts() {
+		return {}
 	}
 
 	accept() {
+		return true
+	}
+
+	fit() {
+		return true
+	}
+
+	canDelete() {
 		return false
+	}
+
+	split(builder, next) {
+		const duplicate = builder.create(this.type, { ...this.attributes })
+
+		builder.append(this.parent, duplicate, this.next)
+		builder.append(duplicate, next)
+
+		return {
+			head: this,
+			tail: duplicate
+		}
 	}
 
 	getNodeUntil(nodeUntil) {
@@ -56,26 +55,6 @@ export default class Node {
 		return current
 	}
 
-	get hasOnlyBr() {
-		return this.element.firstChild &&
-			this.element.firstChild === this.element.lastChild &&
-			isElementBr(this.element.firstChild)
-	}
-
-	get shortrcuts() {
-		return {}
-	}
-
-	getClosestContainer() {
-		let container = this
-
-		while (container && !container.isContainer && !container.isWidget) {
-			container = container.parent
-		}
-
-		return container
-	}
-
 	getPreviousSelectableNode() {
 		let current = this
 
@@ -90,7 +69,7 @@ export default class Node {
 				current = current.parent
 
 				if (!current) {
-					return false
+					return
 				}
 
 				if (current.contains(this)) {
@@ -98,10 +77,7 @@ export default class Node {
 				}
 			}
 
-			if (
-				(current.parent.isSection || hasGroupParent(current)) &&
-				(current.isContainer || current.isWidget)
-			) {
+			if (current.isContainer) {
 				return current
 			}
 		}
@@ -121,7 +97,7 @@ export default class Node {
 				current = current.parent
 
 				if (!current) {
-					return false
+					return
 				}
 
 				if (current.contains(this)) {
@@ -129,128 +105,9 @@ export default class Node {
 				}
 			}
 
-			if (
-				(current.parent.isSection || hasGroupParent(current)) &&
-				(current.isContainer || current.isWidget)
-			) {
+			if (current.isContainer) {
 				return current
 			}
-		}
-	}
-
-	getOffset(element) {
-		let index = 0
-
-		if (this.isWidget) {
-			return 0
-		}
-
-		walk(this.element, (current) => {
-			if (current === element) {
-				return true
-			}
-
-			if (isTextElement(current)) {
-				index += current.length
-			} else if (isElementBr(current)) {
-				if (current === this.element.lastChild) {
-					return true
-				}
-
-				index += 1
-			}
-		})
-
-		return index
-	}
-
-	getChildByOffset(offset) {
-		let restOffset = Math.min(offset, this.getOffset())
-
-		if (this.isWidget && !offset) {
-			return { node: this, element: this.element }
-		}
-
-		const element = walk(this.element, (current) => {
-			if (isTextElement(current)) {
-				if (current.length >= restOffset) {
-					return current
-				}
-
-				restOffset -= current.length
-			} else if (isElementBr(current)) {
-				if (restOffset === 0) {
-					return current
-				}
-
-				restOffset -= 1
-			}
-		})
-		const node = getNodeByElement(element)
-
-		if (node.type === 'line-holder' && node.previous && node.previous.type === 'breakLine') {
-			return {
-				node: node.previous,
-				element: node.element
-			}
-		}
-
-		return { node, element }
-	}
-
-	getFirstLevelNode(offset) {
-		let { node: firstLevelNode } = this.getChildByOffset(offset)
-
-		while (!firstLevelNode.isWidget && firstLevelNode.parent !== this) {
-			firstLevelNode = firstLevelNode.parent
-		}
-
-		return firstLevelNode
-	}
-
-	getLastNode() {
-		let current = this
-
-		while (current.next) {
-			current = current.next
-		}
-
-		return current
-	}
-
-	duplicate(builder) {
-		return builder.create(this.type, this.attributes)
-	}
-
-	split(offset, builder) {
-		let { node: nodeChild } = this.getChildByOffset(offset)
-
-		while (nodeChild.parent !== this) {
-			nodeChild = nodeChild.parent
-		}
-
-		const { head, tail } = builder.split(this, offset)
-
-		if (head && tail) {
-			const duplicate = this.duplicate(builder)
-
-			builder.append(this.parent, duplicate, this.next)
-			builder.append(duplicate, tail)
-
-			return {
-				head: this,
-				tail: duplicate
-			}
-		} else if (head) {
-			return {
-				head: this,
-				tail: this.next
-			}
-		}
-
-		return {
-			head: null,
-			tail: this
 		}
 	}
 

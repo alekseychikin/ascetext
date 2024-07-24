@@ -29,18 +29,19 @@ function watchTask() {
 		server: {
 			baseDir: "./playground"
 		},
-		open: false
+		open: false,
+		port: 3002
 	})
 
 	gulp.watch([
-		'./**/*.js',
+		'./{components,controls,core,nodes,playground,plugins,utils}/*.js',
 		'playground/*.html'
 	]).on('change', browserSync.reload)
 	gulp.watch(['./icons/*.svg', './*.css'], watchParams, assets)
 
 	gulp.watch([
 		'./playground/app.js',
-		'./{controls,core,nodes,plugins,utils}/*.js'
+		'./{components,controls,core,nodes,plugins,utils}/*.js'
 	], watchParams, scriptsTask(true))
 }
 

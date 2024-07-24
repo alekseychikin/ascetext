@@ -1,10 +1,18 @@
-import WithControls from './with-controls.js'
+import Node from './node.js'
 
-export default class Widget extends WithControls {
+export default class Widget extends Node {
 	constructor(type, attributes) {
 		super(type, attributes)
 
 		this.isWidget = true
+	}
+
+	fit(node) {
+		return node.isSection
+	}
+
+	accept() {
+		return false
 	}
 
 	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
@@ -70,12 +78,17 @@ export default class Widget extends WithControls {
 		setSelection(newBlock)
 	}
 
-	split() {
+	split(builder) {
+		let next = this.next
+
+		if (!next) {
+			next = builder.createBlock()
+			builder.append(this.parent, next)
+		}
+
 		return {
-			head: null,
-			tail: this
+			head: this,
+			tail: next
 		}
 	}
-
-	scheduleUpdate() {}
 }

@@ -1,37 +1,39 @@
 import PluginPlugin from './plugin.js'
-import Node from '../nodes/node.js'
+import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
-import Group from '../nodes/group.js'
-import createElement from '../utils/create-element.js'
-import isHtmlElement from '../utils/is-html-element.js'
+import Section from '../nodes/section.js'
 
-export class List extends Group {
+export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
 		super('list', attributes)
-
-		this.isDeleteEmpty = true
 	}
 
-	render() {
-		return createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
-	}
-
-	update(previous) {
-		if (previous.decor !== this.attributes.decor) {
-			const element = createElement(this.attributes.decor === 'numerable' ? 'ol' : 'ul')
-
-			while (this.element.childNodes.length) {
-				element.appendChild(this.element.childNodes[0])
-			}
-
-			this.element.parentNode.insertBefore(element, this.element)
-			this.element.parentNode.removeChild(this.element)
-			this.setElement(element)
+	render(body) {
+		return {
+			type: this.attributes.decor === 'numerable' ? 'ol' : 'ul',
+			attributes: {},
+			body
 		}
 	}
 
 	accept(node) {
 		return node.type === 'list-item'
+	}
+
+	fit(node) {
+		return node.isSection || node.type === 'list-item' && node.first.next === node.last && node.last === this
+	}
+
+	join(node, builder) {
+		if (node.type === 'list' && this.attributes.decor === node.attributes.decor) {
+			return builder.create('list', { decor: this.attributes.decor })
+		}
+
+		return false
+	}
+
+	canDelete() {
+		return !this.first
 	}
 
 	stringify(children) {
@@ -49,34 +51,35 @@ export class List extends Group {
 	}
 }
 
-export class ListItem extends Node {
+export class ListItem extends Widget {
 	constructor(params = {}) {
 		super('list-item')
 
 		this.params = params
 	}
 
-	render() {
-		return createElement('li')
-	}
-
-	append(target, anchor, { builder, appendDefault }) {
-		if (target.type === 'text' || target.isInlineWidget) {
-			builder.append(this.first, target)
-		} else if (!this.first && target.type === 'list' && target.first && target.first.first) {
-			appendDefault(this, target.first.first, anchor)
-			builder.cut(target)
-		} else {
-			appendDefault(this, target, anchor)
+	render(body) {
+		return {
+			type: 'li',
+			attributes: {},
+			body
 		}
 	}
 
-	wrapper() {
-		return new List()
+	split(builder, next) {
+		const duplicate = builder.create(this.type, { ...this.attributes })
+
+		builder.append(this.parent, duplicate, this.next)
+		builder.append(duplicate, next)
+
+		return {
+			head: this,
+			tail: duplicate
+		}
 	}
 
 	accept(node) {
-		if (node.type === 'list' && this.last && this.last.type === 'list-item-content') {
+		if (node.type === 'list' && this.first.next === this.last && this.last === node) {
 			if (this.params.maxDepth !== null) {
 				const depth = this.getDepth(this, node)
 
@@ -88,7 +91,15 @@ export class ListItem extends Node {
 			return true
 		}
 
-		return node.type === 'list-item-content' || node.type === 'text' || node.isInlineWidget
+		return node.type === 'list-item-content' && this.first === node
+	}
+
+	fit(node) {
+		return node.type === 'list'
+	}
+
+	canDelete() {
+		return !this.first
 	}
 
 	getDepth(container, node) {
@@ -132,27 +143,92 @@ export class ListItemContent extends Container {
 		this.params = params
 	}
 
-	render() {
-		return createElement('div', {
-			tabIndex: 0
-		})
+	render(body) {
+		return {
+			type: 'div',
+			attributes: {
+				tabIndex: 0
+			},
+			body
+		}
 	}
 
-	cut({ builder }) {
-		if (this.parent && this.parent.parent) {
-			const list = this.parent.parent
+	fit(node) {
+		return node.first === this && node.type === 'list-item'
+	}
 
-			if (this.next && this.next.type === 'list') {
-				builder.append(list, this.next.first, this.parent.next)
+	join(node, builder) {
+		if (node.type === 'list-item-content') {
+			return builder.create('list-item-content')
+		}
+
+		return false
+	}
+
+	split(builder, next) {
+		const item = builder.create('list-item', this.params)
+		const content = builder.create('list-item-content', this.params)
+
+		builder.append(item, content)
+		builder.append(content, next)
+
+		if (this.parent.last.type === 'list') {
+			builder.append(item, this.parent.last)
+		}
+
+		builder.append(this.parent.parent, item, this.parent.next)
+
+		return {
+			head: this.parent,
+			tail: item
+		}
+	}
+
+	onCombine(builder, container) {
+		if (this.parent.last.type === 'list') {
+			if (container.parent.type === 'list-item') {
+				builder.append(container.parent, this.parent.last)
+			} else {
+				builder.append(this.parent.parent, this.parent.last.first, this.parent.next)
 			}
+		}
 
-			builder.cut(this.parent)
+		builder.cut(this.parent)
+	}
 
-			if (list.type === 'list' && !list.first) {
-				builder.cut(list)
+	enterHandler(event, {
+		builder,
+		setSelection,
+		anchorContainer,
+		anchorOffset,
+		focusedNodes
+	}) {
+		event.preventDefault()
+
+		const item = this.parent
+		const parent = item.parent
+
+		if (event.shiftKey) {
+			event.preventDefault()
+
+			builder.insert(builder.create('breakLine'))
+		} else if (anchorContainer.isEmpty) {
+			if (parent.parent.type === 'list-item') {
+				this.indentLeft(event, { anchorContainer, setSelection, builder })
+			} else if (parent.parent.isSection) {
+				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
 			}
 		} else {
-			builder.cutUntil(this, this)
+			const nextItem = builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
+
+			builder.append(nextItem, content)
+			builder.append(item.parent, nextItem, item.next)
+			builder.moveTail(this, content, anchorOffset)
+
+			if (this.next && this.next.type === 'list') {
+				builder.append(nextItem, this.next)
+			}
 		}
 	}
 
@@ -177,42 +253,7 @@ export class ListItemContent extends Container {
 		}
 	}
 
-	enterHandler(event, {
-		builder,
-		setSelection,
-		anchorContainer,
-		anchorOffset,
-		focusedNodes
-	}) {
-		event.preventDefault()
-
-		const item = this.parent
-		const parent = item.parent
-
-		if (event.shiftKey) {
-			event.preventDefault()
-
-			builder.insert(this, builder.create('breakLine'), anchorOffset)
-			setSelection(anchorContainer, anchorOffset + 1)
-		} else if (anchorContainer.isEmpty) {
-			if (parent.parent.type === 'list-item') {
-				this.indentLeft(event, { anchorContainer, setSelection, builder })
-			} else if (parent.parent.isSection) {
-				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
-			}
-		} else {
-			const nextItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
-
-			builder.append(nextItem, content)
-			builder.append(item.parent, nextItem, item.next)
-			builder.moveTail(this, content, anchorOffset)
-
-			setSelection(nextItem)
-		}
-	}
-
-	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer, setSelection }) {
+	deleteHandler(event, { builder, anchorContainer, focusAtLastPositionInContainer }) {
 		if (focusAtLastPositionInContainer) {
 			event.preventDefault()
 
@@ -222,23 +263,11 @@ export class ListItemContent extends Container {
 				return false
 			}
 
-			if (nextSelectableNode.isContainer) {
-				const offset = anchorContainer.getOffset()
-
-				if (!nextSelectableNode.hasOnlyBr) {
-					builder.append(anchorContainer, nextSelectableNode.first)
-				}
-
-				builder.cut(nextSelectableNode)
-
-				setSelection(anchorContainer, offset)
-			} else if (nextSelectableNode.isWidget) {
-				setSelection(nextSelectableNode)
-			}
+			builder.combine(this, nextSelectableNode)
 		}
 	}
 
-	indentLeft(event, { builder, anchorContainer, setSelection }) {
+	indentLeft(event, { builder, anchorContainer, anchorOffset, setSelection }) {
 		const item = anchorContainer.parent
 		const parentList = item.parent
 		let subList
@@ -249,19 +278,16 @@ export class ListItemContent extends Container {
 		}
 
 		builder.append(parentList.parent.parent, item, parentList.parent.next)
-
-		if (subList) {
-			builder.append(item, subList)
-		}
+		builder.append(item, subList)
 
 		if (!parentList.first) {
 			builder.cut(parentList)
 		}
 
-		setSelection(anchorContainer)
+		setSelection(anchorContainer, anchorOffset)
 	}
 
-	indentRight(event, { builder, anchorContainer, setSelection }) {
+	indentRight(event, { builder, anchorContainer, anchorOffset, setSelection }) {
 		const item = anchorContainer.parent
 		let list
 
@@ -274,7 +300,7 @@ export class ListItemContent extends Container {
 			builder.push(list, item)
 		}
 
-		setSelection(anchorContainer)
+		setSelection(anchorContainer, anchorOffset)
 	}
 
 	convertListItemToBlock(event, { builder, setSelection, focusedNodes }) {
@@ -293,13 +319,10 @@ export class ListItemContent extends Container {
 					next = item.next
 				}
 
-				if (container.first) {
-					builder.append(newBlock, container.first)
-				}
-
+				builder.append(newBlock, container.first)
 				builder.cut(item)
 
-				while (!parentSection.isSection) {
+				while (['list', 'list-item', 'list-item-content'].includes(parentSection.type)) {
 					parentNext = parentSection.next
 					parentSection = parentSection.parent
 
@@ -312,14 +335,14 @@ export class ListItemContent extends Container {
 						builder.cut(parentList)
 					}
 
-					if (!next && parentNext && !parentSection.isSection) {
+					if (!next && parentNext) {
 						next = parentNext
 					}
 				}
 
 				builder.append(parentSection, newBlock, parentNext)
 
-				if (next) {
+				if (next && next.type === 'list-item') {
 					const ul = builder.create('list', next.parent.attributes)
 
 					builder.append(ul, next)
@@ -359,11 +382,23 @@ export default class ListPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			marked: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 17h10M9 12h10M9 7h10M5.002 17v.002H5V17h.002Zm0-5v.002H5V12h.002Zm0-5v.002H5V7h.002Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			numerated: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17h10M4 15.685V15.5A1.5 1.5 0 0 1 5.5 14h.04c.807 0 1.46.653 1.46 1.46 0 .35-.114.692-.324.972L4 20h3m3-8h10M10 7h10M4 5l2-1v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			indentLeft: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 18V6m18 6H7m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			indentRight: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 18V6M3 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+			marked: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M9 17h10M9 12h10M9 7h10M5.002 17v.002H5V17h.002Zm0-5v.002H5V12h.002Zm0-5v.002H5V7h.002Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			numerated: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17h10M4 15.685V15.5A1.5 1.5 0 0 1 5.5 14h.04c.807 0 1.46.653 1.46 1.46 0 .35-.114.692-.324.972L4 20h3m3-8h10M10 7h10M4 5l2-1v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			indentLeft: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 18V6m18 6H7m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			indentRight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 18V6M3 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
+	}
+
+	restore(node, builder) {
+		if (node.type === 'list-item') {
+			const list = builder.create('list')
+
+			builder.push(list, node)
+
+			return list
+		}
+
+		return false
 	}
 
 	getInsertControls(container) {
@@ -488,25 +523,6 @@ export default class ListPlugin extends PluginPlugin {
 		return controls
 	}
 
-	parse(element, builder) {
-		const nodeName = isHtmlElement(element) ? element.nodeName.toLowerCase() : ''
-
-		if (nodeName === 'ul' || nodeName === 'ol') {
-			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
-
-			return builder.create('list', { decor })
-		}
-
-		if (nodeName === 'li') {
-			const listItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
-
-			builder.append(listItem, content)
-
-			return listItem
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'list') {
 			return builder.create('list', { decor: element.decor })
@@ -518,6 +534,23 @@ export default class ListPlugin extends PluginPlugin {
 
 		if (element.type === 'list-item-content') {
 			return builder.create('list-item-content', this.params)
+		}
+	}
+
+	parseTree(element, builder) {
+		if (element.type === 'ul' || element.type === 'ol') {
+			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'marker' })
+		}
+
+		if (element.type === 'li') {
+			const listItem =  builder.create('list-item', this.params)
+			const content = builder.create('list-item-content', this.params)
+			const children = builder.parseVirtualTree(element.body)
+
+			builder.append(listItem, content)
+			builder.append(content, children.first)
+
+			return listItem
 		}
 	}
 
@@ -538,9 +571,11 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	setList(type) {
-		return (event, { builder, focusedNodes }) => {
+		return (event, { builder, setSelection, focusedNodes, anchorOffset, focusOffset }) => {
 			const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
 			const { params } = this
+			let since
+			let until
 			let previous
 			let group = []
 
@@ -553,10 +588,15 @@ export default class ListPlugin extends PluginPlugin {
 						const listItem = builder.create('list-item', params)
 						const content = builder.create('list-item-content', params)
 
-						builder.append(content, node.first)
 						builder.append(listItem, content)
 						builder.append(list, listItem)
+						builder.moveTail(node, content, 0)
 						builder.cut(node)
+						until = content
+
+						if (!since) {
+							since = content
+						}
 					})
 				}
 			}
@@ -573,6 +613,7 @@ export default class ListPlugin extends PluginPlugin {
 			})
 
 			convertGroup(group)
+			setSelection(since, anchorOffset, until, focusOffset)
 		}
 	}
 }

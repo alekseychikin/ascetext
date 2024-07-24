@@ -1,17 +1,17 @@
-import WithControls from './with-controls.js'
+import Node from './node.js'
 
-export default class InlineWidget extends WithControls {
+export default class InlineWidget extends Node {
 	constructor(type, attributes = {}) {
 		super(type, attributes)
 
 		this.isInlineWidget = true
 	}
 
-	accept(node) {
-		return node.type === 'text'
+	fit(node) {
+		return node.isContainer || node.isInlineWidget
 	}
 
-	wrapper(builder) {
-		return builder.createBlock()
+	accept(node) {
+		return node.type === 'text' || node.isInlineWidget
 	}
 }

@@ -1,23 +1,21 @@
-import { operationTypes } from '../core/timetravel.js'
-import isElementBr from '../utils/is-element-br.js'
-import isHtmlElement from '../utils/is-html-element.js'
+import Publisher from './publisher.js'
 import isFunction from '../utils/is-function.js'
 import Fragment from '../nodes/fragment.js'
-import nbsp from '../utils/nbsp.js'
-import { LineHolder } from '../nodes/container.js'
+import findParent from '../utils/find-parent.js'
 
-const ignoreParsingElements = ['style', 'script']
+export const operationTypes = {
+	CUT: 'cut',
+	APPEND: 'append',
+	ATTRIBUTE: 'attribute'
+}
 
-export default class Builder {
+export default class Builder extends Publisher {
 	constructor(core) {
+		super()
 		this.core = core
 
 		this.registeredNodes = {}
 		this.registerPlugins()
-		this.parse = this.parse.bind(this)
-		this.appendHandler = this.appendHandler.bind(this)
-		this.handleMount = this.handleMount.bind(this)
-		this.handleUnmount = this.handleUnmount.bind(this)
 	}
 
 	create(name, ...params) {
@@ -50,53 +48,12 @@ export default class Builder {
 	}
 
 	handleAttributes(target, previous, next) {
-		this.core.onNodeChange({
+		this.sendMessage({
 			type: operationTypes.ATTRIBUTE,
 			target,
 			previous,
 			next
 		})
-
-		if (isFunction(target.update)) {
-			target.update(previous)
-		}
-	}
-
-	parse(element, ctx = {}) {
-		const fragment = this.createTree(element, ctx)
-
-		this.normalize(fragment)
-
-		return fragment
-	}
-
-	normalize(node) {
-		let current = node.first
-		let next
-		let previous
-		let normalized
-
-		while (current) {
-			next = current.next
-			previous = current.previous
-
-			if (previous && isFunction(previous.normalize) && (normalized = previous.normalize(current, this))) {
-				if (previous.first) {
-					this.append(normalized, previous.first)
-				}
-
-				if (current.first) {
-					this.append(normalized, current.first)
-				}
-
-				this.replaceUntil(previous, normalized, current)
-				this.normalize(normalized)
-			} else {
-				this.normalize(current)
-			}
-
-			current = next
-		}
 	}
 
 	parseJson(body) {
@@ -160,71 +117,104 @@ export default class Builder {
 		return content
 	}
 
-	createTree(element, ctx) {
+	parseVirtualTree(tree) {
 		const fragment = this.createFragment()
-		const lastElement = element.lastChild
-		let currentElement = element.firstChild
-		let nextElement
+		let currentElement
+		let i
 		let children = null
 		let current
 
-		while (currentElement) {
-			const context = { ...ctx }
-
-			if (ignoreParsingElements.includes(currentElement.nodeName.toLowerCase())) {
-				currentElement = currentElement.nextSibling
-
-				continue
-			}
-
-			nextElement = currentElement.nextSibling
+		for (i = 0; i < tree.length; i++) {
+			currentElement = tree[i]
 			children = null
 			current = this.core.plugins.reduce((parsed, plugin) => {
 				if (parsed) return parsed
 
-				return plugin.parse(currentElement, this, context)
+				return plugin.parseTree(currentElement, this)
 			}, null)
 
-			if (
-				isHtmlElement(currentElement) &&
-				currentElement.childNodes.length &&
-				(!current || !current.isWidget && current.type !== 'text')
-			) {
-				children = this.createTree(currentElement, { ...context })
+			if (!current || !current.isWidget && current.type !== 'text') {
+				children = this.parseVirtualTree(currentElement.body)
 			}
 
 			if (current) {
 				this.append(fragment, current)
 
-				if (children && children.first) {
+				if (children) {
 					this.append(current, children.first)
 				}
-
-				if (current.isDeleteEmpty && !current.first) {
-					this.cut(current)
-				}
-			} else if (children && children.first) {
+			} else if (children) {
 				this.append(fragment, children.first)
 			}
-
-			if (currentElement === lastElement) {
-				if (ctx.removeLeadingBr && isElementBr(lastElement)) {
-					this.cut(current)
-				}
-
-				break
-			}
-
-			currentElement = nextElement
 		}
 
 		return fragment
 	}
 
-	split(container, offset) {
-		const firstLevelNode = container.getFirstLevelNode(offset)
+	splitByOffset(container, offset) {
+		let length = offset
+		let firstLevelNode = container.first
 
-		return firstLevelNode.split(offset - container.getOffset(firstLevelNode.element), this)
+		if (!offset) {
+			const text = this.create('text', { content: '' })
+
+			this.append(container, text, firstLevelNode)
+
+			return {
+				head: text,
+				tail: firstLevelNode
+			}
+		}
+
+		while (firstLevelNode && length > firstLevelNode.length) {
+			length -= firstLevelNode.length
+			firstLevelNode = firstLevelNode.next
+		}
+
+		if (firstLevelNode.type === 'text' || firstLevelNode.type === 'breakLine') {
+			return firstLevelNode.split(this, length)
+		}
+
+		const { tail } = this.splitByOffset(firstLevelNode, length)
+		const duplicate = firstLevelNode.split(this).tail
+
+		this.append(duplicate, tail)
+
+		return {
+			head: firstLevelNode,
+			tail: duplicate
+		}
+	}
+
+	splitByTail(parent, tail) {
+		let currentTail = tail
+		let container = tail.parent
+		let duplicate
+
+		while (container !== parent) {
+			duplicate = container.split(this, currentTail)
+			currentTail = duplicate.tail
+
+			if (duplicate.head.parent.contains(parent)) {
+				return {
+					head: duplicate.head,
+					tail: currentTail
+				}
+			}
+
+			container = duplicate.head.parent
+		}
+
+		return {
+			head: tail.previous,
+			tail
+		}
+	}
+
+	duplicate(target) {
+		return isFunction(target.duplicate)
+			? target.duplicate(this)
+			: this.create(target.type, { ...target.attributes })
 	}
 
 	push(node, target) {
@@ -233,95 +223,33 @@ export default class Builder {
 	}
 
 	append(node, target, anchor) {
-		let container = node
-		let current = target
-		let next
-		let tail = anchor
+		if (!target) {
+			return
+		}
 
 		if (target.type === 'fragment') {
-			if (target.first) {
-				this.append(node, target.first, anchor)
-			}
-		} else {
-			if (node.isContainer && node.isEmpty) {
-				if (tail && tail === node.first) {
-					tail = node.first.next
-				}
-
-				if (node.first) {
-					this.cut(node.first)
-				}
-			}
-
-			while (current) {
-				next = current.next
-
-				if (this.canAccept(container, current)) {
-					while (!container.accept(current)) {
-						// if (tail && (!container.isContainer || !container.isEmpty)) {
-						// 	duplicate = container.duplicate(this)
-						// 	this.append(duplicate, tail)
-						// }
-
-						tail = container.next
-						container = container.parent
-					}
-
-					this.cut(current)
-
-					if (isFunction(container.append)) {
-						container.append(current, tail, { builder: this, appendDefault: this.appendHandler })
-					} else {
-						this.appendHandler(container, current, tail)
-					}
-				} else {
-					if (isFunction(current.wrapper)) {
-						const wrapper = current.wrapper(this)
-
-						if (this.canAccept(container, wrapper)) {
-							this.append(container, wrapper, tail)
-							this.cut(current)
-							this.append(wrapper, current)
-
-							container = wrapper
-							current = next
-							tail = null
-
-							continue
-						}
-					}
-
-					this.cut(current)
-					console.log('can not accept', container, current)
-				}
-
-				current = next
-			}
+			return this.append(node, target.first, anchor)
 		}
-	}
 
-	appendHandler(node, target, anchor) {
 		const last = target.getNodeUntil()
 		let current = target
 
+		if (anchor && anchor.parent !== node) {
+			console.error('anchor is not child of node', anchor)
+
+			return
+		}
+
 		this.cutUntil(target, last)
-		this.prepareContainer(target)
 
 		do {
 			current.parent = node
+			findParent(current.parent, (parent) => {
+				parent.length += current.length
+			})
 
-			this.render(current)
-			this.render(node)
-
-			if (anchor) {
-				this.render(anchor)
-				node.element.insertBefore(current.element, anchor.element)
-			} else {
-				node.element.appendChild(current.element)
-			}
-
-			if (node.isMount && isFunction(node.inputHandler)) {
-				node.inputHandler()
+			if (current === last) {
+				break
 			}
 
 			current = current.next
@@ -348,48 +276,29 @@ export default class Builder {
 			node.last = last
 		}
 
-		if (target.previous && target.previous.type === 'line-holder') {
-			this.cut(target.previous)
-		}
-
-		if (node.type !== 'fragment' && last.type === 'breakLine' && !last.next) {
-			this.append(last.parent, new LineHolder(), last.next)
-		}
-
-		current = target
-
-		while (current) {
-			this.handleMount(current)
-			current = current.next
-		}
-
-		if (node.isMount) {
-			this.core.onNodeChange({
-				type: operationTypes.APPEND,
-				container: node,
-				target,
-				last,
-				anchor
-			})
-		}
+		this.sendMessage({
+			type: operationTypes.APPEND,
+			container: node,
+			target,
+			last,
+			anchor
+		})
 	}
 
 	cut(node) {
-		if (isFunction(node.cut)) {
-			node.cut({ builder: this })
-		} else {
-			this.cutUntil(node, node)
-		}
+		this.cutUntil(node, node)
 	}
 
 	cutUntil(node, until) {
+		if (!node) {
+			return
+		}
+
 		const last = node.getNodeUntil(until)
-		const parent = node.parent
-		const isContainer = parent && parent.isContainer
 		let current = node
 
-		if (node.isMount && (node.parent || node.previous || last.next)) {
-			this.core.onNodeChange({
+		if (node.parent) {
+			this.sendMessage({
 				type: operationTypes.CUT,
 				container: node.parent,
 				last,
@@ -401,8 +310,6 @@ export default class Builder {
 		}
 
 		if (current.previous) {
-			this.handleText(current)
-
 			if (current.parent && current.parent.last === last) {
 				current.parent.last = current.previous
 			}
@@ -428,11 +335,9 @@ export default class Builder {
 		delete last.next
 
 		while (current) {
-			if (current.element && current.element.parentNode) {
-				current.element.parentNode.removeChild(current.element)
-			}
-
-			this.handleUnmount(current)
+			findParent(current.parent, (item) => {
+				item.length -= current.length
+			})
 			delete current.parent
 
 			if (current === last) {
@@ -440,72 +345,6 @@ export default class Builder {
 			}
 
 			current = current.next
-		}
-
-		if (isContainer && !parent.first) {
-			this.append(parent, new LineHolder())
-		}
-	}
-
-	handleMount(node) {
-		let current = node
-		let hasRoot = false
-
-		do {
-			if (current.type === 'root') {
-				hasRoot = true
-				break
-			}
-
-			current = current.parent
-		} while (current)
-
-		if (hasRoot && !node.isMount) {
-			node.isMount = true
-
-			if (isFunction(node.onMount)) {
-				node.onMount(this.core)
-			}
-
-			current = node.first
-
-			while (current) {
-				this.handleMount(current)
-				current = current.next
-			}
-		}
-	}
-
-	handleUnmount(node) {
-		let current
-
-		if (node.isMount) {
-			if (isFunction(node.onUnmount)) {
-				node.onUnmount(this.core)
-			}
-
-			node.isMount = false
-			current = node.first
-
-			while (current) {
-				this.handleUnmount(current)
-				current = current.next
-			}
-		}
-	}
-
-	handleText(current) {
-		const firstChild = current.deepesetFirstNode()
-		const lastChild = current.previous.deepesetLastNode()
-
-		if (firstChild && firstChild.type === 'text' && firstChild.attributes.content[0] === ' ') {
-			firstChild.attributes.content = nbsp + firstChild.attributes.content.substr(1)
-			firstChild.setNodeValue(firstChild.attributes.content)
-		}
-
-		if (lastChild && lastChild.type === 'text' && lastChild.attributes.content[lastChild.attributes.content.length - 1] === ' ') {
-			lastChild.attributes.content = lastChild.attributes.content.substr(0, lastChild.attributes.content.length - 1) + nbsp
-			lastChild.setNodeValue(lastChild.attributes.content)
 		}
 	}
 
@@ -521,46 +360,84 @@ export default class Builder {
 		this.append(parent, target, next)
 	}
 
-	canAccept(container, current) {
-		if (container.accept(current)) {
-			return container
+
+	insertText(target, anchor) {
+		const current = target.isFragment ? target.first : target
+		let next = current
+		let last
+
+		if (current.type === 'text' || current.isInlineWidget) {
+			last = current
+
+			while (last) {
+				if (last.type !== 'text' && !last.isInlineWidget || !last.next) {
+					break
+				}
+
+				last = last.next
+			}
+
+			next = last.next
+			this.cutUntil(current, last)
+			this.append(anchor.parent, current, anchor)
+		} else if (current.isContainer) {
+			next = current.next
+			this.cut(current)
+			this.append(anchor.parent, current.first, anchor)
 		}
 
-		if (container.parent) {
-			return this.canAccept(container.parent, current)
-		}
-
-		return false
+		return next
 	}
 
-	insert(node, target, offset) {
-		const { tail } = this.split(node, offset)
+	insert(target) {
+		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
+		const splitted = this.splitByOffset(anchorContainer, anchorOffset)
+		const rest = this.insertText(target, splitted.tail)
 
-		this.append(node, target, tail)
+		if (rest) {
+			const { head, tail } = this.splitByTail(anchorContainer.parent, splitted.tail)
+
+			this.append(head.parent, rest, tail)
+			setSelection(tail)
+		} else {
+			setSelection(anchorContainer, this.getOffsetToParent(anchorContainer, splitted.tail))
+		}
+	}
+
+	getOffsetToParent(parent, target) {
+		let offset = 0
+		let current = target
+
+		while (current !== parent) {
+			while (current.previous) {
+				current = current.previous
+				offset += current.length
+			}
+
+			current = current.parent
+		}
+
+		return offset
 	}
 
 	moveTail(container, target, offset) {
-		const { tail } = this.split(container, offset)
+		const { tail } = this.splitByOffset(container, offset)
+		const anchorOffset = target.length
 
-		if (tail) {
-			this.append(target, tail)
-		}
+		this.append(target, tail)
+		this.core.selection.setSelection(target, anchorOffset)
 	}
 
-	render(node) {
-		if (!node.element) {
-			node.setElement(node.render())
-		}
-	}
+	combine(container, target) {
+		if (container.isEmpty && container.parent.isSection && target.parent.isSection) {
+			this.cut(container)
+			this.core.selection.setSelection(target)
+		} else {
+			this.moveTail(target, container, 0)
 
-	prepareContainer(node) {
-		if (node.isContainer && !node.first) {
-			this.append(node, new LineHolder())
-		}
-
-		if (node.isWidget) {
-			node.element.setAttribute('tabindex', '0')
-			node.element.setAttribute('data-widget', '')
+			if (isFunction(target.onCombine)) {
+				target.onCombine(this, container)
+			}
 		}
 	}
 

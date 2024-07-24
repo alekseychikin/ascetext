@@ -9,28 +9,35 @@ export default class SizeObserver {
 
 		this.id = 0
 		this.ids = []
-		this.observedElements = []
+		this.observedNodes = []
 		this.handlers = []
 		this.timer = null
 		this.middleware = middleware
 
-		this.core.selection.onUpdate(this.update)
+		this.core.selection.subscribe(this.update)
+		this.core.builder.subscribe(this.update)
+		this.core.render.subscribe(this.update)
+		window.addEventListener('load', this.update)
+		this.core.node.addEventListener('load', this.update, true)
+		document.addEventListener('DOMContentLoaded', this.update)
 		window.addEventListener('resize', this.update)
+		visualViewport.addEventListener('resize', this.update)
+		visualViewport.addEventListener('scroll', this.update)
 	}
 
-	observe(element, handler) {
+	observe(node, handler) {
 		const id = ++this.id
 
 		this.ids.push(id)
-		this.observedElements.push(element)
+		this.observedNodes.push(node)
 		this.handlers.push(handler)
-		this.update()
+		this.handleNode(this.observedNodes.length - 1)
 
 		return () => {
 			const index = this.ids.indexOf(id)
 
 			this.ids.splice(index, 1)
-			this.observedElements.splice(index, 1)
+			this.observedNodes.splice(index, 1)
 			this.handlers.splice(index, 1)
 		}
 	}
@@ -44,16 +51,24 @@ export default class SizeObserver {
 	}
 
 	updateHandler() {
-		this.observedElements.forEach((element, index) => {
-			let boundings = this.calculateBoundings(element)
+		this.observedNodes.forEach((node, index) => {
+			this.handleNode(index)
+		})
+		this.timer = null
+	}
+
+	handleNode(index) {
+		const node = this.observedNodes[index]
+
+		if (node.isMount) {
+			let boundings = this.calculateBoundings(node.element)
 
 			if (isFunction(this.middleware)) {
 				boundings = this.middleware(boundings)
 			}
 
 			this.handlers[index](boundings)
-		})
-		this.timer = null
+		}
 	}
 
 	calculateBoundings(element) {
@@ -67,5 +82,8 @@ export default class SizeObserver {
 
 	destroy() {
 		window.removeEventListener('resize', this.update)
+		visualViewport.removeEventListener('resize', this.update)
+		visualViewport.removeEventListener('scroll', this.update)
+		this.core.node.removeEventListener('load', this.update, true)
 	}
 }

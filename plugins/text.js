@@ -1,8 +1,5 @@
 import Node from '../nodes/node.js'
 import PluginPlugin from './plugin.js'
-import isElementBr from '../utils/is-element-br.js'
-import isTextElement from '../utils/is-text-element.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 const mapModifierToTag = {
 	bold: 'strong',
@@ -16,39 +13,25 @@ const supportTags = {
 	strike: 's',
 	underlined: 'u'
 }
-const beginSpacesRegexp = /^[^\S\u00A0]+/
-const finishSpacesRegexp = /[^\S\u00A0]+$/
 const groupSpacesRegexp = /[^\S\u00A0]+/g
 
 export class Text extends Node {
 	constructor(attributes) {
 		super('text', attributes)
+
+		this.length = attributes.content.length
 	}
 
 	render() {
-		return this.create(this.generateModifiers())
-	}
-
-	update() {
-		const element = this.render()
-
-		this.element.parentNode.insertBefore(element, this.element)
-		this.element.parentNode.removeChild(this.element)
-		this.setElement(element)
-	}
-
-	create(modifiers) {
-		let modifier
-
-		if (modifier = modifiers.shift()) {
-			const node = document.createElement(mapModifierToTag[modifier])
-
-			node.appendChild(this.create(modifiers))
-
-			return node
+		return {
+			type: 'text',
+			attributes: { ...this.attributes },
+			body: []
 		}
+	}
 
-		return document.createTextNode(this.attributes.content)
+	fit(node) {
+		return node.isContainer || node.isInlineWidget
 	}
 
 	generateModifiers() {
@@ -73,16 +56,16 @@ export class Text extends Node {
 		return modifiers
 	}
 
-	accept() {
-		return false
+	accept(node) {
+		return node.isContainer
 	}
 
-	wrapper(builder) {
-		return builder.createBlock()
-	}
+	join(target, builder) {
+		if (target.type === 'text' && (this.isEqual(target) || !this.length || !target.length)) {
+			if (!this.length) {
+				return builder.create('text', { ...target.attributes })
+			}
 
-	normalize(target, builder) {
-		if (target.type === 'text' && this.isEqual(target)) {
 			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
 		}
 
@@ -102,16 +85,38 @@ export class Text extends Node {
 		return areEqualElements
 	}
 
-	split(position, builder) {
+	split(builder, position) {
+		const text = builder.create('text', { content: '' })
+
 		if (!position) {
+			if (this.previous) {
+				return {
+					head: this.previous,
+					tail: this
+				}
+			}
+
+			builder.append(this.parent, text, this)
+
 			return {
-				head: this.previous,
+				head: text,
 				tail: this
 			}
-		} else if (position > this.attributes.content.length - 1) {
+		}
+
+		if (position === this.length) {
+			if (this.next) {
+				return {
+					head: this,
+					tail: this.next
+				}
+			}
+
+			builder.append(this.parent, text)
+
 			return {
 				head: this,
-				tail: this.next
+				tail: text
 			}
 		}
 
@@ -127,6 +132,10 @@ export class Text extends Node {
 			head,
 			tail
 		}
+	}
+
+	canDelete() {
+		return !this.parent.isEmpty && !this.length
 	}
 
 	stringify() {
@@ -148,18 +157,6 @@ export class Text extends Node {
 			type: this.type,
 			modifiers: this.generateModifiers(),
 			content: this.attributes.content
-		}
-	}
-
-	setNodeValue(value, element = this.element) {
-		if (element.nodeType === 3) {
-			if (element.nodeValue !== value) {
-				element.nodeValue = value
-			}
-		} else if (element.firstChild) {
-			this.setNodeValue(value, element.firstChild)
-		} else {
-			this.setElement(this.render())
 		}
 	}
 }
@@ -190,100 +187,39 @@ export default class TextPlugin extends PluginPlugin {
 
 	get icons() {
 		return {
-			bold: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11a1 1 0 1 0 0 2v-2Zm0 8H7a1 1 0 0 0 1 1v-1ZM8 5V4a1 1 0 0 0-1 1h1Zm0 8h5.5v-2H8v2Zm5.5 5H8v2h5.5v-2Zm2.5-2.5a2.5 2.5 0 0 1-2.5 2.5v2a4.5 4.5 0 0 0 4.5-4.5h-2ZM13.5 13a2.5 2.5 0 0 1 2.5 2.5h2a4.5 4.5 0 0 0-4.5-4.5v2ZM8 6h4.5V4H8v2Zm4.5 5H8v2h4.5v-2ZM15 8.5a2.5 2.5 0 0 1-2.5 2.5v2A4.5 4.5 0 0 0 17 8.5h-2ZM12.5 6A2.5 2.5 0 0 1 15 8.5h2A4.5 4.5 0 0 0 12.5 4v2ZM7 5v14h2V5H7Z" fill="currentColor"/></svg>',
-			italic: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 19h4m0-14h4m-6 14 4-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			underlined: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h12M8 5v6a4 4 0 0 0 8 0V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-			strike: '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c.896 0 1.775.192 2.546.557.348.165.668.362.955.586.347.273.645.586.882.93.43.628.643 1.337.615 2.053-.028.716-.296 1.412-.776 2.017-.48.605-1.154 1.096-1.952 1.421a6.073 6.073 0 0 1-2.583.428 5.865 5.865 0 0 1-2.497-.684c-.74-.402-1.332-.957-1.713-1.605M4 12h16m-3.476-5.703c-.381-.648-.973-1.203-1.714-1.605a5.866 5.866 0 0 0-2.496-.684 6.075 6.075 0 0 0-2.584.428c-.798.325-1.472.816-1.952 1.42-.48.606-.747 1.302-.776 2.018-.008.21.005.42.037.626" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+			bold: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 11a1 1 0 1 0 0 2v-2Zm0 8H7a1 1 0 0 0 1 1v-1ZM8 5V4a1 1 0 0 0-1 1h1Zm0 8h5.5v-2H8v2Zm5.5 5H8v2h5.5v-2Zm2.5-2.5a2.5 2.5 0 0 1-2.5 2.5v2a4.5 4.5 0 0 0 4.5-4.5h-2ZM13.5 13a2.5 2.5 0 0 1 2.5 2.5h2a4.5 4.5 0 0 0-4.5-4.5v2ZM8 6h4.5V4H8v2Zm4.5 5H8v2h4.5v-2ZM15 8.5a2.5 2.5 0 0 1-2.5 2.5v2A4.5 4.5 0 0 0 17 8.5h-2ZM12.5 6A2.5 2.5 0 0 1 15 8.5h2A4.5 4.5 0 0 0 12.5 4v2ZM7 5v14h2V5H7Z" fill="currentColor"/></svg>',
+			italic: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 19h4m0-14h4m-6 14 4-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			underlined: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6 19h12M8 5v6a4 4 0 0 0 8 0V5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+			strike: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c.896 0 1.775.192 2.546.557.348.165.668.362.955.586.347.273.645.586.882.93.43.628.643 1.337.615 2.053-.028.716-.296 1.412-.776 2.017-.48.605-1.154 1.096-1.952 1.421a6.073 6.073 0 0 1-2.583.428 5.865 5.865 0 0 1-2.497-.684c-.74-.402-1.332-.957-1.713-1.605M4 12h16m-3.476-5.703c-.381-.648-.973-1.203-1.714-1.605a5.866 5.866 0 0 0-2.496-.684 6.075 6.075 0 0 0-2.584.428c-.798.325-1.472.816-1.952 1.42-.48.606-.747 1.302-.776 2.018-.008.21.005.42.037.626" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
 	}
 
-	parse(element, builder, ctx) {
-		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
-
-		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
+	parseTree(element) {
+		if (element.type !== 'text') {
 			return null
 		}
 
-		if (isTextElement(element)) {
-			const firstChild = element.parentNode.firstChild
-			const lastChild = element.parentNode.lastChild
-			const attributes = {
-				content: element.nodeValue
-			}
-
-			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
-				attributes.content = attributes.content.replace(beginSpacesRegexp, '')
-			}
-
-			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
-				attributes.content = attributes.content.replace(finishSpacesRegexp, '')
-			}
-
-			attributes.content = attributes.content.replace(groupSpacesRegexp, ' ')
-
-			if (!attributes.content.length || attributes.content.match(/^[^\S\u00A0]+$/)) {
-				return false
-			}
-
-			if (ctx.weight) {
-				attributes.weight = 'bold'
-			}
-
-			if (ctx.style) {
-				attributes.style = 'italic'
-			}
-
-			if (ctx.strike) {
-				attributes.strike = 'horizontal'
-			}
-
-			if (ctx.decoration) {
-				attributes.decoration = 'underlined'
-			}
-
-			return new Text(attributes)
+		const attributes = {
+			content: element.attributes.content.replace(groupSpacesRegexp, ' ')
 		}
 
-		if (supportTags.bold.includes(tagName) && this.params.allowModifiers.includes('bold')) {
-			ctx.weight = 'bold'
+		if (element.attributes.weight && this.params.allowModifiers.includes('bold')) {
+			attributes.weight = 'bold'
 		}
 
-		if (supportTags.italic.includes(tagName) && this.params.allowModifiers.includes('italic')) {
-			ctx.style = 'italic'
+		if (element.attributes.style && this.params.allowModifiers.includes('italic')) {
+			attributes.style = 'italic'
 		}
 
-		if (supportTags.strike === tagName && this.params.allowModifiers.includes('strike')) {
-			ctx.strike = 'horizontal'
+		if (element.attributes.strike && this.params.allowModifiers.includes('strike')) {
+			attributes.strike = 'horizontal'
 		}
 
-		if (supportTags.underlined === tagName && this.params.allowModifiers.includes('underlined')) {
-			ctx.decoration = 'underlined'
+		if (element.attributes.decoration && this.params.allowModifiers.includes('underlined')) {
+			attributes.decoration = 'underlined'
 		}
 
-		if (tagName === 'span') {
-			if (
-				(
-					element.style['font-weight'] === 'bold' ||
-					element.style['font-weight'] === '600' ||
-					element.style['font-weight'] === '500' ||
-					element.style['font-weight'] === '700'
-				) && this.params.allowModifiers.includes('bold')
-			) {
-				ctx.weight = 'bold'
-			}
-
-			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
-				ctx.style = 'italic'
-			}
-
-			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
-				ctx.strike = 'horizontal'
-			}
-
-			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
-				ctx.decoration = 'underlined'
-			}
-		}
+		return new Text(attributes)
 	}
 
 	parseJson(element) {

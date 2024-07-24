@@ -1,4 +1,3 @@
-// import { debounce } from '../../libs/helpers.js'
 import Section from '../nodes/section.js'
 import Builder from './builder.js'
 import Selection from './selection.js'
@@ -18,14 +17,17 @@ import Toolbar from '../components/toolbar.js'
 import Controls from './controls.js'
 import Dragndrop from './drag-n-drop.js'
 import SizeObserver from './size-observer.js'
+import Render from './render.js'
+import Parser from './parser.js'
+import Normalizer from './normalizer.js'
 import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
 
 class Root extends Section {
-	constructor(element) {
+	constructor() {
 		super('root')
 
-		this.element = element
 		this.isMount = true
+		this.isRendered = true
 	}
 }
 
@@ -33,7 +35,7 @@ export default class Ascetext {
 	constructor(node, params = {}) {
 		this.stringify = this.stringify.bind(this)
 		this.onChange = this.onChange.bind(this)
-		this.onNodeChange = this.onNodeChange.bind(this)
+		this.triggerChange = this.triggerChange.bind(this)
 
 		this.node = node
 		this.onChangeHandlers = []
@@ -54,10 +56,13 @@ export default class Ascetext {
 
 			return icons
 		}, {}), params.icons || {})
-		this.placeholder = extractPlaceholderParams(params.placeholder)
-		this.model = new Root(node)
-		// this.navigation = new Navigation(this)
+		this.model = new Root()
 		this.builder = new Builder(this)
+		this.normalizer = new Normalizer(this)
+		this.render = new Render(this)
+		this.parser = new Parser(node)
+		this.placeholder = extractPlaceholderParams(params.placeholder)
+		// this.navigation = new Navigation(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
@@ -69,6 +74,7 @@ export default class Ascetext {
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
+		this.selection.setComponents(this.components)
 
 		const container = document.createElement('div')
 
@@ -76,15 +82,13 @@ export default class Ascetext {
 			container.appendChild(node.childNodes[0])
 		}
 
-		const children = this.builder.parse(container)
+		const tree = this.parser.getVirtualTree(container.firstChild)
+		const children = this.builder.parseVirtualTree(tree)
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.timeTravel.reset()
-		this.init = true
+		this.builder.subscribe(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
-		window.addEventListener('load', this.sizeObserver.update)
-		document.addEventListener('DOMContentLoaded', this.sizeObserver.update)
-		this.node.addEventListener('load', this.sizeObserver.update, true)
+		this.finishInit()
 	}
 
 	stringify(first) {
@@ -93,6 +97,8 @@ export default class Ascetext {
 		let children = ''
 
 		while (current) {
+			children = ''
+
 			if (current.first) {
 				children = this.stringify(current.first)
 			}
@@ -116,14 +122,6 @@ export default class Ascetext {
 		}
 	}
 
-	onNodeChange(changes) {
-		if (this.init) {
-			this.timeTravel.pushChange(changes)
-			this.sizeObserver.update()
-			this.triggerChange()
-		}
-	}
-
 	triggerChange() {
 		clearTimeout(this.onChangeTimer)
 		this.onChangeTimer = setTimeout(() => {
@@ -132,24 +130,20 @@ export default class Ascetext {
 	}
 
 	setContent(content) {
-		this.unmountAll()
-		this.model = new Root(this.node)
-		this.timeTravel.root = this.model
-		this.node.innerHTML = ''
+		this.components.forEach((component) => component.unregister())
+		this.builder.cutUntil(this.model.first)
 		this.init = false
 
 		const container = document.createElement('div')
 
 		container.innerHTML = content
 
-		const children = this.builder.parse(container)
+		const tree = this.parser.getVirtualTree(container.firstChild)
+		const children = this.builder.parseVirtualTree(tree)
 
-		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.selection.setSelection(this.model.first)
-		this.timeTravel.reset()
-		this.init = true
 		this.components.forEach((component) => component.register(this))
+		this.finishInit()
 	}
 
 	getContent() {
@@ -159,19 +153,15 @@ export default class Ascetext {
 	}
 
 	setJson(data) {
-		this.unmountAll()
-		this.model = new Root(this.node)
-		this.timeTravel.root = this.model
-		this.node.innerHTML = ''
+		this.components.forEach((component) => component.unregister())
+		this.builder.cutUntil(this.model.first)
 		this.init = false
 
 		const children = this.builder.parseJson(data)
 
-		this.components.forEach((component) => component.unregister())
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.timeTravel.reset()
-		this.init = true
 		this.components.forEach((component) => component.register(this))
+		this.finishInit()
 	}
 
 	getJson() {
@@ -180,27 +170,20 @@ export default class Ascetext {
 		return this.json(this.model.first)
 	}
 
-	unmountAll() {
-		let current = this.model.first
-
-		while (current) {
-			this.builder.handleUnmount(current)
-
-			current = current.next
-		}
+	finishInit() {
+		const unsubscribe = this.normalizer.subscribe(() => {
+			this.timeTravel.reset()
+			this.init = true
+			unsubscribe()
+		})
 	}
 
 	focus() {
-		this.selection.setSelection(this.model.first, 0)
-	}
-
-	refreshComponent() {
-		this.components.forEach((component) => component.unregister())
-		this.components.forEach((component) => component.register(this))
+		this.selection.setSelection(this.model.first)
 	}
 
 	destroy() {
-		this.onChangeHandlers.splice(0, this.onChangeHandlers.length)
+		this.onChangeHandlers.splice(0)
 		this.node.setAttribute('contenteditable', false)
 		this.editing.destroy()
 		this.selection.destroy()
@@ -208,7 +191,5 @@ export default class Ascetext {
 		this.sizeObserver.destroy()
 		this.controls.destroy()
 		this.components.forEach((component) => component.unregister())
-		// this.node.removeEventListener('keydown', this.onKeyDown)
-		// this.node.removeEventListener('mouseup', this.onMouseUp)
 	}
 }

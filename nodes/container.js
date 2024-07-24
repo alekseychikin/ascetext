@@ -1,35 +1,5 @@
 import Node from './node.js'
-import InlineWidget from '../nodes/inline-widget.js'
 import createElement from '../utils/create-element.js'
-
-export class LineHolder extends InlineWidget {
-	constructor() {
-		super('line-holder')
-	}
-
-	render() {
-		return createElement('br')
-	}
-
-	accept(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
-	split() {
-		return {
-			head: this.previous,
-			tail: this
-		}
-	}
-
-	stringify() {
-		return ''
-	}
-
-	json() {
-		return null
-	}
-}
 
 export default class Container extends Node {
 	constructor(type, attributes = {}) {
@@ -41,26 +11,29 @@ export default class Container extends Node {
 		this.removeObserver = null
 		this.sizeObserver = null
 		this.controls = null
-		this.inputHandlerTimer = null
 	}
 
 	get isEmpty() {
-		return !this.first || this.first === this.last && this.first.type === 'line-holder'
+		return !this.first || this.first === this.last && this.first.type === 'text' && !this.first.length
+	}
+
+	fit(node) {
+		return node.isSection
 	}
 
 	accept(node) {
-		return node.type === 'text' || node.isInlineWidget
+		return node.isInlineWidget || node.type === 'text'
 	}
 
 	onFocus(selection) {
 		if (!selection.isRange && this.placeholder) {
-			this.invokePlaceholderHandler(true)
+			this.inputHandler(true)
 		}
 	}
 
 	onBlur() {
 		if (this.placeholder) {
-			this.invokePlaceholderHandler(false)
+			this.inputHandler(false)
 		}
 	}
 
@@ -74,61 +47,56 @@ export default class Container extends Node {
 					'position': 'absolute',
 					'pointer-events': 'none',
 					'top': '0',
-					'left': '0'
-				}
-			})
-			this.invokePlaceholderHandler(false)
-		}
-	}
-
-	onUnmount() {
-		this.hidePlaceholder()
-	}
-
-	inputHandler() {
-		if (this.placeholder) {
-			if (this.inputHandlerTimer) {
-				return null
-			}
-
-			this.inputHandlerTimer = requestAnimationFrame(() => this.invokePlaceholderHandler(true))
-		}
-	}
-
-	invokePlaceholderHandler(focused) {
-		this.cancelPlaceholderHandler()
-		this.placeholderHandler(this.placeholder, this, focused)
-
-		if (!this.element.innerText.trim().length) {
-			this.showPlaceholder()
-		} else {
-			this.hidePlaceholder()
-		}
-	}
-
-	showPlaceholder() {
-		if (this.placeholder) {
-			this.removeObserver = this.sizeObserver.observe(this.element, (entry) => {
-				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
-				this.placeholder.style.width = `${entry.element.width}px`
+					'left': '0',
+					'display': 'none'
+				},
+				'data-id': this.id
 			})
 			this.controls.registerControl(this.placeholder)
 		}
 	}
 
-	hidePlaceholder() {
-		this.cancelPlaceholderHandler()
-
-		if (this.placeholder && this.removeObserver) {
-			this.removeObserver()
-			this.removeObserver = null
-			this.controls.unregisterControl(this.placeholder)
+	onUnmount({ controls }) {
+		if (this.placeholder) {
+			this.hidePlaceholder()
+			controls.unregisterControl(this.placeholder)
 		}
 	}
 
-	cancelPlaceholderHandler() {
-		cancelAnimationFrame(this.inputHandlerTimer)
-		this.inputHandlerTimer = null
+	onCombine(builder) {
+		if (this.parent.isSection) {
+			builder.cut(this)
+		}
+	}
+
+	inputHandler(focused) {
+		if (this.placeholder) {
+			const show = this.placeholderHandler(this.placeholder, this, focused)
+
+			if (!this.element.outerText.trim().length && show) {
+				this.showPlaceholder()
+			} else {
+				this.hidePlaceholder()
+			}
+		}
+	}
+
+	showPlaceholder() {
+		if (this.placeholder) {
+			this.removeObserver = this.sizeObserver.observe(this, (entry) => {
+				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+				this.placeholder.style.width = `${entry.element.width}px`
+			})
+			this.placeholder.style.display = ''
+		}
+	}
+
+	hidePlaceholder() {
+		if (this.placeholder && this.removeObserver) {
+			this.placeholder.style.display = 'none'
+			this.removeObserver()
+			this.removeObserver = null
+		}
 	}
 
 	enterHandler(
@@ -136,35 +104,35 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorOffset,
-			anchorContainer,
-			setSelection,
+			anchorAtFirstPositionInContainer,
 			focusAtLastPositionInContainer
 		}
 	) {
 		if (event.shiftKey) {
 			event.preventDefault()
 
-			builder.insert(this, builder.create('breakLine'), anchorOffset)
-
-			setSelection(anchorContainer, anchorOffset + 1)
+			builder.insert(builder.create('breakLine'))
 		} else {
 			let newBlock
 
-			if (!this.parent.isSection && !this.parent.isGroup) {
+			if (!this.parent.isSection) {
 				return false
 			}
 
 			event.preventDefault()
 
-			if (focusAtLastPositionInContainer) {
-				newBlock = builder.createBlock()
+			if (anchorAtFirstPositionInContainer) {
+				builder.append(this.parent, builder.createBlock(), this)
 			} else {
-				newBlock = this.duplicate(builder)
-			}
+				if (focusAtLastPositionInContainer) {
+					newBlock = builder.createBlock()
+				} else {
+					newBlock = builder.duplicate(this)
+				}
 
-			builder.append(this.parent, newBlock, this.next)
-			builder.moveTail(this, newBlock, anchorOffset)
-			setSelection(newBlock)
+				builder.append(this.parent, newBlock, this.next)
+				builder.moveTail(this, newBlock, anchorOffset)
+			}
 		}
 	}
 
@@ -172,57 +140,19 @@ export default class Container extends Node {
 		event,
 		{
 			builder,
-			anchorAtFirstPositionInContainer,
-			anchorAtLastPositionInContainer,
-			anchorContainer,
-			setSelection
+			anchorAtFirstPositionInContainer
 		}
 	) {
 		if (anchorAtFirstPositionInContainer) {
 			event.preventDefault()
 
-			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
-				return false
-			}
-
-			const container = anchorContainer
-			const previousSelectableNode = container.getPreviousSelectableNode()
+			const previousSelectableNode = this.getPreviousSelectableNode()
 
 			if (!previousSelectableNode) {
 				return false
 			}
 
-			if (anchorAtLastPositionInContainer) {
-				builder.cut(container)
-
-				if (previousSelectableNode.isContainer) {
-					setSelection(previousSelectableNode, -1)
-				} else if (previousSelectableNode.isWidget) {
-					setSelection(previousSelectableNode)
-				}
-			} else if (previousSelectableNode.isContainer) {
-				const offset = previousSelectableNode.getOffset()
-
-				if (previousSelectableNode.isEmpty) {
-					if (previousSelectableNode.parent.isSection) {
-						builder.cut(previousSelectableNode)
-						setSelection(container)
-					} else {
-						builder.append(previousSelectableNode, container.first)
-						builder.cut(container)
-						setSelection(previousSelectableNode)
-					}
-				} else {
-					if (container.first) {
-						builder.append(previousSelectableNode, container.first)
-					}
-
-					builder.cut(container)
-					setSelection(previousSelectableNode, offset)
-				}
-			} else if (previousSelectableNode.isWidget) {
-				setSelection(previousSelectableNode)
-			}
+			builder.combine(previousSelectableNode, this)
 		}
 	}
 
@@ -231,43 +161,23 @@ export default class Container extends Node {
 		{
 			builder,
 			anchorAtLastPositionInContainer,
-			anchorAtFirstPositionInContainer,
-			anchorContainer,
 			setSelection
 		}
 	) {
 		if (anchorAtLastPositionInContainer) {
 			event.preventDefault()
 
-			if (!anchorContainer.parent.isSection && !anchorContainer.parent.isGroup) {
-				return false
-			}
-
-			const container = anchorContainer
-			const nextSelectableNode = container.getNextSelectableNode()
+			const nextSelectableNode = this.getNextSelectableNode()
 
 			if (!nextSelectableNode) {
 				return false
 			}
 
-			if (anchorAtFirstPositionInContainer) {
-				builder.cut(container)
-
-				if (nextSelectableNode.isContainer || nextSelectableNode.isWidget) {
-					setSelection(nextSelectableNode)
-				}
-			} else if (nextSelectableNode.isContainer) {
-				const offset = container.getOffset()
-
-				if (!nextSelectableNode.hasOnlyBr) {
-					builder.append(container, nextSelectableNode.first)
-				}
-
-				builder.cut(nextSelectableNode)
-
-				setSelection(container, offset)
-			} else if (nextSelectableNode.isWidget) {
+			if (this.isEmpty) {
+				builder.cut(this)
 				setSelection(nextSelectableNode)
+			} else {
+				builder.combine(this, nextSelectableNode)
 			}
 		}
 	}

@@ -1,87 +1,59 @@
 export default class Autocomplete {
 	constructor(core) {
-		this.onEdit = this.onEdit.bind(this)
-
 		this.node = core.node
 		this.plugins = core.plugins
 		this.selection = core.selection
 		this.builder = core.builder
-		this.editing = core.editing
 		this.patterns = this.plugins.map((plugin) =>
 			plugin.autocompleteRule ? { plugin, rule: plugin.autocompleteRule } : null
 		).filter(Boolean)
-		this.lastAnchorContainer = null
-		this.lastAnchorOffset = null
-
-		this.selection.onUpdate(this.onEdit)
 	}
 
-	onEdit() {
-		const { selection, editing, builder } = this
+	trigger() {
+		const { selection, builder } = this
 
-		if (
-			!selection.focused ||
-			selection.isRange ||
-			this.lastAnchorContainer === selection.anchorContainer && this.lastAnchorOffset === selection.anchorOffset
-		) {
-			return
+		if (selection.isRange) {
+			return false
 		}
 
-		const content = selection.anchorContainer.element.outerText
-		let itemContent
-		let start
+		const content = this.getContent()
 		let index
 		let match
-		let plugin
-
-		this.lastAnchorContainer = selection.anchorContainer
-		this.lastAnchorOffset = selection.anchorOffset
 
 		for (index = 0; index < this.patterns.length; index++) {
-			start = 0
-			itemContent = content
+			if (match = content.match(this.patterns[index].rule)) {
+				const { head, tail } = selection.cutRange(selection.anchorContainer, selection.anchorOffset - match[0].length, selection.anchorContainer, selection.anchorOffset)
+				const plugin = this.patterns[index].plugin
+				const anchor = tail.next
 
-			while (match = itemContent.match(this.patterns[index].rule)) {
-				start += match.index
-				itemContent = itemContent.substr(match.index + match[0].length)
+				builder.cutUntil(head, tail)
 
-				if (start <= selection.anchorOffset && start + match[0].length >= selection.anchorOffset - 1) {
-					editing.update()
-					plugin = this.patterns[index].plugin
-					plugin.unwrap(selection.anchorContainer.getChildByOffset(start + 1).node, builder)
+				const node = plugin.wrap(tail, builder, selection)
 
-					const textNode = builder.create('text', { content: match[0] })
-					const { head, tail } = selection.cutRange(selection.anchorContainer, start, selection.anchorContainer, start + match[0].length)
-					const selectedItems = selection.getArrayRangeItems(head, tail)
-					const { since, until } = editing.captureSinceAndUntil(selectedItems, 0)
-					const node = plugin.wrap(textNode, builder)
+				builder.append(selection.anchorContainer, node, anchor)
 
-					builder.replaceUntil(since, node, until)
-					selection.setSelection(selection.anchorContainer, selection.anchorOffset)
-
-					return
-				}
-
-				start += match[0].length
+				return true
 			}
 		}
+
+		return false
 	}
 
-	getRangeOffsets(selection, start, finish) {
-		const content = selection.anchorContainer.element.outerText
-		const fakeContent = content.substr(0, start) +
-			'<span style="background: blue" data-selected-text>' +
-			content.substr(start, finish - start) +
-			'</span>' +
-			content.substr(finish)
-		selection.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-		const selectedText = selection.containerAvatar.querySelector('span[data-selected-text]')
+	getContent() {
+		let current = this.selection.getNodeByOffset(this.selection.anchorContainer, this.selection.anchorOffset)
+		let offset = 0
+		let content = ''
 
-		return {
-			left: selection.boundings.container.left + selectedText.offsetLeft,
-			top: selection.boundings.container.top + selectedText.offsetTop,
-			width: selectedText.offsetWidth,
-			height: selectedText.offsetHeight
+		if (current.parent.isInlineWidget) {
+			return ''
 		}
+
+		while (current && current.type === 'text') {
+			content = (current.type === 'text' ? current.attributes.content : '\n') + content
+			offset = this.builder.getOffsetToParent(this.selection.anchorContainer, current)
+			current = current.previous
+		}
+
+		return content.substring(0, this.selection.anchorOffset - offset)
 	}
 }

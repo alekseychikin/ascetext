@@ -1,25 +1,37 @@
 import InlineWidget from '../nodes/inline-widget.js'
 import PluginPlugin from './plugin.js'
-import createElement from '../utils/create-element.js'
 import isElementBr from '../utils/is-element-br.js'
 
 class BreakLine extends InlineWidget {
 	constructor() {
 		super('breakLine')
+
+		this.length = 1
 	}
 
 	render() {
-		return createElement('br')
-	}
-
-	accept(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
-	split() {
 		return {
-			head: this.previous,
-			tail: this
+			type: 'br',
+			attributes: {},
+			body: []
+		}
+	}
+
+	split(builder) {
+		if (this.next) {
+			return {
+				head: this,
+				tail: this.next
+			}
+		}
+
+		const text = builder.create('text', { content: '' })
+
+		builder.append(this.parent, text)
+
+		return {
+			head: this,
+			tail: text
 		}
 	}
 
@@ -39,14 +51,14 @@ export default class BreakLinePlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder) {
-		if (isElementBr(element)) {
+	parseJson(element, builder) {
+		if (element.type === 'breakLine') {
 			return builder.create('breakLine')
 		}
 	}
 
-	parseJson(element, builder) {
-		if (element.type === 'breakLine') {
+	parseTree(element, builder) {
+		if (element.type === 'br') {
 			return builder.create('breakLine')
 		}
 	}
