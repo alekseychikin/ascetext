@@ -123,9 +123,9 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 export default Ascetext
 
 declare class Publisher {
-	subscribers: Array<(...params: any) => void>;
-	subscribe(handler: (...params: any) => void): () => void;
-	sendMessage(...params: any): void;
+	subscribers: Array<(...params: unknown[]) => void>;
+	subscribe(handler: (...params: unknown[]) => void): () => void;
+	sendMessage(...params: unknown[]): void;
 }
 
 declare class Controls {
