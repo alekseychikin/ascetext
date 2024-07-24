@@ -1,5 +1,3 @@
-import { setNode } from '../utils/map-element-to-node.js'
-
 let id = 1
 
 export default class Node {
@@ -10,16 +8,13 @@ export default class Node {
 		this.isContainer = false
 		this.isWidget = false
 		this.isSection = false
-		this.isGroup = false
 		this.isRendered = false
 		this.isMount = false
 		this.length = 0
 	}
 
-	setElement(element) {
-		this.element = element
-		this.element.nodeId = this.id
-		setNode(this)
+	get shortrcuts() {
+		return {}
 	}
 
 	accept() {
@@ -60,10 +55,6 @@ export default class Node {
 		return current
 	}
 
-	get shortrcuts() {
-		return {}
-	}
-
 	getPreviousSelectableNode() {
 		let current = this
 
@@ -78,7 +69,7 @@ export default class Node {
 				current = current.parent
 
 				if (!current) {
-					return false
+					return
 				}
 
 				if (current.contains(this)) {
@@ -106,7 +97,7 @@ export default class Node {
 				current = current.parent
 
 				if (!current) {
-					return false
+					return
 				}
 
 				if (current.contains(this)) {

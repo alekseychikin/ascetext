@@ -51,19 +51,13 @@ export default class BreakLinePlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder) {
-		if (isElementBr(element)) {
-			return builder.create('breakLine')
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'breakLine') {
 			return builder.create('breakLine')
 		}
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (element.type === 'br') {
 			return builder.create('breakLine')
 		}

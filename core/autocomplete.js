@@ -13,7 +13,7 @@ export default class Autocomplete {
 		const { selection, builder } = this
 
 		if (selection.isRange) {
-			return
+			return false
 		}
 
 		const content = this.getContent()

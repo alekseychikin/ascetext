@@ -42,14 +42,18 @@ export default class Editing {
 		this.node = core.node
 		this.core = core
 		this.updatingContainers = []
-		this.modifyKeyHandlerParams = {}
+		this.modifyKeyHandlerParams = {
+			builder: core.builder,
+			setSelection: core.selection.setSelection,
+			restoreSelection: core.selection.restoreSelection
+		}
 		this.scheduleTimer = null
+		this.keydownTimer = null
 		this.isSession = false
 		this.isUpdating = false
 		this.spacesDown = false
 		this.hadKeydown = false
 		this.removedRange = false
-		this.keydownTimer = null
 
 		this.node.addEventListener('mousedown', this.onMouseDown)
 		this.node.addEventListener('keydown', this.onKeyDown)
@@ -200,7 +204,7 @@ export default class Editing {
 		if (!this.core.selection.isRange) {
 			this.removedRange = false
 
-			return ''
+			return
 		}
 
 		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
@@ -287,11 +291,8 @@ export default class Editing {
 	}
 
 	getModifyKeyHandlerParams() {
-		this.modifyKeyHandlerParams.builder = this.core.builder
 		this.modifyKeyHandlerParams.anchorOffset = this.core.selection.anchorOffset
 		this.modifyKeyHandlerParams.focusOffset = this.core.selection.focusOffset
-		this.modifyKeyHandlerParams.setSelection = this.core.selection.setSelection
-		this.modifyKeyHandlerParams.restoreSelection = this.core.selection.restoreSelection
 		this.modifyKeyHandlerParams.anchorAtFirstPositionInContainer = this.core.selection.anchorAtFirstPositionInContainer
 		this.modifyKeyHandlerParams.anchorAtLastPositionInContainer = this.core.selection.anchorAtLastPositionInContainer
 		this.modifyKeyHandlerParams.focusAtFirstPositionInContainer = this.core.selection.focusAtFirstPositionInContainer
@@ -300,7 +301,6 @@ export default class Editing {
 		this.modifyKeyHandlerParams.focusContainer = this.core.selection.focusContainer
 		this.modifyKeyHandlerParams.focused = this.core.selection.focused
 		this.modifyKeyHandlerParams.focusedNodes = this.core.selection.focusedNodes
-		this.modifyKeyHandlerParams.isLockPushChange = this.core.timeTravel.isLockPushChange
 
 		return this.modifyKeyHandlerParams
 	}
@@ -505,7 +505,7 @@ export default class Editing {
 			}
 		}
 
-		return false
+		return null
 	}
 
 	destroy() {

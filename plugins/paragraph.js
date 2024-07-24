@@ -1,6 +1,5 @@
 import PluginPlugin from './plugin.js'
 import Container from '../nodes/container.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 export class Paragraph extends Container {
 	constructor() {
@@ -45,19 +44,13 @@ export default class ParagraphPlugin extends PluginPlugin {
 		return false
 	}
 
-	parse(element, builder) {
-		if (isHtmlElement(element) && [ 'p', 'div' ].includes(element.nodeName.toLowerCase())) {
-			return builder.create('paragraph')
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'paragraph') {
 			return builder.create('paragraph')
 		}
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (element.type === 'p') {
 			return builder.create('paragraph')
 		}

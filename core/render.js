@@ -42,8 +42,6 @@ export default class Render extends Publisher {
 		this.onChange = this.onChange.bind(this)
 		this.render = this.render.bind(this)
 
-		this.selectionHandlers = []
-		this.selectionTimeout = null
 		this.timer = null
 		this.queue = []
 		this.mapNodeIdToElement = {
@@ -62,10 +60,6 @@ export default class Render extends Publisher {
 				pointerEvents: 'none'
 			}
 		})
-		this.anchorNode = null
-		this.anchorOffset = null
-		this.focusNode = null
-		this.focusOffset = null
 
 		document.body.appendChild(this.containerAvatar)
 		this.core.builder.subscribe(this.onChange)
@@ -113,7 +107,7 @@ export default class Render extends Publisher {
 						break
 					case operationTypes.ATTRIBUTE:
 						this.queue.push({
-							type: change.type,
+							type: 'update',
 							target: change.target
 						})
 

@@ -14,8 +14,4 @@ export default class InlineWidget extends Node {
 	accept(node) {
 		return node.type === 'text' || node.isInlineWidget
 	}
-
-	wrapper(builder) {
-		return builder.createBlock()
-	}
 }

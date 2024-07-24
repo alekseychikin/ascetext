@@ -1,7 +1,5 @@
 import PluginPlugin from './plugin.js'
 import Container from '../nodes/container.js'
-import createElement from '../utils/create-element.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 export class Quote extends Container {
 	constructor() {
@@ -34,19 +32,13 @@ export default class QuotePlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder) {
-		if (isHtmlElement(element) && element.matches('blockquote')) {
-			return builder.create('quote')
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'quote') {
 			return builder.create('quote')
 		}
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (element.type === 'blockquote') {
 			return builder.create('quote')
 		}

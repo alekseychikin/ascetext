@@ -3,7 +3,6 @@ import isElementBr from '../utils/is-element-br.js'
 import isTextElement from '../utils/is-text-element.js'
 import walk from '../utils/walk.js'
 import isHtmlElement from '../utils/is-html-element.js'
-import getStyle from '../utils/get-style.js'
 import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
@@ -20,18 +19,16 @@ export default class Selection extends Publisher {
 		this.getSelectedItems = this.getSelectedItems.bind(this)
 
 		this.core = core
-		this.selection = {}
 		this.anchorIndex = null
 		this.focusIndex = null
 		this.focused = false
-		this.skipUpdate = false
 		this.selectedItems = []
 		this.focusedNodes = []
 		this.components = []
 		this.timer = null
-		this.anchorAtFirstPositionInContainer = null
+		this.anchorAtFirstPositionInContainer = false
 		this.anchorAtLastPositionInContainer = false
-		this.focusAtFirstPositionInContainer = null
+		this.focusAtFirstPositionInContainer = false
 		this.focusAtLastPositionInContainer = false
 		this.isRange = false
 		this.anchorContainer = null
@@ -255,42 +252,6 @@ export default class Selection extends Publisher {
 		}
 	}
 
-	getBoundings(node) {
-		return this.mapNodeIdToElement[node.id].getBoundingClientRect()
-	}
-
-	getSelectedBoundings(anchorContainer, anchorOffset, focusContainer, focusOffset) {
-		const selectedLength = anchorContainer === focusContainer ? focusOffset - anchorOffset : anchorContainer.length - anchorOffset
-		const anchorElement = this.mapNodeIdToElement[anchorContainer.id]
-		const content = anchorElement.outerText
-		const styles = getStyle(anchorElement)
-
-		this.containerAvatar.style.display = ''
-		this.containerAvatar.style.width = `${anchorElement.offsetWidth}px`
-		this.containerAvatar.style.fontFamily = styles.fontFamily
-		this.containerAvatar.style.fontSize = styles.fontSize
-		this.containerAvatar.style.lineHeight = styles.lineHeight
-		this.containerAvatar.style.letterSpacing = styles.letterSpacing
-		this.containerAvatar.style.padding = styles.padding
-		this.containerAvatar.style.boxSizing = styles.boxSizing
-		this.containerAvatar.style.textAlign = styles.textAlign
-
-		const fakeContent = content.substr(0, anchorOffset) +
-			'<span style="background: blue" data-selected-text>' +
-			content.substr(anchorOffset, selectedLength) +
-			'</span>' +
-		content.substr(anchorOffset + selectedLength)
-		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-		const span = this.containerAvatar.querySelector('span[data-selected-text]')
-
-		return {
-			left: span.offsetLeft,
-			top: span.offsetTop,
-			width: span.offsetWidth,
-			height: span.offsetHeight
-		}
-	}
-
 	update(event) {
 		if (!event.focused && !event.selectedComponent) {
 			return this.blur()
@@ -340,7 +301,9 @@ export default class Selection extends Publisher {
 	}
 
 	blur() {
-		if (!this.focused) return
+		if (!this.focused) {
+			return
+		}
 
 		this.focusedNodes.forEach((item) => {
 			if ((item.isWidget || item.isContainer) && isFunction(item.onBlur)) {

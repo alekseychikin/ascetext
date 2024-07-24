@@ -246,54 +246,6 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder) {
-		if (isHtmlElement(element)) {
-			let img
-			let size = ''
-			let float = 'none'
-			let content
-
-			if (element.matches('figure') && element.querySelector('img')) {
-				const classNames = element.className.split(/\s+/)
-				const figcaption = element.querySelector('figcaption')
-
-				classNames.forEach((className) => {
-					const sizeMatched = className.match(/image--size-(.*)/)
-					const floatMatched = className.match(/image--float-(.*)/)
-
-					if (sizeMatched) {
-						size = sizeMatched[1]
-					}
-
-					if (floatMatched) {
-						float = floatMatched[1]
-					}
-				})
-				img = element.querySelector('img')
-
-				if (figcaption && figcaption.firstChild) {
-					content = builder.parse(figcaption)
-				}
-			}
-
-			if (element.matches('img')) {
-				img = element
-			}
-
-			if (img) {
-				const image = builder.create('image', { src: img.src, size, float })
-				const caption = builder.create('image-caption', {
-					placeholder: this.params.placeholder
-				})
-
-				builder.append(image, caption)
-				builder.append(caption, content)
-
-				return image
-			}
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'image') {
 			const image = builder.create('image', { src: element.src })
@@ -309,7 +261,7 @@ export default class ImagePlugin extends PluginPlugin {
 		return false
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		const img = findElement(element, 'img')
 
 		if (element.type === 'figure' && img) {

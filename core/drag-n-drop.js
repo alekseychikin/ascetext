@@ -2,7 +2,6 @@ export default class Dragndrop {
 	constructor(core) {
 		this.core = core
 		this.node = core.node
-		this.selection = core.selection
 
 		this.drop = this.drop.bind(this)
 

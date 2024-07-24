@@ -1,6 +1,5 @@
 import PluginPlugin from './plugin.js'
 import InlineWidget from '../nodes/inline-widget.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 export class Link extends InlineWidget {
 	constructor(attributes) {
@@ -82,19 +81,13 @@ export default class LinkPlugin extends PluginPlugin {
 		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{1,}\.[a-zA-Z]{2,}[^\s,]*$/
 	}
 
-	parse(element, builder) {
-		if (isHtmlElement(element) && element.matches('a')) {
-			return builder.create('link', { url: element.getAttribute('href') })
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'link') {
 			return builder.create('link', { url: element.url })
 		}
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (element.type === 'a') {
 			return builder.create('link', { url: element.attributes.href })
 		}

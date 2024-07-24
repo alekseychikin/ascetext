@@ -70,12 +70,14 @@ export default class Container extends Node {
 	}
 
 	inputHandler(focused) {
-		const show = this.placeholderHandler(this.placeholder, this, focused)
+		if (this.placeholder) {
+			const show = this.placeholderHandler(this.placeholder, this, focused)
 
-		if (!this.element.outerText.trim().length && show) {
-			this.showPlaceholder()
-		} else {
-			this.hidePlaceholder()
+			if (!this.element.outerText.trim().length && show) {
+				this.showPlaceholder()
+			} else {
+				this.hidePlaceholder()
+			}
 		}
 	}
 
@@ -113,7 +115,7 @@ export default class Container extends Node {
 		} else {
 			let newBlock
 
-			if (!this.parent.isSection && !this.parent.isGroup) {
+			if (!this.parent.isSection) {
 				return false
 			}
 

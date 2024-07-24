@@ -54,14 +54,6 @@ export default class HeaderPlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder) {
-		if (element.nodeType === 1 && this.supportHeaders.includes(element.nodeName.toLowerCase())) {
-			const matches = element.nodeName.toLowerCase().match(/(?<level>\d)+/)
-
-			return builder.create('header', { level: Number(matches.groups.level) })
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'header') {
 			return builder.create('header', { level: element.level })
@@ -70,7 +62,7 @@ export default class HeaderPlugin extends PluginPlugin {
 		return false
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (this.supportHeaders.includes(element.type)) {
 			const matches = element.type.toLowerCase().match(/(?<level>\d)+/)
 

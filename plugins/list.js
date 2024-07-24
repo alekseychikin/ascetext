@@ -2,7 +2,6 @@ import PluginPlugin from './plugin.js'
 import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
 import Section from '../nodes/section.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
@@ -524,25 +523,6 @@ export default class ListPlugin extends PluginPlugin {
 		return controls
 	}
 
-	parse(element, builder) {
-		const nodeName = isHtmlElement(element) ? element.nodeName.toLowerCase() : ''
-
-		if (nodeName === 'ul' || nodeName === 'ol') {
-			const decor = nodeName === 'ul' ? 'marker' : 'numerable'
-
-			return builder.create('list', { decor })
-		}
-
-		if (nodeName === 'li') {
-			const listItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
-
-			builder.append(listItem, content)
-
-			return listItem
-		}
-	}
-
 	parseJson(element, builder) {
 		if (element.type === 'list') {
 			return builder.create('list', { decor: element.decor })
@@ -557,7 +537,7 @@ export default class ListPlugin extends PluginPlugin {
 		}
 	}
 
-	parseTreeElement(element, builder) {
+	parseTree(element, builder) {
 		if (element.type === 'ul' || element.type === 'ol') {
 			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'marker' })
 		}

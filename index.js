@@ -19,7 +19,6 @@ import ControlLink from './controls/link.js'
 import ControlInput from './controls/input.js'
 import Container from './nodes/container.js'
 import Section from './nodes/section.js'
-import Group from './nodes/group.js'
 import InlineWidget from './nodes/inline-widget.js'
 import Widget from './nodes/widget.js'
 import Node from './nodes/node.js'
@@ -54,7 +53,6 @@ export {
 	ControlInput,
 	Container,
 	Section,
-	Group,
 	InlineWidget,
 	Widget,
 	Node,

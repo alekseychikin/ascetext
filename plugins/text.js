@@ -1,8 +1,5 @@
 import Node from '../nodes/node.js'
 import PluginPlugin from './plugin.js'
-import isElementBr from '../utils/is-element-br.js'
-import isTextElement from '../utils/is-text-element.js'
-import isHtmlElement from '../utils/is-html-element.js'
 
 const mapModifierToTag = {
 	bold: 'strong',
@@ -16,8 +13,6 @@ const supportTags = {
 	strike: 's',
 	underlined: 'u'
 }
-const beginSpacesRegexp = /^[^\S\u00A0]+/
-const finishSpacesRegexp = /[^\S\u00A0]+$/
 const groupSpacesRegexp = /[^\S\u00A0]+/g
 
 export class Text extends Node {
@@ -28,19 +23,15 @@ export class Text extends Node {
 	}
 
 	render() {
-		return this.create()
-	}
-
-	fit(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
-	create() {
 		return {
 			type: 'text',
 			attributes: { ...this.attributes },
 			body: []
 		}
+	}
+
+	fit(node) {
+		return node.isContainer || node.isInlineWidget
 	}
 
 	generateModifiers() {
@@ -67,10 +58,6 @@ export class Text extends Node {
 
 	accept(node) {
 		return node.isContainer
-	}
-
-	wrapper(builder) {
-		return builder.createBlock()
 	}
 
 	join(target, builder) {
@@ -207,96 +194,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	parse(element, builder, ctx) {
-		const tagName = isHtmlElement(element) && element.nodeName.toLowerCase()
-
-		if (!isTextElement(element) && (tagName && !this.supportTags.includes(tagName) && tagName !== 'span')) {
-			return null
-		}
-
-		if (isTextElement(element)) {
-			const firstChild = element.parentNode.firstChild
-			const lastChild = element.parentNode.lastChild
-			const attributes = {
-				content: element.nodeValue
-			}
-
-			if (element === firstChild || element.previousSibling && isElementBr(element.previousSibling)) {
-				attributes.content = attributes.content.replace(beginSpacesRegexp, '')
-			}
-
-			if (element === lastChild || element.nextSibling && isElementBr(element.nextSibling)) {
-				attributes.content = attributes.content.replace(finishSpacesRegexp, '')
-			}
-
-			attributes.content = attributes.content.replace(groupSpacesRegexp, ' ')
-
-			if (!attributes.content.length || attributes.content.match(/^[^\S\u00A0]+$/)) {
-				return false
-			}
-
-			if (ctx.weight) {
-				attributes.weight = 'bold'
-			}
-
-			if (ctx.style) {
-				attributes.style = 'italic'
-			}
-
-			if (ctx.strike) {
-				attributes.strike = 'horizontal'
-			}
-
-			if (ctx.decoration) {
-				attributes.decoration = 'underlined'
-			}
-
-			return new Text(attributes)
-		}
-
-		if (supportTags.bold.includes(tagName) && this.params.allowModifiers.includes('bold')) {
-			ctx.weight = 'bold'
-		}
-
-		if (supportTags.italic.includes(tagName) && this.params.allowModifiers.includes('italic')) {
-			ctx.style = 'italic'
-		}
-
-		if (supportTags.strike === tagName && this.params.allowModifiers.includes('strike')) {
-			ctx.strike = 'horizontal'
-		}
-
-		if (supportTags.underlined === tagName && this.params.allowModifiers.includes('underlined')) {
-			ctx.decoration = 'underlined'
-		}
-
-		if (tagName === 'span') {
-			if (
-				(
-					element.style['font-weight'] === 'bold' ||
-					element.style['font-weight'] === '600' ||
-					element.style['font-weight'] === '500' ||
-					element.style['font-weight'] === '700'
-				) && this.params.allowModifiers.includes('bold')
-			) {
-				ctx.weight = 'bold'
-			}
-
-			if (element.style['font-style'] === 'italic' && this.params.allowModifiers.includes('italic')) {
-				ctx.style = 'italic'
-			}
-
-			if (element.style['text-decoration'] === 'line-through' && this.params.allowModifiers.includes('strike')) {
-				ctx.strike = 'horizontal'
-			}
-
-			if (element.style['text-decoration'] === 'underline' && this.params.allowModifiers.includes('underline')) {
-				ctx.decoration = 'underlined'
-			}
-		}
-	}
-
-	parseTreeElement(element, builder) {
+	parseTree(element) {
 		if (element.type !== 'text') {
 			return null
 		}

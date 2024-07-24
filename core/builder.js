@@ -117,7 +117,7 @@ export default class Builder extends Publisher {
 		return content
 	}
 
-	parseVirtualTree(tree, ctx = {}) {
+	parseVirtualTree(tree) {
 		const fragment = this.createFragment()
 		let currentElement
 		let i
@@ -125,19 +125,16 @@ export default class Builder extends Publisher {
 		let current
 
 		for (i = 0; i < tree.length; i++) {
-			const context = { ...ctx }
-
 			currentElement = tree[i]
-
 			children = null
 			current = this.core.plugins.reduce((parsed, plugin) => {
 				if (parsed) return parsed
 
-				return plugin.parseTreeElement(currentElement, this, context)
+				return plugin.parseTree(currentElement, this)
 			}, null)
 
 			if (!current || !current.isWidget && current.type !== 'text') {
-				children = this.parseVirtualTree(currentElement.body, { ...context })
+				children = this.parseVirtualTree(currentElement.body)
 			}
 
 			if (current) {
