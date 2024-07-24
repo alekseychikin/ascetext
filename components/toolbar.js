@@ -385,8 +385,6 @@ export default class Toolbar extends ComponentComponent {
 	}
 
 	toggleSideToolbar() {
-		// this.selection.restoreSelection()
-
 		if (this.isShowSideToolbar) {
 			this.hideSideToolbar()
 		} else {
