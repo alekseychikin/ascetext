@@ -17,7 +17,7 @@ export default class Normalizer extends Publisher {
 	}
 
 	onChange(event) {
-		if (!this.core.model.contains(event.target)) {
+		if (!this.core.model.contains(event.target) || this.core.timeTravel.isLockPushChange) {
 			return
 		}
 
@@ -48,9 +48,6 @@ export default class Normalizer extends Publisher {
 		if (!this.unnormalizedNodes.includes(node)) {
 			this.unnormalizedNodes.push(node)
 		}
-
-		clearTimeout(this.timer)
-		this.timer = setTimeout(this.normalizeHandle, 0)
 	}
 
 	normalizeHandle() {

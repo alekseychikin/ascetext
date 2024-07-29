@@ -362,12 +362,11 @@ export default class Builder extends Publisher {
 
 
 	insertText(target, anchor) {
-		const current = target.isFragment ? target.first : target
-		let next = current
+		let next = target
 		let last
 
-		if (current.type === 'text' || current.isInlineWidget) {
-			last = current
+		if (target.type === 'text' || target.isInlineWidget) {
+			last = target
 
 			while (last) {
 				if (last.type !== 'text' && !last.isInlineWidget || !last.next) {
@@ -378,29 +377,33 @@ export default class Builder extends Publisher {
 			}
 
 			next = last.next
-			this.cutUntil(current, last)
-			this.append(anchor.parent, current, anchor)
-		} else if (current.isContainer) {
-			next = current.next
-			this.cut(current)
-			this.append(anchor.parent, current.first, anchor)
+			this.cutUntil(target, last)
+			this.append(anchor.parent, target, anchor)
+		} else if (target.isContainer) {
+			next = target.next
+			this.cut(target)
+			this.append(anchor.parent, target.first, anchor)
 		}
 
 		return next
 	}
 
 	insert(target) {
-		const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
-		const splitted = this.splitByOffset(anchorContainer, anchorOffset)
-		const rest = this.insertText(target, splitted.tail)
+		const current = target && target.isFragment ? target.first : target
 
-		if (rest) {
-			const { head, tail } = this.splitByTail(anchorContainer.parent, splitted.tail)
+		if (current) {
+			const { selection: { anchorContainer, anchorOffset, setSelection } } = this.core
+			const splitted = this.splitByOffset(anchorContainer, anchorOffset)
+			const rest = this.insertText(current, splitted.tail)
 
-			this.append(head.parent, rest, tail)
-			setSelection(tail)
-		} else {
-			setSelection(anchorContainer, this.getOffsetToParent(anchorContainer, splitted.tail))
+			if (rest) {
+				const { head, tail } = this.splitByTail(anchorContainer.parent, splitted.tail)
+
+				this.append(head.parent, rest, tail)
+				setSelection(tail)
+			} else {
+				setSelection(anchorContainer, this.getOffsetToParent(anchorContainer, splitted.tail))
+			}
 		}
 	}
 

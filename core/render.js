@@ -191,7 +191,10 @@ export default class Render extends Publisher {
 		const element = this.mapNodeIdToElement[event.target.id]
 
 		if (event.target.isMount) {
-			element.parentNode.removeChild(element)
+			if (element.parentNode) {
+				element.parentNode.removeChild(element)
+			}
+
 			this.handleUnmount(event.target, event.target)
 		}
 	}
@@ -310,7 +313,9 @@ export default class Render extends Publisher {
 			.map((child) => this.createElement(child, lookaheadChildren))
 			.forEach((child) => element.appendChild(child))
 
-		lookaheadChildren.forEach((child) => element.removeChild(child))
+		lookaheadChildren.forEach((child) => {
+			element.removeChild(child)
+		})
 
 		if (containerElements.includes(tree.type) || typeof tree.attributes.tabIndex !== 'undefined') {
 			this.handleContainer(element)
@@ -490,7 +495,6 @@ export default class Render extends Publisher {
 		let current = node.first
 
 		if (isFunction(node.inputHandler)) {
-			// console.log('input handler', node, node === this.core.selection.anchorContainer)
 			node.inputHandler(node === this.core.selection.anchorContainer)
 		}
 
