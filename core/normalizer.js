@@ -12,7 +12,6 @@ export default class Normalizer extends Publisher {
 
 		this.core = core
 		this.unnormalizedNodes = []
-		this.timer = null
 		this.core.builder.subscribe(this.onChange)
 	}
 
@@ -51,8 +50,6 @@ export default class Normalizer extends Publisher {
 	}
 
 	normalizeHandle() {
-		clearTimeout(this.timer)
-
 		this.normalize(this.unnormalizedNodes)
 	}
 
