@@ -8,7 +8,7 @@ export default class TimeTravel {
 
 		this.timeline = []
 		this.timeindex = -1
-		this.isLockPushChange = true
+		this.isLockPushChange = false
 		this.currentBunch = []
 		this.root = root
 		this.normalizer = normalizer

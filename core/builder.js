@@ -153,6 +153,11 @@ export default class Builder extends Publisher {
 
 	splitByOffset(container, offset) {
 		let length = offset
+
+		if (!container.first) {
+			this.core.normalizer.empty(container, container)
+		}
+
 		let firstLevelNode = container.first
 
 		if (!offset) {
@@ -400,7 +405,22 @@ export default class Builder extends Publisher {
 				const { head, tail } = this.splitByTail(anchorContainer.parent, splitted.tail)
 
 				this.append(head.parent, rest, tail)
-				setSelection(tail)
+
+				if (head.isEmpty && head.parent && head.parent.isSection) {
+					this.cut(head)
+				}
+
+				if (tail.isEmpty && tail.parent && tail.parent.isSection) {
+					const previousSelectable = tail.getPreviousSelectableNode()
+
+					if (previousSelectable) {
+						setSelection(previousSelectable)
+					}
+
+					this.cut(tail)
+				} else {
+					setSelection(tail)
+				}
 			} else {
 				setSelection(anchorContainer, this.getOffsetToParent(anchorContainer, splitted.tail))
 			}
