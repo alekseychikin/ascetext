@@ -128,23 +128,28 @@ export default class Editing {
 				if (modifyKeyPressed) {
 					this.handleModifyKeyDown(event)
 				} else {
-					this.handleRemoveRange()
-
-					if (event.keyCode === spaceKey && !this.spacesDown) {
-						this.update()
-						this.core.render.dropRender()
-						timeTravel.commit()
-
-						if (this.core.autocomplete.trigger()) {
-							builder.insert(builder.create('text', { content: nbsp }))
-						} else if (!this.removedRange) {
-							this.scheduleUpdate(selection.anchorContainer)
-						}
-
-						this.spacesDown = true
-					} else if (!this.removedRange) {
-						this.scheduleUpdate(selection.anchorContainer)
+					if (this.handleRemoveRange()) {
+						event.preventDefault()
 					}
+
+					if (event.keyCode === spaceKey) {
+						if (!this.spacesDown) {
+							event.preventDefault()
+							this.update()
+							this.core.render.dropRender()
+							timeTravel.commit()
+							timeTravel.preservePreviousSelection()
+							this.core.autocomplete.trigger()
+							builder.insert(builder.create('text', { content: nbsp }))
+							timeTravel.dropCommit()
+							this.spacesDown = true
+						}
+					} else if (this.removedRange) {
+						this.insertText(event.key)
+						timeTravel.dropCommit()
+					}
+
+					this.scheduleUpdate(selection.anchorContainer)
 				}
 			}
 		}
@@ -437,7 +442,6 @@ export default class Editing {
 		clipboardData.setData('text/html', '<meta charset="utf-8">' + htmlValue)
 		clipboardData.setData('text/plain', textValue)
 	}
-
 
 	onPaste(event) {
 		const doc = document.createElement('div')

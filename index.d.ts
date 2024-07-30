@@ -115,7 +115,6 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 	getContent(): string;
 	setJson(data: any): void;
 	getJson<T>(): T;
-	finishInit(): void;
 	focus(): void;
 	destroy(): void;
 }
@@ -141,7 +140,6 @@ declare class Normalizer extends Publisher {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
 	core: Ascetext<Array<PluginPlugin>>;
 	unnormalizedNodes: Array<Node>;
-	timer: Timer;
 	onChange(event: BuilderChangeEvent): void;
 	pushNode(node: Node): void;
 	normalizeHandle(): void;
@@ -492,6 +490,7 @@ declare class TimeTravel {
 	currentBunch: any[];
 	builder: Builder;
 	selection: Selection;
+	normalizer: Normalizer;
 	previousSelection: null | {
 		anchorIndex: Array<string> | null;
 		focusIndex: Array<string> | null;

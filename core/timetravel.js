@@ -1,16 +1,17 @@
 import { operationTypes } from './builder.js'
 
 export default class TimeTravel {
-	constructor(selection, builder, root) {
+	constructor(selection, builder, normalizer, root) {
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.pushChange = this.pushChange.bind(this)
 		this.commit = this.commit.bind(this)
 
 		this.timeline = []
 		this.timeindex = -1
-		this.isLockPushChange = true
+		this.isLockPushChange = false
 		this.currentBunch = []
 		this.root = root
+		this.normalizer = normalizer
 		this.builder = builder
 		this.selection = selection
 		this.previousSelection = null
@@ -22,6 +23,7 @@ export default class TimeTravel {
 	}
 
 	reset() {
+		this.normalizer.normalizeHandle()
 		this.timeline = []
 		this.currentBunch = []
 		this.timeindex = -1
@@ -70,11 +72,17 @@ export default class TimeTravel {
 				break
 		}
 
+		this.dropCommit()
+		this.timer = setTimeout(this.commit, 10)
+	}
+
+	dropCommit() {
 		clearTimeout(this.timer)
-		this.timer = setTimeout(this.commit, 100)
 	}
 
 	commit() {
+		this.normalizer.normalizeHandle()
+
 		if (!this.currentBunch.length) {
 			return
 		}

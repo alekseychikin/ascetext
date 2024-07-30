@@ -12,12 +12,11 @@ export default class Normalizer extends Publisher {
 
 		this.core = core
 		this.unnormalizedNodes = []
-		this.timer = null
 		this.core.builder.subscribe(this.onChange)
 	}
 
 	onChange(event) {
-		if (!this.core.model.contains(event.target)) {
+		if (!this.core.model.contains(event.target) || this.core.timeTravel.isLockPushChange) {
 			return
 		}
 
@@ -48,14 +47,9 @@ export default class Normalizer extends Publisher {
 		if (!this.unnormalizedNodes.includes(node)) {
 			this.unnormalizedNodes.push(node)
 		}
-
-		clearTimeout(this.timer)
-		this.timer = setTimeout(this.normalizeHandle, 0)
 	}
 
 	normalizeHandle() {
-		clearTimeout(this.timer)
-
 		this.normalize(this.unnormalizedNodes)
 	}
 
@@ -293,7 +287,10 @@ export default class Normalizer extends Publisher {
 		const last = this.core.model.last
 
 		if (!last || !last.isContainer || !last.isEmpty) {
-			this.core.builder.append(this.core.model, this.core.builder.createBlock())
+			const block = this.core.builder.createBlock()
+
+			this.core.builder.append(this.core.model, block)
+			this.empty(block, block)
 		}
 	}
 }

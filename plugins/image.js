@@ -2,7 +2,6 @@ import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
 import PluginPlugin from './plugin.js'
 import createElement from '../utils/create-element.js'
-import isHtmlElement from '../utils/is-html-element.js'
 import findElement from '../utils/find-element.js'
 
 export class Image extends Widget {
@@ -262,9 +261,8 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	parseTree(element, builder) {
-		const img = findElement(element, 'img')
-
-		if (element.type === 'figure' && img) {
+		if (element.type === 'figure' && findElement(element, 'img') || element.type === 'img') {
+			const img = element.type === 'figure' ? findElement(element, 'img') : element
 			const image = builder.create('image', { src: img.attributes.src })
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 			const children = builder.parseVirtualTree(element.body)

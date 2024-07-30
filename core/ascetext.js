@@ -65,7 +65,7 @@ export default class Ascetext {
 		// this.navigation = new Navigation(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
-		this.timeTravel = new TimeTravel(this.selection, this.builder, this.model)
+		this.timeTravel = new TimeTravel(this.selection, this.builder, this.normalizer, this.model)
 		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.autocomplete = new Autocomplete(this)
@@ -88,7 +88,8 @@ export default class Ascetext {
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.builder.subscribe(this.triggerChange)
 		this.node.setAttribute('contenteditable', true)
-		this.finishInit()
+		this.timeTravel.reset()
+		this.init = true
 	}
 
 	stringify(first) {
@@ -143,7 +144,8 @@ export default class Ascetext {
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.components.forEach((component) => component.register(this))
-		this.finishInit()
+		this.timeTravel.reset()
+		this.init = true
 	}
 
 	getContent() {
@@ -161,21 +163,14 @@ export default class Ascetext {
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
 		this.components.forEach((component) => component.register(this))
-		this.finishInit()
+		this.timeTravel.reset()
+		this.init = true
 	}
 
 	getJson() {
 		this.editing.save()
 
 		return this.json(this.model.first)
-	}
-
-	finishInit() {
-		const unsubscribe = this.normalizer.subscribe(() => {
-			this.timeTravel.reset()
-			this.init = true
-			unsubscribe()
-		})
 	}
 
 	focus() {
