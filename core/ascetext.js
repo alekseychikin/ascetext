@@ -70,7 +70,6 @@ export default class Ascetext {
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
-		this.onChangeTimer = null
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
@@ -86,9 +85,9 @@ export default class Ascetext {
 		const children = this.builder.parseVirtualTree(tree)
 
 		this.builder.append(this.model, children.first || this.builder.createBlock())
-		this.builder.subscribe(this.triggerChange)
-		this.node.setAttribute('contenteditable', true)
+		this.timeTravel.subscribe(this.triggerChange)
 		this.timeTravel.reset()
+		this.node.setAttribute('contenteditable', true)
 		this.init = true
 	}
 
@@ -124,10 +123,7 @@ export default class Ascetext {
 	}
 
 	triggerChange() {
-		clearTimeout(this.onChangeTimer)
-		this.onChangeTimer = setTimeout(() => {
-			this.onChangeHandlers.forEach((handler) => handler())
-		}, 0)
+		this.onChangeHandlers.forEach((handler) => handler())
 	}
 
 	setContent(content) {

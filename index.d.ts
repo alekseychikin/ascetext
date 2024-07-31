@@ -104,7 +104,6 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 	autocomplete: Autocomplete;
 	dragndrop: Dragndrop;
 	icons: IconsGetter;
-	onChangeTimer: Timer;
 	init: boolean;
 	components: Array<ComponentComponent>;
 	stringify(first: Node): string;
@@ -136,7 +135,7 @@ declare class Controls {
 	destroy(): void;
 }
 
-declare class Normalizer extends Publisher {
+declare class Normalizer {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
 	core: Ascetext<Array<PluginPlugin>>;
 	unnormalizedNodes: Array<Node>;
@@ -482,7 +481,7 @@ declare class SizeObserver implements SizeObserverConstructor {
 	destroy(): void;
 }
 
-declare class TimeTravel {
+declare class TimeTravel extends Publisher {
 	constructor(selection: Selection, builder: Builder, root: Root);
 	timeline: any[];
 	timeindex: number;

@@ -1,7 +1,10 @@
+import Publisher from './publisher.js'
 import { operationTypes } from './builder.js'
 
-export default class TimeTravel {
+export default class TimeTravel extends Publisher {
 	constructor(selection, builder, normalizer, root) {
+		super()
+
 		this.onSelectionChange = this.onSelectionChange.bind(this)
 		this.pushChange = this.pushChange.bind(this)
 		this.commit = this.commit.bind(this)
@@ -102,6 +105,7 @@ export default class TimeTravel {
 		this.preservedPreviousSelection = false
 		this.previousSelection = nextSelection
 		this.timeindex++
+		this.sendMessage()
 	}
 
 	goBack() {
@@ -144,6 +148,7 @@ export default class TimeTravel {
 
 			this.isLockPushChange = false
 			this.timeindex--
+			this.sendMessage()
 		}
 	}
 
@@ -190,6 +195,7 @@ export default class TimeTravel {
 
 			this.isLockPushChange = false
 			this.timeindex++
+			this.sendMessage()
 		}
 	}
 

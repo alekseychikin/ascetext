@@ -395,7 +395,7 @@ export default class Selection extends Publisher {
 	}
 
 	getNodeByOffset(node, offset) {
-		let restOffset = offset
+		let restOffset = Math.min(node.length, offset)
 		let current = node.first
 
 		if (node.isWidget && !offset) {

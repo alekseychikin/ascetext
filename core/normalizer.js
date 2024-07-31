@@ -1,12 +1,9 @@
-import Publisher from './publisher.js'
 import { operationTypes } from './builder.js'
 import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
-export default class Normalizer extends Publisher {
+export default class Normalizer {
 	constructor(core) {
-		super()
-
 		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.onChange = this.onChange.bind(this)
 
@@ -54,7 +51,6 @@ export default class Normalizer extends Publisher {
 	}
 
 	normalize(nodes) {
-		const hasItems = nodes
 		let limit = 1000
 		let node
 		let next
@@ -83,10 +79,6 @@ export default class Normalizer extends Publisher {
 		}
 
 		this.root()
-
-		if (hasItems) {
-			this.sendMessage()
-		}
 	}
 
 	walkUp(node) {
