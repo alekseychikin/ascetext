@@ -72,9 +72,11 @@ export default class Parser {
 	getVirtualTree(node) {
 		let body = []
 		let current = node
-		let elements
+		let elements = null
 
 		while (current) {
+			elements = null
+
 			if (isTextElement(current) || isTextTag(current)) {
 				elements = this.getTextElement(current)
 			} else if (isHtmlElement(current)) {
