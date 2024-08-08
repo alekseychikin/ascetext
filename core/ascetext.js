@@ -58,7 +58,7 @@ export default class Ascetext {
 		}, {}), params.icons || {})
 		this.model = new Root()
 		this.builder = new Builder(this)
-		this.normalizer = new Normalizer(this)
+		this.normalizer = new Normalizer(this, params.trimTrailingContainer)
 		this.render = new Render(this)
 		this.parser = new Parser(node)
 		this.placeholder = extractPlaceholderParams(params.placeholder)

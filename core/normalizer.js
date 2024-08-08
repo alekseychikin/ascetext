@@ -3,9 +3,10 @@ import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
 export default class Normalizer {
-	constructor(core) {
+	constructor(core, trimTrailingContainer = false) {
 		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.onChange = this.onChange.bind(this)
+		this.trimTrailingContainer = trimTrailingContainer
 
 		this.core = core
 		this.unnormalizedNodes = []
@@ -78,7 +79,9 @@ export default class Normalizer {
 			}
 		}
 
-		this.root()
+		if (!this.trimTrailingContainer) {
+			this.root()
+		}
 	}
 
 	walkUp(node) {

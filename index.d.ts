@@ -86,6 +86,7 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 			label: string;
 			className: string;
 		} | ((element: HTMLElement, container: Container, focused: boolean) => boolean);
+		trimTrailingContainer?: boolean;
 	});
 	node: HTMLElement;
 	onChangeHandlers: Array<() => void>;
@@ -136,7 +137,7 @@ declare class Controls {
 }
 
 declare class Normalizer {
-	constructor(core: Ascetext<Array<PluginPlugin>>);
+	constructor(core: Ascetext<Array<PluginPlugin>>, trimTrailingContainer?: boolean);
 	core: Ascetext<Array<PluginPlugin>>;
 	unnormalizedNodes: Array<Node>;
 	onChange(event: BuilderChangeEvent): void;
