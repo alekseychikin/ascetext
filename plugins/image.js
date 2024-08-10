@@ -274,6 +274,33 @@ export default class ImagePlugin extends PluginPlugin {
 		}
 	}
 
+	async parseFiles(files, builder) {
+		const fragment = builder.createFragment()
+		const images = files.filter((file) => file.type.substring(0, 6) === 'image/')
+
+		await Promise.all(images.map(async (file) => {
+			const preview = await this.generateImagePreview(file)
+			const image = builder.create('image', { src: '', preview })
+			const caption = builder.create('image-caption', {
+				placeholder: this.params.placeholder
+			})
+
+			builder.append(image, caption)
+			builder.append(fragment, image)
+
+			try {
+				const src = await this.params.onSelectFile(file, image)
+
+				builder.setAttribute(image, 'src', src)
+			} catch (exception) {
+				console.error('exception', exception)
+				builder.cut(image)
+			}
+		}))
+
+		return fragment.first
+	}
+
 	getInsertControls(container) {
 		if (!container.parent.isSection) {
 			return []

@@ -446,10 +446,17 @@ export default class Editing {
 	onPaste(event) {
 		const doc = document.createElement('div')
 		const { builder } = this.core
-		let paste = (event.clipboardData || window.clipboardData).getData('text/html')
+		const clipboardData = event.clipboardData || window.clipboardData
+
+		if (clipboardData.types.includes('Files')) {
+			return this.handleFiles(Array.prototype.slice.call(clipboardData.files))
+		}
+
+		event.preventDefault()
+		let paste = clipboardData.getData('text/html')
 
 		if (!paste.length) {
-			paste = (event.clipboardData || window.clipboardData).getData('text')
+			paste = clipboardData.getData('text')
 		}
 
 		console.log(paste)
@@ -464,7 +471,6 @@ export default class Editing {
 		this.update()
 		builder.insert(result)
 		this.core.autocomplete.trigger()
-		event.preventDefault()
 	}
 
 	insertText(content) {
@@ -479,6 +485,24 @@ export default class Editing {
 
 		builder.append(node.parent, builder.create('text', { ...attributes, content }), tail)
 		selection.setSelection(selection.anchorContainer, selection.anchorOffset + content.length)
+	}
+
+	async handleFiles(files) {
+		const { builder } = this.core
+		const current = await this.core.plugins.reduce((parsed, plugin) => {
+			if (parsed) return parsed
+
+			if (isFunction(plugin.parseFiles)) {
+				return plugin.parseFiles(files, builder)
+			}
+
+			return null
+		}, false)
+
+		if (current) {
+			builder.insert(current)
+			this.core.selection.setSelection(current)
+		}
 	}
 
 	getNodeOffset(container, node) {
