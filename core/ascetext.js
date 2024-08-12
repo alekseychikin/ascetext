@@ -181,6 +181,8 @@ export default class Ascetext {
 		this.dragndrop.destroy()
 		this.sizeObserver.destroy()
 		this.controls.destroy()
+		this.render.destroy()
+		this.timeTravel.destroy()
 		this.components.forEach((component) => component.unregister())
 	}
 }

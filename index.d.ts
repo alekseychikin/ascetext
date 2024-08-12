@@ -198,6 +198,7 @@ declare class Render extends Publisher {
 	handleInput(node: Node): void;
 	getTrailingBr(): void;
 	getNodeById(id: number): Node;
+	destroy(): void;
 }
 
 declare class Parser {

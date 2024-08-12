@@ -516,4 +516,8 @@ export default class Render extends Publisher {
 	getNodeById(id) {
 		return this.mapNodeIdToNode[id]
 	}
+
+	destroy() {
+		this.dropRender()
+	}
 }

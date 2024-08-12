@@ -81,9 +81,11 @@ export default class SizeObserver {
 	}
 
 	destroy() {
+		window.removeEventListener('load', this.update)
+		this.core.node.removeEventListener('load', this.update, true)
+		document.removeEventListener('DOMContentLoaded', this.update)
 		window.removeEventListener('resize', this.update)
 		visualViewport.removeEventListener('resize', this.update)
 		visualViewport.removeEventListener('scroll', this.update)
-		this.core.node.removeEventListener('load', this.update, true)
 	}
 }

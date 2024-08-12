@@ -253,4 +253,8 @@ export default class TimeTravel extends Publisher {
 
 		return this.findByIndex(index)
 	}
+
+	destroy() {
+		this.dropCommit()
+	}
 }

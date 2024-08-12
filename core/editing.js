@@ -537,8 +537,16 @@ export default class Editing {
 	}
 
 	destroy() {
-		this.node.removeEventListener('paste', this.onPaste)
-		this.node.removeEventListener('cut', this.onCut)
+		this.node.removeEventListener('mousedown', this.onMouseDown)
 		this.node.removeEventListener('keydown', this.onKeyDown)
+		this.node.removeEventListener('keyup', this.onKeyUp)
+		this.node.removeEventListener('input', this.onInput)
+		this.node.removeEventListener('cut', this.onCut)
+		this.node.removeEventListener('copy', this.onCopy)
+		this.node.removeEventListener('paste', this.onPaste)
+		this.node.removeEventListener('compositionstart', this.onCompositionStart)
+		this.node.removeEventListener('compositionend', this.onCompositionEnd)
+		clearTimeout(this.scheduleTimer)
+		clearTimeout(this.keydownTimer)
 	}
 }
