@@ -265,9 +265,14 @@ export default class ImagePlugin extends PluginPlugin {
 			const img = element.type === 'figure' ? findElement(element, 'img') : element
 			const image = builder.create('image', { src: img.attributes.src })
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
-			const children = builder.parseVirtualTree(element.body)
+			const figcaption = element.body.find((child) => child.type === 'figcaption')
 
-			builder.append(caption, children.first)
+			if (figcaption) {
+				const children = builder.parseVirtualTree(figcaption.body)
+
+				builder.append(caption, children.first)
+			}
+
 			builder.append(image, caption)
 
 			return image
