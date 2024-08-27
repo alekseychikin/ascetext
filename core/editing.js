@@ -364,14 +364,29 @@ export default class Editing {
 	}
 
 	onCut(event) {
-		if (this.core.selection.isRange) {
+		if (this.core.selection.isRange || this.core.selection.anchorContainer.isWidget) {
 			this.core.timeTravel.preservePreviousSelection()
 
-			const section = new Section('root')
-			const { since } = this.handleRemoveRange()
+			const { builder } = this.core
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+			const section = new Section('root')
 
-			this.core.builder.append(section, since)
+			if (this.core.selection.isRange) {
+				const { since } = this.handleRemoveRange()
+
+				builder.append(section, since)
+			} else {
+				const container = this.core.selection.anchorContainer
+				const previous = container.getPreviousSelectableNode()
+
+				builder.cut(container)
+				builder.append(section, container)
+
+				if (previous) {
+					this.core.selection.setSelection(previous)
+				}
+			}
+
 			this.copyToClipboard(clipboardData, section)
 		}
 
@@ -379,7 +394,7 @@ export default class Editing {
 	}
 
 	onCopy(event) {
-		if (this.core.selection.isRange) {
+		if (this.core.selection.isRange || this.core.selection.anchorContainer.isWidget) {
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
 
 			const { builder, selection } = this.core
@@ -397,16 +412,20 @@ export default class Editing {
 
 			const { node: focusContainer, offset: focusOffset } = selection.findElementByIndex(focusIndex, section)
 			const { node: anchorContainer, offset: anchorOffset } = selection.findElementByIndex(anchorIndex, section)
-			const focus = builder.splitByTail(section, builder.splitByOffset(focusContainer, focusOffset).tail)
-			const anchor = builder.splitByOffset(anchorContainer, anchorOffset)
-			const { tail: since } = builder.splitByTail(section, anchor.tail)
-			const until = anchorContainer === focusContainer ? since : focus.tail.previous
 
-			if (section.first !== since) {
-				builder.cutUntil(section.first, since.previous)
+			if (this.core.selection.isRange) {
+				const focus = builder.splitByTail(section, builder.splitByOffset(focusContainer, focusOffset).tail)
+				const anchor = builder.splitByOffset(anchorContainer, anchorOffset)
+				const { tail: since } = builder.splitByTail(section, anchor.tail)
+				const until = anchorContainer === focusContainer ? since : focus.tail.previous
+
+				if (section.first !== since) {
+					builder.cutUntil(section.first, since.previous)
+				}
+
+				builder.cutUntil(until.next)
 			}
 
-			builder.cutUntil(until.next)
 			this.copyToClipboard(clipboardData, section)
 		}
 

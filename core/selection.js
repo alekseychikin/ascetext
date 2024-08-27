@@ -50,10 +50,12 @@ export default class Selection extends Publisher {
 			return
 		}
 
-		if (this.core.node.contains(event.srcElement) && (typeof event.srcElement.dataset.widget === 'undefined' || this.core.node === event.srcElement)) {
-			this.selectionChange()
+		if (this.core.node.contains(event.srcElement) || this.core.node === event.srcElement) {
+			if (typeof event.srcElement.dataset.widget !== 'undefined') {
+				return this.setSelection(this.core.render.getNodeById(event.srcElement.dataset.nodeId))
+			}
 
-			return
+			return this.selectionChange()
 		}
 
 		const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
