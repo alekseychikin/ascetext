@@ -488,19 +488,10 @@ export default class Editing {
 	}
 
 	async handleFiles(files) {
-		const { builder } = this.core
-		const current = await this.core.plugins.reduce((parsed, plugin) => {
-			if (parsed) return parsed
-
-			if (isFunction(plugin.parseFiles)) {
-				return plugin.parseFiles(files, builder)
-			}
-
-			return null
-		}, false)
+		const current = await this.core.builder.parseFiles(files)
 
 		if (current) {
-			builder.insert(current)
+			this.core.builder.insert(current)
 			this.core.selection.setSelection(current)
 		}
 	}

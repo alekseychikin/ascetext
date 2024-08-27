@@ -3,27 +3,72 @@ export default class Dragndrop {
 		this.core = core
 		this.node = core.node
 
-		this.drop = this.drop.bind(this)
+		this.dropHandler = this.dropHandler.bind(this)
 
 		this.node.addEventListener('dragstart', this.dragStartHandler)
-		this.node.addEventListener('drop', this.dragStartHandler)
-		document.addEventListener('drop', this.drop)
+		this.node.addEventListener('dragover', this.dragOverHandler)
+		this.node.addEventListener('drop', this.dropHandler)
+		this.timer = null
 	}
 
 	dragStartHandler(event) {
 		event.preventDefault()
 	}
 
-	destroy() {
-		this.node.removeEventListener('dragstart', this.dragStartHandler)
-		this.node.removeEventListener('drop', this.dragStartHandler)
-		document.removeEventListener('drop', this.drop)
+	dragOverHandler(event) {
+		// Это событие подойдёт для визуального отображения
+		console.log(event.target)
 	}
 
-	drop() {
-		setTimeout(() => {
-			this.core.setContent(this.core.getContent())
-			this.core.focus()
-		}, 0)
+	async dropHandler(event) {
+		let range
+		let textNode
+		let offset
+
+		event.preventDefault()
+
+		const current = await this.core.builder.parseFiles(this.getFiles(event.dataTransfer))
+
+		if (current) {
+			if (document.caretPositionFromPoint) {
+				range = document.caretPositionFromPoint(event.clientX, event.clientY)
+				textNode = range.offsetNode
+				offset = range.offset
+			} else if (document.caretRangeFromPoint) {
+				range = document.caretRangeFromPoint(event.clientX, event.clientY)
+				textNode = range.startContainer
+				offset = range.startOffset
+			} else {
+				return
+			}
+
+			this.core.selection.selectionUpdate({
+				type: 'selectionchange',
+				anchorNode: textNode,
+				focusNode: textNode,
+				anchorOffset: offset,
+				focusOffset: offset,
+				isCollapsed: true,
+				selectedComponent: false
+			})
+			this.core.builder.insert(current)
+			this.core.selection.setSelection(current)
+		}
+	}
+
+	getFiles(dataTransfer) {
+		if (dataTransfer.items) {
+			return [...dataTransfer.items]
+				.filter((item) => item.kind === 'file')
+				.map((item) => item.getAsFile())
+		}
+
+		return [...dataTransfer.files]
+	}
+
+	destroy() {
+		this.node.removeEventListener('dragstart', this.dragStartHandler)
+		this.node.removeEventListener('dragover', this.dragOverHandler)
+		this.node.removeEventListener('drop', this.dragStartHandler)
 	}
 }

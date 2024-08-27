@@ -216,6 +216,19 @@ export default class Builder extends Publisher {
 		}
 	}
 
+	async parseFiles(files) {
+		return await this.core.plugins.reduce((parsed, plugin) => {
+			if (parsed) return parsed
+
+			if (isFunction(plugin.parseFiles)) {
+				return plugin.parseFiles(files, this)
+			}
+
+			return null
+		}, false)
+
+	}
+
 	duplicate(target) {
 		return isFunction(target.duplicate)
 			? target.duplicate(this)
