@@ -5,17 +5,14 @@ import createElement from '../utils/create-element.js'
 import findElement from '../utils/find-element.js'
 
 export class Image extends Widget {
-	constructor(attributes = {}) {
+	constructor(attributes = {}, params = {}) {
 		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes))
 
-		this.init = false
+		this.src = attributes.src
+		this.params = params
 	}
 
 	render(body = []) {
-		if (!this.init && this.attributes.src) {
-			this.init = true
-		}
-
 		return {
 			type: 'figure',
 			attributes: {
@@ -25,7 +22,7 @@ export class Image extends Widget {
 			body: [{
 				type: 'img',
 				attributes: {
-					src: this.init ? this.attributes.src : this.attributes.preview
+					src: this.src.length > 0 ? this.src : this.attributes.preview
 				},
 				body: []
 			}].concat(body)
@@ -34,10 +31,6 @@ export class Image extends Widget {
 
 	accept(node) {
 		return this.first === this.last && this.first === node && node.type === 'image-caption'
-	}
-
-	canDelete() {
-		return this.init && !this.attributes.src
 	}
 
 	getClassName() {
@@ -69,22 +62,51 @@ export class Image extends Widget {
 			classNames.push(`image--float-${this.attributes.float}`)
 		}
 
-		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.attributes.src + '" />' + children + '</figure>'
+		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>'
 	}
 
 	json(children) {
 		if (children) {
 			return {
 				type: this.type,
-				src: this.attributes.src,
+				src: this.src,
+				preview: this.src.length ? '' : this.attributes.preview,
 				figcaption: children[0]
 			}
 		}
 
 		return {
 			type: this.type,
-			src: this.attributes.src
+			src: this.src,
+			preview: this.src.length ? '' : this.attributes.preview
 		}
+	}
+
+	async onMount({ builder }) {
+		if (!this.src.length) {
+			const file = this.createFile(this.attributes.preview)
+
+			try {
+				this.src = await this.params.onSelectFile(file, this)
+			} catch (exception) {
+				console.error('exception', exception)
+				builder.cut(this)
+			}
+		}
+	}
+
+	createFile(dataURI) {
+		const chunks = dataURI.split(',')
+		const binary = atob(chunks[1])
+		const mimeString = chunks[0].split(':')[1].split(';')[0]
+		const intArray = new Uint8Array(binary.length)
+		let i
+
+		for (i = 0; i < binary.length; i++) {
+			intArray[i] = binary.charCodeAt(i)
+		}
+
+		return new Blob([intArray], { type: mimeString })
 	}
 }
 
@@ -247,7 +269,7 @@ export default class ImagePlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'image') {
-			const image = builder.create('image', { src: element.src })
+			const image = builder.create('image', { src: element.src, preview: element.preview }, this.params)
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 			const children = element.figcaption ? builder.parseJson(element.figcaption) : undefined
 
@@ -263,7 +285,7 @@ export default class ImagePlugin extends PluginPlugin {
 	parseTree(element, builder) {
 		if (element.type === 'figure' && findElement(element, 'img') || element.type === 'img') {
 			const img = element.type === 'figure' ? findElement(element, 'img') : element
-			const image = builder.create('image', { src: img.attributes.src })
+			const image = builder.create('image', { src: img.attributes.src, preview: img.attributes.preview }, this.params)
 			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 			const figcaption = element.body.find((child) => child.type === 'figcaption')
 
@@ -285,22 +307,13 @@ export default class ImagePlugin extends PluginPlugin {
 
 		await Promise.all(images.map(async (file) => {
 			const preview = await this.generateImagePreview(file)
-			const image = builder.create('image', { src: '', preview })
+			const image = builder.create('image', { src: '', preview }, this.params)
 			const caption = builder.create('image-caption', {
 				placeholder: this.params.placeholder
 			})
 
 			builder.append(image, caption)
 			builder.append(fragment, image)
-
-			try {
-				const src = await this.params.onSelectFile(file, image)
-
-				builder.setAttribute(image, 'src', src)
-			} catch (exception) {
-				console.error('exception', exception)
-				builder.cut(image)
-			}
 		}))
 
 		return fragment.first
@@ -371,7 +384,7 @@ export default class ImagePlugin extends PluginPlugin {
 
 			if (files.length) {
 				const preview = await this.generateImagePreview(files[0])
-				const image = builder.create('image', { src: '', preview })
+				const image = builder.create('image', { src: '', preview }, this.params)
 				const caption = builder.create('image-caption', {
 					placeholder: this.params.placeholder
 				})
@@ -379,34 +392,25 @@ export default class ImagePlugin extends PluginPlugin {
 				builder.append(image, caption)
 				builder.replace(container, image)
 				setSelection(image)
-
-				try {
-					const src = await this.params.onSelectFile(files[0], image)
-
-					builder.setAttribute(image, 'src', src)
-				} catch (exception) {
-					console.error('exception', exception)
-					builder.cut(image)
-				}
 			}
 		}
 	}
 
 	updateImage(image) {
 		return async (event, { builder, setSelection, restoreSelection }) => {
-			const { files } = event.target
+			// const { files } = event.target
 
-			if (files.length) {
-				try {
-					const src = await this.params.onSelectFile(files[0], image)
+			// if (files.length) {
+			// 	try {
+			// 		const src = await this.params.onSelectFile(files[0], image)
 
-					builder.setAttribute(image, 'src', src)
-					setSelection(image)
-				} catch (exception) {
-					builder.cut(image)
-					restoreSelection()
-				}
-			}
+			// 		builder.setAttribute(image, 'src', src)
+			// 		setSelection(image)
+			// 	} catch (exception) {
+			// 		builder.cut(image)
+			// 		restoreSelection()
+			// 	}
+			// }
 		}
 	}
 
