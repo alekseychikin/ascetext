@@ -5,7 +5,6 @@ import ControlFile from '../controls/file.js'
 import ControlInput from '../controls/input.js'
 import ControlLink from '../controls/link.js'
 import ControlDropdown from '../controls/dropdown.js'
-import getStyle from '../utils/get-style.js'
 
 const toolbarIndent = 10
 
@@ -70,15 +69,6 @@ export default class Toolbar extends ComponentComponent {
 		this.cancelObserver = null
 		this.setSelectionInvoked = false
 
-		this.containerAvatar = createElement('div', {
-			style: {
-				position: 'fixed',
-				bottom: '0',
-				right: '0',
-				opacity: '0',
-				pointerEvents: 'none'
-			}
-		})
 		this.insertButton = createElement('button', {
 			'class': this.css.toggleButtonInsert
 		})
@@ -113,7 +103,6 @@ export default class Toolbar extends ComponentComponent {
 		this.container.appendChild(this.toggleButtonHolder)
 		this.container.appendChild(this.sideToolbar)
 		this.container.appendChild(this.centeredToolbar)
-		this.container.appendChild(this.containerAvatar)
 		document.body.appendChild(this.container)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keydown', this.onKeyDown)
@@ -518,7 +507,6 @@ export default class Toolbar extends ComponentComponent {
 		this.lastRangeFocused = false
 		this.focusedNodes = []
 		this.sideToolbar.className = this.css.containerHidden
-		this.hideAvatar()
 	}
 
 	emptyCenteredControls() {
@@ -618,22 +606,28 @@ export default class Toolbar extends ComponentComponent {
 				this.centeredToolbar.style.left = ''
 			} else if (this.isShowCenteredToolbar) {
 				let centeredOffsetTop = entry.element.top + entry.scrollTop
-				let offsetLeft = entry.element.left - this.centeredToolbar.offsetWidth / 2
+				let offsetLeft = entry.element.left
 				let offsetTop = 0
 
 				if (container.isWidget) {
 					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
 						? centeredOffsetTop + 20
 						: centeredOffsetTop - this.centeredToolbar.offsetHeight
-					offsetLeft += entry.element.width / 2
+					offsetLeft = entry.element.left + entry.element.width / 2 - this.centeredToolbar.offsetWidth / 2
 				} else {
-					const selectedText = this.setAvatar(entry)
+					const selection = document.getSelection()
+					const range = selection.getRangeAt(0)
+					const rects = range.getClientRects()
 
-					centeredOffsetTop += selectedText.offsetTop
-					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
-						? centeredOffsetTop + selectedText.offsetHeight + 20
-						: centeredOffsetTop - this.centeredToolbar.offsetHeight
-					offsetLeft += selectedText.offsetLeft + selectedText.offsetWidth / 2
+					if (rects.length) {
+						const rect = rects[0]
+
+						centeredOffsetTop = rect.top + entry.scrollTop
+						offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
+							? centeredOffsetTop + rect.height + 20
+							: centeredOffsetTop - this.centeredToolbar.offsetHeight
+						offsetLeft = rect.left + rect.width / 2 - this.centeredToolbar.offsetWidth / 2
+					}
 				}
 
 				this.centeredToolbar.style.top = `${offsetTop}px`
@@ -649,35 +643,6 @@ export default class Toolbar extends ComponentComponent {
 				}
 			}
 		})
-	}
-
-	setAvatar(entry) {
-		const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
-		const content = this.selection.anchorContainer.element.outerText
-		const styles = getStyle(this.selection.anchorContainer.element)
-
-		this.containerAvatar.style.display = ''
-		this.containerAvatar.style.width = `${entry.element.width}px`
-		this.containerAvatar.style.fontFamily = styles.fontFamily
-		this.containerAvatar.style.fontSize = styles.fontSize
-		this.containerAvatar.style.lineHeight = styles.lineHeight
-		this.containerAvatar.style.letterSpacing = styles.letterSpacing
-		this.containerAvatar.style.padding = styles.padding
-		this.containerAvatar.style.boxSizing = styles.boxSizing
-		this.containerAvatar.style.textAlign = styles.textAlign
-
-		const fakeContent = content.substr(0, this.selection.anchorOffset) +
-			'<span style="background: blue" data-selected-text>' +
-			content.substr(this.selection.anchorOffset, selectedLength) +
-			'</span>' +
-		content.substr(this.selection.focusOffset)
-		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-
-		return this.containerAvatar.querySelector('span[data-selected-text]')
-	}
-
-	hideAvatar() {
-		this.containerAvatar.style.display = 'none'
 	}
 
 	stopUpdateBoundings() {
@@ -708,7 +673,6 @@ export default class Toolbar extends ComponentComponent {
 
 	unregister() {
 		this.container.removeChild(this.toggleButtonHolder)
-		this.container.removeChild(this.containerAvatar)
 		this.container.removeChild(this.sideToolbar)
 		this.container.removeChild(this.centeredToolbar)
 		document.body.removeChild(this.container)
