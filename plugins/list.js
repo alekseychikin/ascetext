@@ -81,9 +81,11 @@ export class ListItem extends Widget {
 	accept(node) {
 		if (node.type === 'list' && this.first.next === this.last && this.last === node) {
 			if (this.params.maxDepth !== null) {
-				const depth = this.getDepth(this, node)
+				const depth = this.getDepth()
 
-				if (depth > this.params.maxDepth) {
+				console.log(depth)
+
+				if (depth >= this.params.maxDepth) {
 					return false
 				}
 			}
@@ -102,8 +104,8 @@ export class ListItem extends Widget {
 		return !this.first
 	}
 
-	getDepth(container, node) {
-		let current = container
+	getDepth() {
+		let current = this
 		let depth = 0
 
 		while (current) {
@@ -112,16 +114,6 @@ export class ListItem extends Widget {
 			}
 
 			current = current.parent
-		}
-
-		current = node
-
-		while (current) {
-			if (current.type === 'list-item') {
-				depth++
-			}
-
-			current = current.last
 		}
 
 		return depth
@@ -166,6 +158,7 @@ export class ListItemContent extends Container {
 	}
 
 	split(builder, next) {
+		console.log(next)
 		const item = builder.create('list-item', this.params)
 		const content = builder.create('list-item-content', this.params)
 
