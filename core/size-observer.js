@@ -18,9 +18,11 @@ export default class SizeObserver {
 		this.core.builder.subscribe(this.update)
 		this.core.render.subscribe(this.update)
 		window.addEventListener('load', this.update)
+		window.addEventListener('resize', this.update)
 		this.core.node.addEventListener('load', this.update, true)
 		document.addEventListener('DOMContentLoaded', this.update)
-		window.addEventListener('resize', this.update)
+		document.addEventListener('scroll', this.update)
+		document.body.addEventListener('touchmove', this.update, { passive: false })
 		visualViewport.addEventListener('resize', this.update)
 		visualViewport.addEventListener('scroll', this.update)
 	}
@@ -82,9 +84,11 @@ export default class SizeObserver {
 
 	destroy() {
 		window.removeEventListener('load', this.update)
+		window.removeEventListener('resize', this.update)
 		this.core.node.removeEventListener('load', this.update, true)
 		document.removeEventListener('DOMContentLoaded', this.update)
-		window.removeEventListener('resize', this.update)
+		document.removeEventListener('scroll', this.update)
+		document.body.removeEventListener('touchmove', this.update, { passive: false })
 		visualViewport.removeEventListener('resize', this.update)
 		visualViewport.removeEventListener('scroll', this.update)
 	}

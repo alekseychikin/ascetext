@@ -599,11 +599,18 @@ export default class Toolbar extends ComponentComponent {
 			}
 
 			if (this.isMobile) {
-				this.sideToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.sideToolbar.offsetHeight}px`
-				this.sideToolbar.style.left = ''
+				const scale = 1 / visualViewport.scale
+				const left = (this.sideToolbar.offsetWidth * scale - this.sideToolbar.offsetWidth) / 2 + entry.scrollLeft
+				const halfHeight = (this.sideToolbar.offsetHeight * scale - this.sideToolbar.offsetHeight) / 2
+				const top = visualViewport.height + entry.scrollTop + halfHeight - this.sideToolbar.offsetHeight * scale
 
-				this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
+				this.sideToolbar.style.top = ''
+				this.sideToolbar.style.left = ''
+				this.sideToolbar.style.transform = `translate(${left}px, ${top}px) scale(${scale})`
+
+				this.centeredToolbar.style.top = ''
 				this.centeredToolbar.style.left = ''
+				this.centeredToolbar.style.transform = `translate(${left}px, ${top}px) scale(${scale})`
 			} else if (this.isShowCenteredToolbar) {
 				let centeredOffsetTop = entry.element.top + entry.scrollTop
 				let offsetLeft = entry.element.left
