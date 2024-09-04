@@ -51,10 +51,10 @@ export default class Toolbar extends ComponentComponent {
 		this.selection = null
 		this.timeTravel = null
 		this.editing = null
+		this.dragndrop = null
 		this.plugins = null
 		this.icons = null
 		this.sizeObserver = null
-		this.host = null
 		this.node = null
 		this.focusedNodes = []
 		this.lastRangeFocused = false
@@ -104,10 +104,10 @@ export default class Toolbar extends ComponentComponent {
 		this.selection = core.selection
 		this.timeTravel = core.timeTravel
 		this.editing = core.editing
+		this.dragndrop = core.dragndrop
 		this.plugins = core.plugins
 		this.icons = core.icons
 		this.sizeObserver = core.sizeObserver
-		this.host = core.host
 		this.node = core.node
 
 		this.container.appendChild(this.toggleButtonHolder)
@@ -258,6 +258,9 @@ export default class Toolbar extends ComponentComponent {
 			this.toggleButton = this.insertButton
 			this.toggleButtonHolder.appendChild(this.toggleButton)
 			this.toggleButton.addEventListener('click', this.toggleSideToolbar)
+			this.toggleButton.addEventListener('pointerlongdown', (event) => {
+				this.dragndrop.handleDragging(this.selection.anchorContainer, event)
+			})
 		}
 
 		this.sizeObserver.update()
@@ -270,6 +273,9 @@ export default class Toolbar extends ComponentComponent {
 			this.toggleButton = this.replaceButton
 			this.toggleButtonHolder.appendChild(this.toggleButton)
 			this.toggleButton.addEventListener('click', this.toggleSideToolbar)
+			this.toggleButton.addEventListener('pointerlongdown', (event) => {
+				this.dragndrop.handleDragging(this.selection.anchorContainer, event)
+			})
 		}
 
 		// this.toggleButton.className = !hasControls && insideSection
