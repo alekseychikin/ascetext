@@ -31,7 +31,20 @@ export class Text extends Node {
 	}
 
 	fit(node) {
-		return node.isContainer || node.isInlineWidget
+		return node.isSection || node.isContainer || node.isInlineWidget
+	}
+
+	normalize(builder) {
+		if (this.parent.isSection) {
+			const block = builder.createBlock()
+
+			builder.replace(this, block)
+			builder.append(block, this)
+
+			return block
+		}
+
+		return false
 	}
 
 	generateModifiers() {

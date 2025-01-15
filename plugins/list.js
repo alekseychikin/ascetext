@@ -95,7 +95,20 @@ export class ListItem extends Widget {
 	}
 
 	fit(node) {
-		return node.type === 'list'
+		return node.isSection
+	}
+
+	normalize(builder) {
+		if (this.parent.isSection && this.parent.type !== 'list') {
+			const list = builder.create('list')
+
+			builder.replace(this, list)
+			builder.push(list, this)
+
+			return list
+		}
+
+		return false
 	}
 
 	canDelete() {
@@ -387,18 +400,6 @@ export default class ListPlugin extends PluginPlugin {
 			indentLeft: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 18V6m18 6H7m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 			indentRight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 18V6M3 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
-	}
-
-	restore(node, builder) {
-		if (node.type === 'list-item') {
-			const list = builder.create('list')
-
-			builder.push(list, node)
-
-			return list
-		}
-
-		return false
 	}
 
 	getInsertControls(container) {

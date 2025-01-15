@@ -92,18 +92,14 @@ export default class Normalizer {
 			current = current.deepesetLastNode()
 
 			while (current.previous) {
-				if (next = this.empty(node, current)) {
-					return next
-				}
-
-				if (next = this.join(node, current)) {
+				if (next = this.handleWalkUp(node, current)) {
 					return next
 				}
 
 				current = current.previous
 			}
 
-			if (next = this.empty(node, current)) {
+			if (next = this.handleWalkUp(node, current)) {
 				return next
 			}
 
@@ -114,16 +110,30 @@ export default class Normalizer {
 					break
 				}
 
-				if (next = this.join(node, current)) {
-					return next
-				}
-
-				if (next = this.empty(node, current)) {
+				if (next = this.handleWalkUp(node, current)) {
 					return next
 				}
 			}
 
 			current = current.previous
+		}
+
+		return false
+	}
+
+	handleWalkUp(node, current) {
+		let next
+
+		if (next = current.normalize(this.core.builder)) {
+			return next
+		}
+
+		if (next = this.empty(node, current)) {
+			return next
+		}
+
+		if (next = this.join(node, current)) {
+			return next
 		}
 
 		return false
@@ -193,26 +203,9 @@ export default class Normalizer {
 
 	accept(node, current) {
 		let parent = current.parent
-		let restored
 
 		if (!this.canAccept(parent, current)) {
 			const anchor = current.next
-
-			restored = this.core.plugins.reduce((parsed, plugin) => {
-				if (parsed) return parsed
-
-				if (isFunction(plugin.restore)) {
-					return plugin.restore(current, this.core.builder)
-				}
-
-				return false
-			}, false)
-
-			if (restored && this.canAccept(parent, restored)) {
-				this.core.builder.append(parent, restored, anchor)
-
-				return restored
-			}
 
 			this.core.builder.cut(current)
 
