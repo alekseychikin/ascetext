@@ -15,16 +15,7 @@ export default class InlineWidget extends Node {
 		return node.type === 'text' || node.isInlineWidget
 	}
 
-	normalize(builder) {
-		if (this.parent.isSection) {
-			const block = builder.createBlock()
-
-			builder.replace(this, block)
-			builder.push(block, this)
-
-			return block
-		}
-
-		return false
+	accommodate(node) {
+		return node.isSection
 	}
 }

@@ -38,11 +38,7 @@ export default class Normalizer {
 	}
 
 	pushNode(node) {
-		if (!node) {
-			return
-		}
-
-		if (!this.unnormalizedNodes.includes(node)) {
+		if (node && !this.unnormalizedNodes.includes(node)) {
 			this.unnormalizedNodes.push(node)
 		}
 	}
@@ -124,10 +120,6 @@ export default class Normalizer {
 	handleWalkUp(node, current) {
 		let next
 
-		if (next = current.normalize(this.core.builder)) {
-			return next
-		}
-
 		if (next = this.empty(node, current)) {
 			return next
 		}
@@ -205,7 +197,14 @@ export default class Normalizer {
 		let parent = current.parent
 
 		if (!this.canAccept(parent, current)) {
+			console.log(parent, current)
+
 			const anchor = current.next
+			let adopted
+
+			if (adopted = this.canAdopt(parent, current)) {
+				return adopted
+			}
 
 			this.core.builder.cut(current)
 
@@ -266,6 +265,29 @@ export default class Normalizer {
 
 		if (container.parent) {
 			return this.canAccept(container.parent, current)
+		}
+
+		return false
+	}
+
+	canAdopt(container, current) {
+		if (
+			container.adopt(current) && current.fit(container) ||
+			container.accept(current) && current.accommodate(container)
+		) {
+			const mutated = this.core.plugins.reduce((parsed, plugin) => {
+				if (parsed) return parsed
+
+				if (isFunction(plugin.mutate)) {
+					return plugin.mutate(current, this.core.builder)
+				}
+
+				return false
+			}, false)
+
+			console.log('mutated', mutated)
+
+			return mutated
 		}
 
 		return false

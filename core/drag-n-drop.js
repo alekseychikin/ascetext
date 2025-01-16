@@ -1,3 +1,5 @@
+import findParent from '../utils/find-parent.js'
+
 export default class Dragndrop {
 	constructor(core) {
 		this.core = core
@@ -45,11 +47,16 @@ export default class Dragndrop {
 	}
 
 	handleDragging(container, event) {
-		this.dragging = container
+		const section = findParent(container, (node) => node.isSection)
+		const target = findParent(container, (node) => (node.isWidget || node.isContainer) && node.parent === section)
+
+		console.log(section, target)
+
+		this.dragging = target
 		this.startClientX = event.detail.clientX
 		this.startClientY = event.detail.clientY
-		this.initOffsetLeft = container.element.offsetLeft
-		this.initOffsetTop = container.element.offsetTop
+		this.initOffsetLeft = target.element.offsetLeft
+		this.initOffsetTop = target.element.offsetTop
 		this.dragging.element.style.position = 'absolute'
 	}
 
@@ -77,7 +84,7 @@ export default class Dragndrop {
 
 	dragOverHandler(event) {
 		// Это событие подойдёт для визуального отображения
-		console.log(event.target)
+		// console.log(event.target)
 	}
 
 	async dropHandler(event) {

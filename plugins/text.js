@@ -31,20 +31,11 @@ export class Text extends Node {
 	}
 
 	fit(node) {
-		return node.isSection || node.isContainer || node.isInlineWidget
+		return node.isContainer || node.isInlineWidget
 	}
 
-	normalize(builder) {
-		if (this.parent.isSection) {
-			const block = builder.createBlock()
-
-			builder.replace(this, block)
-			builder.append(block, this)
-
-			return block
-		}
-
-		return false
+	accommodate(node) {
+		return node.isSection
 	}
 
 	generateModifiers() {
@@ -445,5 +436,18 @@ export default class TextPlugin extends PluginPlugin {
 				builder.setAttribute(item, 'decoration', 'underlined')
 			}
 		})
+	}
+
+	mutate(node, builder) {
+		if (node.parent.isSection && (node.type === 'text' || node.isInlineWidget)) {
+			const paragraph = builder.createBlock()
+
+			builder.replace(node, paragraph)
+			builder.push(paragraph, node)
+
+			return paragraph
+		}
+
+		return false
 	}
 }

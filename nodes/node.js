@@ -25,11 +25,15 @@ export default class Node {
 		return true
 	}
 
-	canDelete() {
+	accommodate() {
 		return false
 	}
 
-	normalize() {
+	adopt() {
+		return false
+	}
+
+	canDelete() {
 		return false
 	}
 

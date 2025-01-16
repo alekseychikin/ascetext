@@ -20,6 +20,10 @@ export class List extends Section {
 		return node.type === 'list-item'
 	}
 
+	adopt(node) {
+		return node.isContainer
+	}
+
 	fit(node) {
 		return node.isSection || node.type === 'list-item' && node.first.next === node.last && node.last === this
 	}
@@ -95,20 +99,11 @@ export class ListItem extends Widget {
 	}
 
 	fit(node) {
-		return node.isSection
+		return node.type === 'list'
 	}
 
-	normalize(builder) {
-		if (this.parent.isSection && this.parent.type !== 'list') {
-			const list = builder.create('list')
-
-			builder.replace(this, list)
-			builder.push(list, this)
-
-			return list
-		}
-
-		return false
+	accommodate(node) {
+		return node.isSection
 	}
 
 	canDelete() {
@@ -616,5 +611,30 @@ export default class ListPlugin extends PluginPlugin {
 			convertGroup(group)
 			setSelection(since, anchorOffset, until, focusOffset)
 		}
+	}
+
+	mutate(node, builder) {
+		const { params } = this
+
+		if (node.parent.isSection && node.parent.type !== 'list') {
+			const list = builder.create('list', params)
+
+			builder.replace(node, list)
+			builder.push(list, node)
+
+			return list
+		}
+
+		if (node.parent.type === 'list' && node.isContainer && node.type !== 'list-item') {
+			const listItem = builder.create('list-item', params)
+			const content = builder.create('list-item-content', params)
+
+			builder.append(content, node.first)
+			builder.replace(node, listItem)
+
+			return listItem
+		}
+
+		return false
 	}
 }
