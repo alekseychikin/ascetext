@@ -613,26 +613,188 @@ export default class ListPlugin extends PluginPlugin {
 		}
 	}
 
-	mutate(node, builder) {
+	normalize(node, builder) {
 		const { params } = this
 
-		if (node.parent.isSection && node.parent.type !== 'list') {
-			const list = builder.create('list', params)
+		// ! если перед списком находится другой список, то их нужно склеить
+		if (node.type === 'list' && node.previous && node.previous.type === 'list') {
+			const previous = node.previous
 
-			builder.replace(node, list)
-			builder.push(list, node)
+			builder.append(previous, node.first)
+			builder.cut(node)
+
+			return previous
+		}
+
+		// ! если элемент списка оказывается вне секции, нужно обернуть элемент списка списком
+		if (node.type === 'list-item' && node.parent.isSection && node.parent.type !== 'list') {
+			const list = builder.create('list', params)
+			let last = node
+
+			while (last.next && last.next.type === 'list-item') {
+				last = last.next
+			}
+
+			builder.append(node.parent, list, last.next)
+			builder.cutUntil(node, last)
+			builder.append(list, node)
 
 			return list
 		}
 
-		if (node.parent.type === 'list' && node.isContainer && node.type !== 'list-item') {
-			const listItem = builder.create('list-item', params)
-			const content = builder.create('list-item-content', params)
+		// в списке могут быть только элементы списка
+		// ! если оказывается что-то другое, нужно разделить список и разместить это другое между двумя списками
+		if (node.parent.type === 'list') {
+			// list
+			//   paragraph
+			//     text
+			// →
+			// list
+			//   list-item
+			//     list-item-content
+			//       text
+			if (node.isContainer && node.type !== 'list-item') {
+				const listItem = builder.create('list-item', params)
+				const content = builder.create('list-item-content', params)
 
-			builder.append(content, node.first)
-			builder.replace(node, listItem)
+				builder.append(content, node.first)
+				builder.replace(node, listItem)
 
-			return listItem
+				return listItem
+			}
+
+			// list
+			//   image
+			// →
+			// image
+
+			// list
+			//   list-item
+			//   image
+			// →
+			// list
+			//   list-item
+			// image
+
+			// list
+			//   image
+			//   list-item
+			// →
+			// image
+			// list
+			//   list-item
+
+			// list
+			//   list-item
+			//   image
+			//   list-item
+			// →
+			// list
+			//   list-item
+			// image
+			// list
+			//   list-item
+			if (node.type !== 'list-item') {
+				const parent = node.parent
+
+				if (node.next) {
+					const list = builder.create('list', params)
+
+					builder.append(list, node.next)
+					builder.append(parent.parent, list, parent.next)
+				}
+
+				builder.push(parent.parent, node, parent.next)
+
+				if (!parent.first) {
+					builder.cut(parent)
+				}
+
+				return node
+			}
+		}
+
+		// в элементе списка может быть только один контент элемента списка и один список
+		// ! если в элементе списка оказывается что-то другое, нужно разделить элемент списка пополам и разместить это другое между двумя элементами списка
+		// list-item
+		//   paragraph
+		//     text
+		// →
+		// list-item
+		//   list-item-content
+		//     text
+
+		// list-item
+		//   image
+		//   list-item-content
+		// →
+		// image
+		// list
+		//   list-item-content
+
+		// list-item
+		//   list
+		//     list-item
+		// →
+		// list-item
+		// list-item
+
+		// list-item
+		//   list-item-content
+		//   list
+		//    list-item
+		//   list
+		//     list-item
+		// →
+		// list-item
+		//   list-item-content
+		//   list
+		//     list-item
+		// list
+		//   list-item
+		if (node.parent.type === 'list-item') {
+			const parent = node.parent
+
+			if (node === parent.first && node.isContainer && node.type !== 'list-item-content') {
+				const content = builder.create('list-item-content', params)
+
+				builder.append(content, node.first)
+				builder.replace(node, content)
+
+				return content
+			}
+
+			if (
+				node === parent.first && node.type !== 'list-item-content' ||
+				parent.first && node === parent.first.next && node.type !== 'list' ||
+				parent.first && parent.first.next && node === parent.first.next.next
+			) {
+				builder.append(parent.parent, node, parent.next)
+
+				if (parent.first) {
+					builder.cut(parent)
+				}
+
+				return node
+			}
+		}
+
+		// root
+		//   paragraph
+		//   list-item-content
+		//   header
+		// →
+		// root
+		//   paragraph
+		//   paragraph
+		//   header
+		if (node.type === 'list-item-content' && node.parent.type !== 'list-item') {
+			const block = builder.createBlock()
+
+			builder.append(block, node.first)
+			builder.replace(node, block)
+
+			return block
 		}
 
 		return false

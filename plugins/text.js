@@ -438,12 +438,20 @@ export default class TextPlugin extends PluginPlugin {
 		})
 	}
 
-	mutate(node, builder) {
+	normalize(node, builder) {
+		// в секции может находиться секция, контейнер или виджет
+		// ! если попадает текст или инлайн виджет, нужно обернуть их в параграф
 		if (node.parent.isSection && (node.type === 'text' || node.isInlineWidget)) {
 			const paragraph = builder.createBlock()
+			let last = node
 
-			builder.replace(node, paragraph)
-			builder.push(paragraph, node)
+			while (last.next && (last.next.type === 'text' || last.next.isInlineWidget)) {
+				last = last.next
+			}
+
+			builder.append(node.parent, paragraph, last.next)
+			builder.cutUntil(node, last)
+			builder.append(paragraph, node)
 
 			return paragraph
 		}

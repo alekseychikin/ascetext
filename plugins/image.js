@@ -453,4 +453,62 @@ export default class ImagePlugin extends PluginPlugin {
 			reader.readAsDataURL(file)
 		})
 	}
+
+	normalize(node, builder) {
+		// в виджете картинки может находиться только одна подпись
+		// ! если в виджете оказывается что-то кроме подписи, нужно переместить сразу после
+
+		if (node.parent.type === 'image') {
+			const parent = node.parent
+
+			// image
+			//   paragraph
+			//     text
+			// →
+			// image
+			//   image-caption
+			//     text
+			if (node === node.parent.first && node.isContainer && node.type !== 'image-caption') {
+				const caption = builder.create('image-caption')
+
+				builder.append(caption, node.first)
+				builder.replace(node, caption)
+
+				return caption
+			}
+
+			// image
+			//   list
+			//     list-item
+			// →
+			// image
+			//   image-caption
+			// list
+			//   list-item
+
+			// image
+			//   image-caption
+			//   paragraph
+			// →
+			// image
+			//   image-caption
+			// paragraph
+			if (
+				node === node.parent.first && node.type !== 'image-caption' ||
+				node.parent.first && node === node.parent.first.next
+			) {
+				builder.append(parent.parent, node, parent.next)
+
+				if (!parent.first) {
+					const caption = builder.create('image-caption')
+
+					builder.append(parent, caption)
+				}
+
+				return node
+			}
+		}
+
+		return false
+	}
 }

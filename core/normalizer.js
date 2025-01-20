@@ -18,20 +18,26 @@ export default class Normalizer {
 			return
 		}
 
+		let current
+
 		switch (event.type) {
 			case operationTypes.APPEND:
-				this.pushNode(event.last)
 				this.pushNode(event.last.next)
+
+				current = event.last
+
+				do {
+					this.pushNode(current)
+				} while (current !== event.target && (current = current.previous))
 
 				break
 			case operationTypes.CUT:
 				this.pushNode(event.last.next)
-				this.pushNode(event.previous)
 
 				break
 			case operationTypes.ATTRIBUTE:
-				this.pushNode(event.target)
 				this.pushNode(event.target.next)
+				this.pushNode(event.target)
 
 				break
 		}
@@ -53,25 +59,27 @@ export default class Normalizer {
 		let next
 		let current
 
-		while (node = nodes.pop()) {
+		while (node = nodes.shift()) {
 			if (hasRoot(node)) {
 				current = node
 
-				while (current && limit-- > 0) {
-					if (next = this.walkUp(current)) {
-						current = next
+				this.walkUp(current)
 
-						continue
-					}
+				// while (current && limit-- > 0) {
+				// 	if (next = this.walkUp(current)) {
+				// 		current = next
 
-					if (next = this.walkDown(current)) {
-						current = next
+				// 		continue
+				// 	}
 
-						continue
-					}
+				// 	if (next = this.walkDown(current)) {
+				// 		current = next
 
-					break
-				}
+				// 		continue
+				// 	}
+
+				// 	break
+				// }
 			}
 		}
 
@@ -81,37 +89,34 @@ export default class Normalizer {
 	}
 
 	walkUp(node) {
-		let current = node
+		console.log('walkUp node', node)
+		let current = node.deepesetLastNode()
 		let next
 
-		while (current && current.type !== 'root') {
-			current = current.deepesetLastNode()
+		while (true) {
+			if (next = this.handleNode(current)) {
+				current = next
 
-			while (current.previous) {
-				if (next = this.handleWalkUp(node, current)) {
-					return next
-				}
-
-				current = current.previous
+				continue
 			}
 
-			if (next = this.handleWalkUp(node, current)) {
-				return next
+			if (current === node) {
+				break
 			}
 
-			while (!current.previous) {
+			if (current.previous) {
+				current = current.previous.deepesetLastNode()
+
+				continue
+			}
+
+			if (current.parent) {
 				current = current.parent
 
-				if (current.type === 'root') {
-					break
-				}
-
-				if (next = this.handleWalkUp(node, current)) {
-					return next
-				}
+				continue
 			}
 
-			current = current.previous
+			break
 		}
 
 		return false
@@ -294,13 +299,57 @@ export default class Normalizer {
 	}
 
 	root() {
-		const last = this.core.model.last
+		let last = this.core.model.last
 
 		if (!last || !last.isContainer || !last.isEmpty) {
-			const block = this.core.builder.createBlock()
+			last = this.core.builder.createBlock()
 
-			this.core.builder.append(this.core.model, block)
-			this.empty(block, block)
+			this.core.builder.append(this.core.model, last)
+		}
+
+		this.empty(last, last)
+	}
+
+	handleNode(node) {
+		const { builder } = this.core
+		const handled = this.core.plugins.reduce((parsed, plugin) => {
+			if (parsed) return parsed
+
+			if (isFunction(plugin.normalize)) {
+				return plugin.normalize(node, builder)
+			}
+
+			return false
+		}, false)
+
+		if (handled) {
+			return handled
+		}
+
+		// в контейнере может находиться текст или инлайн-виджет
+		// ! если в контейнер попадает контейнер, нужно переместить из него дочерние элементы
+		// ! если в контейнер попадает виджет или секция, нужно поделить контейнер пополам и разместить секцию или виджет между ними
+		if (node.parent.isContainer) {
+			const parent = node.parent
+
+			if (node.isContainer) {
+				const first = node.first
+
+				builder.append(parent, first, node.next)
+				builder.cut(node)
+
+				return node
+			}
+
+			const duplicated = parent.split(builder, node)
+
+			builder.push(parent, node, duplicated.tail)
+
+			if (!parent.first) {
+				builder.cut(parent)
+			}
+
+			return node
 		}
 	}
 }
