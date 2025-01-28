@@ -1,7 +1,8 @@
 type Attributes = Record<string, string | number>
+type Params = Record<string, any>
 
 declare class Node {
-	constructor(type: string, attributes?: Attributes);
+	constructor(type: string, attributes?: Attributes, params?: Params);
 	id: number;
 	type: string;
 	attributes: Attributes;
@@ -18,10 +19,7 @@ declare class Node {
 	first?: Node;
 	last?: Node;
 	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
-	accept(node: Node): boolean;
-	fit(node: Node): boolean;
-	canDelete(): boolean;
-	split(builder: Builder, next: Node | number): { head: Node; tail: Node | null };
+	split(builder: Builder, next: Node | number): { head: Node | null; tail: Node | null };
 	getNodeUntil(nodeUntil: Node): Node;
 	getPreviousSelectableNode(): Node | undefined;
 	getNextSelectableNode(): Node | undefined;
@@ -32,7 +30,7 @@ declare class Node {
 }
 
 declare class UsefullNode extends Node {
-	constructor(attributes?: Attributes);
+	constructor(attributes?: Attributes, params?: Params);
 }
 
 declare class Section extends Node {
@@ -140,18 +138,15 @@ declare class Normalizer {
 	constructor(core: Ascetext<Array<PluginPlugin>>, trimTrailingContainer?: boolean);
 	core: Ascetext<Array<PluginPlugin>>;
 	unnormalizedNodes: Array<Node>;
+	unnormalizedParents: Array<Node>;
 	onChange(event: BuilderChangeEvent): void;
 	pushNode(node: Node): void;
+	pushParent(node: Node): void;
 	normalizeHandle(): void;
 	normalize(nodes: Array<Node>): void;
-	walkUp(node: Node): Node | false;
-	walkDown(node: Node): Node | false;
-	empty(node: Node, current: Node): Node | false;
-	accept(node: Node, current: Node): Node | false;
-	join(node: Node, current: Node): Node | false;
-	handleJoin(node: Node, current: Node): Node | null;
-	canAccept(node: Node, current: Node): Node | false;
-	root(): void;
+	normalizeParents(nodes: Array<Node>): void;
+	walk(node: Node): void;
+	handleNode(node: Node): void;
 }
 
 type RenderEvent = {
@@ -268,7 +263,7 @@ declare class Builder extends Publisher {
 	handleAttributes(target: Node, previous?: Node, next?: Node): void;
 	parseJson(body: any): Fragment;
 	getJson(first: Node, last?: Node): any;
-	parseVirtualTree(tree: Tree): Fragment;
+	parseVirtualTree(tree: VirtualTree): Fragment;
 	splitByOffset(container: Container, offset: number): { head: Node, tail: Node };
 	splitByTail(parent: Node, tail: Node): { head: Node, tail: Node };
 	duplicate(target: Node): Node;
@@ -651,12 +646,14 @@ declare class ControlLink extends ControlControl {
 
 declare class PluginPlugin {
 	get register(): Record<string, typeof UsefullNode>;
+	params: Params;
 	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
 	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getInsertControls(container: Node): Array<Control>;
 	getSelectControls(focusedNodes: Array<Node>, isRange: boolean): Control[];
 	getReplaceControls(focusedNodes: Array<Node>): Array<Control>;
+	normalize?(node: Node, builder: Builder): Node | false;
 }
 
 declare class BreakLine extends InlineWidget {
@@ -678,8 +675,8 @@ declare class BreakLinePlugin extends PluginPlugin {
 
 declare class Header extends Container {
 	constructor(attributes: {
-    level: number;
-  });
+	level: number;
+});
 	render(): VirtualTree;
 	json(): {
 		type: 'header';
@@ -772,6 +769,7 @@ declare class ImagePlugin extends PluginPlugin {
 	parseTree(element: VirtualTree, builder: Builder): Image | undefined;
 	parseJson(element: { type: string }, builder: Builder): Image | undefined;
 	generateImagePreview(file: File): Promise<string>;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class Link extends InlineWidget {
@@ -807,6 +805,7 @@ declare class LinkPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): Link | undefined;
 	wrap(match: any, builder: Builder): any;
 	unwrap(node: any, builder: Builder): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class List extends Section {
@@ -884,6 +883,7 @@ declare class ListPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(event: MouseEvent, params: ActionParams): void;
 	setMarkerList(event: MouseEvent, params: ActionParams): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class Paragraph extends Container {
@@ -970,6 +970,7 @@ declare class TextPlugin extends PluginPlugin {
 	setStrike(event: MouseEvent, params: ActionParams): void;
 	unsetUnderline(event: MouseEvent, params: ActionParams): void;
 	setUnderline(event: MouseEvent, params: ActionParams): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare function getIcon(source: string): HTMLElement;
@@ -999,7 +1000,6 @@ export {
 	ControlLink,
 	ControlInput,
 	Section,
-	Group,
 	InlineWidget,
 	Widget,
 	Node,
