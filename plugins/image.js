@@ -7,10 +7,9 @@ import findLastNode from '../utils/find-last.js'
 
 export class Image extends Widget {
 	constructor(attributes = {}, params = {}) {
-		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes))
+		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes), params)
 
 		this.src = attributes.src
-		this.params = params
 	}
 
 	render(body = []) {
@@ -108,8 +107,8 @@ export class Image extends Widget {
 }
 
 export class ImageCaption extends Container {
-	constructor(params) {
-		super('image-caption', params)
+	constructor(attributes, params) {
+		super('image-caption', attributes, params)
 
 		this.imagePlaceholder = createElement('div', {
 			style: {
@@ -232,7 +231,14 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	constructor(params = {}) {
-		super()
+		super(Object.assign({
+			onSelectFile: (file, image) => new Promise((resolve) => {
+				setTimeout(() => {
+					resolve(image.attributes.preview)
+				}, 1000)
+			}),
+			placeholder: 'Add image caption (optional)'
+		}, params))
 
 		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
 		this.toggleFloatRight = this.toggleFloatRight.bind(this)
@@ -242,14 +248,6 @@ export default class ImagePlugin extends PluginPlugin {
 
 		this.insertImage = this.insertImage.bind(this)
 		this.updateImage = this.updateImage.bind(this)
-		this.params = Object.assign({
-			onSelectFile: (file, image) => new Promise((resolve) => {
-				setTimeout(() => {
-					resolve(image.attributes.preview)
-				}, 1000)
-			}),
-			placeholder: 'Add image caption (optional)'
-		}, params)
 	}
 
 	get icons() {
@@ -264,7 +262,7 @@ export default class ImagePlugin extends PluginPlugin {
 	parseJson(element, builder) {
 		if (element.type === 'image') {
 			const image = builder.create('image', { src: element.src, preview: element.preview }, this.params)
-			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+			const caption = builder.create('image-caption', {}, this.params)
 			const children = element.figcaption ? builder.parseJson(element.figcaption) : undefined
 
 			builder.append(caption, children)
@@ -285,7 +283,7 @@ export default class ImagePlugin extends PluginPlugin {
 
 			if (figcaption) {
 				const children = builder.parseVirtualTree(figcaption.body)
-				const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+				const caption = builder.create('image-caption', {}, this.params)
 
 				builder.append(caption, children.first)
 				builder.append(image, caption)
@@ -308,9 +306,7 @@ export default class ImagePlugin extends PluginPlugin {
 		await Promise.all(images.map(async (file) => {
 			const preview = await this.generateImagePreview(file)
 			const image = builder.create('image', { src: '', preview }, this.params)
-			const caption = builder.create('image-caption', {
-				placeholder: this.params.placeholder
-			})
+			const caption = builder.create('image-caption', {}, this.params)
 
 			builder.append(image, caption)
 			builder.append(fragment, image)
@@ -385,9 +381,7 @@ export default class ImagePlugin extends PluginPlugin {
 			if (files.length) {
 				const preview = await this.generateImagePreview(files[0])
 				const image = builder.create('image', { src: '', preview }, this.params)
-				const caption = builder.create('image-caption', {
-					placeholder: this.params.placeholder
-				})
+				const caption = builder.create('image-caption', {}, this.params)
 
 				builder.append(image, caption)
 				builder.replace(container, image)

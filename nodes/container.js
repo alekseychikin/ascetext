@@ -2,8 +2,8 @@ import Node from './node.js'
 import createElement from '../utils/create-element.js'
 
 export default class Container extends Node {
-	constructor(type, attributes = {}) {
-		super(type, attributes)
+	constructor(type, attributes = {}, params = {}) {
+		super(type, attributes, params)
 
 		this.isContainer = true
 		this.placeholder = null

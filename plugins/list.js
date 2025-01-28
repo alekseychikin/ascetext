@@ -33,10 +33,8 @@ export class List extends Section {
 }
 
 export class ListItem extends Widget {
-	constructor(params = {}) {
+	constructor() {
 		super('list-item')
-
-		this.params = params
 	}
 
 	render(body) {
@@ -48,7 +46,7 @@ export class ListItem extends Widget {
 	}
 
 	split(builder, next) {
-		const duplicate = builder.create(this.type, { ...this.attributes })
+		const duplicate = builder.create(this.type)
 
 		builder.append(this.parent, duplicate, this.next)
 		builder.append(duplicate, next)
@@ -59,45 +57,14 @@ export class ListItem extends Widget {
 		}
 	}
 
-	getDepth(container, node) {
-		let current = container
-		let depth = 0
-
-		while (current) {
-			if (current.type === 'list-item') {
-				depth++
-			}
-
-			current = current.parent
-		}
-
-		current = node
-
-		while (current) {
-			if (current.type === 'list-item') {
-				depth++
-			}
-
-			current = current.last
-		}
-
-		return depth
-	}
-
-	duplicate(builder) {
-		return builder.create('list-item', this.params)
-	}
-
 	stringify(children) {
 		return '<li>' + children + '</li>'
 	}
 }
 
 export class ListItemContent extends Container {
-	constructor(params = {}) {
+	constructor() {
 		super('list-item-content')
-
-		this.params = params
 	}
 
 	render(body) {
@@ -111,8 +78,8 @@ export class ListItemContent extends Container {
 	}
 
 	split(builder, next) {
-		const item = builder.create('list-item', this.params)
-		const content = builder.create('list-item-content', this.params)
+		const item = builder.create('list-item')
+		const content = builder.create('list-item-content')
 
 		builder.append(item, content)
 		builder.append(content, next)
@@ -164,8 +131,8 @@ export class ListItemContent extends Container {
 				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
 			}
 		} else {
-			const nextItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
+			const nextItem = builder.create('list-item')
+			const content = builder.create('list-item-content')
 
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
@@ -299,10 +266,6 @@ export class ListItemContent extends Container {
 		})
 	}
 
-	duplicate(builder) {
-		return builder.create('list-item-content', this.params)
-	}
-
 	stringify(children) {
 		return children
 	}
@@ -318,11 +281,10 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	constructor(params = { maxDepth: null }) {
-		super()
+		super(params)
 
 		this.setList = this.setList.bind(this)
 		this.normalize = this.normalize.bind(this)
-		this.params = params
 	}
 
 	get icons() {
@@ -441,7 +403,8 @@ export default class ListPlugin extends PluginPlugin {
 					})
 				}
 
-				if (listItemContents[0].parent.previous && (!this.params.maxDepth || listItemContents[0].parent.getDepth(listItemContents[0].parent) < this.params.maxDepth)) {
+				console.log('listItemContents', listItemContents)
+				if (listItemContents[0].parent.previous && (!this.params.maxDepth || this.getDepth(listItemContents[0].parent) < this.params.maxDepth)) {
 					controls.push({
 						slug: 'list.indentRight',
 						label: 'Indent right',
@@ -462,11 +425,11 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'list-item') {
-			return builder.create('list-item', this.params)
+			return builder.create('list-item')
 		}
 
 		if (element.type === 'list-item-content') {
-			return builder.create('list-item-content', this.params)
+			return builder.create('list-item-content')
 		}
 	}
 
@@ -476,8 +439,8 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'li') {
-			const listItem =  builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
+			const listItem =  builder.create('list-item')
+			const content = builder.create('list-item-content')
 			const children = builder.parseVirtualTree(element.body)
 
 			builder.append(listItem, content)
@@ -506,7 +469,6 @@ export default class ListPlugin extends PluginPlugin {
 	setList(type) {
 		return (event, { builder, setSelection, focusedNodes, anchorOffset, focusOffset }) => {
 			const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
-			const { params } = this
 			let since
 			let until
 			let previous
@@ -518,8 +480,8 @@ export default class ListPlugin extends PluginPlugin {
 
 					builder.append(group[0].parent, list, group[0])
 					group.forEach((node) => {
-						const listItem = builder.create('list-item', params)
-						const content = builder.create('list-item-content', params)
+						const listItem = builder.create('list-item')
+						const content = builder.create('list-item-content')
 
 						builder.append(listItem, content)
 						builder.append(list, listItem)
@@ -569,6 +531,15 @@ export default class ListPlugin extends PluginPlugin {
 
 				return node
 			}
+
+			if (this.params.maxDepth && this.getDepth(node) > this.params.maxDepth) {
+				const first = node.first
+
+				builder.append(parent.parent, first, parent.next)
+				builder.cut(node)
+
+				return first
+			}
 		}
 
 		// root
@@ -600,8 +571,8 @@ export default class ListPlugin extends PluginPlugin {
 			//     list-item-content
 			//       text
 			if (node.isContainer && node.type !== 'list-item') {
-				const listItem = builder.create('list-item', params)
-				const content = builder.create('list-item-content', params)
+				const listItem = builder.create('list-item')
+				const content = builder.create('list-item-content')
 
 				builder.append(content, node.first)
 				builder.append(listItem, content)
@@ -694,7 +665,7 @@ export default class ListPlugin extends PluginPlugin {
 		//   list-item
 		if (parent.type === 'list-item') {
 			if (node === parent.first && node.isContainer && node.type !== 'list-item-content') {
-				const content = builder.create('list-item-content', params)
+				const content = builder.create('list-item-content')
 
 				builder.convert(node, content)
 
@@ -760,5 +731,20 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		return false
+	}
+
+	getDepth(container) {
+		let current = container
+		let depth = 1
+
+		while (current) {
+			if (current.type === 'list-item') {
+				depth++
+			}
+
+			current = current.parent
+		}
+
+		return depth
 	}
 }

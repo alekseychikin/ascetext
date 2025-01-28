@@ -1,10 +1,11 @@
 let id = 1
 
 export default class Node {
-	constructor(type, attributes = {}) {
+	constructor(type, attributes = {}, params = {}) {
 		this.id = id++
 		this.type = type
 		this.attributes = attributes
+		this.params = params
 		this.isContainer = false
 		this.isWidget = false
 		this.isSection = false

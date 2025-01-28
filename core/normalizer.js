@@ -141,8 +141,6 @@ export default class Normalizer {
 		if(!safety) {
 			console.error('safety alarm')
 		}
-
-		return false
 	}
 
 	handleNode(node) {
@@ -150,7 +148,7 @@ export default class Normalizer {
 		const handled = this.normalizeHandlers.reduce((parsed, handler) => {
 			if (parsed) return parsed
 
-			return handler(node, builder, this.pushNode)
+			return handler(node, builder)
 		}, false)
 
 		if (handled) {
