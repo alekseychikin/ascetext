@@ -235,9 +235,9 @@ export default class Builder extends Publisher {
 			: this.create(target.type, { ...target.attributes })
 	}
 
-	push(node, target) {
+	push(node, target, anchor) {
 		this.cut(target)
-		this.append(node, target)
+		this.append(node, target, anchor)
 	}
 
 	append(node, target, anchor) {
@@ -475,6 +475,23 @@ export default class Builder extends Publisher {
 				target.onCombine(this, container)
 			}
 		}
+	}
+
+	wrap(node, target, last) {
+		this.append(node.parent, target, last.next)
+		this.cutUntil(node, last)
+		this.append(target, node)
+	}
+
+	cutEmpty(target) {
+		if (!target.first) {
+			this.cut(target)
+		}
+	}
+
+	convert(node, target) {
+		this.append(target, node.first)
+		this.replace(node, target)
 	}
 
 	registerPlugins() {

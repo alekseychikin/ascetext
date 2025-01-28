@@ -3,6 +3,7 @@ import Container from '../nodes/container.js'
 import PluginPlugin from './plugin.js'
 import createElement from '../utils/create-element.js'
 import findElement from '../utils/find-element.js'
+import findLastNode from '../utils/find-last.js'
 
 export class Image extends Widget {
 	constructor(attributes = {}, params = {}) {
@@ -27,10 +28,6 @@ export class Image extends Widget {
 				body: []
 			}].concat(body)
 		}
-	}
-
-	accept(node) {
-		return this.first === this.last && this.first === node && node.type === 'image-caption'
 	}
 
 	getClassName() {
@@ -137,10 +134,6 @@ export class ImageCaption extends Container {
 		}
 	}
 
-	fit(node) {
-		return node.type === 'image' && node.last === node.first && node.last === this
-	}
-
 	split(builder, next) {
 		if (next || !this.parent.next) {
 			const paragraph = builder.createBlock()
@@ -245,6 +238,7 @@ export default class ImagePlugin extends PluginPlugin {
 		this.toggleFloatRight = this.toggleFloatRight.bind(this)
 		this.toggleSizeWide = this.toggleSizeWide.bind(this)
 		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
+		this.normalize = this.normalize.bind(this)
 
 		this.insertImage = this.insertImage.bind(this)
 		this.updateImage = this.updateImage.bind(this)
@@ -286,16 +280,22 @@ export default class ImagePlugin extends PluginPlugin {
 		if (element.type === 'figure' && findElement(element, 'img') || element.type === 'img') {
 			const img = element.type === 'figure' ? findElement(element, 'img') : element
 			const image = builder.create('image', { src: img.attributes.src, preview: img.attributes.preview }, this.params)
-			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 			const figcaption = element.body.find((child) => child.type === 'figcaption')
+			const body = element.body.filter((child) => child.type !== 'figcaption' && child.type !== 'img')
 
 			if (figcaption) {
 				const children = builder.parseVirtualTree(figcaption.body)
+				const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
 
 				builder.append(caption, children.first)
+				builder.append(image, caption)
 			}
 
-			builder.append(image, caption)
+			if (body.length) {
+				const children = builder.parseVirtualTree(body)
+
+				builder.append(image, children.first)
+			}
 
 			return image
 		}
@@ -455,9 +455,6 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	normalize(node, builder) {
-		// в виджете картинки может находиться только одна подпись
-		// ! если в виджете оказывается что-то кроме подписи, нужно переместить сразу после
-
 		if (node.parent.type === 'image') {
 			const parent = node.parent
 
@@ -468,14 +465,6 @@ export default class ImagePlugin extends PluginPlugin {
 			// image
 			//   image-caption
 			//     text
-			if (node === node.parent.first && node.isContainer && node.type !== 'image-caption') {
-				const caption = builder.create('image-caption')
-
-				builder.append(caption, node.first)
-				builder.replace(node, caption)
-
-				return caption
-			}
 
 			// image
 			//   list
@@ -493,20 +482,63 @@ export default class ImagePlugin extends PluginPlugin {
 			// image
 			//   image-caption
 			// paragraph
-			if (
-				node === node.parent.first && node.type !== 'image-caption' ||
-				node.parent.first && node === node.parent.first.next
-			) {
-				builder.append(parent.parent, node, parent.next)
-
-				if (!parent.first) {
+			if (!node.previous && node.type !== 'image-caption') {
+				if (node.isContainer) {
 					const caption = builder.create('image-caption')
 
-					builder.append(parent, caption)
+					builder.convert(node, caption)
+
+					return caption
 				}
+
+				if (node.type === 'text' || node.isInlineWidget) {
+					const caption = builder.create('image-caption')
+					const last = findLastNode(node, (child) => child.type === 'text' || child.isInlineWidget)
+
+					builder.wrap(node, caption, last)
+
+					return caption
+				}
+
+				builder.append(parent.parent, node, parent.next)
 
 				return node
 			}
+
+			if (node.previous) {
+				const duplicated = parent.split(builder)
+
+				builder.append(parent.parent, node, duplicated.tail)
+
+				return node
+			}
+		// root
+		//   image-caption
+		//     text
+		// →
+		// root
+		//   paragraph
+		//     text
+		} else if (node.type === 'image-caption') {
+			const paragraph = builder.createBlock()
+
+			builder.convert(node, paragraph)
+
+			return paragraph
+		}
+
+		// image
+		// paragraph
+		// →
+		// image
+		//   image-caption
+		// paragraph
+		if (node.type === 'image' && !node.first) {
+			const caption = builder.create('image-caption')
+
+			builder.append(node, caption)
+
+			return node
 		}
 
 		return false

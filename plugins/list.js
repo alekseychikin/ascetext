@@ -2,6 +2,7 @@ import PluginPlugin from './plugin.js'
 import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
 import Section from '../nodes/section.js'
+import findLastNode from '../utils/find-last.js'
 
 export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
@@ -14,30 +15,6 @@ export class List extends Section {
 			attributes: {},
 			body
 		}
-	}
-
-	accept(node) {
-		return node.type === 'list-item'
-	}
-
-	adopt(node) {
-		return node.isContainer
-	}
-
-	fit(node) {
-		return node.isSection || node.type === 'list-item' && node.first.next === node.last && node.last === this
-	}
-
-	join(node, builder) {
-		if (node.type === 'list' && this.attributes.decor === node.attributes.decor) {
-			return builder.create('list', { decor: this.attributes.decor })
-		}
-
-		return false
-	}
-
-	canDelete() {
-		return !this.first
 	}
 
 	stringify(children) {
@@ -80,34 +57,6 @@ export class ListItem extends Widget {
 			head: this,
 			tail: duplicate
 		}
-	}
-
-	accept(node) {
-		if (node.type === 'list' && this.first.next === this.last && this.last === node) {
-			if (this.params.maxDepth !== null) {
-				const depth = this.getDepth(this, node)
-
-				if (depth > this.params.maxDepth) {
-					return false
-				}
-			}
-
-			return true
-		}
-
-		return node.type === 'list-item-content' && this.first === node
-	}
-
-	fit(node) {
-		return node.type === 'list'
-	}
-
-	accommodate(node) {
-		return node.isSection
-	}
-
-	canDelete() {
-		return !this.first
 	}
 
 	getDepth(container, node) {
@@ -159,18 +108,6 @@ export class ListItemContent extends Container {
 			},
 			body
 		}
-	}
-
-	fit(node) {
-		return node.first === this && node.type === 'list-item'
-	}
-
-	join(node, builder) {
-		if (node.type === 'list-item-content') {
-			return builder.create('list-item-content')
-		}
-
-		return false
 	}
 
 	split(builder, next) {
@@ -384,7 +321,7 @@ export default class ListPlugin extends PluginPlugin {
 		super()
 
 		this.setList = this.setList.bind(this)
-
+		this.normalize = this.normalize.bind(this)
 		this.params = params
 	}
 
@@ -615,36 +552,45 @@ export default class ListPlugin extends PluginPlugin {
 
 	normalize(node, builder) {
 		const { params } = this
+		const parent = node.parent
 
-		// ! если перед списком находится другой список, то их нужно склеить
-		if (node.type === 'list' && node.previous && node.previous.type === 'list') {
-			const previous = node.previous
+		if (node.type === 'list') {
+			if (node.previous && node.previous.type === 'list') {
+				const previous = node.previous
 
-			builder.append(previous, node.first)
-			builder.cut(node)
+				builder.append(previous, node.first)
+				builder.cut(node)
 
-			return previous
-		}
-
-		// ! если элемент списка оказывается вне секции, нужно обернуть элемент списка списком
-		if (node.type === 'list-item' && node.parent.isSection && node.parent.type !== 'list') {
-			const list = builder.create('list', params)
-			let last = node
-
-			while (last.next && last.next.type === 'list-item') {
-				last = last.next
+				return previous
 			}
 
-			builder.append(node.parent, list, last.next)
-			builder.cutUntil(node, last)
-			builder.append(list, node)
+			if (!node.first) {
+				builder.cut(node)
+
+				return node
+			}
+		}
+
+		// root
+		//   list-item
+		//     list-item-content
+		//       text
+		// →
+		// root
+		//   list
+		//     list-item
+		//       list-item-content
+		//         text
+		if (node.type === 'list-item' && parent.isSection && parent.type !== 'list') {
+			const list = builder.create('list', params)
+			const last = findLastNode(node, (item) => item.type === 'list-item')
+
+			builder.wrap(node, list, last)
 
 			return list
 		}
 
-		// в списке могут быть только элементы списка
-		// ! если оказывается что-то другое, нужно разделить список и разместить это другое между двумя списками
-		if (node.parent.type === 'list') {
+		if (parent.type === 'list') {
 			// list
 			//   paragraph
 			//     text
@@ -658,6 +604,7 @@ export default class ListPlugin extends PluginPlugin {
 				const content = builder.create('list-item-content', params)
 
 				builder.append(content, node.first)
+				builder.append(listItem, content)
 				builder.replace(node, listItem)
 
 				return listItem
@@ -695,8 +642,6 @@ export default class ListPlugin extends PluginPlugin {
 			// list
 			//   list-item
 			if (node.type !== 'list-item') {
-				const parent = node.parent
-
 				if (node.next) {
 					const list = builder.create('list', params)
 
@@ -705,17 +650,12 @@ export default class ListPlugin extends PluginPlugin {
 				}
 
 				builder.push(parent.parent, node, parent.next)
-
-				if (!parent.first) {
-					builder.cut(parent)
-				}
+				builder.cutEmpty(parent)
 
 				return node
 			}
 		}
 
-		// в элементе списка может быть только один контент элемента списка и один список
-		// ! если в элементе списка оказывается что-то другое, нужно разделить элемент списка пополам и разместить это другое между двумя элементами списка
 		// list-item
 		//   paragraph
 		//     text
@@ -752,14 +692,11 @@ export default class ListPlugin extends PluginPlugin {
 		//     list-item
 		// list
 		//   list-item
-		if (node.parent.type === 'list-item') {
-			const parent = node.parent
-
+		if (parent.type === 'list-item') {
 			if (node === parent.first && node.isContainer && node.type !== 'list-item-content') {
 				const content = builder.create('list-item-content', params)
 
-				builder.append(content, node.first)
-				builder.replace(node, content)
+				builder.convert(node, content)
 
 				return content
 			}
@@ -770,13 +707,39 @@ export default class ListPlugin extends PluginPlugin {
 				parent.first && parent.first.next && node === parent.first.next.next
 			) {
 				builder.append(parent.parent, node, parent.next)
-
-				if (parent.first) {
-					builder.cut(parent)
-				}
+				builder.cutEmpty(parent)
 
 				return node
 			}
+		}
+
+		// list
+		//   list-item
+		//     list-item-content
+		//       text
+		//       image
+		// →
+		// list
+		//   list-item
+		//     list-item-content
+		//       text
+		//   image
+		if (parent.type === 'list-item-content' && node.type !== 'text' && !node.isInlineWidget) {
+			if (node.type === 'list') {
+				builder.append(parent.parent, node, parent.next)
+
+				return node
+			}
+
+			const duplicated = parent.split(builder)
+
+			builder.append(parent.parent.parent, node, duplicated.tail)
+
+			if (!duplicated.tail.length) {
+				builder.cut(duplicated.tail)
+			}
+
+			return node
 		}
 
 		// root
@@ -788,11 +751,10 @@ export default class ListPlugin extends PluginPlugin {
 		//   paragraph
 		//   paragraph
 		//   header
-		if (node.type === 'list-item-content' && node.parent.type !== 'list-item') {
+		if (node.type === 'list-item-content' && parent.type !== 'list-item') {
 			const block = builder.createBlock()
 
-			builder.append(block, node.first)
-			builder.replace(node, block)
+			builder.convert(node, block)
 
 			return block
 		}

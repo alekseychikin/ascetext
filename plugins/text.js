@@ -1,5 +1,6 @@
 import Node from '../nodes/node.js'
 import PluginPlugin from './plugin.js'
+import findLastNode from '../utils/find-last.js'
 
 const mapModifierToTag = {
 	bold: 'strong',
@@ -30,14 +31,6 @@ export class Text extends Node {
 		}
 	}
 
-	fit(node) {
-		return node.isContainer || node.isInlineWidget
-	}
-
-	accommodate(node) {
-		return node.isSection
-	}
-
 	generateModifiers() {
 		const modifiers = []
 
@@ -58,35 +51,6 @@ export class Text extends Node {
 		}
 
 		return modifiers
-	}
-
-	accept(node) {
-		return node.isContainer
-	}
-
-	join(target, builder) {
-		if (target.type === 'text' && (this.isEqual(target) || !this.length || !target.length)) {
-			if (!this.length) {
-				return builder.create('text', { ...target.attributes })
-			}
-
-			return builder.create('text', { ...this.attributes, content: this.attributes.content + target.attributes.content })
-		}
-
-		return false
-	}
-
-	isEqual(target) {
-		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
-		let areEqualElements = true
-
-		fields.forEach((field) => {
-			if (this.attributes[field] !== target.attributes[field]) {
-				areEqualElements = false
-			}
-		})
-
-		return areEqualElements
 	}
 
 	split(builder, position) {
@@ -138,10 +102,6 @@ export class Text extends Node {
 		}
 	}
 
-	canDelete() {
-		return !this.parent.isEmpty && !this.length
-	}
-
 	stringify() {
 		return this.stringifyWithModifiers(this.generateModifiers())
 	}
@@ -187,6 +147,7 @@ export default class TextPlugin extends PluginPlugin {
 
 			return result
 		}, [])
+		this.normalize = this.normalize.bind(this)
 	}
 
 	get icons() {
@@ -439,23 +400,36 @@ export default class TextPlugin extends PluginPlugin {
 	}
 
 	normalize(node, builder) {
-		// в секции может находиться секция, контейнер или виджет
-		// ! если попадает текст или инлайн виджет, нужно обернуть их в параграф
 		if (node.parent.isSection && (node.type === 'text' || node.isInlineWidget)) {
 			const paragraph = builder.createBlock()
-			let last = node
+			const last = findLastNode(node, (item) => item.type === 'text' || item.isInlineWidget)
 
-			while (last.next && (last.next.type === 'text' || last.next.isInlineWidget)) {
-				last = last.next
-			}
-
-			builder.append(node.parent, paragraph, last.next)
-			builder.cutUntil(node, last)
-			builder.append(paragraph, node)
+			builder.wrap(node, paragraph, last)
 
 			return paragraph
 		}
 
+		if (node.type === 'text' && node.previous && node.previous.type === 'text' && (this.isEqual(node, node.previous) || !node.length || !node.previous.length)) {
+			const text = builder.create('text', { ...node.previous.attributes, content: node.previous.attributes.content + node.attributes.content })
+
+			builder.replaceUntil(node.previous, text, node)
+
+			return text
+		}
+
 		return false
+	}
+
+	isEqual(node, target) {
+		const fields = [ 'weight', 'style', 'decoration', 'strike' ]
+		let areEqualElements = true
+
+		fields.forEach((field) => {
+			if (node.attributes[field] !== target.attributes[field]) {
+				areEqualElements = false
+			}
+		})
+
+		return areEqualElements
 	}
 }

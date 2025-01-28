@@ -16,31 +16,6 @@ export class Link extends InlineWidget {
 		}
 	}
 
-	join(element, builder) {
-		if (element.type !== 'link') {
-			return false
-		}
-
-		const fields = ['href', 'target']
-		let areEqualElements = true
-
-		fields.forEach((field) => {
-			if (this.attributes[field] !== element.attributes[field]) {
-				areEqualElements = false
-			}
-		})
-
-		if (areEqualElements) {
-			return builder.create('link', { url: this.attributes.url })
-		}
-
-		return false
-	}
-
-	canDelete() {
-		return !this.first
-	}
-
 	stringify(children) {
 		return '<a href="' + this.attributes.url + '">' + children + '</a>'
 	}
@@ -203,5 +178,15 @@ export default class LinkPlugin extends PluginPlugin {
 		builder.append(link, match)
 
 		return link
+	}
+
+	normalize(node, builder) {
+		if (node.type === 'link' && !node.first) {
+			builder.cut(node)
+
+			return node
+		}
+
+		return false
 	}
 }

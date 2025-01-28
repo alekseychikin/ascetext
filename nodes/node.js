@@ -17,26 +17,6 @@ export default class Node {
 		return {}
 	}
 
-	accept() {
-		return true
-	}
-
-	fit() {
-		return true
-	}
-
-	accommodate() {
-		return false
-	}
-
-	adopt() {
-		return false
-	}
-
-	canDelete() {
-		return false
-	}
-
 	split(builder, next) {
 		const duplicate = builder.create(this.type, { ...this.attributes })
 
