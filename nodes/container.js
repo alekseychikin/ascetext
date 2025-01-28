@@ -17,14 +17,6 @@ export default class Container extends Node {
 		return !this.first || this.first === this.last && this.first.type === 'text' && !this.first.length
 	}
 
-	fit(node) {
-		return node.isSection
-	}
-
-	accept(node) {
-		return node.isInlineWidget || node.type === 'text'
-	}
-
 	onFocus(selection) {
 		if (!selection.isRange && this.placeholder) {
 			this.inputHandler(true)
