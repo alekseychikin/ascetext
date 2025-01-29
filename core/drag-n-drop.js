@@ -1,4 +1,5 @@
 import findParent from '../utils/find-parent.js'
+import isHtmlElement from '../utils/is-html-element.js'
 
 export default class Dragndrop {
 	constructor(core) {
@@ -22,6 +23,8 @@ export default class Dragndrop {
 		this.startClientY = 0
 		this.initOffsetLeft = 0
 		this.initOffsetTop = 0
+		this.targetElement = null
+		this.targetBoundings = null
 
 		document.addEventListener('pointerdown', (event) => {
 			this.isPointerDown = true
@@ -48,15 +51,15 @@ export default class Dragndrop {
 
 	handleDragging(container, event) {
 		const section = findParent(container, (node) => node.isSection)
-		const target = findParent(container, (node) => (node.isWidget || node.isContainer) && node.parent === section)
+		const dragging = findParent(container, (node) => (node.isWidget || node.isContainer) && node.parent === section)
 
-		console.log(section, target)
+		console.log(section, dragging)
 
-		this.dragging = target
+		this.dragging = dragging
 		this.startClientX = event.detail.clientX
 		this.startClientY = event.detail.clientY
-		this.initOffsetLeft = target.element.offsetLeft
-		this.initOffsetTop = target.element.offsetTop
+		this.initOffsetLeft = dragging.element.offsetLeft
+		this.initOffsetTop = dragging.element.offsetTop
 		this.dragging.element.style.position = 'absolute'
 	}
 
@@ -64,8 +67,25 @@ export default class Dragndrop {
 		if (this.dragging) {
 			const shiftX = event.clientX - this.startClientX
 			const shiftY = event.clientY - this.startClientY
+			const targetElement = this.core.selection.getContainerAndOffset(document.elementFromPoint(event.clientX, event.clientY), 0).container
 
 			this.dragging.element.style.transform = `translate(${shiftX}px, ${shiftY}px)`
+
+			if (this.targetElement !== targetElement) {
+				if (this.targetElement) {
+					this.targetElement.classList.remove('target')
+					this.targetElement.parentNode.classList.remove('section')
+				}
+
+				if (isHtmlElement(targetElement)) {
+					this.targetElement = targetElement
+					this.targetElement.classList.add('target')
+					this.targetElement.parentNode.classList.add('section')
+					this.targetBoundings = targetElement.getBoundingClientRect()
+				}
+			}
+
+			console.log(event.screenY, this.targetBoundings.top, event.clientX, this.targetBoundings.left)
 		}
 	}
 
@@ -73,9 +93,15 @@ export default class Dragndrop {
 		if (this.dragging) {
 			this.dragging.element.style.transform = ''
 			this.dragging.element.style.position = ''
+
+			if (this.targetElement) {
+				this.targetElement.classList.remove('target')
+			}
 		}
 
 		this.dragging = null
+		this.targetElement = null
+		this.targetBoundings = null
 	}
 
 	dragStartHandler(event) {
@@ -88,26 +114,14 @@ export default class Dragndrop {
 	}
 
 	async dropHandler(event) {
-		let range
-		let textNode
-		let offset
+		let caretPosition
 
 		event.preventDefault()
 
 		const current = await this.core.builder.parseFiles(this.getFiles(event.dataTransfer))
 
-		if (current) {
-			if (document.caretPositionFromPoint) {
-				range = document.caretPositionFromPoint(event.clientX, event.clientY)
-				textNode = range.offsetNode
-				offset = range.offset
-			} else if (document.caretRangeFromPoint) {
-				range = document.caretRangeFromPoint(event.clientX, event.clientY)
-				textNode = range.startContainer
-				offset = range.startOffset
-			} else {
-				return
-			}
+		if (current && (caretPosition = this.getElementAndCaretPositionFromPoint(event))) {
+			const { textNode, offset } = caretPosition
 
 			this.core.selection.selectionUpdate({
 				type: 'selectionchange',
@@ -121,6 +135,28 @@ export default class Dragndrop {
 			this.core.builder.insert(current)
 			this.core.selection.setSelection(current)
 		}
+	}
+
+	getElementAndCaretPositionFromPoint(event) {
+		if (document.caretPositionFromPoint) {
+			const range = document.caretPositionFromPoint(event.clientX, event.clientY)
+
+			return {
+				textNode: range.offsetNode,
+				offset: range.offset
+			}
+		}
+
+		if (document.caretRangeFromPoint) {
+			const range = document.caretRangeFromPoint(event.clientX, event.clientY)
+
+			return {
+				textNode: range.startContainer,
+				offset: range.startOffset
+			}
+		}
+
+		return null
 	}
 
 	getFiles(dataTransfer) {
