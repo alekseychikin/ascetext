@@ -265,6 +265,7 @@ export default class Builder extends Publisher {
 			findParent(current.parent, (parent) => {
 				parent.length += current.length
 			})
+			node.childrenAmount++
 
 			if (current === last) {
 				break
@@ -356,6 +357,11 @@ export default class Builder extends Publisher {
 			findParent(current.parent, (item) => {
 				item.length -= current.length
 			})
+
+			if (current.parent) {
+				current.parent.childrenAmount--
+			}
+
 			delete current.parent
 
 			if (current === last) {

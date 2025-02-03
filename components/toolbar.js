@@ -20,7 +20,8 @@ export default class Toolbar extends ComponentComponent {
 			toggleButtonInsert: 'contenteditor__toggle-button contenteditor__toggle-button--insert',
 			toggleButtonReplace: 'contenteditor__toggle-button contenteditor__toggle-button--replace',
 			toggleButtonGrab: 'contenteditor__toggle-button contenteditor__toggle-button--replace contenteditor__toggle-button--move',
-			tooltipGroup: 'contenteditor__tooltip-group'
+			tooltipGroup: 'contenteditor__tooltip-group',
+			dragIndicator: 'contenteditor__drag-indicator'
 		}
 	}
 
@@ -41,6 +42,7 @@ export default class Toolbar extends ComponentComponent {
 		this.viewportChange = this.viewportChange.bind(this)
 		this.viewportResize = this.viewportResize.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
+		this.onDragNDropChange = this.onDragNDropChange.bind(this)
 
 		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
@@ -94,6 +96,9 @@ export default class Toolbar extends ComponentComponent {
 		this.toggleButtonHolder = createElement('div', {
 			'class': this.css.toggleButtonHolderHidden
 		})
+		this.dragIndicator = createElement('div', {
+			'class': this.css.dragIndicator
+		})
 		this.toggleButton = null
 		this.container = document.createElement('div')
 		this.mediaQuery = window.matchMedia('(min-width: 640px)')
@@ -114,13 +119,15 @@ export default class Toolbar extends ComponentComponent {
 		this.container.appendChild(this.sideToolbar)
 		this.container.appendChild(this.centeredToolbar)
 		this.container.appendChild(this.containerAvatar)
+		this.container.appendChild(this.dragIndicator)
 		document.body.appendChild(this.container)
 		document.addEventListener('pointerdown', this.checkToolbarVisibility)
 		document.addEventListener('keydown', this.onKeyDown)
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
 
-		this.unsubscribe = this.selection.subscribe(this.onSelectionChange)
+		this.unsubscribeSelection = this.selection.subscribe(this.onSelectionChange)
+		this.unsubscribeDragNDrop = this.dragndrop.subscribe(this.onDragNDropChange)
 		this.bindViewportChange()
 	}
 
@@ -161,6 +168,43 @@ export default class Toolbar extends ComponentComponent {
 			this.updateCenteredToolbar()
 			this.updateButtonHolder()
 		}
+	}
+
+	onDragNDropChange(event) {
+		switch (event.type) {
+			case 'dragout':
+				event.target.element.classList.remove('target')
+
+				if (this.dragIndicator.parentNode) {
+					this.container.removeChild(this.dragIndicator)
+				}
+
+				break
+			case 'dragover':
+				this.toggleButtonHolder.style.pointerEvents = 'none'
+				event.target.element.classList.add('target')
+				this.updateDragAnchorPosition(event)
+
+				break
+			case 'drop':
+				this.toggleButtonHolder.style.pointerEvents = ''
+				console.log(this.toggleButtonHolder)
+
+				break
+		}
+	}
+
+	updateDragAnchorPosition(event) {
+		if (event.anchor) {
+			const boundings = event.anchor.element.getBoundingClientRect()
+			const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
+
+			this.container.appendChild(this.dragIndicator)
+			this.dragIndicator.style.width = `${boundings.width}px`
+			this.dragIndicator.style.top = `${boundings.top + scrollTop}px`
+			this.dragIndicator.style.left = `${boundings.left}px`
+		}
+
 	}
 
 	checkSelection(target) {
@@ -717,11 +761,12 @@ export default class Toolbar extends ComponentComponent {
 		this.container.removeChild(this.containerAvatar)
 		this.container.removeChild(this.sideToolbar)
 		this.container.removeChild(this.centeredToolbar)
+		this.container.removeChild(this.dragIndicator)
 		document.body.removeChild(this.container)
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)
 		document.removeEventListener('input', this.checkToolbarVisibility)
-		this.unsubscribe()
+		this.unsubscribeSelection()
 		this.unbindViewportChange()
 		this.stopUpdateBoundings()
 		this.hideToggleButtonHolder()

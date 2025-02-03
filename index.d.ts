@@ -12,6 +12,7 @@ declare class Node {
 	isRendered: boolean;
 	isMount: boolean;
 	length: number;
+	childrenAmount: number;
 	element?: HTMLElement;
 	parent?: Node;
 	previous?: Node;
@@ -35,6 +36,7 @@ declare class UsefullNode extends Node {
 
 declare class Section extends Node {
 	isSection: true;
+	layout: 'vertical' | 'tile'
 }
 
 declare class InlineWidget extends Node {
@@ -86,6 +88,9 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 		} | ((element: HTMLElement, container: Container, focused: boolean) => boolean);
 		trimTrailingContainer?: boolean;
 	});
+	params: {
+		placeholder: ((element: HTMLElement, container: Container, focused: boolean) => void) | null;
+	};
 	node: HTMLElement;
 	onChangeHandlers: Array<() => void>;
 	plugins: P;
@@ -94,7 +99,6 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 	normalizer: Normalizer;
 	render: Render;
 	parser: Parser;
-	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
 	selection: Selection;
 	editing: Editing;
 	timeTravel: TimeTravel;

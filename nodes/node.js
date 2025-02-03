@@ -12,6 +12,7 @@ export default class Node {
 		this.isRendered = false
 		this.isMount = false
 		this.length = 0
+		this.childrenAmount = 0
 	}
 
 	get shortrcuts() {

@@ -1,30 +1,39 @@
+import Publisher from './publisher.js'
 import findParent from '../utils/find-parent.js'
 import isHtmlElement from '../utils/is-html-element.js'
+import debounce from '../utils/debounce.js'
 
-export default class Dragndrop {
+export default class Dragndrop extends Publisher {
 	constructor(core) {
+		super()
+
 		this.core = core
 		this.node = core.node
 
+		this.getScrollTop = this.core.params.getScrollTop.bind(this)
+		this.updateDraggingPosition = this.updateDraggingPosition.bind(this)
 		this.dropHandler = this.dropHandler.bind(this)
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this)
 		this.pointerUpHandler = this.pointerUpHandler.bind(this)
+		this.setTargetAndAnchor = this.setTargetAndAnchor.bind(this)
+		this.keydownHandler = this.keydownHandler.bind(this)
 
 		this.node.addEventListener('dragstart', this.dragStartHandler)
 		this.node.addEventListener('dragover', this.dragOverHandler)
 		this.node.addEventListener('drop', this.dropHandler)
 		document.addEventListener('pointermove', this.pointerMoveHandler)
 		document.addEventListener('pointerup', this.pointerUpHandler)
+		document.addEventListener('scroll', this.updateDraggingPosition)
 
 		this.pointerdownTimer = null
 		this.isPointerDown = false
 		this.dragging = null
+		this.initDraggingShiftX = 0
+		this.initDraggingShiftY = 0
 		this.startClientX = 0
 		this.startClientY = 0
-		this.initOffsetLeft = 0
-		this.initOffsetTop = 0
-		this.targetElement = null
-		this.targetBoundings = null
+		this.target = null
+		this.anchor = null
 
 		document.addEventListener('pointerdown', (event) => {
 			this.isPointerDown = true
@@ -41,7 +50,7 @@ export default class Dragndrop {
 						}
 					}))
 				}
-			}, 1000)
+			}, 300)
 		})
 		document.addEventListener('pointerup', () => {
 			this.isPointerDown = false
@@ -50,58 +59,184 @@ export default class Dragndrop {
 	}
 
 	handleDragging(container, event) {
-		const section = findParent(container, (node) => node.isSection)
-		const dragging = findParent(container, (node) => (node.isWidget || node.isContainer) && node.parent === section)
+		this.target = findParent(container, (node) => node.isSection)
+		this.dragging = findParent(container, (node) => (node.isWidget || node.isContainer) && node.parent === this.target)
 
-		console.log(section, dragging)
+		const boundings = this.dragging.element.getBoundingClientRect()
 
-		this.dragging = dragging
+		this.anchor = this.findAnchor(event.detail)
 		this.startClientX = event.detail.clientX
 		this.startClientY = event.detail.clientY
-		this.initOffsetLeft = dragging.element.offsetLeft
-		this.initOffsetTop = dragging.element.offsetTop
+		this.startScrollTop = this.getScrollTop()
+		this.clientX = event.detail.clientX
+		this.clientY = event.detail.clientY
+		this.shiftX = 0
+		this.shiftY = 0
+		this.initDraggingShiftX = boundings.left - event.detail.clientX
+		this.initDraggingShiftY = boundings.top - event.detail.clientY
+		this.dragging.element.style.top = `${this.dragging.element.offsetTop}px`
+		this.dragging.element.style.left = `${this.dragging.element.offsetLeft}px`
+		console.log(this.initDraggingShiftX, this.initDraggingShiftY)
 		this.dragging.element.style.position = 'absolute'
+		this.dragging.element.style.pointerEvents = 'none'
+		this.setTargetAndAnchor(event.detail)
+		document.addEventListener('keydown', this.keydownHandler)
 	}
 
 	pointerMoveHandler(event) {
 		if (this.dragging) {
-			const shiftX = event.clientX - this.startClientX
-			const shiftY = event.clientY - this.startClientY
-			const targetElement = this.core.selection.getContainerAndOffset(document.elementFromPoint(event.clientX, event.clientY), 0).container
-
-			this.dragging.element.style.transform = `translate(${shiftX}px, ${shiftY}px)`
-
-			if (this.targetElement !== targetElement) {
-				if (this.targetElement) {
-					this.targetElement.classList.remove('target')
-					this.targetElement.parentNode.classList.remove('section')
-				}
-
-				if (isHtmlElement(targetElement)) {
-					this.targetElement = targetElement
-					this.targetElement.classList.add('target')
-					this.targetElement.parentNode.classList.add('section')
-					this.targetBoundings = targetElement.getBoundingClientRect()
-				}
-			}
-
-			console.log(event.screenY, this.targetBoundings.top, event.clientX, this.targetBoundings.left)
+			this.clientX = event.clientX
+			this.clientY = event.clientY
+			this.shiftX = event.clientX - this.startClientX
+			this.shiftY = event.clientY - this.startClientY
+			this.updateDraggingPosition()
 		}
 	}
 
-	pointerUpHandler() {
+	updateDraggingPosition() {
 		if (this.dragging) {
-			this.dragging.element.style.transform = ''
-			this.dragging.element.style.position = ''
+			const shiftScrollTop = this.getScrollTop() - this.startScrollTop
 
-			if (this.targetElement) {
-				this.targetElement.classList.remove('target')
+			this.dragging.element.style.transform = `translate(${this.shiftX}px, ${this.shiftY + shiftScrollTop}px)`
+			this.setTargetAndAnchor()
+			this.sendMessage({
+				type: 'dragging',
+				shiftX: this.shiftX,
+				shiftY: this.shiftY
+			})
+		}
+	}
+
+	setTargetAndAnchor() {
+		const elementFromPoint = this.getElementFromPoint()
+		const targetElement = elementFromPoint.closest('[data-node-id]')
+		const targetNode = targetElement ? this.core.render.getNodeById(targetElement.dataset.nodeId) : this.core.model
+
+		if (targetNode) {
+			const target = findParent(targetNode, (node) => node.isSection)
+			// console.group()
+			const anchor = this.findAnchor()
+			// console.groupEnd()
+
+			// console.log('anchor.id', anchor.id)
+
+			if (this.target) {
+				this.sendMessage({
+					type: 'dragout',
+					target: this.target,
+					anchor: this.anchor
+				})
+			}
+
+			this.target = target
+			this.anchor = anchor
+			this.sendMessage({
+				type: 'dragover',
+				target: this.target,
+				anchor: this.anchor
+			})
+		}
+	}
+
+	getElementFromPoint() {
+		const targetElement = document.elementFromPoint(this.clientX + this.initDraggingShiftX, this.clientY + this.initDraggingShiftY)
+		// console.log(targetElement)
+
+		if (isHtmlElement(targetElement)) {
+			return targetElement
+		}
+
+		return targetElement.parentNode
+	}
+
+	findAnchor() {
+		const ceilClientY = Math.ceil(this.clientY) + this.initDraggingShiftY
+		// const ceilClientX = Math.ceil(this.clientX) + this.initDraggingShiftX
+		const floorClientY = Math.floor(this.clientY)
+		let left = 0
+		let right = this.target.childrenAmount - (this.dragging.parent === this.target ? 2 : 1)
+		let bestChoice = this.getChild(right)
+
+		while (left <= right) {
+			const middle = Math.floor((left + right) / 2)
+			const node = this.getChild(middle)
+			const boundings = node.element.getBoundingClientRect()
+
+			if (
+				boundings.top <= ceilClientY &&
+				// boundings.left <= ceilClientX &&
+				boundings.bottom >= floorClientY
+			) {
+				// console.log('return node')
+				return node
+			}
+
+			if (boundings.top > ceilClientY) {
+				// console.log('move right', left, right)
+				right = middle - 1
+				bestChoice = node
+			} else {
+				// console.log('move left', left, right)
+				left = middle + 1
 			}
 		}
 
-		this.dragging = null
-		this.targetElement = null
-		this.targetBoundings = null
+		// console.log('return best choice')
+
+		return bestChoice
+	}
+
+	getChild(index) {
+		let current = this.target.first
+		let i = 0
+
+		if (current.id === this.dragging.id) {
+			current = current.next
+		}
+
+		while (i++ < index) {
+			current = current.next
+
+			if (current.id === this.dragging.id) {
+				current = current.next
+			}
+		}
+
+		return current
+	}
+
+	pointerUpHandler() {
+		if (this.target) {
+			this.core.builder.push(this.target, this.dragging, this.anchor)
+		}
+
+		this.cancel()
+	}
+
+	cancel() {
+		if (this.dragging) {
+			if (this.target) {
+				this.sendMessage({
+					type: 'dragout',
+					target: this.target,
+					anchor: this.anchor
+				})
+			}
+
+			this.dragging.element.style.top = ''
+			this.dragging.element.style.left = ''
+			this.dragging.element.style.transform = ''
+			this.dragging.element.style.position = ''
+			this.dragging.element.style.pointerEvents = ''
+			this.target = null
+			this.anchor = null
+			this.dragging = null
+			this.targetElement = null
+			this.sendMessage({
+				type: 'drop'
+			})
+			document.removeEventListener('keydown', this.keydownHandler)
+		}
 	}
 
 	dragStartHandler(event) {
@@ -135,6 +270,10 @@ export default class Dragndrop {
 			this.core.builder.insert(current)
 			this.core.selection.setSelection(current)
 		}
+
+		this.sendMessage({
+			type: 'drop'
+		})
 	}
 
 	getElementAndCaretPositionFromPoint(event) {
@@ -169,9 +308,18 @@ export default class Dragndrop {
 		return [...dataTransfer.files]
 	}
 
+	keydownHandler(event) {
+		if (event.key === 'Escape') {
+			this.cancel()
+		}
+	}
+
 	destroy() {
 		this.node.removeEventListener('dragstart', this.dragStartHandler)
 		this.node.removeEventListener('dragover', this.dragOverHandler)
 		this.node.removeEventListener('drop', this.dragStartHandler)
+		document.removeEventListener('pointermove', this.pointerMoveHandler)
+		document.removeEventListener('pointerup', this.pointerUpHandler)
+		document.removeEventListener('scroll', this.updateDraggingPosition)
 	}
 }

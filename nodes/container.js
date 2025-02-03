@@ -29,9 +29,9 @@ export default class Container extends Node {
 		}
 	}
 
-	onMount({ controls, placeholder, sizeObserver }) {
-		if (placeholder) {
-			this.placeholderHandler = placeholder
+	onMount({ controls, params, sizeObserver }) {
+		if (params.placeholder) {
+			this.placeholderHandler = params.placeholder
 			this.controls = controls
 			this.sizeObserver = sizeObserver
 			this.placeholder = createElement('div', {

@@ -3,11 +3,11 @@ import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
 export default class Normalizer {
-	constructor(core, trimTrailingContainer = false) {
+	constructor(core) {
 		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.onChange = this.onChange.bind(this)
 		this.pushNode = this.pushNode.bind(this)
-		this.trimTrailingContainer = trimTrailingContainer
+		this.trimTrailingContainer = core.params.trimTrailingContainer
 
 		this.core = core
 		this.unnormalizedNodes = []

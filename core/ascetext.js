@@ -20,7 +20,7 @@ import SizeObserver from './size-observer.js'
 import Render from './render.js'
 import Parser from './parser.js'
 import Normalizer from './normalizer.js'
-import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
+import importParams from '../utils/import-params.js'
 
 class Root extends Section {
 	constructor() {
@@ -37,6 +37,7 @@ export default class Ascetext {
 		this.onChange = this.onChange.bind(this)
 		this.triggerChange = this.triggerChange.bind(this)
 
+		this.params = importParams(params)
 		this.node = node
 		this.onChangeHandlers = []
 		this.plugins = params.plugins || [
@@ -58,10 +59,9 @@ export default class Ascetext {
 		}, {}), params.icons || {})
 		this.model = new Root()
 		this.builder = new Builder(this)
-		this.normalizer = new Normalizer(this, params.trimTrailingContainer)
+		this.normalizer = new Normalizer(this)
 		this.render = new Render(this)
 		this.parser = new Parser(node)
-		this.placeholder = extractPlaceholderParams(params.placeholder)
 		// this.navigation = new Navigation(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)

@@ -5,5 +5,6 @@ export default class Section extends Node {
 		super(type, attributes, params)
 
 		this.isSection = true
+		this.layout = 'vertical'
 	}
 }
