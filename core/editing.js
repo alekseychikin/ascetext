@@ -96,7 +96,7 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, components, builder } = this.core
+		const { selection, timeTravel, components } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
@@ -134,14 +134,9 @@ export default class Editing {
 
 					if (event.keyCode === spaceKey) {
 						if (!this.spacesDown) {
-							event.preventDefault()
-							this.update()
-							// this.core.render.dropRender()
+							this.syncContainer(selection.anchorContainer)
 							timeTravel.commit()
 							timeTravel.preservePreviousSelection()
-							this.core.autocomplete.trigger()
-							builder.insert(builder.create('text', { content: nbsp }))
-							timeTravel.dropCommit()
 							this.spacesDown = true
 						}
 					} else if (this.removedRange) {
@@ -173,6 +168,8 @@ export default class Editing {
 	handleModifyKeyDown(event) {
 		switch (event.keyCode) {
 			case backspaceKey:
+				this.core.selection.selectionChange()
+
 				if (
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
@@ -331,7 +328,6 @@ export default class Editing {
 	}
 
 	update(node) {
-		const { builder, parser } = this.core
 		let container
 
 		clearTimeout(this.scheduleTimer)
@@ -349,15 +345,20 @@ export default class Editing {
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
-
-				builder.cutUntil(container.first)
-				builder.append(container, replacement || builder.create('text', { content: '' }))
+				this.syncContainer(container)
 			}
 		}
 
 		this.core.builder.commit()
 		this.isUpdating = false
+	}
+
+	syncContainer(container) {
+		const { builder, parser } = this.core
+		const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
+
+		builder.cutUntil(container.first)
+		builder.append(container, replacement || builder.create('text', { content: '' }))
 	}
 
 	save() {
