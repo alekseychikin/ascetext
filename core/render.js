@@ -42,7 +42,6 @@ export default class Render extends Publisher {
 		this.onChange = this.onChange.bind(this)
 		this.render = this.render.bind(this)
 
-		this.timer = null
 		this.queue = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
@@ -121,9 +120,6 @@ export default class Render extends Publisher {
 
 			current = current.next
 		}
-
-		// this.dropRender()
-		// this.timer = requestAnimationFrame(this.render)
 	}
 
 	markUnrendered(target, last = target) {
@@ -141,10 +137,6 @@ export default class Render extends Publisher {
 			current = current.next
 		}
 	}
-
-	// dropRender() {
-	// 	cancelAnimationFrame(this.timer)
-	// }
 
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
@@ -428,8 +420,9 @@ export default class Render extends Publisher {
 	}
 
 	handleContainer(element) {
-		const isEmpty = !element.childNodes.length || isTextElement(element.childNodes[0]) && !element.childNodes[0].length
-		const hasLastBr = element.childNodes.length && isElementBr(element.lastChild)
+		const isEmpty = !element.firstChild || isTextElement(element.firstChild) && !element.firstChild.length
+		const hasLastBr = element.lastChild && isTextElement(element.lastChild) && !element.lastChild.length &&
+			element.lastChild.previousSibling && isElementBr(element.lastChild.previousSibling)
 
 		if (isEmpty || hasLastBr) {
 			element.appendChild(this.getTrailingBr())
@@ -516,8 +509,4 @@ export default class Render extends Publisher {
 	getNodeById(id) {
 		return this.mapNodeIdToNode[id]
 	}
-
-	// destroy() {
-	// 	this.dropRender()
-	// }
 }
