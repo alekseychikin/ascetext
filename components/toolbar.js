@@ -207,13 +207,18 @@ export default class Toolbar extends ComponentComponent {
 		if (event.target) {
 			const targetBoundings = event.target.element.getBoundingClientRect()
 			let top = targetBoundings.top
+			let last = event.target.last
+
+			if (last && event.dragging === last) {
+				last = last.previous
+			}
 
 			if (event.anchor) {
 				const anchorBoundings = event.anchor.element.getBoundingClientRect()
 
 				top = anchorBoundings.top
-			} else if (event.target.last) {
-				const anchorBoundings = event.target.last.element.getBoundingClientRect()
+			} else if (last) {
+				const anchorBoundings = last.element.getBoundingClientRect()
 
 				top = anchorBoundings.top + anchorBoundings.height
 			}

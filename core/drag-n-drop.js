@@ -77,7 +77,6 @@ export default class Dragndrop extends Publisher {
 		this.initDraggingShiftY = boundings.top - event.detail.clientY
 		this.dragging.element.style.top = `${this.dragging.element.offsetTop}px`
 		this.dragging.element.style.left = `${this.dragging.element.offsetLeft}px`
-		console.log(this.initDraggingShiftX, this.initDraggingShiftY)
 		this.dragging.element.style.position = 'absolute'
 		this.dragging.element.style.pointerEvents = 'none'
 		this.setTargetAndAnchor(event.detail)
@@ -122,7 +121,8 @@ export default class Dragndrop extends Publisher {
 				this.sendMessage({
 					type: 'dragout',
 					target: this.target,
-					anchor: this.anchor
+					anchor: this.anchor,
+					dragging: this.dragging
 				})
 			}
 
@@ -131,7 +131,8 @@ export default class Dragndrop extends Publisher {
 			this.sendMessage({
 				type: 'dragover',
 				target: this.target,
-				anchor: this.anchor
+				anchor: this.anchor,
+				dragging: this.dragging
 			})
 		}
 	}
@@ -211,7 +212,8 @@ export default class Dragndrop extends Publisher {
 				this.sendMessage({
 					type: 'dragout',
 					target: this.target,
-					anchor: this.anchor
+					anchor: this.anchor,
+					dragging: this.dragging
 				})
 			}
 
