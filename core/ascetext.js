@@ -85,6 +85,7 @@ export default class Ascetext {
 		const children = this.builder.parseVirtualTree(tree)
 
 		this.builder.append(this.model, children.first)
+		this.builder.commit()
 		this.timeTravel.subscribe(this.triggerChange)
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)

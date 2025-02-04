@@ -188,23 +188,41 @@ export default class Toolbar extends ComponentComponent {
 				break
 			case 'drop':
 				this.toggleButtonHolder.style.pointerEvents = ''
-				console.log(this.toggleButtonHolder)
+				this.toggleButton.style.transform = ''
+				this.toggleButton.style.transition = ''
+
+				break
+			case 'dragging':
+				this.toggleButton.style.transform = `translate(${event.shiftX}px, ${event.shiftY + event.shiftScrollTop}px)`
+				this.toggleButton.style.transition = 'none'
+				this.stopUpdateBoundings()
 
 				break
 		}
 	}
 
 	updateDragAnchorPosition(event) {
-		if (event.anchor) {
-			const boundings = event.anchor.element.getBoundingClientRect()
-			const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
+		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
+
+		if (event.target) {
+			const targetBoundings = event.target.element.getBoundingClientRect()
+			let top = targetBoundings.top
+
+			if (event.anchor) {
+				const anchorBoundings = event.anchor.element.getBoundingClientRect()
+
+				top = anchorBoundings.top
+			} else if (event.target.last) {
+				const anchorBoundings = event.target.last.element.getBoundingClientRect()
+
+				top = anchorBoundings.top + anchorBoundings.height
+			}
 
 			this.container.appendChild(this.dragIndicator)
-			this.dragIndicator.style.width = `${boundings.width}px`
-			this.dragIndicator.style.top = `${boundings.top + scrollTop}px`
-			this.dragIndicator.style.left = `${boundings.left}px`
+			this.dragIndicator.style.width = `${targetBoundings.width}px`
+			this.dragIndicator.style.top = `${top + scrollTop}px`
+			this.dragIndicator.style.left = `${targetBoundings.left}px`
 		}
-
 	}
 
 	checkSelection(target) {
@@ -509,6 +527,8 @@ export default class Toolbar extends ComponentComponent {
 			this.previousSideMode = ''
 			this.hideSideToolbar()
 		}
+
+		this.builder.commit()
 	}
 
 	catchShortcut(shortcutMatcher, event) {

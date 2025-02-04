@@ -122,8 +122,8 @@ export default class Render extends Publisher {
 			current = current.next
 		}
 
-		this.dropRender()
-		this.timer = requestAnimationFrame(this.render)
+		// this.dropRender()
+		// this.timer = requestAnimationFrame(this.render)
 	}
 
 	markUnrendered(target, last = target) {
@@ -142,9 +142,9 @@ export default class Render extends Publisher {
 		}
 	}
 
-	dropRender() {
-		cancelAnimationFrame(this.timer)
-	}
+	// dropRender() {
+	// 	cancelAnimationFrame(this.timer)
+	// }
 
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
@@ -517,7 +517,7 @@ export default class Render extends Publisher {
 		return this.mapNodeIdToNode[id]
 	}
 
-	destroy() {
-		this.dropRender()
-	}
+	// destroy() {
+	// 	this.dropRender()
+	// }
 }

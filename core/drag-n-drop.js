@@ -11,7 +11,7 @@ export default class Dragndrop extends Publisher {
 		this.node = core.node
 
 		this.getScrollTop = this.core.params.getScrollTop.bind(this)
-		this.updateDraggingPosition = this.updateDraggingPosition.bind(this)
+		this.updateDraggingPosition = debounce(this.updateDraggingPosition.bind(this), 10)
 		this.dropHandler = this.dropHandler.bind(this)
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this)
 		this.pointerUpHandler = this.pointerUpHandler.bind(this)
@@ -64,6 +64,7 @@ export default class Dragndrop extends Publisher {
 
 		const boundings = this.dragging.element.getBoundingClientRect()
 
+		this.core.timeTravel.preservePreviousSelection()
 		this.anchor = this.findAnchor(event.detail)
 		this.startClientX = event.detail.clientX
 		this.startClientY = event.detail.clientY
@@ -102,7 +103,8 @@ export default class Dragndrop extends Publisher {
 			this.sendMessage({
 				type: 'dragging',
 				shiftX: this.shiftX,
-				shiftY: this.shiftY
+				shiftY: this.shiftY,
+				shiftScrollTop
 			})
 		}
 	}
@@ -114,11 +116,7 @@ export default class Dragndrop extends Publisher {
 
 		if (targetNode) {
 			const target = findParent(targetNode, (node) => node.isSection)
-			// console.group()
 			const anchor = this.findAnchor()
-			// console.groupEnd()
-
-			// console.log('anchor.id', anchor.id)
 
 			if (this.target) {
 				this.sendMessage({
@@ -140,7 +138,6 @@ export default class Dragndrop extends Publisher {
 
 	getElementFromPoint() {
 		const targetElement = document.elementFromPoint(this.clientX + this.initDraggingShiftX, this.clientY + this.initDraggingShiftY)
-		// console.log(targetElement)
 
 		if (isHtmlElement(targetElement)) {
 			return targetElement
@@ -151,11 +148,10 @@ export default class Dragndrop extends Publisher {
 
 	findAnchor() {
 		const ceilClientY = Math.ceil(this.clientY) + this.initDraggingShiftY
-		// const ceilClientX = Math.ceil(this.clientX) + this.initDraggingShiftX
 		const floorClientY = Math.floor(this.clientY)
 		let left = 0
 		let right = this.target.childrenAmount - (this.dragging.parent === this.target ? 2 : 1)
-		let bestChoice = this.getChild(right)
+		let bestChoice = null
 
 		while (left <= right) {
 			const middle = Math.floor((left + right) / 2)
@@ -164,24 +160,18 @@ export default class Dragndrop extends Publisher {
 
 			if (
 				boundings.top <= ceilClientY &&
-				// boundings.left <= ceilClientX &&
 				boundings.bottom >= floorClientY
 			) {
-				// console.log('return node')
 				return node
 			}
 
 			if (boundings.top > ceilClientY) {
-				// console.log('move right', left, right)
 				right = middle - 1
 				bestChoice = node
 			} else {
-				// console.log('move left', left, right)
 				left = middle + 1
 			}
 		}
-
-		// console.log('return best choice')
 
 		return bestChoice
 	}
@@ -208,6 +198,8 @@ export default class Dragndrop extends Publisher {
 	pointerUpHandler() {
 		if (this.target) {
 			this.core.builder.push(this.target, this.dragging, this.anchor)
+			this.core.builder.commit()
+			this.core.selection.setSelection(this.dragging, 0)
 		}
 
 		this.cancel()

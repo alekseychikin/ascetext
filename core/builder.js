@@ -500,6 +500,11 @@ export default class Builder extends Publisher {
 		this.replace(node, target)
 	}
 
+	commit() {
+		this.core.normalizer.normalizeHandle()
+		this.core.render.render()
+	}
+
 	registerPlugins() {
 		this.core.plugins.forEach((plugin) => {
 			let nodes

@@ -78,6 +78,7 @@ export default class Normalizer {
 	}
 
 	normalizeParents(nodes) {
+		const { builder } = this.core
 		let node
 
 		while (node = nodes.shift()) {
@@ -90,9 +91,10 @@ export default class Normalizer {
 			let last = this.core.model.last
 
 			if (!last || !last.isContainer || !last.isEmpty) {
-				last = this.core.builder.createBlock()
+				last = builder.createBlock()
 
-				this.core.builder.append(this.core.model, last)
+				builder.append(this.core.model, last)
+				this.empty(last)
 			}
 		}
 	}
@@ -143,6 +145,14 @@ export default class Normalizer {
 		}
 	}
 
+	empty(node) {
+		const { builder } = this.core
+
+		if (node.isContainer && node.isEmpty && !node.first) {
+			builder.append(node, builder.create('text', { content: '' }))
+		}
+	}
+
 	handleNode(node) {
 		const { builder } = this.core
 		const handled = this.normalizeHandlers.reduce((parsed, handler) => {
@@ -178,9 +188,7 @@ export default class Normalizer {
 			}
 		}
 
-		if (node.isContainer && node.isEmpty && !node.first) {
-			builder.append(node, builder.create('text', { content: '' }))
-		}
+		this.empty(node)
 
 		return false
 	}

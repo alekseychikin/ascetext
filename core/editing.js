@@ -136,7 +136,7 @@ export default class Editing {
 						if (!this.spacesDown) {
 							event.preventDefault()
 							this.update()
-							this.core.render.dropRender()
+							// this.core.render.dropRender()
 							timeTravel.commit()
 							timeTravel.preservePreviousSelection()
 							this.core.autocomplete.trigger()
@@ -203,6 +203,8 @@ export default class Editing {
 				this.handleEnterKeyDown(event)
 				break
 		}
+
+		this.core.builder.commit()
 	}
 
 	handleRemoveRange() {
@@ -354,6 +356,7 @@ export default class Editing {
 			}
 		}
 
+		this.core.builder.commit()
 		this.isUpdating = false
 	}
 

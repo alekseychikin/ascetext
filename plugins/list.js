@@ -623,6 +623,13 @@ export default class ListPlugin extends PluginPlugin {
 				builder.cutEmpty(parent)
 
 				return node
+			} else if (!node.first) {
+				const content = builder.create('list-item-content')
+
+				builder.append(content, node.first)
+				builder.append(node, content)
+
+				return content
 			}
 		}
 
