@@ -474,6 +474,7 @@ export default class Editing {
 
 		this.update()
 		builder.insert(result)
+		builder.commit()
 		this.core.autocomplete.trigger()
 	}
 
@@ -488,6 +489,7 @@ export default class Editing {
 		}
 
 		builder.append(node.parent, builder.create('text', { ...attributes, content }), tail)
+		builder.commit()
 		selection.setSelection(selection.anchorContainer, selection.anchorOffset + content.length)
 	}
 
@@ -496,6 +498,7 @@ export default class Editing {
 
 		if (current) {
 			this.core.builder.insert(current)
+			this.core.builder.commit()
 			this.core.selection.setSelection(current)
 		}
 	}

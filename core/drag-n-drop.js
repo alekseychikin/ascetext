@@ -13,6 +13,7 @@ export default class Dragndrop extends Publisher {
 		this.getScrollTop = this.core.params.getScrollTop.bind(this)
 		this.updateDraggingPosition = debounce(this.updateDraggingPosition.bind(this), 10)
 		this.dropHandler = this.dropHandler.bind(this)
+		this.dragOverHandler = this.dragOverHandler.bind(this)
 		this.pointerMoveHandler = this.pointerMoveHandler.bind(this)
 		this.pointerUpHandler = this.pointerUpHandler.bind(this)
 		this.setTargetAndAnchor = this.setTargetAndAnchor.bind(this)
@@ -27,11 +28,12 @@ export default class Dragndrop extends Publisher {
 
 		this.pointerdownTimer = null
 		this.isPointerDown = false
-		this.dragging = null
 		this.initDraggingShiftX = 0
 		this.initDraggingShiftY = 0
 		this.startClientX = 0
 		this.startClientY = 0
+		this.startScrollTop = 0
+		this.dragging = null
 		this.target = null
 		this.anchor = null
 
@@ -115,7 +117,7 @@ export default class Dragndrop extends Publisher {
 
 		if (targetNode) {
 			const target = findParent(targetNode, (node) => node.isSection)
-			const anchor = this.findAnchor()
+			const anchor = this.findAnchor(target)
 
 			if (this.target) {
 				this.sendMessage({
@@ -147,16 +149,16 @@ export default class Dragndrop extends Publisher {
 		return targetElement.parentNode
 	}
 
-	findAnchor() {
+	findAnchor(target) {
 		const ceilClientY = Math.ceil(this.clientY) + this.initDraggingShiftY
 		const floorClientY = Math.floor(this.clientY)
 		let left = 0
-		let right = this.target.childrenAmount - (this.dragging.parent === this.target ? 2 : 1)
+		let right = target.childrenAmount - (this.dragging && this.dragging.parent === target ? 2 : 1)
 		let bestChoice = null
 
 		while (left <= right) {
 			const middle = Math.floor((left + right) / 2)
-			const node = this.getChild(middle)
+			const node = this.getChild(target, middle)
 			const boundings = node.element.getBoundingClientRect()
 
 			if (
@@ -177,18 +179,18 @@ export default class Dragndrop extends Publisher {
 		return bestChoice
 	}
 
-	getChild(index) {
-		let current = this.target.first
+	getChild(target, index) {
+		let current = target.first
 		let i = 0
 
-		if (current.id === this.dragging.id) {
+		if (this.dragging && current.id === this.dragging.id) {
 			current = current.next
 		}
 
 		while (i++ < index) {
 			current = current.next
 
-			if (current.id === this.dragging.id) {
+			if (this.dragging && current.id === this.dragging.id) {
 				current = current.next
 			}
 		}
@@ -208,29 +210,34 @@ export default class Dragndrop extends Publisher {
 
 	cancel() {
 		if (this.dragging) {
-			if (this.target) {
-				this.sendMessage({
-					type: 'dragout',
-					target: this.target,
-					anchor: this.anchor,
-					dragging: this.dragging
-				})
-			}
-
 			this.dragging.element.style.top = ''
 			this.dragging.element.style.left = ''
 			this.dragging.element.style.transform = ''
 			this.dragging.element.style.position = ''
 			this.dragging.element.style.pointerEvents = ''
-			this.target = null
-			this.anchor = null
-			this.dragging = null
-			this.targetElement = null
-			this.sendMessage({
-				type: 'drop'
-			})
 			document.removeEventListener('keydown', this.keydownHandler)
 		}
+
+		if (this.target) {
+			this.sendMessage({
+				type: 'dragout',
+				target: this.target,
+				anchor: this.anchor,
+				dragging: this.dragging
+			})
+		}
+
+		this.target = null
+		this.anchor = null
+		this.dragging = null
+		this.initDraggingShiftX = 0
+		this.initDraggingShiftY = 0
+		this.startClientX = 0
+		this.startClientY = 0
+		this.startScrollTop = 0
+		this.sendMessage({
+			type: 'drop'
+		})
 	}
 
 	dragStartHandler(event) {
@@ -238,36 +245,39 @@ export default class Dragndrop extends Publisher {
 	}
 
 	dragOverHandler(event) {
-		// Это событие подойдёт для визуального отображения
-		// console.log(event.target)
+		this.clientX = event.clientX
+		this.clientY = event.clientY
+		this.setTargetAndAnchor()
 	}
 
 	async dropHandler(event) {
-		let caretPosition
-
 		event.preventDefault()
 
 		const current = await this.core.builder.parseFiles(this.getFiles(event.dataTransfer))
+		// let caretPosition
 
-		if (current && (caretPosition = this.getElementAndCaretPositionFromPoint(event))) {
-			const { textNode, offset } = caretPosition
+		// if (current && (caretPosition = this.getElementAndCaretPositionFromPoint(event))) {
+		// 	const { textNode, offset } = caretPosition
 
-			this.core.selection.selectionUpdate({
-				type: 'selectionchange',
-				anchorNode: textNode,
-				focusNode: textNode,
-				anchorOffset: offset,
-				focusOffset: offset,
-				isCollapsed: true,
-				selectedComponent: false
-			})
-			this.core.builder.insert(current)
-			this.core.selection.setSelection(current)
+		// 	this.core.selection.selectionUpdate({
+		// 		type: 'selectionchange',
+		// 		anchorNode: textNode,
+		// 		focusNode: textNode,
+		// 		anchorOffset: offset,
+		// 		focusOffset: offset,
+		// 		isCollapsed: true,
+		// 		selectedComponent: false
+		// 	})
+		// 	this.core.builder.insert(current)
+		// 	this.core.selection.setSelection(current)
+		// }
+		if (current && this.target) {
+			this.core.builder.push(this.target, current, this.anchor)
+			this.core.builder.commit()
+			this.core.selection.setSelection(current, 0)
 		}
 
-		this.sendMessage({
-			type: 'drop'
-		})
+		this.cancel()
 	}
 
 	getElementAndCaretPositionFromPoint(event) {

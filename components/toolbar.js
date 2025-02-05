@@ -187,9 +187,14 @@ export default class Toolbar extends ComponentComponent {
 
 				break
 			case 'drop':
-				this.toggleButtonHolder.style.pointerEvents = ''
-				this.toggleButton.style.transform = ''
-				this.toggleButton.style.transition = ''
+				if (this.toggleButtonHolder) {
+					this.toggleButtonHolder.style.pointerEvents = ''
+				}
+
+				if (this.toggleButton) {
+					this.toggleButton.style.transform = ''
+					this.toggleButton.style.transition = ''
+				}
 
 				break
 			case 'dragging':
@@ -345,16 +350,12 @@ export default class Toolbar extends ComponentComponent {
 			})
 		}
 
-		// this.toggleButton.className = !hasControls && insideSection
-		// 	? this.css.toggleButtonGrab
-		// 	: this.css.toggleButtonReplace
+		this.toggleButton.className = !hasControls
+			? this.css.toggleButtonGrab
+			: this.css.toggleButtonReplace
 
-		if (hasControls) {
-			this.sizeObserver.update()
-			this.showToggleButtonHolder()
-		} else {
-			this.hideToggleButtonHolder()
-		}
+		this.sizeObserver.update()
+		this.showToggleButtonHolder()
 	}
 
 	renderSideToolbar() {

@@ -196,3 +196,20 @@
 	height: 20px;
 	flex-shrink: 0;
 }
+
+.contenteditor__drag-indicator {
+	position: absolute;
+	pointer-events: none;
+	margin-top: -0.2rem;
+}
+
+.contenteditor__drag-indicator::before {
+	content: '';
+	position: absolute;
+	border-radius: 2px;
+	top: -0.3rem;
+	left: 0.5rem;
+	right: 0.5rem;
+	height: 0.2rem;
+	background: rgb(65 124 246);
+}
