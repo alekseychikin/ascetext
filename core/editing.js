@@ -169,7 +169,9 @@ export default class Editing {
 	handleModifyKeyDown(event) {
 		switch (event.keyCode) {
 			case backspaceKey:
-				this.core.selection.selectionChange()
+				if (this.core.selection.anchorContainer.isContainer) {
+					this.core.selection.selectionChange()
+				}
 
 				if (
 					!this.core.selection.isRange &&
