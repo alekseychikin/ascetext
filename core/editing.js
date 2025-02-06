@@ -137,6 +137,7 @@ export default class Editing {
 							this.syncContainer(selection.anchorContainer)
 							timeTravel.commit()
 							timeTravel.preservePreviousSelection()
+							this.core.autocomplete.trigger()
 							this.spacesDown = true
 						}
 					} else if (this.removedRange) {
@@ -474,8 +475,8 @@ export default class Editing {
 
 		this.update()
 		builder.insert(result)
-		builder.commit()
 		this.core.autocomplete.trigger()
+		builder.commit()
 	}
 
 	insertText(content) {
