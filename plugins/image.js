@@ -153,11 +153,11 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		this.imagePlaceholder.innerHTML = this.attributes.placeholder
+		this.imagePlaceholder.innerHTML = this.params.placeholder
 
 		controls.registerControl(this.imagePlaceholder)
 		this.removeObserver = sizeObserver.observe(this, (entry) => {
-			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top}px)`
 			this.imagePlaceholder.style.width = `${entry.element.width}px`
 			this.inputHandler()
 		})

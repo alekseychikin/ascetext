@@ -127,6 +127,7 @@ body {
 }
 
 .playground__editor figure {
+	position: relative;
 	text-align: center;
 	outline: none;
 }

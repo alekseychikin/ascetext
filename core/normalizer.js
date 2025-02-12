@@ -103,7 +103,7 @@ export default class Normalizer {
 		let entity = node
 		let current = entity.deepesetFirstNode()
 		let next
-		let safety = 100
+		let safety = 1000
 
 		while (--safety) {
 			if (!current.parent) {

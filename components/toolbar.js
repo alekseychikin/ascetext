@@ -12,11 +12,12 @@ const toolbarIndent = 10
 export default class Toolbar extends ComponentComponent {
 	get css() {
 		return {
-			container: 'contenteditor__tooltip',
+			containerSide: 'contenteditor__tooltip contenteditor__tooltip--side',
+			containerCentered: 'contenteditor__tooltip contenteditor__tooltip--centered',
 			containerMobile: 'contenteditor__tooltip contenteditor__tooltip--mobile',
-			containerHidden: 'contenteditor__tooltip hidden',
+			containerHidden: 'contenteditor__tooltip--hidden',
 			toggleButtonHolder: 'contenteditor__toggle-button-holder',
-			toggleButtonHolderHidden: 'contenteditor__toggle-button-holder hidden',
+			toggleButtonHolderHidden: 'contenteditor__toggle-button-holder--hidden',
 			toggleButtonInsert: 'contenteditor__toggle-button contenteditor__toggle-button--insert',
 			toggleButtonReplace: 'contenteditor__toggle-button contenteditor__toggle-button--replace',
 			toggleButtonGrab: 'contenteditor__toggle-button contenteditor__toggle-button--replace contenteditor__toggle-button--move',
@@ -43,6 +44,7 @@ export default class Toolbar extends ComponentComponent {
 		this.viewportResize = this.viewportResize.bind(this)
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onDragNDropChange = this.onDragNDropChange.bind(this)
+		this.updateBoundingsHandler = this.updateBoundingsHandler.bind(this)
 
 		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
@@ -97,7 +99,10 @@ export default class Toolbar extends ComponentComponent {
 			'class': this.css.toggleButtonHolderHidden
 		})
 		this.dragIndicator = createElement('div', {
-			'class': this.css.dragIndicator
+			'class': this.css.dragIndicator,
+			'style': {
+				position: 'fixed'
+			}
 		})
 		this.toggleButton = null
 		this.container = document.createElement('div')
@@ -196,18 +201,26 @@ export default class Toolbar extends ComponentComponent {
 					this.toggleButton.style.transition = ''
 				}
 
+				if (this.dragIndicator.parentNode) {
+					this.container.removeChild(this.dragIndicator)
+				}
+
 				break
 			case 'dragging':
-				this.toggleButton.style.transform = `translate(${event.shiftX}px, ${event.shiftY + event.shiftScrollTop}px)`
-				this.toggleButton.style.transition = 'none'
+				this.updateDraggingTogglePosition(event)
 				this.stopUpdateBoundings()
 
 				break
 		}
 	}
 
+	updateDraggingTogglePosition(event) {
+		this.toggleButton.style.transform = `translate(${event.shiftX}px, ${event.shiftY + event.shiftScrollTop}px)`
+		this.toggleButton.style.transition = 'none'
+	}
+
 	updateDragAnchorPosition(event) {
-		const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
+		// const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
 
 		if (event.target) {
 			const targetBoundings = event.target.element.getBoundingClientRect()
@@ -230,7 +243,7 @@ export default class Toolbar extends ComponentComponent {
 
 			this.container.appendChild(this.dragIndicator)
 			this.dragIndicator.style.width = `${targetBoundings.width}px`
-			this.dragIndicator.style.top = `${top + scrollTop}px`
+			this.dragIndicator.style.top = `${top}px`
 			this.dragIndicator.style.left = `${targetBoundings.left}px`
 		}
 	}
@@ -307,9 +320,9 @@ export default class Toolbar extends ComponentComponent {
 	}
 
 	updateButtonHolder() {
-		const { focused, isRange } = this.selection
+		const { focused, isRange, selectedComponent } = this.selection
 
-		if (!focused && !this.isShowSideToolbar || this.isMobile || isRange) {
+		if (!focused && !selectedComponent || this.isMobile || isRange) {
 			this.hideToggleButtonHolder()
 		} else if (focused) {
 			if (this.sideMode === 'insert') {
@@ -584,7 +597,7 @@ export default class Toolbar extends ComponentComponent {
 
 	showSideToolbar() {
 		this.isShowSideToolbar = true
-		this.sideToolbar.className = this.isMobile ? this.css.containerMobile : this.css.container
+		this.sideToolbar.className = this.isMobile ? this.css.containerMobile : this.css.containerSide
 		this.sizeObserver.update()
 		this.hideCenteredToolbar()
 	}
@@ -593,7 +606,7 @@ export default class Toolbar extends ComponentComponent {
 		this.isShowSideToolbar = false
 		this.lastRangeFocused = false
 		this.focusedNodes = []
-		this.sideToolbar.className = this.css.containerHidden
+		this.sideToolbar.classList.add(this.css.containerHidden)
 		this.hideAvatar()
 	}
 
@@ -603,7 +616,7 @@ export default class Toolbar extends ComponentComponent {
 
 	showCenteredToolbar() {
 		this.isShowCenteredToolbar = true
-		this.centeredToolbar.className = this.isMobile ? this.css.containerMobile : this.css.container
+		this.centeredToolbar.className = this.isMobile ? this.css.containerMobile : this.css.containerCentered
 		this.sizeObserver.update()
 	}
 
@@ -612,7 +625,7 @@ export default class Toolbar extends ComponentComponent {
 		this.lastRangeFocused = false
 		this.focusedNodes = []
 		this.centeredControls = []
-		this.centeredToolbar.className = this.css.containerHidden
+		this.centeredToolbar.classList.add(this.css.containerHidden)
 	}
 
 	emptyToggleButtonHolder() {
@@ -626,7 +639,7 @@ export default class Toolbar extends ComponentComponent {
 
 	hideToggleButtonHolder() {
 		this.isShowToggleButtonHolder = false
-		this.toggleButtonHolder.className = this.css.toggleButtonHolderHidden
+		this.toggleButtonHolder.classList.add(this.css.toggleButtonHolderHidden)
 	}
 
 	wrapControls(controls) {
@@ -670,61 +683,59 @@ export default class Toolbar extends ComponentComponent {
 
 	updateBoundings(container) {
 		this.stopUpdateBoundings()
-		this.cancelObserver = this.sizeObserver.observe(container, (entry) => {
-			if (this.isShowToggleButtonHolder) {
-				const sideOffsetTop = entry.element.top - 40 < toolbarIndent
-					? entry.element.top + entry.scrollTop + 40
-					: entry.element.top + entry.scrollTop - 40
-				const sideOffsetLeft = Math.max(entry.element.left - 40, toolbarIndent)
+		this.cancelObserver = this.sizeObserver.observe(container, this.updateBoundingsHandler)
+	}
 
-				this.toggleButtonHolder.style.top = `${entry.element.top + entry.scrollTop}px`
-				this.toggleButtonHolder.style.left = `${entry.element.left}px`
+	updateBoundingsHandler(entry, container) {
+		if (this.isShowToggleButtonHolder) {
+			this.toggleButtonHolder.style.top = `${entry.absolute.top}px`
+			this.toggleButtonHolder.style.left = `${entry.absolute.left}px`
+			this.toggleButtonHolder.dataset.type = container.type
 
-				if (this.isShowSideToolbar) {
-					this.sideToolbar.style.top = `${sideOffsetTop}px`
-					this.sideToolbar.style.left = `${Math.max(10, sideOffsetLeft)}px`
-				}
+			if (this.isShowSideToolbar) {
+				this.sideToolbar.style.top = `${entry.absolute.top}px`
+				this.sideToolbar.style.left = `${Math.max(entry.absolute.left, toolbarIndent)}px`
 			}
+		}
 
-			if (this.isMobile) {
-				this.sideToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.sideToolbar.offsetHeight}px`
-				this.sideToolbar.style.left = ''
+		if (this.isMobile) {
+			this.sideToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.sideToolbar.offsetHeight}px`
+			this.sideToolbar.style.left = ''
 
-				this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
-				this.centeredToolbar.style.left = ''
-			} else if (this.isShowCenteredToolbar) {
-				let centeredOffsetTop = entry.element.top + entry.scrollTop
-				let offsetLeft = entry.element.left - this.centeredToolbar.offsetWidth / 2
-				let offsetTop = 0
+			this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
+			this.centeredToolbar.style.left = ''
+		} else if (this.isShowCenteredToolbar) {
+			let centeredOffsetTop = entry.absolute.top
+			let offsetLeft = entry.absolute.left - this.centeredToolbar.offsetWidth / 2
+			let offsetTop = 0
 
-				if (container.isWidget) {
-					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
-						? centeredOffsetTop + 20
-						: centeredOffsetTop - this.centeredToolbar.offsetHeight
-					offsetLeft += entry.element.width / 2
-				} else {
-					const selectedText = this.setAvatar(entry)
-
-					centeredOffsetTop += selectedText.offsetTop
-					offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight - entry.scrollTop < toolbarIndent
-						? centeredOffsetTop + selectedText.offsetHeight + 20
-						: centeredOffsetTop - this.centeredToolbar.offsetHeight
-					offsetLeft += selectedText.offsetLeft + selectedText.offsetWidth / 2
-				}
-
-				this.centeredToolbar.style.top = `${offsetTop}px`
-				this.centeredToolbar.style.left = `${Math.max(
-					toolbarIndent,
-					Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
-				)}px`
+			if (container.isWidget) {
+				offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight < toolbarIndent
+					? centeredOffsetTop
+					: centeredOffsetTop - this.centeredToolbar.offsetHeight
+				offsetLeft += entry.absolute.width / 2
 			} else {
-				const offsetLeft = parseInt(this.centeredToolbar.style.left)
+				const selectedText = this.setAvatar(entry)
 
-				if (offsetLeft + this.centeredToolbar.offsetWidth > document.body.clientWidth) {
-					this.centeredToolbar.style.left = '0'
-				}
+				centeredOffsetTop += selectedText.offsetTop
+				offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight < toolbarIndent
+					? centeredOffsetTop
+					: centeredOffsetTop - this.centeredToolbar.offsetHeight
+				offsetLeft += selectedText.offsetLeft + selectedText.offsetWidth / 2
 			}
-		})
+
+			this.centeredToolbar.style.top = `${offsetTop}px`
+			this.centeredToolbar.style.left = `${Math.max(
+				toolbarIndent,
+				Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
+			)}px`
+		} else {
+			const offsetLeft = parseInt(this.centeredToolbar.style.left)
+
+			if (offsetLeft + this.centeredToolbar.offsetWidth > document.body.clientWidth) {
+				this.centeredToolbar.style.left = '0'
+			}
+		}
 	}
 
 	setAvatar(entry) {
@@ -787,7 +798,6 @@ export default class Toolbar extends ComponentComponent {
 		this.container.removeChild(this.containerAvatar)
 		this.container.removeChild(this.sideToolbar)
 		this.container.removeChild(this.centeredToolbar)
-		this.container.removeChild(this.dragIndicator)
 		document.body.removeChild(this.container)
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)

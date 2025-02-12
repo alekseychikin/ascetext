@@ -215,10 +215,72 @@ declare class Dragndrop {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
 	core: Ascetext<Array<PluginPlugin>>;
 	node: HTMLElement;
+	pointerdownTimer: Timer;
+	isPointerDown: boolean;
+	initDraggingShiftX: number;
+	initDraggingShiftY: number;
+	startClientX: number;
+	startClientY: number;
+	startScrollTop: number;
+	dragging: HTMLElement | null;
+	target: HTMLElement | null;
+	anchor: HTMLElement | null;
+	handleDragging(container: Container | Widget, event: PointerLongEvent): void;
+	pointerMoveHandler(event: PointerEvent): void;
+	updateDraggingPosition(): void;
+	setTargetAndAnchor(): void;
+	getElementFromPoint(): HTMLElement;
+	findAnchor(target: UsefullNode): UsefullNode;
+	getChild(target: UsefullNode, index: number): UsefullNode;
+	pointerUpHandler(): void;
+	cancel(): void;
 	dragStartHandler(event: DragEvent): void;
+	dragOverHandler(event: DragEvent): void;
+	dropHandler(DragEvent): Promise<void>;
+	getElementAndCaretPositionFromPoint(event: DragEvent): {
+		textNode: HTMLElement;
+		offset: number;
+	} | null;
+	getFiles(dataTransfer: DataTransfer): Array<File>;
+	keydownHandler(event: KeyboardEvent): void;
 	destroy(): void;
-	drop(): void;
 }
+
+type PointerLongEvent = CustomEvent<{
+	clientX: number;
+	clientY: number;
+	pageX: number;
+	pageY: number;
+	screenX: number;
+	screenY: number;
+}>
+
+interface DragndropDragoutEvent {
+	type: 'dragout';
+	target: UsefullNode | null;
+	anchor: UsefullNode | null;
+	dragging: UsefullNode | null;
+}
+
+interface DragndropDragoverEvent {
+	type: 'dragover';
+	target: UsefullNode | null;
+	anchor: UsefullNode | null;
+	dragging: UsefullNode | null;
+}
+
+interface DragndropDraggingEvent {
+	type: 'dragging';
+	shiftX: number;
+	shiftY: number;
+	shiftScrollTop: number;
+}
+
+interface DragndropDropEvent {
+	type: 'drop';
+}
+
+type DragndropEvent = DragndropDragoutEvent | DragndropDragoverEvent | DragndropDraggingEvent | DragndropDropEvent;
 
 declare class Autocomplete {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
@@ -560,6 +622,7 @@ declare class Toolbar extends ComponentComponent {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	editing: Editing;
+	dragndrop: Dragndrop;
 	plugins: Array<PluginPlugin>;
 	icons: any;
 	sizeObserver: SizeObserver | null;
@@ -574,12 +637,14 @@ declare class Toolbar extends ComponentComponent {
 	sideMode: string;
 	cancelObserver: any;
 	containerAvatar: any;
-	insertButton: any;
-	replaceButton: any;
-	sideToolbar: any;
-	centeredToolbar: any;
-	toggleButtonHolder: any;
-	toggleButton: any;
+	container: HTMLElement;
+	insertButton: HTMLElement;
+	replaceButton: HTMLElement;
+	sideToolbar: HTMLElement;
+	centeredToolbar: HTMLElement;
+	toggleButtonHolder: HTMLElement;
+	toggleButton: HTMLElement;
+	dragIndicator: HTMLElement;
 	mediaQuery: MediaQueryList;
 	bindViewportChange(): void;
 	unbindViewportChange(): void;
@@ -679,8 +744,8 @@ declare class BreakLinePlugin extends PluginPlugin {
 
 declare class Header extends Container {
 	constructor(attributes: {
-	level: number;
-});
+		level: number;
+	});
 	render(): VirtualTree;
 	json(): {
 		type: 'header';
@@ -715,9 +780,11 @@ declare class HeaderPlugin extends PluginPlugin {
 declare class Image extends Widget {
 	image: HTMLImageElement;
 	attributes: Attributes;
-	constructor(attributes: Attributes);
+	params: Params;
+	constructor(attributes: Attributes, params: Params);
 	render(body: Array<VirtualTree>): VirtualTree;
 	getClassName(): string;
+	createFile(dataURI: string): Blob;
 	json(): {
 		type: 'image';
 		src: string;
@@ -991,6 +1058,12 @@ export {
 	VirtualTree,
 	Parser,
 	Dragndrop,
+	PointerLongEvent,
+	DragndropDragoutEvent,
+	DragndropDragoverEvent,
+	DragndropDraggingEvent,
+	DragndropDropEvent,
+	DragndropEvent,
 	TimeTravel,
 	SizeObserverConstructor,
 	SizeObserver,
@@ -1027,5 +1100,6 @@ export {
 	ListPlugin,
 	QuotePlugin,
 	PluginPlugin,
-	getIcon
+	getIcon,
+	Params
 };

@@ -109,6 +109,7 @@ export default class Render extends Publisher {
 							type: 'update',
 							target: change.target
 						})
+						this.markUnrendered(change.target)
 
 						break
 				}
@@ -141,7 +142,7 @@ export default class Render extends Publisher {
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
 			if (
-				current.type === operationTypes.APPEND && (!current.container.contains(current.target) || !current.container.isMount) ||
+				current.type === operationTypes.APPEND && current.container !== current.target.parent ||
 				current.type === 'update' && !current.target.isMount
 			) {
 				return result
@@ -151,9 +152,9 @@ export default class Render extends Publisher {
 
 			return result
 		}, [])
-		let event
 		const added = []
 		const updated = []
+		let event
 
 		while (event = queue.shift()) {
 			switch (event.type) {
@@ -180,9 +181,9 @@ export default class Render extends Publisher {
 	}
 
 	cut(event) {
-		const element = this.mapNodeIdToElement[event.target.id]
-
 		if (event.target.isMount) {
+			const element = this.mapNodeIdToElement[event.target.id]
+
 			if (element.parentNode) {
 				element.parentNode.removeChild(element)
 			}
@@ -192,6 +193,10 @@ export default class Render extends Publisher {
 	}
 
 	append(event) {
+		if (event.target.isRendered) {
+			return
+		}
+
 		const container = this.mapNodeIdToElement[event.container.id]
 		const tree = this.createTree(event.target, event.target)
 		const elements = tree.map((element) => this.createElement(element))
@@ -202,6 +207,10 @@ export default class Render extends Publisher {
 	}
 
 	update(node) {
+		if (node.isRendered) {
+			return
+		}
+
 		const tree = this.createTree(node, node)[0]
 		let container = node.element
 

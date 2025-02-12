@@ -410,7 +410,7 @@ export default class TextPlugin extends PluginPlugin {
 		}
 
 		if (node.type === 'text' && node.previous && node.previous.type === 'text' && (this.isEqual(node, node.previous) || !node.length || !node.previous.length)) {
-			const text = builder.create('text', { ...node.previous.attributes, content: node.previous.attributes.content + node.attributes.content })
+			const text = builder.create('text', { ...(!node.previous.length ? node.attributes : node.previous.attributes), content: node.previous.attributes.content + node.attributes.content })
 
 			builder.replaceUntil(node.previous, text, node)
 

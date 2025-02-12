@@ -24,7 +24,7 @@ export default class Dragndrop extends Publisher {
 		this.node.addEventListener('drop', this.dropHandler)
 		document.addEventListener('pointermove', this.pointerMoveHandler)
 		document.addEventListener('pointerup', this.pointerUpHandler)
-		document.addEventListener('scroll', this.updateDraggingPosition)
+		document.addEventListener('scroll', this.updateDraggingPosition, { capture: true })
 
 		this.pointerdownTimer = null
 		this.isPointerDown = false
@@ -77,10 +77,15 @@ export default class Dragndrop extends Publisher {
 		this.shiftY = 0
 		this.initDraggingShiftX = boundings.left - event.detail.clientX
 		this.initDraggingShiftY = boundings.top - event.detail.clientY
-		this.dragging.element.style.top = `${this.dragging.element.offsetTop}px`
-		this.dragging.element.style.left = `${this.dragging.element.offsetLeft}px`
-		this.dragging.element.style.position = 'absolute'
+		// todo: перенести в рендер
+		this.dragging.element.style.top = `${boundings.top}px`
+		this.dragging.element.style.left = `${boundings.left}px`
+		this.dragging.element.style.position = 'fixed'
+		this.dragging.element.style.marginTop = '0'
+		this.dragging.element.style.marginLeft = '0'
+		this.dragging.element.style.maxWidth = `${boundings.width}px`
 		this.dragging.element.style.pointerEvents = 'none'
+		this.dragging.element.style.zIndex = '999999999'
 		this.setTargetAndAnchor(event.detail)
 		document.addEventListener('keydown', this.keydownHandler)
 	}
@@ -99,7 +104,8 @@ export default class Dragndrop extends Publisher {
 		if (this.dragging) {
 			const shiftScrollTop = this.getScrollTop() - this.startScrollTop
 
-			this.dragging.element.style.transform = `translate(${this.shiftX}px, ${this.shiftY + shiftScrollTop}px)`
+			// перенести в рендер
+			this.dragging.element.style.transform = `translate(${this.shiftX}px, ${this.shiftY}px)`
 			this.setTargetAndAnchor()
 			this.sendMessage({
 				type: 'dragging',
@@ -112,6 +118,11 @@ export default class Dragndrop extends Publisher {
 
 	setTargetAndAnchor() {
 		const elementFromPoint = this.getElementFromPoint()
+
+		if (!elementFromPoint) {
+			return
+		}
+
 		const targetElement = elementFromPoint.closest('[data-node-id]')
 		const targetNode = targetElement ? this.core.render.getNodeById(targetElement.dataset.nodeId) : this.core.model
 
@@ -141,6 +152,10 @@ export default class Dragndrop extends Publisher {
 
 	getElementFromPoint() {
 		const targetElement = document.elementFromPoint(this.clientX + this.initDraggingShiftX, this.clientY + this.initDraggingShiftY)
+
+		if (!targetElement) {
+			return null
+		}
 
 		if (isHtmlElement(targetElement)) {
 			return targetElement
@@ -324,6 +339,6 @@ export default class Dragndrop extends Publisher {
 		this.node.removeEventListener('drop', this.dragStartHandler)
 		document.removeEventListener('pointermove', this.pointerMoveHandler)
 		document.removeEventListener('pointerup', this.pointerUpHandler)
-		document.removeEventListener('scroll', this.updateDraggingPosition)
+		document.removeEventListener('scroll', this.updateDraggingPosition, { capture: true })
 	}
 }

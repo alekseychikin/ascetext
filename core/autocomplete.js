@@ -31,6 +31,7 @@ export default class Autocomplete {
 				const node = plugin.wrap(tail, builder, selection)
 
 				builder.append(selection.anchorContainer, node, anchor)
+				builder.commit()
 
 				return true
 			}

@@ -76,7 +76,7 @@ export default class Container extends Node {
 	showPlaceholder() {
 		if (this.placeholder) {
 			this.removeObserver = this.sizeObserver.observe(this, (entry) => {
-				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top}px)`
 				this.placeholder.style.width = `${entry.element.width}px`
 			})
 			this.placeholder.style.display = ''
