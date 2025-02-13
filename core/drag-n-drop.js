@@ -10,7 +10,6 @@ export default class Dragndrop extends Publisher {
 		this.core = core
 		this.node = core.node
 
-		this.getScrollTop = this.core.params.getScrollTop.bind(this)
 		this.updateDraggingPosition = debounce(this.updateDraggingPosition.bind(this), 10)
 		this.dropHandler = this.dropHandler.bind(this)
 		this.dragOverHandler = this.dragOverHandler.bind(this)
@@ -32,7 +31,6 @@ export default class Dragndrop extends Publisher {
 		this.initDraggingShiftY = 0
 		this.startClientX = 0
 		this.startClientY = 0
-		this.startScrollTop = 0
 		this.dragging = null
 		this.target = null
 		this.anchor = null
@@ -70,7 +68,6 @@ export default class Dragndrop extends Publisher {
 		this.anchor = this.findAnchor(event.detail)
 		this.startClientX = event.detail.clientX
 		this.startClientY = event.detail.clientY
-		this.startScrollTop = this.getScrollTop()
 		this.clientX = event.detail.clientX
 		this.clientY = event.detail.clientY
 		this.shiftX = 0
@@ -102,16 +99,13 @@ export default class Dragndrop extends Publisher {
 
 	updateDraggingPosition() {
 		if (this.dragging) {
-			const shiftScrollTop = this.getScrollTop() - this.startScrollTop
-
 			// перенести в рендер
 			this.dragging.element.style.transform = `translate(${this.shiftX}px, ${this.shiftY}px)`
 			this.setTargetAndAnchor()
 			this.sendMessage({
 				type: 'dragging',
 				shiftX: this.shiftX,
-				shiftY: this.shiftY,
-				shiftScrollTop
+				shiftY: this.shiftY
 			})
 		}
 	}
@@ -249,7 +243,6 @@ export default class Dragndrop extends Publisher {
 		this.initDraggingShiftY = 0
 		this.startClientX = 0
 		this.startClientY = 0
-		this.startScrollTop = 0
 		this.sendMessage({
 			type: 'drop'
 		})

@@ -19,7 +19,7 @@ declare class Node {
 	next?: Node;
 	first?: Node;
 	last?: Node;
-	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
+	get shortcuts(): Shortcuts;
 	split(builder: Builder, next: Node | number): { head: Node | null; tail: Node | null };
 	getNodeUntil(nodeUntil: Node): Node;
 	getPreviousSelectableNode(): Node | undefined;
@@ -221,7 +221,6 @@ declare class Dragndrop {
 	initDraggingShiftY: number;
 	startClientX: number;
 	startClientY: number;
-	startScrollTop: number;
 	dragging: HTMLElement | null;
 	target: HTMLElement | null;
 	anchor: HTMLElement | null;
@@ -273,7 +272,6 @@ interface DragndropDraggingEvent {
 	type: 'dragging';
 	shiftX: number;
 	shiftY: number;
-	shiftScrollTop: number;
 }
 
 interface DragndropDropEvent {
@@ -410,7 +408,7 @@ declare class Editing {
 	onPaste(event: ClipboardEvent): void;
 	insertText(content: string): void;
 	getNodeOffset(container: Node, node: Node): number;
-	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Record<string, (event: KeyboardEvent, params: HandlerParams) => void>): null | ((event: KeyboardEvent, params: HandlerParams) => void);
+	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Shortcuts): null | ((event: KeyboardEvent, params: HandlerParams) => void);
 	destroy(): void;
 }
 
@@ -495,21 +493,19 @@ declare class Selection extends Publisher {
 }
 
 interface SizeObserverEntry {
-	scrollTop: number;
-	scrollLeft: number;
 	element: DOMRect;
-	root: DOMRect;
+	absolute: DOMRect;
 }
 
 interface SizeObserverConstructor {
 	core: Ascetext<Array<PluginPlugin>>;
 	id: number;
 	ids: Array<number>;
-	observedNodes: Array<Node>;
+	observedNodes: Array<UsefullNode>;
 	handlers: Array<(entry: SizeObserverEntry) => void>;
 	timer: Timer;
 	middleware?: (entry: SizeObserverEntry) => SizeObserverEntry;
-	observe(node: Node, handler: (entry: SizeObserverEntry) => void): () => void;
+	observe(node: UsefullNode, handler: (entry: SizeObserverEntry, node: UsefullNode) => void): () => void;
 	update(): void;
 	updateHandler(): void;
 	handleNode(index: number): void;
@@ -588,6 +584,7 @@ interface Control {
 }
 
 export type ShortcutMatcher = (shortcut: string) => boolean;
+export type Shortcuts = Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
 
 declare class ComponentComponent {
 	register(core: Ascetext<Array<PluginPlugin>>): void;
@@ -599,19 +596,6 @@ declare class ComponentComponent {
 declare class Toolbar extends ComponentComponent {
 	constructor();
 	get css(): CSSGetter;
-	onSelectionChange(): void;
-	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
-	showSideToolbar(): void;
-	hideSideToolbar(): void;
-	renderSideControls(): void;
-	restoreSelection(): void;
-	getSelectedItems(): any;
-	toggleSideToolbar(): void;
-	checkToolbarVisibility(event: any): void;
-	wrapControls(controls: Array<Control>): any;
-	updateBoundings(container: any): void;
-	viewportChange(event: any): void;
-	viewportResize(): void;
 	isShowToggleButtonHolder: boolean;
 	isShowSideToolbar: boolean;
 	isShowCenteredToolbar: boolean;
@@ -646,31 +630,48 @@ declare class Toolbar extends ComponentComponent {
 	toggleButton: HTMLElement;
 	dragIndicator: HTMLElement;
 	mediaQuery: MediaQueryList;
+	findScrollableParents(element: HTMLElement): Array<HTMLElement>;
+	viewportChange(event: any): void;
+	viewportResize(): void;
 	bindViewportChange(): void;
 	unbindViewportChange(): void;
+	onSelectionChange(): void;
+	onDragNDropChange(event: DragndropEvent): void;
+	updateDraggingTogglePosition(event: DragndropDraggingEvent): void;
+	updateDragAnchorPosition(event: DragndropDragoverEvent)
+	checkToolbarVisibility(event: any): void;
 	onKeyDown(event: KeyboardEvent): void;
+	updateSideToolbar(): void;
+	updateCenteredToolbar(): null | undefined;
 	updateButtonHolder(): void;
 	renderInsertButton(): void;
 	renderReplaceButton(hasControls: boolean): void;
-	updateSideToolbar(): void;
-	updateCenteredToolbar(): null | undefined;
 	renderSideToolbar(): void;
 	renderSelectedToolbar(): void;
 	getInsertControls(): any[];
 	getReplaceControls(): any[];
+	toggleSideToolbar(): void;
+	renderSideControls(): void;
 	renderCenteredControls(rawControls: any): void;
+	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
+	restoreSelection(): void;
 	emptySideToolbar(): void;
+	showSideToolbar(): void;
+	hideSideToolbar(): void;
 	emptyCenteredControls(): void;
 	showCenteredToolbar(): void;
 	hideCenteredToolbar(): void;
 	emptyToggleButtonHolder(): void;
 	showToggleButtonHolder(): void;
 	hideToggleButtonHolder(): void;
+	wrapControls(controls: Array<Control>): any;
 	isTargetInsideToolbar(target: HTMLElement): boolean;
 	isTargetInsideEditor(target: HTMLElement): boolean;
+	updateBoundings(container: UsefullNode): void;
+	updateBoundingsHandler(entry: SizeObserverEntry, container: UsefullNode): void;
+	isElementVisible(entry: SizeObserverEntry): boolean;
 	stopUpdateBoundings(): void;
-	setAvatar(entry: any): any;
-	destroy(): void;
+	getShortcuts(): Shortcuts;
 }
 
 declare class ControlControl {

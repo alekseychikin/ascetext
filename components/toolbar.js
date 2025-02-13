@@ -73,6 +73,7 @@ export default class Toolbar extends ComponentComponent {
 		this.sideMode = 'insert'
 		this.cancelObserver = null
 		this.setSelectionInvoked = false
+		this.scrollableParents = []
 
 		this.containerAvatar = createElement('div', {
 			style: {
@@ -120,6 +121,8 @@ export default class Toolbar extends ComponentComponent {
 		this.sizeObserver = core.sizeObserver
 		this.node = core.node
 
+		this.scrollableParents = this.findScrollableParents(core.node)
+
 		this.container.appendChild(this.toggleButtonHolder)
 		this.container.appendChild(this.sideToolbar)
 		this.container.appendChild(this.centeredToolbar)
@@ -134,6 +137,24 @@ export default class Toolbar extends ComponentComponent {
 		this.unsubscribeSelection = this.selection.subscribe(this.onSelectionChange)
 		this.unsubscribeDragNDrop = this.dragndrop.subscribe(this.onDragNDropChange)
 		this.bindViewportChange()
+	}
+
+	findScrollableParents(element) {
+		const parents = []
+		let current = element
+
+		while (current) {
+			const style = getStyle(current)
+			const overflow = style.overflow || style.overflowX || style.overflowY
+
+			if (overflow === 'auto' || overflow === 'scroll') {
+				parents.push(current)
+			}
+
+			current = current.parentElement
+		}
+
+		return parents
 	}
 
 	viewportChange(event) {
@@ -194,11 +215,7 @@ export default class Toolbar extends ComponentComponent {
 			case 'drop':
 				if (this.toggleButtonHolder) {
 					this.toggleButtonHolder.style.pointerEvents = ''
-				}
-
-				if (this.toggleButton) {
-					this.toggleButton.style.transform = ''
-					this.toggleButton.style.transition = ''
+					this.toggleButtonHolder.style.transform = ''
 				}
 
 				if (this.dragIndicator.parentNode) {
@@ -215,13 +232,10 @@ export default class Toolbar extends ComponentComponent {
 	}
 
 	updateDraggingTogglePosition(event) {
-		this.toggleButton.style.transform = `translate(${event.shiftX}px, ${event.shiftY + event.shiftScrollTop}px)`
-		this.toggleButton.style.transition = 'none'
+		this.toggleButtonHolder.style.transform = `translate(${event.shiftX}px, ${event.shiftY}px)`
 	}
 
 	updateDragAnchorPosition(event) {
-		// const scrollTop = document.body.scrollTop || document.documentElement.scrollTop || 0
-
 		if (event.target) {
 			const targetBoundings = event.target.element.getBoundingClientRect()
 			let top = targetBoundings.top
@@ -607,7 +621,6 @@ export default class Toolbar extends ComponentComponent {
 		this.lastRangeFocused = false
 		this.focusedNodes = []
 		this.sideToolbar.classList.add(this.css.containerHidden)
-		this.hideAvatar()
 	}
 
 	emptyCenteredControls() {
@@ -688,13 +701,17 @@ export default class Toolbar extends ComponentComponent {
 
 	updateBoundingsHandler(entry, container) {
 		if (this.isShowToggleButtonHolder) {
+			const isToggleVisible = this.isElementVisible(entry.absolute)
+
 			this.toggleButtonHolder.style.top = `${entry.absolute.top}px`
 			this.toggleButtonHolder.style.left = `${entry.absolute.left}px`
 			this.toggleButtonHolder.dataset.type = container.type
+			this.toggleButtonHolder.classList.toggle(this.css.toggleButtonHolderHidden, !isToggleVisible)
 
 			if (this.isShowSideToolbar) {
 				this.sideToolbar.style.top = `${entry.absolute.top}px`
 				this.sideToolbar.style.left = `${Math.max(entry.absolute.left, toolbarIndent)}px`
+				this.sideToolbar.classList.toggle(this.css.containerHidden, !isToggleVisible)
 			}
 		}
 
@@ -705,66 +722,46 @@ export default class Toolbar extends ComponentComponent {
 			this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
 			this.centeredToolbar.style.left = ''
 		} else if (this.isShowCenteredToolbar) {
-			let centeredOffsetTop = entry.absolute.top
+			let offsetTop = entry.absolute.top - this.centeredToolbar.offsetHeight
 			let offsetLeft = entry.absolute.left - this.centeredToolbar.offsetWidth / 2
-			let offsetTop = 0
 
 			if (container.isWidget) {
-				offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight < toolbarIndent
-					? centeredOffsetTop
-					: centeredOffsetTop - this.centeredToolbar.offsetHeight
 				offsetLeft += entry.absolute.width / 2
-			} else {
-				const selectedText = this.setAvatar(entry)
 
-				centeredOffsetTop += selectedText.offsetTop
-				offsetTop = centeredOffsetTop - this.centeredToolbar.offsetHeight < toolbarIndent
-					? centeredOffsetTop
-					: centeredOffsetTop - this.centeredToolbar.offsetHeight
-				offsetLeft += selectedText.offsetLeft + selectedText.offsetWidth / 2
+				this.centeredToolbar.classList.toggle(this.css.containerHidden, !this.isElementVisible(entry.absolute))
+			} else {
+				const selection = document.getSelection()
+
+				if (selection.rangeCount > 0) {
+					const range = selection.getRangeAt(0)
+					const rect = range.getBoundingClientRect()
+
+					offsetTop = rect.top - this.centeredToolbar.offsetHeight
+					offsetLeft = rect.left - this.centeredToolbar.offsetWidth / 2 + rect.width / 2
+
+					this.centeredToolbar.classList.toggle(this.css.containerHidden, !this.isElementVisible(rect))
+				}
 			}
 
 			this.centeredToolbar.style.top = `${offsetTop}px`
-			this.centeredToolbar.style.left = `${Math.max(
-				toolbarIndent,
-				Math.min(offsetLeft, document.body.clientWidth - this.centeredToolbar.offsetWidth - toolbarIndent)
-			)}px`
-		} else {
-			const offsetLeft = parseInt(this.centeredToolbar.style.left)
-
-			if (offsetLeft + this.centeredToolbar.offsetWidth > document.body.clientWidth) {
-				this.centeredToolbar.style.left = '0'
-			}
+			this.centeredToolbar.style.left = `${offsetLeft}px`
 		}
 	}
 
-	setAvatar(entry) {
-		const selectedLength = this.selection.focusOffset - this.selection.anchorOffset
-		const content = this.selection.anchorContainer.element.outerText
-		const styles = getStyle(this.selection.anchorContainer.element)
+	isElementVisible(elementRect) {
+		for (let i = 0; i < this.scrollableParents.length; i++) {
+			const container = this.scrollableParents[i]
+			const rect = container.getBoundingClientRect()
 
-		this.containerAvatar.style.display = ''
-		this.containerAvatar.style.width = `${entry.element.width}px`
-		this.containerAvatar.style.fontFamily = styles.fontFamily
-		this.containerAvatar.style.fontSize = styles.fontSize
-		this.containerAvatar.style.lineHeight = styles.lineHeight
-		this.containerAvatar.style.letterSpacing = styles.letterSpacing
-		this.containerAvatar.style.padding = styles.padding
-		this.containerAvatar.style.boxSizing = styles.boxSizing
-		this.containerAvatar.style.textAlign = styles.textAlign
+			if (
+				elementRect.top < rect.top ||
+				(elementRect.top + Math.min(40, elementRect.bottom - elementRect.top)) > rect.bottom
+			) {
+				return false
+			}
+		}
 
-		const fakeContent = content.substr(0, this.selection.anchorOffset) +
-			'<span style="background: blue" data-selected-text>' +
-			content.substr(this.selection.anchorOffset, selectedLength) +
-			'</span>' +
-		content.substr(this.selection.focusOffset)
-		this.containerAvatar.innerHTML = fakeContent.replace(/\n/g, '<br />')
-
-		return this.containerAvatar.querySelector('span[data-selected-text]')
-	}
-
-	hideAvatar() {
-		this.containerAvatar.style.display = 'none'
+		return true
 	}
 
 	stopUpdateBoundings() {

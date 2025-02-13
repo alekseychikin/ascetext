@@ -30,35 +30,35 @@
 .contenteditor__toggle-button-holder {
 	position: fixed;
 	z-index: 1;
-	margin: -10px 0 0 -40px;
-	opacity: 1;
-	transform: translateX(0);
-	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+	margin: -4px 0 0 -32px;
 }
 
 .contenteditor__toggle-button-holder[data-type="list-item-content"] {
-	margin-left: -50px;
-}
-
-.contenteditor__tooltip--hidden,
-.contenteditor__toggle-button-holder--hidden {
-	transform: translateY(-10px);
-	opacity: 0;
-	pointer-events: none;
+	margin-left: -42px;
 }
 
 .contenteditor__toggle-button {
 	display: block;
 	border: 0;
 	padding: 0;
-	width: 40px;
-	height: 40px;
+	width: 32px;
+	height: 32px;
 	cursor: pointer;
 	outline: none;
 	background-color: transparent;
 	background-size: 24px;
 	background-repeat: no-repeat;
 	background-position: center;
+	opacity: 1;
+	transform: translateY(0);
+	transition: transform 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.contenteditor__tooltip--hidden,
+.contenteditor__toggle-button-holder--hidden .contenteditor__toggle-button {
+	transform: translateY(-10px);
+	opacity: 0;
+	pointer-events: none;
 }
 
 .contenteditor__toggle-button--insert {

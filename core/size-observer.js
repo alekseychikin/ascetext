@@ -79,8 +79,6 @@ export default class SizeObserver {
 		const root = offsetParent.getBoundingClientRect()
 
 		return {
-			scrollTop: document.body.scrollTop || document.documentElement.scrollTop || 0,
-			scrollLeft: document.body.scrollLeft || document.documentElement.scrollLeft || 0,
 			element: {
 				top: absolute.top - root.top + offsetParent.scrollTop,
 				left: absolute.left - root.left + offsetParent.scrollLeft,
@@ -91,8 +89,7 @@ export default class SizeObserver {
 				x: absolute.x,
 				y: absolute.y,
 			},
-			absolute,
-			root
+			absolute
 		}
 	}
 
