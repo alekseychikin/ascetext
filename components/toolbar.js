@@ -450,7 +450,7 @@ export default class Toolbar extends ComponentComponent {
 	toggleSideToolbar() {
 		if (this.isShowSideToolbar) {
 			this.hideSideToolbar()
-		} else {
+		} else if (this.sideControls.length) {
 			this.showSideToolbar()
 		}
 	}

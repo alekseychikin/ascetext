@@ -403,7 +403,7 @@ export default class ListPlugin extends PluginPlugin {
 					})
 				}
 
-				if (listItemContents[0].parent.previous && (!this.params.maxDepth || this.getDepth(listItemContents[0].parent) < this.params.maxDepth)) {
+				if (listItemContents[0].parent.previous && (!this.params.maxDepth || this.getDepth(listItemContents[0].parent.parent) < this.params.maxDepth)) {
 					controls.push({
 						slug: 'list.indentRight',
 						label: 'Indent right',
