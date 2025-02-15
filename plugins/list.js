@@ -541,16 +541,6 @@ export default class ListPlugin extends PluginPlugin {
 			}
 		}
 
-		// root
-		//   list-item
-		//     list-item-content
-		//       text
-		// →
-		// root
-		//   list
-		//     list-item
-		//       list-item-content
-		//         text
 		if (node.type === 'list-item' && parent.isSection && parent.type !== 'list') {
 			const list = builder.create('list', params)
 			const last = findLastNode(node, (item) => item.type === 'list-item')
@@ -561,14 +551,6 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (parent.type === 'list') {
-			// list
-			//   paragraph
-			//     text
-			// →
-			// list
-			//   list-item
-			//     list-item-content
-			//       text
 			if (node.isContainer && node.type !== 'list-item') {
 				const listItem = builder.create('list-item')
 				const content = builder.create('list-item-content')
@@ -580,37 +562,6 @@ export default class ListPlugin extends PluginPlugin {
 				return listItem
 			}
 
-			// list
-			//   image
-			// →
-			// image
-
-			// list
-			//   list-item
-			//   image
-			// →
-			// list
-			//   list-item
-			// image
-
-			// list
-			//   image
-			//   list-item
-			// →
-			// image
-			// list
-			//   list-item
-
-			// list
-			//   list-item
-			//   image
-			//   list-item
-			// →
-			// list
-			//   list-item
-			// image
-			// list
-			//   list-item
 			if (node.type !== 'list-item') {
 				if (node.next) {
 					const list = builder.create('list', params)
@@ -633,42 +584,6 @@ export default class ListPlugin extends PluginPlugin {
 			}
 		}
 
-		// list-item
-		//   paragraph
-		//     text
-		// →
-		// list-item
-		//   list-item-content
-		//     text
-
-		// list-item
-		//   image
-		//   list-item-content
-		// →
-		// image
-		// list
-		//   list-item-content
-
-		// list-item
-		//   list
-		//     list-item
-		// →
-		// list-item
-		// list-item
-
-		// list-item
-		//   list-item-content
-		//   list
-		//    list-item
-		//   list
-		//     list-item
-		// →
-		// list-item
-		//   list-item-content
-		//   list
-		//     list-item
-		// list
-		//   list-item
 		if (parent.type === 'list-item') {
 			if (node === parent.first && node.isContainer && node.type !== 'list-item-content') {
 				const content = builder.create('list-item-content')
@@ -690,17 +605,6 @@ export default class ListPlugin extends PluginPlugin {
 			}
 		}
 
-		// list
-		//   list-item
-		//     list-item-content
-		//       text
-		//       image
-		// →
-		// list
-		//   list-item
-		//     list-item-content
-		//       text
-		//   image
 		if (parent.type === 'list-item-content' && node.type !== 'text' && !node.isInlineWidget) {
 			if (node.type === 'list') {
 				builder.append(parent.parent, node, parent.next)
@@ -719,15 +623,6 @@ export default class ListPlugin extends PluginPlugin {
 			return node
 		}
 
-		// root
-		//   paragraph
-		//   list-item-content
-		//   header
-		// →
-		// root
-		//   paragraph
-		//   paragraph
-		//   header
 		if (node.type === 'list-item-content' && parent.type !== 'list-item') {
 			const block = builder.createBlock()
 

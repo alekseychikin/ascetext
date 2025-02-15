@@ -74,7 +74,6 @@ export default class Dragndrop extends Publisher {
 		this.shiftY = 0
 		this.initDraggingShiftX = boundings.left - event.detail.clientX
 		this.initDraggingShiftY = boundings.top - event.detail.clientY
-		// todo: перенести в рендер
 		this.dragging.element.style.top = `${boundings.top}px`
 		this.dragging.element.style.left = `${boundings.left}px`
 		this.dragging.element.style.position = 'fixed'
@@ -84,6 +83,12 @@ export default class Dragndrop extends Publisher {
 		this.dragging.element.style.pointerEvents = 'none'
 		this.dragging.element.style.zIndex = '999999999'
 		this.setTargetAndAnchor(event.detail)
+		this.sendMessage({
+			type: 'dragstart',
+			target: this.target,
+			anchor: this.anchor,
+			dragging: this.dragging
+		})
 		document.addEventListener('keydown', this.keydownHandler)
 	}
 
@@ -105,7 +110,10 @@ export default class Dragndrop extends Publisher {
 			this.sendMessage({
 				type: 'dragging',
 				shiftX: this.shiftX,
-				shiftY: this.shiftY
+				shiftY: this.shiftY,
+				target: this.target,
+				anchor: this.anchor,
+				dragging: this.dragging
 			})
 		}
 	}

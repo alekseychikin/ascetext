@@ -193,7 +193,7 @@ export default class Render extends Publisher {
 	}
 
 	append(event) {
-		if (event.target.isRendered) {
+		if (event.target.isRendered || !this.mapNodeIdToElement[event.container.id]) {
 			return
 		}
 

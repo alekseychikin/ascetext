@@ -452,30 +452,6 @@ export default class ImagePlugin extends PluginPlugin {
 		if (node.parent.type === 'image') {
 			const parent = node.parent
 
-			// image
-			//   paragraph
-			//     text
-			// →
-			// image
-			//   image-caption
-			//     text
-
-			// image
-			//   list
-			//     list-item
-			// →
-			// image
-			//   image-caption
-			// list
-			//   list-item
-
-			// image
-			//   image-caption
-			//   paragraph
-			// →
-			// image
-			//   image-caption
-			// paragraph
 			if (!node.previous && node.type !== 'image-caption') {
 				if (node.isContainer) {
 					const caption = builder.create('image-caption')
@@ -506,13 +482,6 @@ export default class ImagePlugin extends PluginPlugin {
 
 				return node
 			}
-		// root
-		//   image-caption
-		//     text
-		// →
-		// root
-		//   paragraph
-		//     text
 		} else if (node.type === 'image-caption') {
 			const paragraph = builder.createBlock()
 
@@ -521,12 +490,6 @@ export default class ImagePlugin extends PluginPlugin {
 			return paragraph
 		}
 
-		// image
-		// paragraph
-		// →
-		// image
-		//   image-caption
-		// paragraph
 		if (node.type === 'image' && !node.first) {
 			const caption = builder.create('image-caption')
 

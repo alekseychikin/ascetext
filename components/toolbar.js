@@ -193,6 +193,16 @@ export default class Toolbar extends ComponentComponent {
 
 	onDragNDropChange(event) {
 		switch (event.type) {
+			case 'dragstart':
+				setTimeout(() => {
+					const rect = this.selection.anchorContainer.element.getBoundingClientRect()
+
+					this.toggleButtonHolder.style.transform = 'translate(0, 0)'
+					this.toggleButtonHolder.style.top = `${rect.top}px`
+					this.toggleButtonHolder.style.left = `${rect.left}px`
+				}, 0)
+
+				break
 			case 'dragout':
 				event.target.element.classList.remove('target')
 
@@ -202,15 +212,17 @@ export default class Toolbar extends ComponentComponent {
 
 				break
 			case 'dragover':
-				this.toggleButtonHolder.style.pointerEvents = 'none'
 				event.target.element.classList.add('target')
+				this.toggleButtonHolder.style.pointerEvents = 'none'
 				this.updateDragAnchorPosition(event)
 
 				break
 			case 'drop':
 				if (this.toggleButtonHolder) {
-					this.toggleButtonHolder.style.pointerEvents = ''
+					this.toggleButtonHolder.style.pointerEvents = 'auto'
 					this.toggleButtonHolder.style.transform = ''
+					this.toggleButtonHolder.style.top = ''
+					this.toggleButtonHolder.style.left = ''
 				}
 
 				if (this.dragIndicator.parentNode) {
