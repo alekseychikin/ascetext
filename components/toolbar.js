@@ -722,6 +722,8 @@ export default class Toolbar extends ComponentComponent {
 
 					this.setPosition(this.centeredToolbar, offsetLeft, offsetTop)
 				}
+
+				this.centeredToolbar.toggleAttribute('data-flip', false)
 			}
 		}
 	}
