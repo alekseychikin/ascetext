@@ -620,16 +620,16 @@ declare class Toolbar extends ComponentComponent {
 	centeredControls: any[];
 	sideMode: string;
 	cancelObserver: any;
-	containerAvatar: any;
 	container: HTMLElement;
-	insertButton: HTMLElement;
-	replaceButton: HTMLElement;
 	sideToolbar: HTMLElement;
+	sideToolbarContent: HTMLElement;
 	centeredToolbar: HTMLElement;
+	centeredToolbarContent: HTMLElement;
 	toggleButtonHolder: HTMLElement;
 	toggleButton: HTMLElement;
 	dragIndicator: HTMLElement;
 	mediaQuery: MediaQueryList;
+	pointerLongDown(event: PointerLongEvent): void;
 	findScrollableParents(element: HTMLElement): Array<HTMLElement>;
 	viewportChange(event: any): void;
 	viewportResize(): void;
@@ -638,7 +638,7 @@ declare class Toolbar extends ComponentComponent {
 	onSelectionChange(): void;
 	onDragNDropChange(event: DragndropEvent): void;
 	updateDraggingTogglePosition(event: DragndropDraggingEvent): void;
-	updateDragAnchorPosition(event: DragndropDragoverEvent)
+	updateDragAnchorPosition(event: DragndropDragoverEvent): void;
 	checkToolbarVisibility(event: any): void;
 	onKeyDown(event: KeyboardEvent): void;
 	updateSideToolbar(): void;
@@ -669,7 +669,8 @@ declare class Toolbar extends ComponentComponent {
 	isTargetInsideEditor(target: HTMLElement): boolean;
 	updateBoundings(container: UsefullNode): void;
 	updateBoundingsHandler(entry: SizeObserverEntry, container: UsefullNode): void;
-	isElementVisible(entry: SizeObserverEntry): boolean;
+	isElementVisible(rect: DOMRect): boolean;
+	setPosition(element: HTMLElement, left: number, top: number): void;
 	stopUpdateBoundings(): void;
 	getShortcuts(): Shortcuts;
 }

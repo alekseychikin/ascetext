@@ -79,6 +79,7 @@ export default class Dragndrop extends Publisher {
 		this.dragging.element.style.position = 'fixed'
 		this.dragging.element.style.marginTop = '0'
 		this.dragging.element.style.marginLeft = '0'
+		this.dragging.element.style.minWidth = '350px'
 		this.dragging.element.style.maxWidth = `${boundings.width}px`
 		this.dragging.element.style.pointerEvents = 'none'
 		this.dragging.element.style.zIndex = '999999999'
@@ -232,6 +233,11 @@ export default class Dragndrop extends Publisher {
 			this.dragging.element.style.transform = ''
 			this.dragging.element.style.position = ''
 			this.dragging.element.style.pointerEvents = ''
+			this.dragging.element.style.marginTop = ''
+			this.dragging.element.style.marginLeft = ''
+			this.dragging.element.style.minWidth = ''
+			this.dragging.element.style.maxWidth = ''
+			this.dragging.element.style.zIndex = ''
 			document.removeEventListener('keydown', this.keydownHandler)
 		}
 

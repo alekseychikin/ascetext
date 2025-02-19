@@ -7,6 +7,8 @@ import ControlLink from '../controls/link.js'
 import ControlDropdown from '../controls/dropdown.js'
 import getStyle from '../utils/get-style.js'
 
+const scrollableOptions = ['auto', 'scroll']
+
 export default class Toolbar extends ComponentComponent {
 	get css() {
 		return {
@@ -43,6 +45,7 @@ export default class Toolbar extends ComponentComponent {
 		this.onKeyDown = this.onKeyDown.bind(this)
 		this.onDragNDropChange = this.onDragNDropChange.bind(this)
 		this.updateBoundingsHandler = this.updateBoundingsHandler.bind(this)
+		this.pointerLongDown = this.pointerLongDown.bind(this)
 
 		this.isShowToggleButtonHolder = false
 		this.isShowSideToolbar = false
@@ -81,13 +84,13 @@ export default class Toolbar extends ComponentComponent {
 			'class': this.css.toolbarContent
 		})
 		this.sideToolbar = createElement('div', {
-			'class': this.css.toolbarHidden
+			'class': [this.css.toolbarSide, this.css.toolbarHidden].join(' ')
 		}, [this.sideToolbarContent])
 		this.centeredToolbarContent = createElement('div', {
 			'class': this.css.toolbarContent
 		})
 		this.centeredToolbar = createElement('div', {
-			'class': this.css.toolbarHidden
+			'class': [this.css.toolbarCentered, this.css.toolbarHidden].join(' ')
 		}, [this.centeredToolbarContent])
 		this.toggleButtonHolder = createElement('div', {
 			'class': [this.css.toggleButtonHolder, this.css.toggleButtonHolderHidden].join(' ')
@@ -125,13 +128,15 @@ export default class Toolbar extends ComponentComponent {
 		document.addEventListener('keyup', this.checkToolbarVisibility)
 		document.addEventListener('input', this.checkToolbarVisibility)
 		this.toggleButton.addEventListener('click', this.toggleSideToolbar)
-		this.toggleButton.addEventListener('pointerlongdown', (event) => {
-			this.dragndrop.handleDragging(this.selection.anchorContainer, event)
-		})
+		this.toggleButton.addEventListener('pointerlongdown', this.pointerLongDown)
 
 		this.unsubscribeSelection = this.selection.subscribe(this.onSelectionChange)
 		this.unsubscribeDragNDrop = this.dragndrop.subscribe(this.onDragNDropChange)
 		this.bindViewportChange()
+	}
+
+	pointerLongDown(event) {
+		this.dragndrop.handleDragging(this.selection.anchorContainer, event)
 	}
 
 	findScrollableParents(element) {
@@ -140,9 +145,9 @@ export default class Toolbar extends ComponentComponent {
 
 		while (current) {
 			const style = getStyle(current)
-			const overflow = style.overflow || style.overflowX || style.overflowY
+			const { overflow, overflowX, overflowY } = style
 
-			if (overflow === 'auto' || overflow === 'scroll') {
+			if (scrollableOptions.includes(overflow) || scrollableOptions.includes(overflowX) || scrollableOptions.includes(overflowY)) {
 				parents.push(current)
 			}
 
@@ -784,6 +789,9 @@ export default class Toolbar extends ComponentComponent {
 		document.removeEventListener('pointerdown', this.checkToolbarVisibility)
 		document.removeEventListener('keyup', this.checkToolbarVisibility)
 		document.removeEventListener('input', this.checkToolbarVisibility)
+		document.removeEventListener('keydown', this.onKeyDown)
+		this.toggleButton.removeEventListener('click', this.toggleSideToolbar)
+		this.toggleButton.removeEventListener('pointerlongdown', this.pointerLongDown)
 		this.unsubscribeSelection()
 		this.unbindViewportChange()
 		this.stopUpdateBoundings()

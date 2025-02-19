@@ -49,18 +49,7 @@ export default class Render extends Publisher {
 		this.mapNodeIdToNode = {
 			[this.core.model.id]: this.core.model
 		}
-		this.containerAvatar = createElement('div', {
-			style: {
-				position: 'fixed',
-				bottom: '0',
-				left: '0',
-				maxWidth: '100%',
-				opacity: '0',
-				pointerEvents: 'none'
-			}
-		})
 
-		document.body.appendChild(this.containerAvatar)
 		this.core.builder.subscribe(this.onChange)
 	}
 
