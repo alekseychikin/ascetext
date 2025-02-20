@@ -327,7 +327,7 @@ declare class Builder extends Publisher {
 	handleAttributes(target: Node, previous?: Node, next?: Node): void;
 	parseJson(body: any): Fragment;
 	getJson(first: Node, last?: Node): any;
-	parseVirtualTree(tree: VirtualTree): Fragment;
+	parseVirtualTree(tree: Array<VirtualTree>): Fragment;
 	splitByOffset(container: Container, offset: number): { head: Node, tail: Node };
 	splitByTail(parent: Node, tail: Node): { head: Node, tail: Node };
 	duplicate(target: Node): Node;
