@@ -105,7 +105,6 @@ export default class Dragndrop extends Publisher {
 
 	updateDraggingPosition() {
 		if (this.dragging) {
-			// перенести в рендер
 			this.dragging.element.style.transform = `translate(${this.shiftX}px, ${this.shiftY}px)`
 			this.setTargetAndAnchor()
 			this.sendMessage({

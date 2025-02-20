@@ -52,15 +52,10 @@ function extractPlaceholderParams(params) {
 	}
 }
 
-function getScrollTop() {
-	return document.body.scrollTop || document.documentElement.scrollTop || 0
-}
-
 function importParams(params = {}) {
 	return {
 		placeholder: extractPlaceholderParams(params.placeholder),
-		trimTrailingContainer: typeof params.trimTrailingContainer !== 'undefined' ? params.trimTrailingContainer : false,
-		getScrollTop: params.getScrollTop || getScrollTop
+		trimTrailingContainer: typeof params.trimTrailingContainer !== 'undefined' ? params.trimTrailingContainer : false
 	}
 }
 
