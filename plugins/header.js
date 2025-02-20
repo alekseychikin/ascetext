@@ -35,11 +35,10 @@ export default class HeaderPlugin extends PluginPlugin {
 	}
 
 	constructor(params = {}) {
-		super()
-
-		this.params = Object.assign({
+		super(Object.assign({
 			allowLevels: [2, 3, 4]
-		}, params)
+		}, params))
+
 		this.supportHeaders = this.params.allowLevels.map((level) => `h${level}`)
 	}
 

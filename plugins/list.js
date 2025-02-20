@@ -2,6 +2,7 @@ import PluginPlugin from './plugin.js'
 import Widget from '../nodes/widget.js'
 import Container from '../nodes/container.js'
 import Section from '../nodes/section.js'
+import findLastNode from '../utils/find-last.js'
 
 export class List extends Section {
 	constructor(attributes = { decor: 'marker' }) {
@@ -14,26 +15,6 @@ export class List extends Section {
 			attributes: {},
 			body
 		}
-	}
-
-	accept(node) {
-		return node.type === 'list-item'
-	}
-
-	fit(node) {
-		return node.isSection || node.type === 'list-item' && node.first.next === node.last && node.last === this
-	}
-
-	join(node, builder) {
-		if (node.type === 'list' && this.attributes.decor === node.attributes.decor) {
-			return builder.create('list', { decor: this.attributes.decor })
-		}
-
-		return false
-	}
-
-	canDelete() {
-		return !this.first
 	}
 
 	stringify(children) {
@@ -52,10 +33,8 @@ export class List extends Section {
 }
 
 export class ListItem extends Widget {
-	constructor(params = {}) {
+	constructor() {
 		super('list-item')
-
-		this.params = params
 	}
 
 	render(body) {
@@ -67,7 +46,7 @@ export class ListItem extends Widget {
 	}
 
 	split(builder, next) {
-		const duplicate = builder.create(this.type, { ...this.attributes })
+		const duplicate = builder.create(this.type)
 
 		builder.append(this.parent, duplicate, this.next)
 		builder.append(duplicate, next)
@@ -78,69 +57,14 @@ export class ListItem extends Widget {
 		}
 	}
 
-	accept(node) {
-		if (node.type === 'list' && this.first.next === this.last && this.last === node) {
-			if (this.params.maxDepth !== null) {
-				const depth = this.getDepth(this, node)
-
-				if (depth > this.params.maxDepth) {
-					return false
-				}
-			}
-
-			return true
-		}
-
-		return node.type === 'list-item-content' && this.first === node
-	}
-
-	fit(node) {
-		return node.type === 'list'
-	}
-
-	canDelete() {
-		return !this.first
-	}
-
-	getDepth(container, node) {
-		let current = container
-		let depth = 0
-
-		while (current) {
-			if (current.type === 'list-item') {
-				depth++
-			}
-
-			current = current.parent
-		}
-
-		current = node
-
-		while (current) {
-			if (current.type === 'list-item') {
-				depth++
-			}
-
-			current = current.last
-		}
-
-		return depth
-	}
-
-	duplicate(builder) {
-		return builder.create('list-item', this.params)
-	}
-
 	stringify(children) {
 		return '<li>' + children + '</li>'
 	}
 }
 
 export class ListItemContent extends Container {
-	constructor(params = {}) {
+	constructor() {
 		super('list-item-content')
-
-		this.params = params
 	}
 
 	render(body) {
@@ -153,21 +77,9 @@ export class ListItemContent extends Container {
 		}
 	}
 
-	fit(node) {
-		return node.first === this && node.type === 'list-item'
-	}
-
-	join(node, builder) {
-		if (node.type === 'list-item-content') {
-			return builder.create('list-item-content')
-		}
-
-		return false
-	}
-
 	split(builder, next) {
-		const item = builder.create('list-item', this.params)
-		const content = builder.create('list-item-content', this.params)
+		const item = builder.create('list-item')
+		const content = builder.create('list-item-content')
 
 		builder.append(item, content)
 		builder.append(content, next)
@@ -219,8 +131,8 @@ export class ListItemContent extends Container {
 				this.convertListItemToBlock(event, { focusedNodes, builder, setSelection })
 			}
 		} else {
-			const nextItem = builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
+			const nextItem = builder.create('list-item')
+			const content = builder.create('list-item-content')
 
 			builder.append(nextItem, content)
 			builder.append(item.parent, nextItem, item.next)
@@ -354,10 +266,6 @@ export class ListItemContent extends Container {
 		})
 	}
 
-	duplicate(builder) {
-		return builder.create('list-item-content', this.params)
-	}
-
 	stringify(children) {
 		return children
 	}
@@ -373,11 +281,10 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	constructor(params = { maxDepth: null }) {
-		super()
+		super(params)
 
 		this.setList = this.setList.bind(this)
-
-		this.params = params
+		this.normalize = this.normalize.bind(this)
 	}
 
 	get icons() {
@@ -387,18 +294,6 @@ export default class ListPlugin extends PluginPlugin {
 			indentLeft: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 18V6m18 6H7m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 			indentRight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 18V6M3 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
 		}
-	}
-
-	restore(node, builder) {
-		if (node.type === 'list-item') {
-			const list = builder.create('list')
-
-			builder.push(list, node)
-
-			return list
-		}
-
-		return false
 	}
 
 	getInsertControls(container) {
@@ -508,7 +403,7 @@ export default class ListPlugin extends PluginPlugin {
 					})
 				}
 
-				if (listItemContents[0].parent.previous && (!this.params.maxDepth || listItemContents[0].parent.getDepth(listItemContents[0].parent) < this.params.maxDepth)) {
+				if (listItemContents[0].parent.previous && (!this.params.maxDepth || this.getDepth(listItemContents[0].parent.parent) < this.params.maxDepth)) {
 					controls.push({
 						slug: 'list.indentRight',
 						label: 'Indent right',
@@ -529,11 +424,11 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'list-item') {
-			return builder.create('list-item', this.params)
+			return builder.create('list-item')
 		}
 
 		if (element.type === 'list-item-content') {
-			return builder.create('list-item-content', this.params)
+			return builder.create('list-item-content')
 		}
 	}
 
@@ -543,8 +438,8 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (element.type === 'li') {
-			const listItem =  builder.create('list-item', this.params)
-			const content = builder.create('list-item-content', this.params)
+			const listItem =  builder.create('list-item')
+			const content = builder.create('list-item-content')
 			const children = builder.parseVirtualTree(element.body)
 
 			builder.append(listItem, content)
@@ -573,7 +468,6 @@ export default class ListPlugin extends PluginPlugin {
 	setList(type) {
 		return (event, { builder, setSelection, focusedNodes, anchorOffset, focusOffset }) => {
 			const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
-			const { params } = this
 			let since
 			let until
 			let previous
@@ -585,8 +479,8 @@ export default class ListPlugin extends PluginPlugin {
 
 					builder.append(group[0].parent, list, group[0])
 					group.forEach((node) => {
-						const listItem = builder.create('list-item', params)
-						const content = builder.create('list-item-content', params)
+						const listItem = builder.create('list-item')
+						const content = builder.create('list-item-content')
 
 						builder.append(listItem, content)
 						builder.append(list, listItem)
@@ -615,5 +509,143 @@ export default class ListPlugin extends PluginPlugin {
 			convertGroup(group)
 			setSelection(since, anchorOffset, until, focusOffset)
 		}
+	}
+
+	normalize(node, builder) {
+		const { params } = this
+		const parent = node.parent
+
+		if (node.type === 'list') {
+			if (node.previous && node.previous.type === 'list') {
+				const previous = node.previous
+
+				builder.append(previous, node.first)
+				builder.cut(node)
+
+				return previous
+			}
+
+			if (!node.first) {
+				builder.cut(node)
+
+				return node
+			}
+
+			if (this.params.maxDepth && this.getDepth(node) > this.params.maxDepth) {
+				const first = node.first
+
+				builder.append(parent.parent, first, parent.next)
+				builder.cut(node)
+
+				return first
+			}
+		}
+
+		if (node.type === 'list-item' && parent.isSection && parent.type !== 'list') {
+			const list = builder.create('list', params)
+			const last = findLastNode(node, (item) => item.type === 'list-item')
+
+			builder.wrap(node, list, last)
+
+			return list
+		}
+
+		if (parent.type === 'list') {
+			if (node.isContainer && node.type !== 'list-item') {
+				const listItem = builder.create('list-item')
+				const content = builder.create('list-item-content')
+
+				builder.append(content, node.first)
+				builder.append(listItem, content)
+				builder.replace(node, listItem)
+
+				return listItem
+			}
+
+			if (node.type !== 'list-item') {
+				if (node.next) {
+					const list = builder.create('list', params)
+
+					builder.append(list, node.next)
+					builder.append(parent.parent, list, parent.next)
+				}
+
+				builder.push(parent.parent, node, parent.next)
+				builder.cutEmpty(parent)
+
+				return node
+			} else if (!node.first) {
+				const content = builder.create('list-item-content')
+
+				builder.append(content, node.first)
+				builder.append(node, content)
+
+				return content
+			}
+		}
+
+		if (parent.type === 'list-item') {
+			if (node === parent.first && node.isContainer && node.type !== 'list-item-content') {
+				const content = builder.create('list-item-content')
+
+				builder.convert(node, content)
+
+				return content
+			}
+
+			if (
+				node === parent.first && node.type !== 'list-item-content' ||
+				parent.first && node === parent.first.next && node.type !== 'list' ||
+				parent.first && parent.first.next && node === parent.first.next.next
+			) {
+				builder.append(parent.parent, node, parent.next)
+				builder.cutEmpty(parent)
+
+				return node
+			}
+		}
+
+		if (parent.type === 'list-item-content' && node.type !== 'text' && !node.isInlineWidget) {
+			if (node.type === 'list') {
+				builder.append(parent.parent, node, parent.next)
+
+				return node
+			}
+
+			const duplicated = parent.split(builder)
+
+			builder.append(parent.parent.parent, node, duplicated.tail)
+
+			if (!duplicated.tail.length) {
+				builder.cut(duplicated.tail)
+			}
+
+			return node
+		}
+
+		if (node.type === 'list-item-content' && parent.type !== 'list-item') {
+			const block = builder.createBlock()
+
+			builder.convert(node, block)
+
+			return block
+		}
+
+		return false
+	}
+
+	getDepth(container) {
+		let current = container
+		let depth = 1
+
+		while (current) {
+			if (current.type === 'list-item') {
+				depth++
+			}
+
+			current = current.parent
+		}
+
+		return depth
 	}
 }

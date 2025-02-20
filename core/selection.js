@@ -12,6 +12,7 @@ export default class Selection extends Publisher {
 
 		this.update = this.update.bind(this)
 		this.setSelection = this.setSelection.bind(this)
+		this.pointerDown = this.pointerDown.bind(this)
 		this.restoreSelection = this.restoreSelection.bind(this)
 		this.focus = this.focus.bind(this)
 		this.selectionChange = this.selectionChange.bind(this)
@@ -22,6 +23,7 @@ export default class Selection extends Publisher {
 		this.anchorIndex = null
 		this.focusIndex = null
 		this.focused = false
+		this.selectedComponent = false
 		this.selectedItems = []
 		this.focusedNodes = []
 		this.components = []
@@ -38,6 +40,7 @@ export default class Selection extends Publisher {
 
 		document.addEventListener('focus', this.focus, true)
 		document.addEventListener('selectionchange', this.selectionChange)
+		document.addEventListener('pointerdown', this.pointerDown)
 		this.core.render.subscribe(this.onRender)
 	}
 
@@ -56,8 +59,6 @@ export default class Selection extends Publisher {
 			return
 		}
 
-		const selectedComponent = this.components.find((component) => component.checkSelection(event.srcElement))
-
 		this.selectionUpdate({
 			type: 'focus',
 			anchorNode: event.srcElement,
@@ -65,7 +66,7 @@ export default class Selection extends Publisher {
 			anchorOffset: 0,
 			focusOffset: 0,
 			isCollapsed: true,
-			selectedComponent: Boolean(selectedComponent)
+			selectedComponent: Boolean(this.checkSelectedComponent(event.srcElement))
 		})
 	}
 
@@ -73,8 +74,6 @@ export default class Selection extends Publisher {
 		const selection = document.getSelection()
 
 		if (this.core.node.contains(selection.anchorNode) && this.core.node.contains(selection.focusNode)) {
-			const selectedComponent = this.components.find((component) => component.checkSelection(selection.anchorNode))
-
 			this.selectionUpdate({
 				type: 'selectionchange',
 				anchorNode: selection.anchorNode,
@@ -82,9 +81,27 @@ export default class Selection extends Publisher {
 				anchorOffset: selection.anchorOffset,
 				focusOffset: selection.focusOffset,
 				isCollapsed: selection.isCollapsed,
-				selectedComponent: Boolean(selectedComponent)
+				selectedComponent: Boolean(this.checkSelectedComponent(selection.anchorNode))
 			})
 		}
+	}
+
+	pointerDown(event) {
+		if (!this.checkSelectedComponent(event.srcElement) && !this.core.node.contains(event.target)) {
+			this.update({
+				anchorContainer: null,
+				anchorOffset: 0,
+				focusContainer: null,
+				focusOffset: 0,
+				isCollapsed: true,
+				focused: false,
+				selectedComponent: false
+			})
+		}
+	}
+
+	checkSelectedComponent(node) {
+		return this.components.find((component) => component.checkSelection(node))
 	}
 
 	selectionUpdate(event) {
@@ -290,6 +307,7 @@ export default class Selection extends Publisher {
 		}
 
 		this.focused = true
+		this.selectedComponent = event.selectedComponent
 		this.isRange = !event.isCollapsed
 		this.anchorAtFirstPositionInContainer = this.anchorOffset === 0
 		this.anchorAtLastPositionInContainer = this.anchorOffset === this.anchorContainer.length
@@ -306,8 +324,14 @@ export default class Selection extends Publisher {
 		}
 
 		this.focusedNodes.forEach((item) => {
-			if ((item.isWidget || item.isContainer) && isFunction(item.onBlur)) {
-				item.onBlur(this)
+			if ((item.isWidget || item.isContainer)) {
+				if (isFunction(item.onBlur)) {
+					item.onBlur(this)
+				}
+
+				if (item.isWidget && item.isRendered) {
+					item.element.removeAttribute('data-focus')
+				}
 			}
 		})
 		this.selectedItems.splice(0)

@@ -42,7 +42,6 @@ export default class Render extends Publisher {
 		this.onChange = this.onChange.bind(this)
 		this.render = this.render.bind(this)
 
-		this.timer = null
 		this.queue = []
 		this.mapNodeIdToElement = {
 			[this.core.model.id]: this.core.node
@@ -50,18 +49,7 @@ export default class Render extends Publisher {
 		this.mapNodeIdToNode = {
 			[this.core.model.id]: this.core.model
 		}
-		this.containerAvatar = createElement('div', {
-			style: {
-				position: 'fixed',
-				bottom: '0',
-				left: '0',
-				maxWidth: '100%',
-				opacity: '0',
-				pointerEvents: 'none'
-			}
-		})
 
-		document.body.appendChild(this.containerAvatar)
 		this.core.builder.subscribe(this.onChange)
 	}
 
@@ -110,6 +98,7 @@ export default class Render extends Publisher {
 							type: 'update',
 							target: change.target
 						})
+						this.markUnrendered(change.target)
 
 						break
 				}
@@ -121,9 +110,6 @@ export default class Render extends Publisher {
 
 			current = current.next
 		}
-
-		this.dropRender()
-		this.timer = requestAnimationFrame(this.render)
 	}
 
 	markUnrendered(target, last = target) {
@@ -142,14 +128,10 @@ export default class Render extends Publisher {
 		}
 	}
 
-	dropRender() {
-		cancelAnimationFrame(this.timer)
-	}
-
 	render() {
 		const queue = this.queue.splice(0).reduce((result, current) => {
 			if (
-				current.type === operationTypes.APPEND && (!current.container.contains(current.target) || !current.container.isMount) ||
+				current.type === operationTypes.APPEND && current.container !== current.target.parent ||
 				current.type === 'update' && !current.target.isMount
 			) {
 				return result
@@ -159,9 +141,9 @@ export default class Render extends Publisher {
 
 			return result
 		}, [])
-		let event
 		const added = []
 		const updated = []
+		let event
 
 		while (event = queue.shift()) {
 			switch (event.type) {
@@ -188,9 +170,9 @@ export default class Render extends Publisher {
 	}
 
 	cut(event) {
-		const element = this.mapNodeIdToElement[event.target.id]
-
 		if (event.target.isMount) {
+			const element = this.mapNodeIdToElement[event.target.id]
+
 			if (element.parentNode) {
 				element.parentNode.removeChild(element)
 			}
@@ -200,6 +182,10 @@ export default class Render extends Publisher {
 	}
 
 	append(event) {
+		if (event.target.isRendered || !this.mapNodeIdToElement[event.container.id]) {
+			return
+		}
+
 		const container = this.mapNodeIdToElement[event.container.id]
 		const tree = this.createTree(event.target, event.target)
 		const elements = tree.map((element) => this.createElement(element))
@@ -210,6 +196,10 @@ export default class Render extends Publisher {
 	}
 
 	update(node) {
+		if (node.isRendered) {
+			return
+		}
+
 		const tree = this.createTree(node, node)[0]
 		let container = node.element
 
@@ -428,8 +418,9 @@ export default class Render extends Publisher {
 	}
 
 	handleContainer(element) {
-		const isEmpty = !element.childNodes.length || isTextElement(element.childNodes[0]) && !element.childNodes[0].length
-		const hasLastBr = element.childNodes.length && isElementBr(element.lastChild)
+		const isEmpty = !element.firstChild || isTextElement(element.firstChild) && !element.firstChild.length
+		const hasLastBr = element.lastChild && isTextElement(element.lastChild) && !element.lastChild.length &&
+			element.lastChild.previousSibling && isElementBr(element.lastChild.previousSibling)
 
 		if (isEmpty || hasLastBr) {
 			element.appendChild(this.getTrailingBr())
@@ -515,9 +506,5 @@ export default class Render extends Publisher {
 
 	getNodeById(id) {
 		return this.mapNodeIdToNode[id]
-	}
-
-	destroy() {
-		this.dropRender()
 	}
 }

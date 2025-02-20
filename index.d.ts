@@ -1,7 +1,8 @@
 type Attributes = Record<string, string | number>
+type Params = Record<string, any>
 
 declare class Node {
-	constructor(type: string, attributes?: Attributes);
+	constructor(type: string, attributes?: Attributes, params?: Params);
 	id: number;
 	type: string;
 	attributes: Attributes;
@@ -11,17 +12,15 @@ declare class Node {
 	isRendered: boolean;
 	isMount: boolean;
 	length: number;
+	childrenAmount: number;
 	element?: HTMLElement;
 	parent?: Node;
 	previous?: Node;
 	next?: Node;
 	first?: Node;
 	last?: Node;
-	get shortcuts(): Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
-	accept(node: Node): boolean;
-	fit(node: Node): boolean;
-	canDelete(): boolean;
-	split(builder: Builder, next: Node | number): { head: Node; tail: Node | null };
+	get shortcuts(): Shortcuts;
+	split(builder: Builder, next: Node | number): { head: Node | null; tail: Node | null };
 	getNodeUntil(nodeUntil: Node): Node;
 	getPreviousSelectableNode(): Node | undefined;
 	getNextSelectableNode(): Node | undefined;
@@ -32,11 +31,12 @@ declare class Node {
 }
 
 declare class UsefullNode extends Node {
-	constructor(attributes?: Attributes);
+	constructor(attributes?: Attributes, params?: Params);
 }
 
 declare class Section extends Node {
 	isSection: true;
+	layout: 'vertical' | 'tile'
 }
 
 declare class InlineWidget extends Node {
@@ -88,6 +88,9 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 		} | ((element: HTMLElement, container: Container, focused: boolean) => boolean);
 		trimTrailingContainer?: boolean;
 	});
+	params: {
+		placeholder: ((element: HTMLElement, container: Container, focused: boolean) => void) | null;
+	};
 	node: HTMLElement;
 	onChangeHandlers: Array<() => void>;
 	plugins: P;
@@ -96,7 +99,6 @@ declare class Ascetext<P extends Array<PluginPlugin>> {
 	normalizer: Normalizer;
 	render: Render;
 	parser: Parser;
-	placeholder: (element: HTMLElement, container: Container, focused: boolean) => void;
 	selection: Selection;
 	editing: Editing;
 	timeTravel: TimeTravel;
@@ -140,18 +142,15 @@ declare class Normalizer {
 	constructor(core: Ascetext<Array<PluginPlugin>>, trimTrailingContainer?: boolean);
 	core: Ascetext<Array<PluginPlugin>>;
 	unnormalizedNodes: Array<Node>;
+	unnormalizedParents: Array<Node>;
 	onChange(event: BuilderChangeEvent): void;
 	pushNode(node: Node): void;
+	pushParent(node: Node): void;
 	normalizeHandle(): void;
 	normalize(nodes: Array<Node>): void;
-	walkUp(node: Node): Node | false;
-	walkDown(node: Node): Node | false;
-	empty(node: Node, current: Node): Node | false;
-	accept(node: Node, current: Node): Node | false;
-	join(node: Node, current: Node): Node | false;
-	handleJoin(node: Node, current: Node): Node | null;
-	canAccept(node: Node, current: Node): Node | false;
-	root(): void;
+	normalizeParents(nodes: Array<Node>): void;
+	walk(node: Node): void;
+	handleNode(node: Node): void;
 }
 
 type RenderEvent = {
@@ -216,10 +215,70 @@ declare class Dragndrop {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
 	core: Ascetext<Array<PluginPlugin>>;
 	node: HTMLElement;
+	pointerdownTimer: Timer;
+	isPointerDown: boolean;
+	initDraggingShiftX: number;
+	initDraggingShiftY: number;
+	startClientX: number;
+	startClientY: number;
+	dragging: HTMLElement | null;
+	target: HTMLElement | null;
+	anchor: HTMLElement | null;
+	handleDragging(container: Container | Widget, event: PointerLongEvent): void;
+	pointerMoveHandler(event: PointerEvent): void;
+	updateDraggingPosition(): void;
+	setTargetAndAnchor(): void;
+	getElementFromPoint(): HTMLElement;
+	findAnchor(target: UsefullNode): UsefullNode;
+	getChild(target: UsefullNode, index: number): UsefullNode;
+	pointerUpHandler(): void;
+	cancel(): void;
 	dragStartHandler(event: DragEvent): void;
+	dragOverHandler(event: DragEvent): void;
+	dropHandler(DragEvent): Promise<void>;
+	getElementAndCaretPositionFromPoint(event: DragEvent): {
+		textNode: HTMLElement;
+		offset: number;
+	} | null;
+	getFiles(dataTransfer: DataTransfer): Array<File>;
+	keydownHandler(event: KeyboardEvent): void;
 	destroy(): void;
-	drop(): void;
 }
+
+type PointerLongEvent = CustomEvent<{
+	clientX: number;
+	clientY: number;
+	pageX: number;
+	pageY: number;
+	screenX: number;
+	screenY: number;
+}>
+
+interface DragndropDragoutEvent {
+	type: 'dragout';
+	target: UsefullNode | null;
+	anchor: UsefullNode | null;
+	dragging: UsefullNode | null;
+}
+
+interface DragndropDragoverEvent {
+	type: 'dragover';
+	target: UsefullNode | null;
+	anchor: UsefullNode | null;
+	dragging: UsefullNode | null;
+}
+
+interface DragndropDraggingEvent {
+	type: 'dragging';
+	shiftX: number;
+	shiftY: number;
+}
+
+interface DragndropDropEvent {
+	type: 'drop';
+}
+
+type DragndropEvent = DragndropDragoutEvent | DragndropDragoverEvent | DragndropDraggingEvent | DragndropDropEvent;
 
 declare class Autocomplete {
 	constructor(core: Ascetext<Array<PluginPlugin>>);
@@ -268,7 +327,7 @@ declare class Builder extends Publisher {
 	handleAttributes(target: Node, previous?: Node, next?: Node): void;
 	parseJson(body: any): Fragment;
 	getJson(first: Node, last?: Node): any;
-	parseVirtualTree(tree: Tree): Fragment;
+	parseVirtualTree(tree: VirtualTree): Fragment;
 	splitByOffset(container: Container, offset: number): { head: Node, tail: Node };
 	splitByTail(parent: Node, tail: Node): { head: Node, tail: Node };
 	duplicate(target: Node): Node;
@@ -349,7 +408,7 @@ declare class Editing {
 	onPaste(event: ClipboardEvent): void;
 	insertText(content: string): void;
 	getNodeOffset(container: Node, node: Node): number;
-	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Record<string, (event: KeyboardEvent, params: HandlerParams) => void>): null | ((event: KeyboardEvent, params: HandlerParams) => void);
+	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Shortcuts): null | ((event: KeyboardEvent, params: HandlerParams) => void);
 	destroy(): void;
 }
 
@@ -434,21 +493,19 @@ declare class Selection extends Publisher {
 }
 
 interface SizeObserverEntry {
-	scrollTop: number;
-	scrollLeft: number;
 	element: DOMRect;
-	root: DOMRect;
+	absolute: DOMRect;
 }
 
 interface SizeObserverConstructor {
 	core: Ascetext<Array<PluginPlugin>>;
 	id: number;
 	ids: Array<number>;
-	observedNodes: Array<Node>;
+	observedNodes: Array<UsefullNode>;
 	handlers: Array<(entry: SizeObserverEntry) => void>;
 	timer: Timer;
 	middleware?: (entry: SizeObserverEntry) => SizeObserverEntry;
-	observe(node: Node, handler: (entry: SizeObserverEntry) => void): () => void;
+	observe(node: UsefullNode, handler: (entry: SizeObserverEntry, node: UsefullNode) => void): () => void;
 	update(): void;
 	updateHandler(): void;
 	handleNode(index: number): void;
@@ -527,6 +584,7 @@ interface Control {
 }
 
 export type ShortcutMatcher = (shortcut: string) => boolean;
+export type Shortcuts = Record<string, (event: KeyboardEvent, params: HandlerParams) => void>;
 
 declare class ComponentComponent {
 	register(core: Ascetext<Array<PluginPlugin>>): void;
@@ -538,19 +596,6 @@ declare class ComponentComponent {
 declare class Toolbar extends ComponentComponent {
 	constructor();
 	get css(): CSSGetter;
-	onSelectionChange(): void;
-	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
-	showSideToolbar(): void;
-	hideSideToolbar(): void;
-	renderSideControls(): void;
-	restoreSelection(): void;
-	getSelectedItems(): any;
-	toggleSideToolbar(): void;
-	checkToolbarVisibility(event: any): void;
-	wrapControls(controls: Array<Control>): any;
-	updateBoundings(container: any): void;
-	viewportChange(event: any): void;
-	viewportResize(): void;
 	isShowToggleButtonHolder: boolean;
 	isShowSideToolbar: boolean;
 	isShowCenteredToolbar: boolean;
@@ -561,6 +606,7 @@ declare class Toolbar extends ComponentComponent {
 	selection: Selection;
 	timeTravel: TimeTravel;
 	editing: Editing;
+	dragndrop: Dragndrop;
 	plugins: Array<PluginPlugin>;
 	icons: any;
 	sizeObserver: SizeObserver | null;
@@ -574,39 +620,59 @@ declare class Toolbar extends ComponentComponent {
 	centeredControls: any[];
 	sideMode: string;
 	cancelObserver: any;
-	containerAvatar: any;
-	insertButton: any;
-	replaceButton: any;
-	sideToolbar: any;
-	centeredToolbar: any;
-	toggleButtonHolder: any;
-	toggleButton: any;
+	container: HTMLElement;
+	sideToolbar: HTMLElement;
+	sideToolbarContent: HTMLElement;
+	centeredToolbar: HTMLElement;
+	centeredToolbarContent: HTMLElement;
+	toggleButtonHolder: HTMLElement;
+	toggleButton: HTMLElement;
+	dragIndicator: HTMLElement;
 	mediaQuery: MediaQueryList;
+	pointerLongDown(event: PointerLongEvent): void;
+	findScrollableParents(element: HTMLElement): Array<HTMLElement>;
+	viewportChange(event: any): void;
+	viewportResize(): void;
 	bindViewportChange(): void;
 	unbindViewportChange(): void;
+	onSelectionChange(): void;
+	onDragNDropChange(event: DragndropEvent): void;
+	updateDraggingTogglePosition(event: DragndropDraggingEvent): void;
+	updateDragAnchorPosition(event: DragndropDragoverEvent): void;
+	checkToolbarVisibility(event: any): void;
 	onKeyDown(event: KeyboardEvent): void;
+	updateSideToolbar(): void;
+	updateCenteredToolbar(): null | undefined;
 	updateButtonHolder(): void;
 	renderInsertButton(): void;
 	renderReplaceButton(hasControls: boolean): void;
-	updateSideToolbar(): void;
-	updateCenteredToolbar(): null | undefined;
 	renderSideToolbar(): void;
 	renderSelectedToolbar(): void;
 	getInsertControls(): any[];
 	getReplaceControls(): any[];
+	toggleSideToolbar(): void;
+	renderSideControls(): void;
 	renderCenteredControls(rawControls: any): void;
+	controlHandler<T>(action: T, event: MouseEvent, keep?: boolean): void;
+	restoreSelection(): void;
 	emptySideToolbar(): void;
+	showSideToolbar(): void;
+	hideSideToolbar(): void;
 	emptyCenteredControls(): void;
 	showCenteredToolbar(): void;
 	hideCenteredToolbar(): void;
 	emptyToggleButtonHolder(): void;
 	showToggleButtonHolder(): void;
 	hideToggleButtonHolder(): void;
+	wrapControls(controls: Array<Control>): any;
 	isTargetInsideToolbar(target: HTMLElement): boolean;
 	isTargetInsideEditor(target: HTMLElement): boolean;
+	updateBoundings(container: UsefullNode): void;
+	updateBoundingsHandler(entry: SizeObserverEntry, container: UsefullNode): void;
+	isElementVisible(rect: DOMRect): boolean;
+	setPosition(element: HTMLElement, left: number, top: number): void;
 	stopUpdateBoundings(): void;
-	setAvatar(entry: any): any;
-	destroy(): void;
+	getShortcuts(): Shortcuts;
 }
 
 declare class ControlControl {
@@ -651,12 +717,14 @@ declare class ControlLink extends ControlControl {
 
 declare class PluginPlugin {
 	get register(): Record<string, typeof UsefullNode>;
+	params: Params;
 	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
 	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getInsertControls(container: Node): Array<Control>;
 	getSelectControls(focusedNodes: Array<Node>, isRange: boolean): Control[];
 	getReplaceControls(focusedNodes: Array<Node>): Array<Control>;
+	normalize?(node: Node, builder: Builder): Node | false;
 }
 
 declare class BreakLine extends InlineWidget {
@@ -678,8 +746,8 @@ declare class BreakLinePlugin extends PluginPlugin {
 
 declare class Header extends Container {
 	constructor(attributes: {
-    level: number;
-  });
+		level: number;
+	});
 	render(): VirtualTree;
 	json(): {
 		type: 'header';
@@ -714,9 +782,11 @@ declare class HeaderPlugin extends PluginPlugin {
 declare class Image extends Widget {
 	image: HTMLImageElement;
 	attributes: Attributes;
-	constructor(attributes: Attributes);
+	params: Params;
+	constructor(attributes: Attributes, params: Params);
 	render(body: Array<VirtualTree>): VirtualTree;
 	getClassName(): string;
+	createFile(dataURI: string): Blob;
 	json(): {
 		type: 'image';
 		src: string;
@@ -772,6 +842,7 @@ declare class ImagePlugin extends PluginPlugin {
 	parseTree(element: VirtualTree, builder: Builder): Image | undefined;
 	parseJson(element: { type: string }, builder: Builder): Image | undefined;
 	generateImagePreview(file: File): Promise<string>;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class Link extends InlineWidget {
@@ -807,6 +878,7 @@ declare class LinkPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): Link | undefined;
 	wrap(match: any, builder: Builder): any;
 	unwrap(node: any, builder: Builder): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class List extends Section {
@@ -884,6 +956,7 @@ declare class ListPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(event: MouseEvent, params: ActionParams): void;
 	setMarkerList(event: MouseEvent, params: ActionParams): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class Paragraph extends Container {
@@ -970,6 +1043,7 @@ declare class TextPlugin extends PluginPlugin {
 	setStrike(event: MouseEvent, params: ActionParams): void;
 	unsetUnderline(event: MouseEvent, params: ActionParams): void;
 	setUnderline(event: MouseEvent, params: ActionParams): void;
+	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare function getIcon(source: string): HTMLElement;
@@ -986,6 +1060,12 @@ export {
 	VirtualTree,
 	Parser,
 	Dragndrop,
+	PointerLongEvent,
+	DragndropDragoutEvent,
+	DragndropDragoverEvent,
+	DragndropDraggingEvent,
+	DragndropDropEvent,
+	DragndropEvent,
 	TimeTravel,
 	SizeObserverConstructor,
 	SizeObserver,
@@ -999,7 +1079,6 @@ export {
 	ControlLink,
 	ControlInput,
 	Section,
-	Group,
 	InlineWidget,
 	Widget,
 	Node,
@@ -1023,5 +1102,6 @@ export {
 	ListPlugin,
 	QuotePlugin,
 	PluginPlugin,
-	getIcon
+	getIcon,
+	Params
 };

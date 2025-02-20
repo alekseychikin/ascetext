@@ -28,5 +28,4 @@ const editor = new Editor(document.getElementById('app'), {
 	placeholder: 'Here is where your story comes...'
 })
 
-console.log(editor.model)
 window.editor = editor

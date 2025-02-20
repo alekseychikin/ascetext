@@ -20,7 +20,7 @@ import SizeObserver from './size-observer.js'
 import Render from './render.js'
 import Parser from './parser.js'
 import Normalizer from './normalizer.js'
-import extractPlaceholderParams from '../utils/extract-placeholder-params.js'
+import importParams from '../utils/import-params.js'
 
 class Root extends Section {
 	constructor() {
@@ -37,6 +37,7 @@ export default class Ascetext {
 		this.onChange = this.onChange.bind(this)
 		this.triggerChange = this.triggerChange.bind(this)
 
+		this.params = importParams(params)
 		this.node = node
 		this.onChangeHandlers = []
 		this.plugins = params.plugins || [
@@ -58,18 +59,17 @@ export default class Ascetext {
 		}, {}), params.icons || {})
 		this.model = new Root()
 		this.builder = new Builder(this)
-		this.normalizer = new Normalizer(this, params.trimTrailingContainer)
+		this.normalizer = new Normalizer(this)
 		this.render = new Render(this)
 		this.parser = new Parser(node)
-		this.placeholder = extractPlaceholderParams(params.placeholder)
 		// this.navigation = new Navigation(this)
 		this.selection = new Selection(this)
 		this.editing = new Editing(this)
 		this.timeTravel = new TimeTravel(this.selection, this.builder, this.normalizer, this.model)
-		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.controls = params.controls ? params.controls(this) : new Controls(this)
 		this.autocomplete = new Autocomplete(this)
 		this.dragndrop = new Dragndrop(this)
+		this.sizeObserver = new SizeObserver(this, params.sizeObserver)
 		this.init = false
 		this.components = params.components ? params.components : [new Toolbar(this)]
 		this.components.forEach((component) => component.register(this))
@@ -84,7 +84,8 @@ export default class Ascetext {
 		const tree = this.parser.getVirtualTree(container.firstChild)
 		const children = this.builder.parseVirtualTree(tree)
 
-		this.builder.append(this.model, children.first || this.builder.createBlock())
+		this.builder.append(this.model, children.first)
+		this.builder.commit()
 		this.timeTravel.subscribe(this.triggerChange)
 		this.timeTravel.reset()
 		this.node.setAttribute('contenteditable', true)
@@ -138,7 +139,8 @@ export default class Ascetext {
 		const tree = this.parser.getVirtualTree(container.firstChild)
 		const children = this.builder.parseVirtualTree(tree)
 
-		this.builder.append(this.model, children.first || this.builder.createBlock())
+		this.builder.append(this.model, children.first)
+		this.builder.commit()
 		this.components.forEach((component) => component.register(this))
 		this.timeTravel.reset()
 		this.init = true
@@ -157,7 +159,8 @@ export default class Ascetext {
 
 		const children = this.builder.parseJson(data)
 
-		this.builder.append(this.model, children.first || this.builder.createBlock())
+		this.builder.append(this.model, children.first)
+		this.builder.commit()
 		this.components.forEach((component) => component.register(this))
 		this.timeTravel.reset()
 		this.init = true
@@ -181,7 +184,6 @@ export default class Ascetext {
 		this.dragndrop.destroy()
 		this.sizeObserver.destroy()
 		this.controls.destroy()
-		this.render.destroy()
 		this.timeTravel.destroy()
 		this.components.forEach((component) => component.unregister())
 	}

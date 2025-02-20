@@ -216,15 +216,28 @@ export default class Builder extends Publisher {
 		}
 	}
 
+	async parseFiles(files) {
+		return await this.core.plugins.reduce((parsed, plugin) => {
+			if (parsed) return parsed
+
+			if (isFunction(plugin.parseFiles)) {
+				return plugin.parseFiles(files, this)
+			}
+
+			return null
+		}, false)
+
+	}
+
 	duplicate(target) {
 		return isFunction(target.duplicate)
 			? target.duplicate(this)
 			: this.create(target.type, { ...target.attributes })
 	}
 
-	push(node, target) {
+	push(node, target, anchor) {
 		this.cut(target)
-		this.append(node, target)
+		this.append(node, target, anchor)
 	}
 
 	append(node, target, anchor) {
@@ -252,6 +265,7 @@ export default class Builder extends Publisher {
 			findParent(current.parent, (parent) => {
 				parent.length += current.length
 			})
+			node.childrenAmount++
 
 			if (current === last) {
 				break
@@ -343,6 +357,11 @@ export default class Builder extends Publisher {
 			findParent(current.parent, (item) => {
 				item.length -= current.length
 			})
+
+			if (current.parent) {
+				current.parent.childrenAmount--
+			}
+
 			delete current.parent
 
 			if (current === last) {
@@ -462,6 +481,28 @@ export default class Builder extends Publisher {
 				target.onCombine(this, container)
 			}
 		}
+	}
+
+	wrap(node, target, last) {
+		this.append(node.parent, target, last.next)
+		this.cutUntil(node, last)
+		this.append(target, node)
+	}
+
+	cutEmpty(target) {
+		if (!target.first) {
+			this.cut(target)
+		}
+	}
+
+	convert(node, target) {
+		this.append(target, node.first)
+		this.replace(node, target)
+	}
+
+	commit() {
+		this.core.normalizer.normalizeHandle()
+		this.core.render.render()
 	}
 
 	registerPlugins() {

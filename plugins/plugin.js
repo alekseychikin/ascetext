@@ -7,6 +7,10 @@ export default class PluginPlugin {
 		return {}
 	}
 
+	constructor(params = {}) {
+		this.params = params
+	}
+
 	create() {
 		return new Fragment()
 	}

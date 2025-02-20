@@ -26,7 +26,6 @@ export default class TimeTravel extends Publisher {
 	}
 
 	reset() {
-		this.normalizer.normalizeHandle()
 		this.timeline = []
 		this.currentBunch = []
 		this.timeindex = -1
@@ -84,8 +83,6 @@ export default class TimeTravel extends Publisher {
 	}
 
 	commit() {
-		this.normalizer.normalizeHandle()
-
 		if (!this.currentBunch.length) {
 			return
 		}
@@ -142,6 +139,8 @@ export default class TimeTravel extends Publisher {
 				}
 			}
 
+			this.builder.commit()
+
 			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
 				this.selection.setSelectionByIndexes(selectionIndexes)
 			}
@@ -188,6 +187,8 @@ export default class TimeTravel extends Publisher {
 						break
 				}
 			}
+
+			this.builder.commit()
 
 			if (selectionIndexes && selectionIndexes.anchorIndex && selectionIndexes.focusIndex) {
 				this.selection.setSelectionByIndexes(selectionIndexes)

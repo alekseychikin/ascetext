@@ -3,19 +3,16 @@ import Container from '../nodes/container.js'
 import PluginPlugin from './plugin.js'
 import createElement from '../utils/create-element.js'
 import findElement from '../utils/find-element.js'
+import findLastNode from '../utils/find-last.js'
 
 export class Image extends Widget {
-	constructor(attributes = {}) {
-		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes))
+	constructor(attributes = {}, params = {}) {
+		super('image', Object.assign({ src: '', preview: '', size: '', float: 'none' }, attributes), params)
 
-		this.init = false
+		this.src = attributes.src
 	}
 
 	render(body = []) {
-		if (!this.init && this.attributes.src) {
-			this.init = true
-		}
-
 		return {
 			type: 'figure',
 			attributes: {
@@ -25,19 +22,11 @@ export class Image extends Widget {
 			body: [{
 				type: 'img',
 				attributes: {
-					src: this.init ? this.attributes.src : this.attributes.preview
+					src: this.src.length > 0 ? this.src : this.attributes.preview
 				},
 				body: []
 			}].concat(body)
 		}
-	}
-
-	accept(node) {
-		return this.first === this.last && this.first === node && node.type === 'image-caption'
-	}
-
-	canDelete() {
-		return this.init && !this.attributes.src
 	}
 
 	getClassName() {
@@ -69,28 +58,57 @@ export class Image extends Widget {
 			classNames.push(`image--float-${this.attributes.float}`)
 		}
 
-		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.attributes.src + '" />' + children + '</figure>'
+		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>'
 	}
 
 	json(children) {
 		if (children) {
 			return {
 				type: this.type,
-				src: this.attributes.src,
+				src: this.src,
+				preview: this.src.length ? '' : this.attributes.preview,
 				figcaption: children[0]
 			}
 		}
 
 		return {
 			type: this.type,
-			src: this.attributes.src
+			src: this.src,
+			preview: this.src.length ? '' : this.attributes.preview
 		}
+	}
+
+	async onMount({ builder }) {
+		if (!this.src.length) {
+			const file = this.createFile(this.attributes.preview)
+
+			try {
+				this.src = await this.params.onSelectFile(file, this)
+			} catch (exception) {
+				console.error('exception', exception)
+				builder.cut(this)
+			}
+		}
+	}
+
+	createFile(dataURI) {
+		const chunks = dataURI.split(',')
+		const binary = atob(chunks[1])
+		const mimeString = chunks[0].split(':')[1].split(';')[0]
+		const intArray = new Uint8Array(binary.length)
+		let i
+
+		for (i = 0; i < binary.length; i++) {
+			intArray[i] = binary.charCodeAt(i)
+		}
+
+		return new Blob([intArray], { type: mimeString })
 	}
 }
 
 export class ImageCaption extends Container {
-	constructor(params) {
-		super('image-caption', params)
+	constructor(attributes, params) {
+		super('image-caption', attributes, params)
 
 		this.imagePlaceholder = createElement('div', {
 			style: {
@@ -115,10 +133,6 @@ export class ImageCaption extends Container {
 		}
 	}
 
-	fit(node) {
-		return node.type === 'image' && node.last === node.first && node.last === this
-	}
-
 	split(builder, next) {
 		if (next || !this.parent.next) {
 			const paragraph = builder.createBlock()
@@ -139,11 +153,11 @@ export class ImageCaption extends Container {
 	}
 
 	onMount({ controls, sizeObserver }) {
-		this.imagePlaceholder.innerHTML = this.attributes.placeholder
+		this.imagePlaceholder.innerHTML = this.params.placeholder
 
 		controls.registerControl(this.imagePlaceholder)
 		this.removeObserver = sizeObserver.observe(this, (entry) => {
-			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+			this.imagePlaceholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top}px)`
 			this.imagePlaceholder.style.width = `${entry.element.width}px`
 			this.inputHandler()
 		})
@@ -217,23 +231,23 @@ export default class ImagePlugin extends PluginPlugin {
 	}
 
 	constructor(params = {}) {
-		super()
-
-		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
-		this.toggleFloatRight = this.toggleFloatRight.bind(this)
-		this.toggleSizeWide = this.toggleSizeWide.bind(this)
-		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
-
-		this.insertImage = this.insertImage.bind(this)
-		this.updateImage = this.updateImage.bind(this)
-		this.params = Object.assign({
+		super(Object.assign({
 			onSelectFile: (file, image) => new Promise((resolve) => {
 				setTimeout(() => {
 					resolve(image.attributes.preview)
 				}, 1000)
 			}),
 			placeholder: 'Add image caption (optional)'
-		}, params)
+		}, params))
+
+		this.toggleFloatLeft = this.toggleFloatLeft.bind(this)
+		this.toggleFloatRight = this.toggleFloatRight.bind(this)
+		this.toggleSizeWide = this.toggleSizeWide.bind(this)
+		this.toggleSizeBanner = this.toggleSizeBanner.bind(this)
+		this.normalize = this.normalize.bind(this)
+
+		this.insertImage = this.insertImage.bind(this)
+		this.updateImage = this.updateImage.bind(this)
 	}
 
 	get icons() {
@@ -247,8 +261,8 @@ export default class ImagePlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'image') {
-			const image = builder.create('image', { src: element.src })
-			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+			const image = builder.create('image', { src: element.src, preview: element.preview }, this.params)
+			const caption = builder.create('image-caption', {}, this.params)
 			const children = element.figcaption ? builder.parseJson(element.figcaption) : undefined
 
 			builder.append(caption, children)
@@ -263,17 +277,23 @@ export default class ImagePlugin extends PluginPlugin {
 	parseTree(element, builder) {
 		if (element.type === 'figure' && findElement(element, 'img') || element.type === 'img') {
 			const img = element.type === 'figure' ? findElement(element, 'img') : element
-			const image = builder.create('image', { src: img.attributes.src })
-			const caption = builder.create('image-caption', { placeholder: this.params.placeholder })
+			const image = builder.create('image', { src: img.attributes.src, preview: img.attributes.preview }, this.params)
 			const figcaption = element.body.find((child) => child.type === 'figcaption')
+			const body = element.body.filter((child) => child.type !== 'figcaption' && child.type !== 'img')
 
 			if (figcaption) {
 				const children = builder.parseVirtualTree(figcaption.body)
+				const caption = builder.create('image-caption', {}, this.params)
 
 				builder.append(caption, children.first)
+				builder.append(image, caption)
 			}
 
-			builder.append(image, caption)
+			if (body.length) {
+				const children = builder.parseVirtualTree(body)
+
+				builder.append(image, children.first)
+			}
 
 			return image
 		}
@@ -285,22 +305,11 @@ export default class ImagePlugin extends PluginPlugin {
 
 		await Promise.all(images.map(async (file) => {
 			const preview = await this.generateImagePreview(file)
-			const image = builder.create('image', { src: '', preview })
-			const caption = builder.create('image-caption', {
-				placeholder: this.params.placeholder
-			})
+			const image = builder.create('image', { src: '', preview }, this.params)
+			const caption = builder.create('image-caption', {}, this.params)
 
 			builder.append(image, caption)
 			builder.append(fragment, image)
-
-			try {
-				const src = await this.params.onSelectFile(file, image)
-
-				builder.setAttribute(image, 'src', src)
-			} catch (exception) {
-				console.error('exception', exception)
-				builder.cut(image)
-			}
 		}))
 
 		return fragment.first
@@ -371,42 +380,31 @@ export default class ImagePlugin extends PluginPlugin {
 
 			if (files.length) {
 				const preview = await this.generateImagePreview(files[0])
-				const image = builder.create('image', { src: '', preview })
-				const caption = builder.create('image-caption', {
-					placeholder: this.params.placeholder
-				})
+				const image = builder.create('image', { src: '', preview }, this.params)
+				const caption = builder.create('image-caption', {}, this.params)
 
 				builder.append(image, caption)
 				builder.replace(container, image)
 				setSelection(image)
-
-				try {
-					const src = await this.params.onSelectFile(files[0], image)
-
-					builder.setAttribute(image, 'src', src)
-				} catch (exception) {
-					console.error('exception', exception)
-					builder.cut(image)
-				}
 			}
 		}
 	}
 
 	updateImage(image) {
 		return async (event, { builder, setSelection, restoreSelection }) => {
-			const { files } = event.target
+			// const { files } = event.target
 
-			if (files.length) {
-				try {
-					const src = await this.params.onSelectFile(files[0], image)
+			// if (files.length) {
+			// 	try {
+			// 		const src = await this.params.onSelectFile(files[0], image)
 
-					builder.setAttribute(image, 'src', src)
-					setSelection(image)
-				} catch (exception) {
-					builder.cut(image)
-					restoreSelection()
-				}
-			}
+			// 		builder.setAttribute(image, 'src', src)
+			// 		setSelection(image)
+			// 	} catch (exception) {
+			// 		builder.cut(image)
+			// 		restoreSelection()
+			// 	}
+			// }
 		}
 	}
 
@@ -448,5 +446,58 @@ export default class ImagePlugin extends PluginPlugin {
 
 			reader.readAsDataURL(file)
 		})
+	}
+
+	normalize(node, builder) {
+		if (node.parent.type === 'image') {
+			const parent = node.parent
+
+			if (!node.previous && node.type !== 'image-caption') {
+				if (node.isContainer) {
+					const caption = builder.create('image-caption')
+
+					builder.convert(node, caption)
+
+					return caption
+				}
+
+				if (node.type === 'text' || node.isInlineWidget) {
+					const caption = builder.create('image-caption')
+					const last = findLastNode(node, (child) => child.type === 'text' || child.isInlineWidget)
+
+					builder.wrap(node, caption, last)
+
+					return caption
+				}
+
+				builder.append(parent.parent, node, parent.next)
+
+				return node
+			}
+
+			if (node.previous) {
+				const duplicated = parent.split(builder)
+
+				builder.append(parent.parent, node, duplicated.tail)
+
+				return node
+			}
+		} else if (node.type === 'image-caption') {
+			const paragraph = builder.createBlock()
+
+			builder.convert(node, paragraph)
+
+			return paragraph
+		}
+
+		if (node.type === 'image' && !node.first) {
+			const caption = builder.create('image-caption')
+
+			builder.append(node, caption)
+
+			return node
+		}
+
+		return false
 	}
 }

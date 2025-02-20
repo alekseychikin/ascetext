@@ -2,8 +2,8 @@ import Node from './node.js'
 import createElement from '../utils/create-element.js'
 
 export default class Container extends Node {
-	constructor(type, attributes = {}) {
-		super(type, attributes)
+	constructor(type, attributes = {}, params = {}) {
+		super(type, attributes, params)
 
 		this.isContainer = true
 		this.placeholder = null
@@ -15,14 +15,6 @@ export default class Container extends Node {
 
 	get isEmpty() {
 		return !this.first || this.first === this.last && this.first.type === 'text' && !this.first.length
-	}
-
-	fit(node) {
-		return node.isSection
-	}
-
-	accept(node) {
-		return node.isInlineWidget || node.type === 'text'
 	}
 
 	onFocus(selection) {
@@ -37,9 +29,9 @@ export default class Container extends Node {
 		}
 	}
 
-	onMount({ controls, placeholder, sizeObserver }) {
-		if (placeholder) {
-			this.placeholderHandler = placeholder
+	onMount({ controls, params, sizeObserver }) {
+		if (params.placeholder) {
+			this.placeholderHandler = params.placeholder
 			this.controls = controls
 			this.sizeObserver = sizeObserver
 			this.placeholder = createElement('div', {
@@ -84,7 +76,7 @@ export default class Container extends Node {
 	showPlaceholder() {
 		if (this.placeholder) {
 			this.removeObserver = this.sizeObserver.observe(this, (entry) => {
-				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top + entry.scrollTop}px)`
+				this.placeholder.style.transform = `translate(${entry.element.left}px, ${entry.element.top}px)`
 				this.placeholder.style.width = `${entry.element.width}px`
 			})
 			this.placeholder.style.display = ''

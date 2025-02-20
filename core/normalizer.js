@@ -3,14 +3,17 @@ import isFunction from '../utils/is-function.js'
 import { hasRoot } from '../utils/find-parent.js'
 
 export default class Normalizer {
-	constructor(core, trimTrailingContainer = false) {
+	constructor(core) {
 		this.normalizeHandle = this.normalizeHandle.bind(this)
 		this.onChange = this.onChange.bind(this)
-		this.trimTrailingContainer = trimTrailingContainer
+		this.pushNode = this.pushNode.bind(this)
+		this.trimTrailingContainer = core.params.trimTrailingContainer
 
 		this.core = core
 		this.unnormalizedNodes = []
+		this.unnormalizedParents = []
 		this.core.builder.subscribe(this.onChange)
+		this.normalizeHandlers = core.plugins.filter((plugin) => isFunction(plugin.normalize)).map((plugin) => plugin.normalize)
 	}
 
 	onChange(event) {
@@ -18,274 +21,175 @@ export default class Normalizer {
 			return
 		}
 
+		let current
+
 		switch (event.type) {
 			case operationTypes.APPEND:
-				this.pushNode(event.last)
 				this.pushNode(event.last.next)
+
+				current = event.target
+
+				do {
+					this.pushNode(current)
+				} while (current !== event.last && (current = current.next))
 
 				break
 			case operationTypes.CUT:
 				this.pushNode(event.last.next)
-				this.pushNode(event.previous)
+				this.pushParent(event.target.parent)
 
 				break
 			case operationTypes.ATTRIBUTE:
-				this.pushNode(event.target)
 				this.pushNode(event.target.next)
+				this.pushNode(event.target)
 
 				break
 		}
 	}
 
 	pushNode(node) {
-		if (!node) {
-			return
-		}
-
-		if (!this.unnormalizedNodes.includes(node)) {
+		if (node && !this.unnormalizedNodes.includes(node)) {
 			this.unnormalizedNodes.push(node)
+		}
+	}
+
+	pushParent(node) {
+		if (node && !this.unnormalizedParents.includes(node)) {
+			this.unnormalizedParents.push(node)
 		}
 	}
 
 	normalizeHandle() {
 		this.normalize(this.unnormalizedNodes)
+		this.normalizeParents(this.unnormalizedParents)
 	}
 
 	normalize(nodes) {
-		let limit = 1000
 		let node
-		let next
 		let current
 
-		while (node = nodes.pop()) {
+		while (node = nodes.shift()) {
 			if (hasRoot(node)) {
 				current = node
 
-				while (current && limit-- > 0) {
-					if (next = this.walkUp(current)) {
-						current = next
+				this.walk(current)
+			}
+		}
+	}
 
-						continue
-					}
+	normalizeParents(nodes) {
+		const { builder } = this.core
+		let node
 
-					if (next = this.walkDown(current)) {
-						current = next
-
-						continue
-					}
-
-					break
-				}
+		while (node = nodes.shift()) {
+			if (hasRoot(node) && node.parent) {
+				this.handleNode(node)
 			}
 		}
 
 		if (!this.trimTrailingContainer) {
-			this.root()
+			let last = this.core.model.last
+
+			if (!last || !last.isContainer || !last.isEmpty) {
+				last = builder.createBlock()
+
+				builder.append(this.core.model, last)
+				this.empty(last)
+			}
 		}
 	}
 
-	walkUp(node) {
-		let current = node
+	walk(node) {
+		let entity = node
+		let current = entity.deepesetFirstNode()
 		let next
+		let safety = 1000
 
-		while (current && current.type !== 'root') {
-			current = current.deepesetLastNode()
-
-			while (current.previous) {
-				if (next = this.empty(node, current)) {
-					return next
-				}
-
-				if (next = this.join(node, current)) {
-					return next
-				}
-
-				current = current.previous
+		while (--safety) {
+			if (!current.parent) {
+				break
 			}
 
-			if (next = this.empty(node, current)) {
-				return next
+			if (next = this.handleNode(current)) {
+				if (entity.contains(next)) {
+					current = next
+				} else if (next.parent) {
+					entity = next
+					current = entity.deepesetFirstNode()
+				}
+
+				continue
 			}
 
-			while (!current.previous) {
-				current = current.parent
-
-				if (current.type === 'root') {
-					break
-				}
-
-				if (next = this.join(node, current)) {
-					return next
-				}
-
-				if (next = this.empty(node, current)) {
-					return next
-				}
+			if (!entity.contains(current) || entity === current) {
+				break
 			}
-
-			current = current.previous
-		}
-
-		return false
-	}
-
-	walkDown(node) {
-		let current = node
-		let next
-
-		while (current && current.type !== 'root') {
-			current = current.deepesetFirstNode()
-
-			while (current.next) {
-				if (current.first) {
-					current = current.deepesetFirstNode()
-					break
-				}
-
-				if (next = this.accept(node, current)) {
-					return next
-				}
-
-				current = current.next
-			}
-
-			if (next = this.accept(node, current)) {
-				return next
-			}
-
-			while (!current.next) {
-				current = current.parent
-
-				if (current.type === 'root') {
-					break
-				}
-
-				if (next = this.accept(node, current)) {
-					return next
-				}
-			}
-
-			current = current.next
-		}
-
-		return false
-	}
-
-	empty(node, current) {
-		if (current.canDelete()) {
-			const next = current.previous || current.parent
-
-			this.core.builder.cut(current)
-
-			if (node !== current) {
-				return node
-			}
-
-			return next
-		}
-
-		if (current.isContainer && current.isEmpty && !current.first) {
-			this.core.builder.append(current, this.core.builder.create('text', { content: '' }))
-		}
-
-		return false
-	}
-
-	accept(node, current) {
-		let parent = current.parent
-		let restored
-
-		if (!this.canAccept(parent, current)) {
-			const anchor = current.next
-
-			restored = this.core.plugins.reduce((parsed, plugin) => {
-				if (parsed) return parsed
-
-				if (isFunction(plugin.restore)) {
-					return plugin.restore(current, this.core.builder)
-				}
-
-				return false
-			}, false)
-
-			if (restored && this.canAccept(parent, restored)) {
-				this.core.builder.append(parent, restored, anchor)
-
-				return restored
-			}
-
-			this.core.builder.cut(current)
-
-			return node !== current ? node : anchor || parent
-		}
-
-		if (!parent.accept(current) || !current.fit(parent)) {
-			let next = parent.next
 
 			if (current.next) {
-				const duplicated = parent.split(this.core.builder, current.next)
+				current = current.next.deepesetFirstNode()
 
-				next = duplicated.tail
-				parent = duplicated.head
+				continue
 			}
 
-			this.core.builder.append(parent.parent, current, next)
+			if (current.parent) {
+				current = current.parent
 
-			return node
-		}
-
-		return false
-	}
-
-	join(node, current) {
-		let joined
-
-		if (joined = this.handleJoin(current)) {
-			if (current === node) {
-				return joined
+				continue
 			}
 
-			return node
+			break
 		}
+
+		if(!safety) {
+			console.error('safety alarm')
+		}
+	}
+
+	empty(node) {
+		const { builder } = this.core
+
+		if (node.isContainer && node.isEmpty && !node.first) {
+			builder.append(node, builder.create('text', { content: '' }))
+		}
+	}
+
+	handleNode(node) {
+		const { builder } = this.core
+		const handled = this.normalizeHandlers.reduce((parsed, handler) => {
+			if (parsed) return parsed
+
+			return handler(node, builder)
+		}, false)
+
+		if (handled) {
+			return handled
+		}
+
+		if (node.parent.isContainer) {
+			const parent = node.parent
+
+			if (node.isContainer) {
+				const first = node.first
+
+				builder.append(parent, first, node.next)
+				builder.cut(node)
+
+				return parent
+			}
+
+			if (node.type !== 'text' && !node.isInlineWidget) {
+				const duplicated = parent.split(builder, node)
+
+				builder.push(parent.parent, node, duplicated.tail)
+				builder.cutEmpty(parent)
+				builder.cutEmpty(duplicated.tail)
+
+				return node
+			}
+		}
+
+		this.empty(node)
 
 		return false
-	}
-
-	handleJoin(node) {
-		const previous = node.previous
-		let joined
-
-		if (previous && isFunction(previous.join) && (joined = previous.join(node, this.core.builder))) {
-			this.core.builder.append(joined, previous.first)
-			this.core.builder.append(joined, node.first)
-			this.core.builder.replaceUntil(previous, joined, node)
-
-			return joined
-		}
-
-		return null
-	}
-
-	canAccept(container, current) {
-		if (container.accept(current) && current.fit(container)) {
-			return container
-		}
-
-		if (container.parent) {
-			return this.canAccept(container.parent, current)
-		}
-
-		return false
-	}
-
-	root() {
-		const last = this.core.model.last
-
-		if (!last || !last.isContainer || !last.isEmpty) {
-			const block = this.core.builder.createBlock()
-
-			this.core.builder.append(this.core.model, block)
-			this.empty(block, block)
-		}
 	}
 }

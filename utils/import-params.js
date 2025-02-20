@@ -52,4 +52,11 @@ function extractPlaceholderParams(params) {
 	}
 }
 
-export default extractPlaceholderParams
+function importParams(params = {}) {
+	return {
+		placeholder: extractPlaceholderParams(params.placeholder),
+		trimTrailingContainer: typeof params.trimTrailingContainer !== 'undefined' ? params.trimTrailingContainer : false
+	}
+}
+
+export default importParams

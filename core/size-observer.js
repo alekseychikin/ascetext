@@ -17,10 +17,12 @@ export default class SizeObserver {
 		this.core.selection.subscribe(this.update)
 		this.core.builder.subscribe(this.update)
 		this.core.render.subscribe(this.update)
+		this.core.dragndrop.subscribe(this.update)
 		window.addEventListener('load', this.update)
 		this.core.node.addEventListener('load', this.update, true)
 		document.addEventListener('DOMContentLoaded', this.update)
 		window.addEventListener('resize', this.update)
+		window.addEventListener('scroll', this.update, { capture: true })
 		visualViewport.addEventListener('resize', this.update)
 		visualViewport.addEventListener('scroll', this.update)
 	}
@@ -67,16 +69,27 @@ export default class SizeObserver {
 				boundings = this.middleware(boundings)
 			}
 
-			this.handlers[index](boundings)
+			this.handlers[index](boundings, node)
 		}
 	}
 
 	calculateBoundings(element) {
+		const absolute = element.getBoundingClientRect()
+		const offsetParent = this.core.node.offsetParent
+		const root = offsetParent.getBoundingClientRect()
+
 		return {
-			scrollTop: document.body.scrollTop || document.documentElement.scrollTop || 0,
-			scrollLeft: document.body.scrollLeft || document.documentElement.scrollLeft || 0,
-			element: element.getBoundingClientRect(),
-			root: this.core.node.getBoundingClientRect()
+			element: {
+				top: absolute.top - root.top + offsetParent.scrollTop,
+				left: absolute.left - root.left + offsetParent.scrollLeft,
+				right: absolute.right - root.right,
+				bottom: absolute.bottom - root.bottom,
+				width: absolute.width,
+				height: absolute.height,
+				x: absolute.x,
+				y: absolute.y,
+			},
+			absolute
 		}
 	}
 

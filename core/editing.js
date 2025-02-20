@@ -96,7 +96,7 @@ export default class Editing {
 	}
 
 	onKeyDown(event) {
-		const { selection, timeTravel, components, builder } = this.core
+		const { selection, timeTravel, components } = this.core
 		const shortrcutMatcher = createShortcutMatcher(event)
 		let shortcutHandler
 
@@ -134,14 +134,10 @@ export default class Editing {
 
 					if (event.keyCode === spaceKey) {
 						if (!this.spacesDown) {
-							event.preventDefault()
-							this.update()
-							this.core.render.dropRender()
+							this.syncContainer(selection.anchorContainer)
 							timeTravel.commit()
 							timeTravel.preservePreviousSelection()
 							this.core.autocomplete.trigger()
-							builder.insert(builder.create('text', { content: nbsp }))
-							timeTravel.dropCommit()
 							this.spacesDown = true
 						}
 					} else if (this.removedRange) {
@@ -173,6 +169,10 @@ export default class Editing {
 	handleModifyKeyDown(event) {
 		switch (event.keyCode) {
 			case backspaceKey:
+				if (this.core.selection.anchorContainer.isContainer) {
+					this.core.selection.selectionChange()
+				}
+
 				if (
 					!this.core.selection.isRange &&
 					this.core.selection.anchorAtFirstPositionInContainer
@@ -203,6 +203,8 @@ export default class Editing {
 				this.handleEnterKeyDown(event)
 				break
 		}
+
+		this.core.builder.commit()
 	}
 
 	handleRemoveRange() {
@@ -329,7 +331,6 @@ export default class Editing {
 	}
 
 	update(node) {
-		const { builder, parser } = this.core
 		let container
 
 		clearTimeout(this.scheduleTimer)
@@ -347,14 +348,20 @@ export default class Editing {
 
 		while (!this.isSession && (container = this.updatingContainers.pop())) {
 			if (container.isContainer) {
-				const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
-
-				builder.cutUntil(container.first)
-				builder.append(container, replacement || builder.create('text', { content: '' }))
+				this.syncContainer(container)
 			}
 		}
 
+		this.core.builder.commit()
 		this.isUpdating = false
+	}
+
+	syncContainer(container) {
+		const { builder, parser } = this.core
+		const replacement = builder.parseVirtualTree(parser.getVirtualTree(container.element.firstChild)).first
+
+		builder.cutUntil(container.first)
+		builder.append(container, replacement || builder.create('text', { content: '' }))
 	}
 
 	save() {
@@ -471,6 +478,7 @@ export default class Editing {
 		this.update()
 		builder.insert(result)
 		this.core.autocomplete.trigger()
+		builder.commit()
 	}
 
 	insertText(content) {
@@ -484,23 +492,16 @@ export default class Editing {
 		}
 
 		builder.append(node.parent, builder.create('text', { ...attributes, content }), tail)
+		builder.commit()
 		selection.setSelection(selection.anchorContainer, selection.anchorOffset + content.length)
 	}
 
 	async handleFiles(files) {
-		const { builder } = this.core
-		const current = await this.core.plugins.reduce((parsed, plugin) => {
-			if (parsed) return parsed
-
-			if (isFunction(plugin.parseFiles)) {
-				return plugin.parseFiles(files, builder)
-			}
-
-			return null
-		}, false)
+		const current = await this.core.builder.parseFiles(files)
 
 		if (current) {
-			builder.insert(current)
+			this.core.builder.insert(current)
+			this.core.builder.commit()
 			this.core.selection.setSelection(current)
 		}
 	}

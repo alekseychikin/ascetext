@@ -1,32 +1,22 @@
 let id = 1
 
 export default class Node {
-	constructor(type, attributes = {}) {
+	constructor(type, attributes = {}, params = {}) {
 		this.id = id++
 		this.type = type
 		this.attributes = attributes
+		this.params = params
 		this.isContainer = false
 		this.isWidget = false
 		this.isSection = false
 		this.isRendered = false
 		this.isMount = false
 		this.length = 0
+		this.childrenAmount = 0
 	}
 
 	get shortrcuts() {
 		return {}
-	}
-
-	accept() {
-		return true
-	}
-
-	fit() {
-		return true
-	}
-
-	canDelete() {
-		return false
 	}
 
 	split(builder, next) {

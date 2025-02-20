@@ -1,18 +1,10 @@
 import Node from './node.js'
 
 export default class Widget extends Node {
-	constructor(type, attributes) {
-		super(type, attributes)
+	constructor(type, attributes, params) {
+		super(type, attributes, params)
 
 		this.isWidget = true
-	}
-
-	fit(node) {
-		return node.isSection
-	}
-
-	accept() {
-		return false
 	}
 
 	backspaceHandler(event, { builder, anchorContainer, setSelection }) {
