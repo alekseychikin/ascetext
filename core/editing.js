@@ -455,11 +455,12 @@ export default class Editing {
 		const { builder } = this.core
 		const clipboardData = event.clipboardData || window.clipboardData
 
+		event.preventDefault()
+
 		if (clipboardData.types.includes('Files')) {
 			return this.handleFiles(Array.prototype.slice.call(clipboardData.files))
 		}
 
-		event.preventDefault()
 		let paste = clipboardData.getData('text/html')
 
 		if (!paste.length) {
