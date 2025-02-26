@@ -5,20 +5,20 @@ import Section from '../nodes/section.js'
 import findLastNode from '../utils/find-last.js'
 
 export class List extends Section {
-	constructor(attributes = { decor: 'marker' }) {
+	constructor(attributes = { style: 'marker' }) {
 		super('list', attributes)
 	}
 
 	render(body) {
 		return {
-			type: this.attributes.decor === 'numerable' ? 'ol' : 'ul',
+			type: this.attributes.style === 'numerable' ? 'ol' : 'ul',
 			attributes: {},
 			body
 		}
 	}
 
 	stringify(children) {
-		const tagName = this.attributes.decor === 'numerable' ? 'ol' : 'ul'
+		const tagName = this.attributes.style === 'numerable' ? 'ol' : 'ul'
 
 		return '<' + tagName + '>' + children + '</' + tagName + '>'
 	}
@@ -26,7 +26,7 @@ export class List extends Section {
 	json(children) {
 		return {
 			type: this.type,
-			decor: this.attributes.decor,
+			style: this.attributes.style,
 			body: children
 		}
 	}
@@ -185,7 +185,7 @@ export class ListItemContent extends Container {
 		let subList
 
 		if (item.next) {
-			subList = builder.create('list', { decor: item.parent.attributes.decor })
+			subList = builder.create('list', { ...item.attributes })
 			builder.append(subList, item.next)
 		}
 
@@ -207,7 +207,7 @@ export class ListItemContent extends Container {
 			list = item.previous.last
 			builder.push(list, item)
 		} else {
-			list = builder.create('list', { decor: item.parent.attributes.decor })
+			list = builder.create('list', { ...item.attributes })
 			builder.append(item.previous, list)
 			builder.push(list, item)
 		}
@@ -255,7 +255,7 @@ export class ListItemContent extends Container {
 				builder.append(parentSection, newBlock, parentNext)
 
 				if (next && next.type === 'list-item') {
-					const ul = builder.create('list', next.parent.attributes)
+					const ul = builder.create('list', { ...next.parent.attributes })
 
 					builder.append(ul, next)
 					builder.append(newBlock.parent, ul, newBlock.next)
@@ -321,10 +321,10 @@ export default class ListPlugin extends PluginPlugin {
 		const containers = focusedNodes.filter((node) => node.isContainer && node.parent.isSection)
 		const listItemContents = focusedNodes.filter((node) => node.type === 'list-item-content')
 		const types = listItemContents.reduce((result, node) => {
-			const { decor } = node.parent.parent.attributes
+			const { style } = node.parent.parent.attributes
 
-			if (!result.includes(decor)) {
-				result.push(decor)
+			if (!result.includes(style)) {
+				result.push(style)
 			}
 
 			return result
@@ -420,7 +420,7 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'list') {
-			return builder.create('list', { decor: element.decor })
+			return builder.create('list', { style: element.style })
 		}
 
 		if (element.type === 'list-item') {
@@ -434,7 +434,7 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseTree(element, builder) {
 		if (element.type === 'ul' || element.type === 'ol') {
-			return builder.create('list', { decor: element.type === 'ol' ? 'numerable' : 'marker' })
+			return builder.create('list', { style: element.type === 'ol' ? 'numerable' : 'marker' })
 		}
 
 		if (element.type === 'li') {
@@ -452,7 +452,7 @@ export default class ListPlugin extends PluginPlugin {
 	convertNumberList(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((node) => {
 			if (node.type === 'list-item-content') {
-				builder.setAttribute(node.parent.parent, 'decor', 'numerable')
+				builder.setAttribute(node.parent.parent, 'style', 'numerable')
 			}
 		})
 	}
@@ -460,7 +460,7 @@ export default class ListPlugin extends PluginPlugin {
 	convertMarkerList(event, { builder, focusedNodes }) {
 		focusedNodes.forEach((node) => {
 			if (node.type === 'list-item-content') {
-				builder.setAttribute(node.parent.parent, 'decor', 'marker')
+				builder.setAttribute(node.parent.parent, 'style', 'marker')
 			}
 		})
 	}
@@ -475,7 +475,7 @@ export default class ListPlugin extends PluginPlugin {
 
 			function convertGroup(group) {
 				if (group.length) {
-					const list = builder.create('list', { decor: type })
+					const list = builder.create('list', { style: type })
 
 					builder.append(group[0].parent, list, group[0])
 					group.forEach((node) => {
@@ -512,7 +512,6 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	normalize(node, builder) {
-		const { params } = this
 		const parent = node.parent
 
 		if (node.type === 'list') {
@@ -542,7 +541,15 @@ export default class ListPlugin extends PluginPlugin {
 		}
 
 		if (node.type === 'list-item' && parent.isSection && parent.type !== 'list') {
-			const list = builder.create('list', params)
+			if (node.next && node.next.type === 'list') {
+				const list = node.next
+
+				builder.push(list, node, list.first)
+
+				return list
+			}
+
+			const list = builder.create('list', { ...node.attributes })
 			const last = findLastNode(node, (item) => item.type === 'list-item')
 
 			builder.wrap(node, list, last)
@@ -564,7 +571,7 @@ export default class ListPlugin extends PluginPlugin {
 
 			if (node.type !== 'list-item') {
 				if (node.next) {
-					const list = builder.create('list', params)
+					const list = builder.create('list', { ...parent.attributes })
 
 					builder.append(list, node.next)
 					builder.append(parent.parent, list, parent.next)

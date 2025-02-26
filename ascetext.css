@@ -52,6 +52,10 @@
 	margin-left: -42px;
 }
 
+.contenteditor__toggle-button-holder[data-type="image-caption"] {
+	display: none;
+}
+
 .contenteditor__toggle-button {
 	display: block;
 	border: 0;

@@ -343,6 +343,7 @@ declare class Builder extends Publisher {
 	moveTail(container: Node, target: Node, offset: number): void;
 	combine(container: Node, target: Node): void;
 	registerPlugins(): void;
+	commit(): void;
 }
 
 interface HandlerParams {
@@ -883,22 +884,22 @@ declare class LinkPlugin extends PluginPlugin {
 
 declare class List extends Section {
 	constructor(attributes: {
-		decor: string;
+		style: string;
 	});
 	render(): VirtualTree;
 	normalize(element: any, builder: Builder): any;
 	json(): {
 		type: 'list';
-		decor: 'numerable' | 'marker';
+		style: 'numerable' | 'marker';
 	};
 	json<T extends { type: string }[]>(children: T): {
 		type: 'list';
-		decor: 'numerable' | 'marker';
+		style: 'numerable' | 'marker';
 		body: T;
 	};
 	json<T extends { type: string }[]>(children?: T): {
 		type: 'list';
-		decor: 'numerable' | 'marker';
+		style: 'numerable' | 'marker';
 		body?: T;
 	};
 }

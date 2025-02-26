@@ -293,7 +293,7 @@ export default class Dragndrop extends Publisher {
 		// 	this.core.selection.setSelection(current)
 		// }
 		if (current && this.target) {
-			this.core.builder.push(this.target, current, this.anchor)
+			this.core.builder.append(this.target, current, this.anchor)
 			this.core.builder.commit()
 			this.core.selection.setSelection(current, 0)
 		}
