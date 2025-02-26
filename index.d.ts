@@ -645,8 +645,7 @@ declare class Toolbar extends ComponentComponent {
 	updateSideToolbar(): void;
 	updateCenteredToolbar(): null | undefined;
 	updateButtonHolder(): void;
-	renderInsertButton(): void;
-	renderReplaceButton(hasControls: boolean): void;
+	renderButton(hasControls: boolean): void;
 	renderSideToolbar(): void;
 	renderSelectedToolbar(): void;
 	getInsertControls(): any[];
