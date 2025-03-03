@@ -700,7 +700,7 @@ export default class Toolbar extends ComponentComponent {
 			this.centeredToolbar.style.top = `${visualViewport.height + visualViewport.offsetTop - this.centeredToolbar.offsetHeight}px`
 			this.centeredToolbar.style.left = ''
 		} else if (this.isShowCenteredToolbar) {
-			let offsetTop = entry.absolute.top - this.centeredToolbar.offsetHeight
+			const offsetTop = entry.absolute.top - this.centeredToolbar.offsetHeight
 			let offsetLeft = entry.absolute.left - this.centeredToolbar.offsetWidth / 2
 
 			if (container.isWidget) {
@@ -710,25 +710,7 @@ export default class Toolbar extends ComponentComponent {
 				this.setPosition(this.centeredToolbar, offsetLeft, offsetTop)
 				this.centeredToolbar.toggleAttribute('data-flip', offsetTop < 0)
 			} else {
-				const selection = document.getSelection()
-
-				if (selection.rangeCount > 0) {
-					const range = selection.getRangeAt(0)
-					const rect = range.getBoundingClientRect()
-
-					offsetTop = rect.top - this.centeredToolbar.offsetHeight
-					offsetLeft = rect.left - this.centeredToolbar.offsetWidth / 2 + rect.width / 2
-
-					this.centeredToolbar.classList.toggle(this.css.toolbarHidden, !this.isElementVisible(rect))
-
-					if (offsetTop < 0) {
-						offsetTop = rect.bottom + this.centeredToolbar.offsetHeight
-					}
-
-					this.setPosition(this.centeredToolbar, offsetLeft, offsetTop)
-				}
-
-				this.centeredToolbar.toggleAttribute('data-flip', false)
+				this.handleCenteredToolbar(entry)
 			}
 		}
 	}
@@ -747,6 +729,28 @@ export default class Toolbar extends ComponentComponent {
 		}
 
 		return true
+	}
+
+	handleCenteredToolbar(entry) {
+		let offsetTop = entry.absolute.top - this.centeredToolbar.offsetHeight
+		let offsetLeft = entry.absolute.left - this.centeredToolbar.offsetWidth / 2
+
+		if (this.selection.range) {
+			const rect = this.selection.range.getBoundingClientRect()
+
+			offsetTop = rect.top - this.centeredToolbar.offsetHeight
+			offsetLeft = rect.left - this.centeredToolbar.offsetWidth / 2 + rect.width / 2
+
+			this.centeredToolbar.classList.toggle(this.css.toolbarHidden, !this.isElementVisible(rect))
+
+			if (offsetTop < 0) {
+				offsetTop = rect.bottom + this.centeredToolbar.offsetHeight
+			}
+
+			this.setPosition(this.centeredToolbar, offsetLeft, offsetTop)
+		}
+
+		this.centeredToolbar.toggleAttribute('data-flip', false)
 	}
 
 	setPosition(element, left, top) {

@@ -429,6 +429,7 @@ declare class Selection extends Publisher {
 	focusAtFirstPositionInContainer: boolean;
 	focusAtLastPositionInContainer: boolean;
 	isRange: boolean;
+	range: Range | null;
 	anchorContainer: Container | Widget | null;
 	focusContainer: Container | Widget | null;
 	anchorOffset: number;
@@ -670,6 +671,7 @@ declare class Toolbar extends ComponentComponent {
 	updateBoundings(container: UsefullNode): void;
 	updateBoundingsHandler(entry: SizeObserverEntry, container: UsefullNode): void;
 	isElementVisible(rect: DOMRect): boolean;
+	handleCenteredToolbar(entry: SizeObserverEntry): void;
 	setPosition(element: HTMLElement, left: number, top: number): void;
 	stopUpdateBoundings(): void;
 	getShortcuts(): Shortcuts;

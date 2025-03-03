@@ -98,7 +98,9 @@ export default class SizeObserver {
 		this.core.node.removeEventListener('load', this.update, true)
 		document.removeEventListener('DOMContentLoaded', this.update)
 		window.removeEventListener('resize', this.update)
+		window.removeEventListener('scroll', this.update, { capture: true })
 		visualViewport.removeEventListener('resize', this.update)
 		visualViewport.removeEventListener('scroll', this.update)
+		cancelAnimationFrame(this.timer)
 	}
 }

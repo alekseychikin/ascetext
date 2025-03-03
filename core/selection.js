@@ -33,6 +33,7 @@ export default class Selection extends Publisher {
 		this.focusAtFirstPositionInContainer = false
 		this.focusAtLastPositionInContainer = false
 		this.isRange = false
+		this.range = null
 		this.anchorContainer = null
 		this.focusContainer = null
 		this.anchorOffset = 0
@@ -66,14 +67,15 @@ export default class Selection extends Publisher {
 			anchorOffset: 0,
 			focusOffset: 0,
 			isCollapsed: true,
-			selectedComponent: Boolean(this.checkSelectedComponent(event.srcElement))
+			selectedComponent: Boolean(this.checkSelectedComponent(event.srcElement)),
+			range: null
 		})
 	}
 
 	selectionChange() {
 		const selection = document.getSelection()
 
-		if (this.core.node.contains(selection.anchorNode) && this.core.node.contains(selection.focusNode)) {
+		if (selection && this.core.node.contains(selection.anchorNode) && this.core.node.contains(selection.focusNode)) {
 			this.selectionUpdate({
 				type: 'selectionchange',
 				anchorNode: selection.anchorNode,
@@ -81,7 +83,8 @@ export default class Selection extends Publisher {
 				anchorOffset: selection.anchorOffset,
 				focusOffset: selection.focusOffset,
 				isCollapsed: selection.isCollapsed,
-				selectedComponent: Boolean(this.checkSelectedComponent(selection.anchorNode))
+				selectedComponent: Boolean(this.checkSelectedComponent(selection.anchorNode)),
+				range: selection.rangeCount > 0 ? selection.getRangeAt(0) : null
 			})
 		}
 	}
@@ -95,7 +98,8 @@ export default class Selection extends Publisher {
 				focusOffset: 0,
 				isCollapsed: true,
 				focused: false,
-				selectedComponent: false
+				selectedComponent: false,
+				range: null
 			})
 		}
 	}
@@ -125,7 +129,8 @@ export default class Selection extends Publisher {
 			focusOffset,
 			isCollapsed: event.isCollapsed,
 			focused,
-			selectedComponent: event.selectedComponent
+			selectedComponent: event.selectedComponent,
+			range: event.range
 		})
 	}
 
@@ -210,7 +215,8 @@ export default class Selection extends Publisher {
 			focusOffset: correctFocusOffset,
 			isCollapsed: focusNode ? anchorNode === focusNode && correctAnchorOffset === correctFocusOffset : true,
 			focused: true,
-			selectedComponent: false
+			selectedComponent: false,
+			range: null
 		})
 		this.selectElements()
 	}
@@ -313,6 +319,10 @@ export default class Selection extends Publisher {
 		this.anchorAtLastPositionInContainer = this.anchorOffset === this.anchorContainer.length
 		this.focusAtFirstPositionInContainer = this.focusOffset === 0
 		this.focusAtLastPositionInContainer = this.focusOffset === this.focusContainer.length
+
+		if (event.range) {
+			this.range = event.range
+		}
 
 		this.handleSelectedItems()
 		this.sendMessage(this)
