@@ -18,7 +18,7 @@ const escapeKey = 27
 const zKey = 90
 const spaceKey = 32
 const isMac = navigator.userAgent.includes('Macintosh')
-const modifyKeyCodes = [ enterKey, backspaceKey, deletekey ]
+const modifyKeyCodes = [ enterKey, backspaceKey, deletekey, leftKey, rightKey ]
 const metaKeyCodes = [ leftKey, upKey, rightKey, downKey, shiftKey, ctrlKey, optionKey, metaKey, escapeKey ]
 const forbiddenShortcuts = [ 'ctrl+b/meta+b', 'ctrl+i/meta+i', 'ctrl+u/meta+u' ]
 
@@ -118,6 +118,7 @@ export default class Editing {
 				}
 			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(shortrcutMatcher, selection.anchorContainer.shortcuts))) {
 				shortcutHandler(event, this.getModifyKeyHandlerParams())
+				this.core.builder.commit()
 			} else if (components.find((component) => component.catchShortcut(shortrcutMatcher, event))) {
 				event.preventDefault()
 			} else if (forbiddenShortcuts.find((item) => shortrcutMatcher(item))) {
@@ -167,40 +168,48 @@ export default class Editing {
 	}
 
 	handleModifyKeyDown(event) {
+		const { selection, timeTravel } = this.core
+
 		switch (event.keyCode) {
 			case backspaceKey:
-				if (this.core.selection.anchorContainer.isContainer) {
-					this.core.selection.selectionChange()
+				if (selection.anchorContainer.isContainer) {
+					selection.selectionChange()
 				}
 
 				if (
-					!this.core.selection.isRange &&
-					this.core.selection.anchorAtFirstPositionInContainer
+					!selection.isRange &&
+					selection.anchorAtFirstPositionInContainer
 				) {
 					this.update()
-					this.core.timeTravel.preservePreviousSelection()
+					timeTravel.preservePreviousSelection()
 				}
 
 				this.handleBackspaceKeyDown(event)
 				break
 			case deletekey:
 				if (
-					!this.core.selection.isRange &&
-					this.core.selection.focusAtLastPositionInContainer
+					!selection.isRange &&
+					selection.focusAtLastPositionInContainer
 				) {
 					this.update()
-					this.core.timeTravel.preservePreviousSelection()
+					timeTravel.preservePreviousSelection()
 				}
 
 				this.handleDeleteKeyDown(event)
 				break
 			case enterKey:
-				if (!this.core.selection.isRange) {
+				if (!selection.isRange) {
 					this.update()
-					this.core.timeTravel.preservePreviousSelection()
+					timeTravel.preservePreviousSelection()
 				}
 
 				this.handleEnterKeyDown(event)
+				break
+			case rightKey:
+				if (!selection.isRange && selection.focusAtLastPositionInContainer && selection.anchorContainer.last.isInlineWidget) {
+					this.hanldeRightKeyDown(event)
+				}
+
 				break
 		}
 
@@ -295,6 +304,16 @@ export default class Editing {
 			console.info('must be enterHandler on ', this.core.selection.anchorContainer)
 			event.preventDefault()
 		}
+	}
+
+	hanldeRightKeyDown(event) {
+		event.preventDefault()
+
+		const { builder, selection } = this.core
+		const text = builder.create('text', { content: nbsp })
+
+		builder.append(selection.anchorContainer, text)
+		selection.setSelection(selection.anchorContainer, selection.anchorOffset + 1)
 	}
 
 	getModifyKeyHandlerParams() {

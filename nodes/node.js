@@ -1,8 +1,6 @@
-let id = 1
-
 export default class Node {
 	constructor(type, attributes = {}, params = {}) {
-		this.id = id++
+		this.id = 0
 		this.type = type
 		this.attributes = attributes
 		this.params = params
@@ -13,6 +11,7 @@ export default class Node {
 		this.isMount = false
 		this.length = 0
 		this.childrenAmount = 0
+		this.trimWhiteSpaces = true
 	}
 
 	get shortrcuts() {

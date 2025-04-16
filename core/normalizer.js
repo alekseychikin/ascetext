@@ -1,6 +1,68 @@
 import { operationTypes } from './builder.js'
 import isFunction from '../utils/is-function.js'
-import { hasRoot } from '../utils/find-parent.js'
+import findParent, { hasRoot } from '../utils/find-parent.js'
+
+function isLastText(node) {
+	let current = node
+
+	do {
+		if (!current.next) {
+			current = current.parent
+
+			if (!current.isInlineWidget) {
+				return true
+			}
+
+			continue
+		}
+
+		return !current.next || current.next.type === 'breakLine'
+	} while (current)
+}
+
+function isFirstText(node) {
+	let current = node
+
+	do {
+		if (!current.previous) {
+			current = current.parent
+
+			if (!current.isInlineWidget) {
+				return true
+			}
+
+			continue
+		}
+
+		return !current.previous || current.previous.type === 'breakLine'
+	} while (current)
+}
+
+function previousTextFinishesSpace(node) {
+	let current = node
+
+	do {
+		if (!current.previous) {
+			current = current.parent
+
+			if (!current.isInlineWidget && current.type !== 'text') {
+				break
+			}
+
+			continue
+		}
+
+		current = current.previous
+
+		while (current.last) {
+			current = current.last
+		}
+
+		return current.type === 'text' && current.attributes.content.match(/[^\S\n\u00a0]$/)
+	} while (current)
+
+	return false
+}
 
 export default class Normalizer {
 	constructor(core) {
@@ -169,9 +231,7 @@ export default class Normalizer {
 			const parent = node.parent
 
 			if (node.isContainer) {
-				const first = node.first
-
-				builder.append(parent, first, node.next)
+				builder.append(parent, node.first, node.next)
 				builder.cut(node)
 
 				return parent
@@ -188,8 +248,87 @@ export default class Normalizer {
 			}
 		}
 
+		this.handleText(node)
 		this.empty(node)
 
 		return false
+	}
+
+	handleText(node) {
+		const { builder } = this.core
+		let container
+
+		if (node.type === 'text' && (container = findParent(node, (child) => child.isContainer))) {
+			let match
+
+			if (!node.length && !(container.first === container.last)) {
+				const next = node.previous || node.next || node.parent
+
+				builder.cut(node)
+
+				return next
+			}
+
+			if (container.trimWhiteSpaces) {
+				if (isLastText(node) && node.attributes.content.match(/[\s]+$/)) {
+					const content = node.attributes.content.replace(/[\s]+$/, '')
+					const next = node.previous || node.next || node.parent
+
+					builder.setAttribute(node, 'content', content)
+
+					if (!container.length) {
+						builder.cut(container)
+
+						return container
+					}
+
+					return next
+				}
+
+				if (isFirstText(node) && node.attributes.content.match(/^[\s]+/)) {
+					const content = node.attributes.content.replace(/^[\s]+/, '')
+					const next = node.previous || node.next || node.parent
+
+					builder.setAttribute(node, 'content', content)
+
+					if (!container.length) {
+						builder.cut(container)
+
+						return container
+					}
+
+					return next
+				}
+
+				if (node.attributes.content[0] === ' ' && previousTextFinishesSpace(node)) {
+					const content = '\u00a0' + node.attributes.content.substr(1)
+
+					builder.setAttribute(node, 'content', content)
+
+					return node
+				}
+			}
+
+			if (container.parent.isSection && (match = node.attributes.content.match(/\s*\n\n\s*/))) {
+				const parent = node.parent
+				const right = builder.splitByOffset(parent, match.index + match[0].length)
+				const left = builder.splitByOffset(parent, match.index)
+
+				builder.splitByTail(container.parent, right.tail)
+				builder.cut(left.tail)
+
+				return container
+			}
+
+			if (container.trimWhiteSpaces) {
+				if (match = node.attributes.content.match(/[^\S\u00a0]{2,}/)) {
+					const content = node.attributes.content.replace(/[^\S\u00a0]{2,}/g, ' ')
+
+					builder.setAttribute(node, 'content', content)
+
+					return node
+				}
+			}
+		}
 	}
 }

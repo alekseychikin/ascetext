@@ -3,43 +3,6 @@ import isTextElement from '../utils/is-text-element.js'
 import isElementBr from '../utils/is-element-br.js'
 import getAttributes from '../utils/get-attributes.js'
 
-const blockElements = [
-	'br',
-	'address',
-	'article',
-	'aside',
-	'blockquote',
-	'canvas',
-	'dd',
-	'div',
-	'dl',
-	'dt',
-	'fieldset',
-	'figcaption',
-	'figure',
-	'footer',
-	'form',
-	'h1',
-	'h2',
-	'h3',
-	'h4',
-	'h5',
-	'h6',
-	'header',
-	'hr',
-	'li',
-	'main',
-	'nav',
-	'noscript',
-	'ol',
-	'p',
-	'pre',
-	'section',
-	'table',
-	'tfoot',
-	'ul',
-	'video'
-]
 const textElements = [
 	'em',
 	'i',
@@ -55,9 +18,6 @@ const supportTags = {
 	strike: 's',
 	underlined: 'u'
 }
-const beginSpacesRegexp = /^[^\S\u00A0]+/
-const finishSpacesRegexp = /[^\S\u00A0]+$/
-const groupSpacesRegexp = /[^\S\u00A0]+/g
 const ignoreParsingElements = ['style', 'script']
 
 function isTextTag(element) {
@@ -164,8 +124,6 @@ export default class Parser {
 	}
 
 	getTextElement(current, context = {}) {
-		let content = current.nodeValue
-
 		if (isElementBr(current)) {
 			return this.getHtmlElement(current)
 		}
@@ -224,33 +182,14 @@ export default class Parser {
 			return children
 		}
 
-		if (
-			!current.previousSibling && blockElements.includes(current.parentNode.nodeName.toLowerCase()) ||
-			current.previousSibling && isHtmlElement(current.previousSibling) && blockElements.includes(current.previousSibling.nodeName.toLowerCase())
-		) {
-			content = content.replace(beginSpacesRegexp, '')
-		}
-
-		if (!current.nextSibling && blockElements.includes(current.parentNode.nodeName.toLowerCase()) ||
-			current.nextSibling && isHtmlElement(current.nextSibling) && blockElements.includes(current.nextSibling.nodeName.toLowerCase())
-		) {
-			content = content.replace(finishSpacesRegexp, '')
-		}
-
-		content = content.replace(groupSpacesRegexp, ' ')
-
-		if (!content.length) {
-			return null
-		}
-
-		return [{
+		return {
 			type: 'text',
 			attributes: {
-				content,
+				content: current.nodeValue,
 				...context
 			},
 			body: []
-		}]
+		}
 	}
 
 	isInsideEditor(element) {

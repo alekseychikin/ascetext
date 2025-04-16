@@ -14,12 +14,17 @@ export default class Builder extends Publisher {
 		super()
 		this.core = core
 
+		this.id = 0
 		this.registeredNodes = {}
 		this.registerPlugins()
 	}
 
 	create(name, ...params) {
-		return new this.registeredNodes[name](...params)
+		const node = new this.registeredNodes[name](...params)
+
+		node.id = ++this.id
+
+		return node
 	}
 
 	createBlock() {
@@ -48,6 +53,15 @@ export default class Builder extends Publisher {
 	}
 
 	handleAttributes(target, previous, next) {
+		if (target.type === 'text') {
+			const delta = next.content.length - target.length
+
+			findParent(target.parent, (item) => {
+				item.length += delta
+			})
+			target.length = next.content.length
+		}
+
 		this.sendMessage({
 			type: operationTypes.ATTRIBUTE,
 			target,

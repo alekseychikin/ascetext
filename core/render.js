@@ -1,7 +1,6 @@
 import Publisher from './publisher.js'
 import isTextElement from '../utils/is-text-element.js'
 import isElementBr from '../utils/is-element-br.js'
-import createElement from '../utils/create-element.js'
 import findParent from '../utils/find-parent.js'
 import isFunction from '../utils/is-function.js'
 import getAttributes from '../utils/get-attributes.js'

@@ -14,7 +14,6 @@ const supportTags = {
 	strike: 's',
 	underlined: 'u'
 }
-const groupSpacesRegexp = /[^\S\u00A0]+/g
 
 export class Text extends Node {
 	constructor(attributes) {
@@ -88,8 +87,19 @@ export class Text extends Node {
 			}
 		}
 
-		const head = builder.create('text', { ...this.attributes, content: this.attributes.content.substr(0, position) })
-		const tail = builder.create('text', { ...this.attributes, content: this.attributes.content.substr(position) })
+		let left = this.attributes.content.substr(0, position)
+		let right = this.attributes.content.substr(position)
+
+		if (left[left.length - 1] === ' ') {
+			left = left.substr(0, left.length - 1) + '\u00a0'
+		}
+
+		if (right[0] === ' ') {
+			right = '\u00a0' + right.substr(1)
+		}
+
+		const head = builder.create('text', { ...this.attributes, content: left })
+		const tail = builder.create('text', { ...this.attributes, content: right })
 		const fragment = builder.createFragment()
 
 		builder.append(fragment, head)
@@ -159,13 +169,13 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
-	parseTree(element) {
+	parseTree(element, builder) {
 		if (element.type !== 'text') {
 			return null
 		}
 
 		const attributes = {
-			content: element.attributes.content.replace(groupSpacesRegexp, ' ')
+			content: element.attributes.content
 		}
 
 		if (element.attributes.weight && this.params.allowModifiers.includes('bold')) {
@@ -184,10 +194,10 @@ export default class TextPlugin extends PluginPlugin {
 			attributes.decoration = 'underlined'
 		}
 
-		return new Text(attributes)
+		return builder.create('text', attributes)
 	}
 
-	parseJson(element) {
+	parseJson(element, builder) {
 		if (element.type === 'text') {
 			const attributes = {
 				content: element.content
@@ -209,7 +219,7 @@ export default class TextPlugin extends PluginPlugin {
 				attributes.strike = 'horizontal'
 			}
 
-			return new Text(attributes)
+			return builder.create('text', attributes)
 		}
 	}
 
@@ -400,7 +410,7 @@ export default class TextPlugin extends PluginPlugin {
 	}
 
 	normalize(node, builder) {
-		if (node.parent.isSection && (node.type === 'text' || node.isInlineWidget)) {
+		if (node.parent.type === 'root' && (node.type === 'text' || node.isInlineWidget)) {
 			const paragraph = builder.createBlock()
 			const last = findLastNode(node, (item) => item.type === 'text' || item.isInlineWidget)
 

@@ -181,7 +181,7 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	normalize(node, builder) {
-		if (node.type === 'link' && !node.first) {
+		if (node.type === 'link' && (!node.first || !node.first.length)) {
 			builder.cut(node)
 
 			return node

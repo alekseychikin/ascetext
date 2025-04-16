@@ -151,6 +151,7 @@ declare class Normalizer {
 	normalizeParents(nodes: Array<Node>): void;
 	walk(node: Node): void;
 	handleNode(node: Node): void;
+	handleText(node: Node): void;
 }
 
 type RenderEvent = {
@@ -399,6 +400,7 @@ declare class Editing {
 	handleBackspaceKeyDown(event: KeyboardEvent): void;
 	handleDeleteKeyDown(event: KeyboardEvent): void;
 	handleEnterKeyDown(event: KeyboardEvent): void;
+	hanldeRightKeyDown(event: KeyboardEvent): void;
 	getModifyKeyHandlerParams(): HandlerParams;
 	scheduleUpdate(container: Node): void;
 	update(node?: Node): void;
@@ -720,9 +722,6 @@ declare class ControlLink extends ControlControl {
 declare class PluginPlugin {
 	get register(): Record<string, typeof UsefullNode>;
 	params: Params;
-	getClosestContainer(element: HTMLElement | Text): HTMLElement | Text;
-	getFirstTextChild(element: HTMLElement | Text): HTMLElement | Text;
-	getLastTextChild(element: HTMLElement | Text): HTMLElement | Text;
 	getInsertControls(container: Node): Array<Control>;
 	getSelectControls(focusedNodes: Array<Node>, isRange: boolean): Control[];
 	getReplaceControls(focusedNodes: Array<Node>): Array<Control>;
@@ -851,7 +850,6 @@ declare class Link extends InlineWidget {
 	type: 'link';
 	constructor(attributes: Attributes);
 	render(): VirtualTree;
-	normalize(element: any, builder: Builder): any;
 	json(): {
 		type: 'link';
 	};
@@ -880,7 +878,6 @@ declare class LinkPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): Link | undefined;
 	wrap(match: any, builder: Builder): any;
 	unwrap(node: any, builder: Builder): void;
-	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class List extends Section {
@@ -888,7 +885,6 @@ declare class List extends Section {
 		style: string;
 	});
 	render(): VirtualTree;
-	normalize(element: any, builder: Builder): any;
 	json(): {
 		type: 'list';
 		style: 'numerable' | 'marker';
@@ -958,7 +954,6 @@ declare class ListPlugin extends PluginPlugin {
 	parseJson(element: { type: string }, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(event: MouseEvent, params: ActionParams): void;
 	setMarkerList(event: MouseEvent, params: ActionParams): void;
-	normalize(node: Node, builder: Builder): Node | false;
 }
 
 declare class Paragraph extends Container {
@@ -1084,6 +1079,7 @@ export {
 	InlineWidget,
 	Widget,
 	Node,
+	UsefullNode,
 	Container,
 	ActionParams,
 	HandlerParams,

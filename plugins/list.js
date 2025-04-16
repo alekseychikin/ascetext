@@ -514,6 +514,14 @@ export default class ListPlugin extends PluginPlugin {
 	normalize(node, builder) {
 		const parent = node.parent
 
+		if (node.type === 'text' && (parent.type === 'list' || parent.type === 'list-item') && !node.attributes.content.trim().length) {
+			const next = node.next || parent
+
+			builder.cut(node)
+
+			return next
+		}
+
 		if (node.type === 'list') {
 			if (node.previous && node.previous.type === 'list') {
 				const previous = node.previous

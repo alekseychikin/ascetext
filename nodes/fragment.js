@@ -6,4 +6,8 @@ export default class Fragment extends Node {
 
 		this.isFragment = true
 	}
+
+	json(body = []) {
+		return body
+	}
 }
