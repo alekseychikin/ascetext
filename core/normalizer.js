@@ -270,8 +270,8 @@ export default class Normalizer {
 			}
 
 			if (container.trimWhiteSpaces) {
-				if (isLastText(node) && node.attributes.content.match(/[\s]+$/)) {
-					const content = node.attributes.content.replace(/[\s]+$/, '')
+				if (isLastText(node) && node.attributes.content.match(/[^\S\u00a0]+$/)) {
+					const content = node.attributes.content.replace(/[^\S\u00a0]+$/, '')
 					const next = node.previous || node.next || node.parent
 
 					builder.setAttribute(node, 'content', content)
@@ -285,8 +285,8 @@ export default class Normalizer {
 					return next
 				}
 
-				if (isFirstText(node) && node.attributes.content.match(/^[\s]+/)) {
-					const content = node.attributes.content.replace(/^[\s]+/, '')
+				if (isFirstText(node) && node.attributes.content.match(/^[^\S\u00a0]+/)) {
+					const content = node.attributes.content.replace(/^[^\S\u00a0]+/, '')
 					const next = node.previous || node.next || node.parent
 
 					builder.setAttribute(node, 'content', content)
@@ -309,7 +309,7 @@ export default class Normalizer {
 				}
 			}
 
-			if (container.parent.isSection && (match = node.attributes.content.match(/\s*\n\n\s*/))) {
+			if (container.parent.isSection && (match = node.attributes.content.match(/[\u0020\t]*\n\n[\u0020\t]*/))) {
 				const parent = node.parent
 				const right = builder.splitByOffset(parent, match.index + match[0].length)
 				const left = builder.splitByOffset(parent, match.index)
