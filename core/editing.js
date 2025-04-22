@@ -398,6 +398,7 @@ export default class Editing {
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
 
 			this.core.builder.append(section, since)
+			this.core.builder.commit()
 			this.copyToClipboard(clipboardData, section)
 		}
 
