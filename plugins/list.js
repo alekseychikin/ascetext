@@ -22,13 +22,14 @@ export class List extends Section {
 	stringify(children) {
 		const tagName = this.attributes.style === 'numerable' ? 'ol' : 'ul'
 
-		return '<' + tagName + '>\n' + children + '</' + tagName + '>\n'
+		return '<' + tagName + (this.attributes.style === 'numerable' ? ' style="counter-reset: list ' + this.attributes.start + '"' : '') + '>\n' + children + '</' + tagName + '>\n'
 	}
 
 	json(children) {
 		return {
 			type: this.type,
 			style: this.attributes.style,
+			start: this.attributes.start,
 			body: children
 		}
 	}
@@ -452,7 +453,7 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseJson(element, builder) {
 		if (element.type === 'list') {
-			return builder.create('list', { style: element.style })
+			return builder.create('list', { style: element.style, start: element.start ? element.start : 0 })
 		}
 
 		if (element.type === 'list-item') {
@@ -466,7 +467,17 @@ export default class ListPlugin extends PluginPlugin {
 
 	parseTree(element, builder) {
 		if (element.type === 'ul' || element.type === 'ol') {
-			return builder.create('list', { style: element.type === 'ol' ? 'numerable' : 'marker' })
+			let start = 0
+
+			if (element.attributes.style) {
+				let match
+
+				if (match = element.attributes.style.match(/reset-counter:\s*list\s*(\d+)/)) {
+					start = Number(match[1])
+				}
+			}
+
+			return builder.create('list', { style: element.type === 'ol' ? 'numerable' : 'marker', start })
 		}
 
 		if (element.type === 'li') {

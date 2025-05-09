@@ -768,6 +768,9 @@ declare class Header extends Container {
 }
 
 declare class HeaderPlugin extends PluginPlugin {
+	constructor(params?: {
+		allowLevels: Array<number>;
+	});
 	params: {
 		allowLevels: Array<number>;
 	};
@@ -889,15 +892,18 @@ declare class List extends Section {
 	json(): {
 		type: 'list';
 		style: 'numerable' | 'marker';
+		start: number;
 	};
 	json<T extends { type: string }[]>(children: T): {
 		type: 'list';
 		style: 'numerable' | 'marker';
+		start: number;
 		body: T;
 	};
 	json<T extends { type: string }[]>(children?: T): {
 		type: 'list';
 		style: 'numerable' | 'marker';
+		start: number;
 		body?: T;
 	};
 }
