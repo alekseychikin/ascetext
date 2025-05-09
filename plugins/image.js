@@ -58,7 +58,7 @@ export class Image extends Widget {
 			classNames.push(`image--float-${this.attributes.float}`)
 		}
 
-		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>'
+		return '<figure class="' + classNames.join(' ') + '"><img src="' + this.src + '" />' + children + '</figure>\n'
 	}
 
 	json(children) {

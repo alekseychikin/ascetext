@@ -165,44 +165,34 @@ export default class Builder extends Publisher {
 		return fragment
 	}
 
-	splitByOffset(container, offset) {
-		let length = offset
+	cutRange(
+		anchorContainer,
+		anchorOffset,
+		focusContainer,
+		focusOffset
+	) {
+		const commonParent = this.findCommonParent(anchorContainer, focusContainer)
+		let focus = this.splitByOffset(focusContainer, focusOffset)
+		let anchor = this.splitByOffset(anchorContainer, anchorOffset)
 
+		focus = this.splitByTail(commonParent, focus.tail)
+		anchor = this.splitByTail(commonParent, anchor.tail)
+
+		return {
+			head: anchor.tail,
+			tail: focus.tail.previous
+		}
+	}
+
+	splitByOffset(container, offset) {
 		if (!container.first) {
 			this.core.normalizer.empty(container, container)
 		}
 
-		let firstLevelNode = container.first
+		const node = this.getNodeByOffset(container, offset, true)
+		const { tail } = node.split(this, offset - this.getOffsetToParent(container, node))
 
-		if (!offset) {
-			const text = this.create('text', { content: '' })
-
-			this.append(container, text, firstLevelNode)
-
-			return {
-				head: text,
-				tail: firstLevelNode
-			}
-		}
-
-		while (firstLevelNode && length > firstLevelNode.length) {
-			length -= firstLevelNode.length
-			firstLevelNode = firstLevelNode.next
-		}
-
-		if (firstLevelNode.type === 'text' || firstLevelNode.type === 'breakLine') {
-			return firstLevelNode.split(this, length)
-		}
-
-		const { tail } = this.splitByOffset(firstLevelNode, length)
-		const duplicate = firstLevelNode.split(this).tail
-
-		this.append(duplicate, tail)
-
-		return {
-			head: firstLevelNode,
-			tail: duplicate
-		}
+		return this.splitByTail(container, tail)
 	}
 
 	splitByTail(parent, tail) {
@@ -529,5 +519,39 @@ export default class Builder extends Publisher {
 				})
 			}
 		})
+	}
+
+	getNodeByOffset(node, offset, isRightEdge = false) {
+		let restOffset = Math.min(node.length, offset)
+		let current = node.first
+
+		if ((node.isWidget && !offset) || !node.first) {
+			return node
+		}
+
+		while (current && restOffset >= 0) {
+			if (isRightEdge && restOffset <= current.length || (restOffset < current.length || current.isLast)) {
+				if (current.first) {
+					return this.getNodeByOffset(current, restOffset, isRightEdge)
+				}
+
+				return current
+			}
+
+			restOffset -= current.length
+			current = current.next
+		}
+
+		return current
+	}
+
+	findCommonParent(anchor, focus) {
+		let current = anchor
+
+		while (!current.contains(focus)) {
+			current = current.parent
+		}
+
+		return current
 	}
 }

@@ -17,20 +17,20 @@ class BreakLine extends InlineWidget {
 	}
 
 	split(builder) {
-		if (this.next) {
+		if (this.previous) {
 			return {
-				head: this,
-				tail: this.next
+				head: this.previous,
+				tail: this
 			}
 		}
 
 		const text = builder.create('text', { content: '' })
 
-		builder.append(this.parent, text)
+		builder.append(this.parent, text, this)
 
 		return {
-			head: this,
-			tail: text
+			head: text,
+			tail: this
 		}
 	}
 

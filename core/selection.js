@@ -428,57 +428,15 @@ export default class Selection extends Publisher {
 		}
 	}
 
-	getNodeByOffset(node, offset) {
-		let restOffset = Math.min(node.length, offset)
-		let current = node.first
-
-		if (node.isWidget && !offset) {
-			return node
-		}
-
-		if (!node.first) {
-			return node
-		}
-
-		while (current && restOffset >= 0) {
-			if (restOffset <= current.length) {
-
-				if (current.first) {
-					return this.getNodeByOffset(current, restOffset)
-				}
-
-				return current
-			}
-
-			restOffset -= current.length
-			current = current.next
-		}
-
-		return current
-	}
-
 	getSelectedItems() {
-		const { head, tail } = this.cutRange()
+		const { builder } = this.core
+		let focus = builder.splitByOffset(this.focusContainer, this.focusOffset)
+		let anchor = builder.splitByOffset(this.anchorContainer, this.anchorOffset)
 
-		return this.getArrayRangeItems(head, tail)
-	}
+		focus = builder.splitByTail(this.focusContainer, focus.tail)
+		anchor = builder.splitByTail(this.anchorContainer, anchor.tail)
 
-	cutRange(
-		anchorContainer = this.anchorContainer,
-		anchorOffset = this.anchorOffset,
-		focusContainer = this.focusContainer,
-		focusOffset = this.focusOffset
-	) {
-		const focus = this.core.builder.splitByOffset(focusContainer, focusOffset)
-		const selectedSingleElement = focus.head === this.getNodeByOffset(anchorContainer, anchorOffset)
-		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
-
-		return {
-			head: anchor.tail,
-			tail: selectedSingleElement
-				? anchor.tail.deepesetLastNode()
-				: focus.head.deepesetLastNode()
-		}
+		return this.getArrayRangeItems(anchor.tail, focus.tail.previous.deepesetLastNode())
 	}
 
 	getArrayRangeItems(since, until) {
@@ -534,8 +492,8 @@ export default class Selection extends Publisher {
 
 	handleSelectedItems() {
 		const selectedItems = this.getArrayRangeItems(
-			this.getNodeByOffset(this.anchorContainer, this.anchorOffset),
-			this.getNodeByOffset(this.focusContainer, this.focusOffset)
+			this.core.builder.getNodeByOffset(this.anchorContainer, this.anchorOffset),
+			this.core.builder.getNodeByOffset(this.focusContainer, this.focusOffset, this.isRange)
 		)
 		const itemsToFocus = []
 		let focusedNodes = selectedItems.slice(0)

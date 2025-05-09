@@ -20,6 +20,8 @@ declare class Node {
 	first?: Node;
 	last?: Node;
 	get shortcuts(): Shortcuts;
+	get isFirst(): boolean;
+	get isLast(): boolean;
 	split(builder: Builder, next: Node | number): { head: Node | null; tail: Node | null };
 	getNodeUntil(nodeUntil: Node): Node;
 	getPreviousSelectableNode(): Node | undefined;
@@ -288,10 +290,12 @@ declare class Autocomplete {
 	selection: Selection;
 	builder: Builder;
 	patterns: Array<{
-		plugin: string;
+		plugin: PluginPlugin;
 		rule: RegExp;
 	}>;
-	trigger(): boolean;
+	trigger(key: string): boolean;
+	runAll(): boolean;
+	run(content: string, pattern: { plugin: PluginPlugin; rule: RegExp }): boolean;
 	getContent(): string;
 }
 
@@ -329,6 +333,7 @@ declare class Builder extends Publisher {
 	parseJson(body: any): Fragment;
 	getJson(first: Node, last?: Node): any;
 	parseVirtualTree(tree: Array<VirtualTree>): Fragment;
+	cutRange(anchorContainer: Container, anchorOffset: number, focusContainer: Container, focusOffset: number): { head: Node, tail: Node };
 	splitByOffset(container: Container, offset: number): { head: Node, tail: Node };
 	splitByTail(parent: Node, tail: Node): { head: Node, tail: Node };
 	duplicate(target: Node): Node;
@@ -343,8 +348,10 @@ declare class Builder extends Publisher {
 	getOffsetToParent(parent: Node, target: Node): number;
 	moveTail(container: Node, target: Node, offset: number): void;
 	combine(container: Node, target: Node): void;
-	registerPlugins(): void;
 	commit(): void;
+	registerPlugins(): void;
+	getNodeByOffset(node: Node, offset: number, isRightEdge?: boolean): Node | undefined;
+	findCommonParent(anchor: Node, focus: Node): Node;
 }
 
 interface HandlerParams {
@@ -410,7 +417,6 @@ declare class Editing {
 	copyToClipboard(clipboardData: ClipboardItemData, section: Section): void;
 	onPaste(event: ClipboardEvent): void;
 	insertText(content: string): void;
-	getNodeOffset(container: Node, node: Node): number;
 	catchShortcut(shortcutMatcher: ShortcutMatcher, shortcuts: Shortcuts): null | ((event: KeyboardEvent, params: HandlerParams) => void);
 	destroy(): void;
 }
@@ -485,12 +491,7 @@ declare class Selection extends Publisher {
 		node: Node;
 		offset: number;
 	};
-	getNodeByOffset(node: Node, offset: number): Node;
 	getSelectedItems(): Array<Node>;
-	cutRange(anchorContainer?: Node, anchorOffset?: number, focusContainer?: Node, focusOffset?: number): {
-		head: Node;
-		tail: Node;
-	};
 	getArrayRangeItems(since: Node, until: Node): Array<Node>;
 	handleSelectedItems(): void;
 	destroy(): void;
@@ -772,9 +773,9 @@ declare class HeaderPlugin extends PluginPlugin {
 	};
 	supportHeaders: Array<string>;
 	get icons(): IconsGetter;
-	constructor(params?: {
-		allowLevels: Array<number>;
-	});
+	get autocompleteRule(): RegExp;
+	get autocompleteTrigger(): RegExp;
+	autocomplete(match: RegExpMatchArray, builder: Builder, selection: Selection): void;
 	parseTree(element: VirtualTree, builder: Builder): Header | undefined;
 	parseJson(element: { type: string }, builder: Builder): Header | undefined;
 	setHeader(level: number): (event: MouseEvent, params: ActionParams) => void;
@@ -866,6 +867,8 @@ declare class Link extends InlineWidget {
 declare class LinkPlugin extends PluginPlugin {
 	get icons(): IconsGetter;
 	get autocompleteRule(): RegExp;
+	get autocompleteTrigger(): RegExp;
+	autocomplete(match: RegExpMatchArray, builder: Builder, selection: Selection): void;
 	openLinkControls(): (Control & {
 		placeholder?: string;
 		autofocus?: boolean;
@@ -876,8 +879,6 @@ declare class LinkPlugin extends PluginPlugin {
 	removeLink(event: MouseEvent, params: ActionParams): void;
 	parseTree(element: VirtualTree, builder: Builder): Link | undefined;
 	parseJson(element: { type: string }, builder: Builder): Link | undefined;
-	wrap(match: any, builder: Builder): any;
-	unwrap(node: any, builder: Builder): void;
 }
 
 declare class List extends Section {
@@ -950,6 +951,9 @@ declare class ListPlugin extends PluginPlugin {
 		maxDepth: number | null;
 	};
 	get icons(): IconsGetter;
+	get autocompleteRule(): RegExp;
+	get autocompleteTrigger(): RegExp;
+	autocomplete(match: RegExpMatchArray, builder: Builder, selection: Selection): void;
 	parseTree(element: VirtualTree, builder: Builder): List | ListItem | ListItemContent | undefined;
 	parseJson(element: { type: string }, builder: Builder): List | ListItem | ListItemContent | undefined;
 	setNumberList(event: MouseEvent, params: ActionParams): void;
@@ -997,6 +1001,9 @@ declare class Quote extends Container {
 
 declare class QuotePlugin extends PluginPlugin {
 	get icons(): IconsGetter;
+	get autocompleteRule(): RegExp;
+	get autocompleteTrigger(): RegExp;
+	autocomplete(match: RegExpMatchArray, builder: Builder, selection: Selection): void;
 	parse(element: HTMLElement | Text, builder: Builder): Quote | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): Quote | undefined;
 	setQuote(event: MouseEvent, params: ActionParams): void;
@@ -1030,6 +1037,9 @@ declare class TextPlugin extends PluginPlugin {
 	};
 	supportTags: Array<string>;
 	get icons(): IconsGetter;
+	get autocompleteRule(): RegExp;
+	get autocompleteTrigger(): RegExp;
+	autocomplete(match: RegExpMatchArray, builder: Builder, selection: Selection): void;
 	parse(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	parseJson(element: HTMLElement | Text, builder: Builder): TextNode | undefined;
 	unsetBold(event: MouseEvent, params: ActionParams): void;

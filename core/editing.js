@@ -88,10 +88,18 @@ export default class Editing {
 		if (!this.hadKeydown && !this.isSession) {
 			this.handleRemoveRange()
 			this.update(selection.anchorContainer)
+
+			if (event.data) {
+				selection.setSelection(selection.anchorContainer, selection.anchorOffset + event.data.length)
+			}
 		}
 
 		if (this.hadKeydown && this.removedRange && event.data) {
 			this.insertText(event.data)
+		}
+
+		if (event.data) {
+			this.core.autocomplete.trigger(event.data)
 		}
 	}
 
@@ -116,7 +124,8 @@ export default class Editing {
 				} else {
 					timeTravel.goBack()
 				}
-			} else if (!selection.isRange && (shortcutHandler = this.catchShortcut(shortrcutMatcher, selection.anchorContainer.shortcuts))) {
+			} else if (shortcutHandler = this.catchShortcut(shortrcutMatcher, selection.anchorContainer.shortcuts)) {
+				this.syncContainer(selection.anchorContainer)
 				shortcutHandler(event, this.getModifyKeyHandlerParams())
 				this.core.builder.commit()
 			} else if (components.find((component) => component.catchShortcut(shortrcutMatcher, event))) {
@@ -135,13 +144,12 @@ export default class Editing {
 
 					if (event.keyCode === spaceKey) {
 						if (!this.spacesDown) {
+							this.spacesDown = true
 							this.syncContainer(selection.anchorContainer)
 							timeTravel.commit()
 							timeTravel.preservePreviousSelection()
-							this.core.autocomplete.trigger()
-							this.spacesDown = true
 						}
-					} else if (this.removedRange) {
+					} else if (this.removedRange && event.key.toLowerCase() !== 'tab') {
 						this.insertText(event.key)
 						timeTravel.dropCommit()
 					}
@@ -224,24 +232,23 @@ export default class Editing {
 		}
 
 		const { anchorContainer, anchorOffset, focusContainer, focusOffset} = this.core.selection
-		const focus = this.core.builder.splitByTail(this.core.model, this.core.builder.splitByOffset(focusContainer, focusOffset).tail)
-		const anchor = this.core.builder.splitByOffset(anchorContainer, anchorOffset)
-		const { head: anchorHead, tail: since } = this.core.builder.splitByTail(this.core.model, anchor.tail)
-		const until = anchorContainer === focusContainer ? since : focus.tail.previous
+		const { head, tail } = this.core.builder.cutRange(anchorContainer, anchorOffset, focusContainer, focusOffset)
+		const sameContainer = anchorContainer === focusContainer
+		const previousSelectableNode = head.getPreviousSelectableNode()
+		const nextSelectableNode = tail.getNextSelectableNode()
 
 		this.removedRange = true
-		this.core.builder.cutUntil(since, until)
+		this.core.builder.cutUntil(head, tail)
 
-		const previousSelectableNode = anchorHead.next.getPreviousSelectableNode()
-		const nextSelectableNode = previousSelectableNode.getNextSelectableNode()
-
-		if (previousSelectableNode && nextSelectableNode) {
+		if (!sameContainer && previousSelectableNode && nextSelectableNode) {
 			this.core.builder.combine(previousSelectableNode, nextSelectableNode)
+		} else {
+			this.core.selection.setSelection(anchorContainer, anchorOffset)
 		}
 
 		return {
-			since,
-			until
+			head,
+			tail
 		}
 	}
 
@@ -327,6 +334,7 @@ export default class Editing {
 		this.modifyKeyHandlerParams.focusContainer = this.core.selection.focusContainer
 		this.modifyKeyHandlerParams.focused = this.core.selection.focused
 		this.modifyKeyHandlerParams.focusedNodes = this.core.selection.focusedNodes
+		this.modifyKeyHandlerParams.isRange = this.core.selection.isRange
 
 		return this.modifyKeyHandlerParams
 	}
@@ -394,10 +402,10 @@ export default class Editing {
 			this.core.timeTravel.preservePreviousSelection()
 
 			const section = new Section('root')
-			const { since } = this.handleRemoveRange()
+			const { head } = this.handleRemoveRange()
 			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
 
-			this.core.builder.append(section, since)
+			this.core.builder.append(section, head)
 			this.core.builder.commit()
 			this.copyToClipboard(clipboardData, section)
 		}
@@ -406,11 +414,11 @@ export default class Editing {
 	}
 
 	onCopy(event) {
-		if (this.core.selection.isRange) {
-			const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+		const clipboardData = event.clipboardData || window.clipboardData || event.originalEvent.clipboardData
+		const { builder, selection } = this.core
+		const section = new Section('root')
 
-			const { builder, selection } = this.core
-			const section = new Section('root')
+		if (selection.isRange) {
 			const indexes = selection.getSelectionInIndexes()
 			const anchorIndex = indexes.anchorIndex.slice()
 			const focusIndex = indexes.focusIndex.slice()
@@ -434,6 +442,13 @@ export default class Editing {
 			}
 
 			builder.cutUntil(until.next)
+			this.copyToClipboard(clipboardData, section)
+		}
+
+		if (selection.anchorContainer.isWidget) {
+			const payload = builder.getJson(selection.anchorContainer, selection.anchorContainer)
+
+			builder.append(section, builder.parseJson(payload))
 			this.copyToClipboard(clipboardData, section)
 		}
 
@@ -461,7 +476,8 @@ export default class Editing {
 			htmlValue += current.stringify(children)
 			textValue += children
 				.replace(/<br\s*?\/?>/g, '\n')
-				.replace(/(<([^>]+)>)/ig, '') + '\n'
+				.replace(/&nbsp;/ig, ' ')
+				.replace(/<[^>]+>/ig, '') + '\n'
 
 			current = current.next
 		}
@@ -495,17 +511,16 @@ export default class Editing {
 
 		this.core.timeTravel.preservePreviousSelection()
 		this.handleRemoveRange()
-
 		this.update()
 		builder.insert(result)
-		this.core.autocomplete.trigger()
 		builder.commit()
+		this.core.autocomplete.runAll()
 	}
 
 	insertText(content) {
 		const { selection, builder } = this.core
-		const node = selection.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
-		const { tail } = builder.splitByOffset(node.parent, selection.anchorOffset - this.getNodeOffset(selection.anchorContainer, node.parent))
+		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+		const { tail } = builder.splitByOffset(node.parent, selection.anchorOffset - builder.getOffsetToParent(selection.anchorContainer, node.parent))
 		let attributes = {}
 
 		if (node && node.type === 'text') {
@@ -525,25 +540,6 @@ export default class Editing {
 			this.core.builder.commit()
 			this.core.selection.setSelection(current)
 		}
-	}
-
-	getNodeOffset(container, node) {
-		let offset = 0
-		let current = node
-
-		while (current !== container) {
-			if (current.previous) {
-				current = current.previous
-			} else {
-				current = current.parent
-
-				continue
-			}
-
-			offset += current.length
-		}
-
-		return offset
 	}
 
 	catchShortcut(shortcutMatcher, shortcuts) {

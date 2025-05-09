@@ -15,7 +15,7 @@ export class Header extends Container {
 	}
 
 	stringify(children) {
-		return '<h' + this.attributes.level + '>' + children + '</h' + this.attributes.level + '>'
+		return '<h' + this.attributes.level + '>' + children + '</h' + this.attributes.level + '>\n'
 	}
 
 	json(children) {
@@ -50,6 +50,27 @@ export default class HeaderPlugin extends PluginPlugin {
 			h4: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M18.954 9.298a1 1 0 0 0-1.909-.596l1.91.596ZM15.5 17l-.954-.298A1 1 0 0 0 15.5 18v-1Zm5.5 1a1 1 0 1 0 0-2v2Zm0-4a1 1 0 1 0-2 0h2Zm-2 5a1 1 0 1 0 2 0h-2ZM4 5a1 1 0 0 0-2 0h2ZM2 19a1 1 0 1 0 2 0H2ZM12 5a1 1 0 1 0-2 0h2Zm-2 14a1 1 0 1 0 2 0h-2Zm7.046-10.298-2.5 8 1.909.596 2.5-8-1.91-.596ZM15.5 18H21v-2h-5.5v2Zm3.5-4v5h2v-5h-2ZM2 5v7h2V5H2Zm2 14v-7H2v7h2Zm6-14v7h2V5h-2Zm2 14v-7h-2v7h2Zm-9-6h8v-2H3v2Z" fill="currentColor"/></svg>',
 			h5: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 10a1 1 0 1 0 0-2v2Zm-4-1V8a1 1 0 0 0-.97.758L17 9Zm-1.25 5.016-.97-.242a1 1 0 0 0 1.72.903l-.75-.661Zm.25-.252.667.745-.667-.745Zm1.235-.665-.255-.967.255.967Zm2.07.2.435-.9-.435.9ZM16.5 17.323a1 1 0 1 0-1.5 1.323l1.5-1.323ZM4 5a1 1 0 0 0-2 0h2ZM2 19a1 1 0 1 0 2 0H2ZM12 5a1 1 0 1 0-2 0h2Zm-2 14a1 1 0 1 0 2 0h-2ZM21 8h-4v2h4V8Zm-4.97.758-1.25 5.016 1.94.484 1.25-5.016-1.94-.484Zm.47 5.92c.052-.06.108-.116.167-.169l-1.334-1.49a3.987 3.987 0 0 0-.333.335l1.5 1.323Zm.167-.169a2 2 0 0 1 .823-.443l-.51-1.934a4 4 0 0 0-1.647.887l1.334 1.49Zm.823-.443a2 2 0 0 1 1.38.133l.87-1.8a4 4 0 0 0-2.76-.267l.51 1.934Zm1.38.133c.43.207.77.561.962.998l1.832-.802a4 4 0 0 0-1.924-1.997l-.87 1.801Zm.962.998a2 2 0 0 1 .082 1.385l1.913.581a4 4 0 0 0-.163-2.768l-1.832.803Zm.082 1.385a2 2 0 0 1-.838 1.104l1.075 1.686a4 4 0 0 0 1.676-2.209l-1.913-.581Zm-.838 1.104a2 2 0 0 1-1.355.294l-.28 1.98a4 4 0 0 0 2.71-.588l-1.075-1.686Zm-1.355.294a2 2 0 0 1-1.221-.657L15 18.646a4 4 0 0 0 2.441 1.315l.28-1.98ZM2 5v7h2V5H2Zm2 14v-7H2v7h2Zm6-14v7h2V5h-2Zm2 14v-7h-2v7h2Zm-9-6h8v-2H3v2Z" fill="currentColor"/></svg>',
 			h6: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="m19.5 13.433-.497.867.497-.867Zm.376-4.95a1 1 0 1 0-1.752-.966l1.752.966ZM4 5a1 1 0 0 0-2 0h2ZM2 19a1 1 0 1 0 2 0H2ZM12 5a1 1 0 1 0-2 0h2Zm-2 14a1 1 0 1 0 2 0h-2Zm9.734-1.994a2.01 2.01 0 0 1-2.736.727l-.995 1.734a4.01 4.01 0 0 0 5.46-1.457l-1.73-1.004Zm-2.736.727a1.974 1.974 0 0 1-.73-2.706l-1.73-1.004a3.974 3.974 0 0 0 1.465 5.444l.995-1.734Zm-.73-2.706a2.01 2.01 0 0 1 2.735-.727l.995-1.734a4.01 4.01 0 0 0-5.46 1.457l1.73 1.004Zm2.735-.727c.956.55 1.28 1.76.73 2.706l1.73 1.004a3.974 3.974 0 0 0-1.465-5.444l-.995 1.734Zm-2.725.708 3.598-6.525-1.752-.966-3.597 6.525 1.751.966ZM2 5v7h2V5H2Zm2 14v-7H2v7h2Zm6-14v7h2V5h-2Zm2 14v-7h-2v7h2Zm-9-6h8v-2H3v2Z" fill="currentColor"/></svg>'
+		}
+	}
+
+	get autocompleteRule() {
+		return /^(#+)\s$/
+	}
+
+	get autocompleteTrigger() {
+		return /^[ ]$/
+	}
+
+	autocomplete(match, builder, selection) {
+		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+		const atFirstPosition = selection.anchorContainer.first === node
+
+		if (atFirstPosition) {
+			const level = Math.min(match[1].length, this.params.allowLevels.length)
+			const header = builder.create('header', { level: this.params.allowLevels[level - 1] })
+
+			builder.replace(selection.anchorContainer, header)
+			builder.moveTail(selection.anchorContainer, header, match[0].length)
 		}
 	}
 

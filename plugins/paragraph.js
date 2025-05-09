@@ -15,7 +15,7 @@ export class Paragraph extends Container {
 	}
 
 	stringify(children) {
-		return '<p>' + children + '</p>'
+		return '<p>' + children + '</p>\n'
 	}
 }
 

@@ -169,6 +169,41 @@ export default class TextPlugin extends PluginPlugin {
 		}
 	}
 
+	get autocompleteRule() {
+		return /((\*\*)[^*]+\*\*|(__)[^_]+__|(\*)[^*]+\*|(~~)[^~]+~~)(\s*)?$/
+	}
+
+	get autocompleteTrigger() {
+		return /^[ ]$/
+	}
+
+	autocomplete(match, builder, selection) {
+		if (
+			(match[2] || match[3]) && this.params.allowModifiers.includes('bold') ||
+			match[4] && this.params.allowModifiers.includes('italic') ||
+			match[5] && this.params.allowModifiers.includes('strike')
+		) {
+			const spaceLength = match[6] ? match[6].length : 0
+			const entity = match[2] || match[3] || match[4] || match[5]
+			const { tail } = builder.cutRange(
+				selection.anchorContainer,
+				selection.anchorOffset - match[0].length,
+				selection.anchorContainer,
+				selection.anchorOffset - spaceLength
+			)
+			const content = builder.create('text', {
+				...tail.attributes,
+				content: tail.attributes.content.substr(entity.length, match[0].length - entity.length * 2 - spaceLength),
+				...(match[2] || match[3] ? { weight: 'bold' } : {}),
+				...(match[4] ? { style: 'italic' } : {}),
+				...(match[5] ? { strike: 'horizontal' } : {})
+			})
+
+			builder.replace(tail, content)
+			selection.setSelection(selection.anchorContainer, selection.anchorOffset - entity.length * 2)
+		}
+	}
+
 	parseTree(element, builder) {
 		if (element.type !== 'text') {
 			return null

@@ -18,6 +18,14 @@ export default class Node {
 		return {}
 	}
 
+	get isFirst() {
+		return this.parent && this.parent.first === this
+	}
+
+	get isLast() {
+		return this.parent && this.parent.last === this
+	}
+
 	split(builder, next) {
 		const duplicate = builder.create(this.type, { ...this.attributes })
 

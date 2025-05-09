@@ -5,14 +5,16 @@ import Section from '../nodes/section.js'
 import findLastNode from '../utils/find-last.js'
 
 export class List extends Section {
-	constructor(attributes = { style: 'marker' }) {
-		super('list', attributes)
+	constructor(attributes = { style: 'marker', start: 0 }) {
+		super('list', { start: 0, ...attributes })
 	}
 
 	render(body) {
 		return {
 			type: this.attributes.style === 'numerable' ? 'ol' : 'ul',
-			attributes: {},
+			attributes: this.attributes.style === 'numerable' ? {
+				style: `counter-reset: list ${this.attributes.start}`
+			} : {},
 			body
 		}
 	}
@@ -20,7 +22,7 @@ export class List extends Section {
 	stringify(children) {
 		const tagName = this.attributes.style === 'numerable' ? 'ol' : 'ul'
 
-		return '<' + tagName + '>' + children + '</' + tagName + '>'
+		return '<' + tagName + '>\n' + children + '</' + tagName + '>\n'
 	}
 
 	json(children) {
@@ -58,7 +60,7 @@ export class ListItem extends Widget {
 	}
 
 	stringify(children) {
-		return '<li>' + children + '</li>'
+		return '<li>' + children + '</li>\n'
 	}
 }
 
@@ -207,7 +209,7 @@ export class ListItemContent extends Container {
 			list = item.previous.last
 			builder.push(list, item)
 		} else {
-			list = builder.create('list', { ...item.attributes })
+			list = builder.create('list', { ...item.parent.attributes })
 			builder.append(item.previous, list)
 			builder.push(list, item)
 		}
@@ -293,6 +295,36 @@ export default class ListPlugin extends PluginPlugin {
 			numerated: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M10 17h10M4 15.685V15.5A1.5 1.5 0 0 1 5.5 14h.04c.807 0 1.46.653 1.46 1.46 0 .35-.114.692-.324.972L4 20h3m3-8h10M10 7h10M4 5l2-1v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 			indentLeft: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 18V6m18 6H7m0 0 5-5m-5 5 5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
 			indentRight: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 18V6M3 12h14m0 0-5-5m5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+		}
+	}
+
+	get autocompleteRule() {
+		return /^(([1-9]\d*)\.|\*\s)$/
+	}
+
+	get autocompleteTrigger() {
+		return /^[. ]$/
+	}
+
+	autocomplete(match, builder, selection) {
+		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+		const atFirstPosition = selection.anchorContainer.first === node
+
+		if (atFirstPosition) {
+			const listItem = builder.create('list-item')
+			const listItemContent = builder.create('list-item-content')
+			let list
+
+			if (match[0].match(/\*\s/)) {
+				list = builder.create('list', { style: 'marker' })
+			} else {
+				list = builder.create('list', { style: 'numerable', start: parseInt(match[2]) - 1 })
+			}
+
+			builder.append(list, listItem)
+			builder.append(listItem, listItemContent)
+			builder.replace(selection.anchorContainer, list)
+			builder.moveTail(selection.anchorContainer, listItemContent, match[0].length)
 		}
 	}
 

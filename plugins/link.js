@@ -53,7 +53,24 @@ export default class LinkPlugin extends PluginPlugin {
 	}
 
 	get autocompleteRule() {
-		return /\bhttps?:\/\/[a-zA-Z0-9\-_]{1,}\.[a-zA-Z]{2,}[^\s,]*$/
+		return /\bhttps?:\/\/(?:[a-zA-Z0-9\-_]{1,}\.)*[a-zA-Z]{2,}[^\s,]*(\s*)?$/
+	}
+
+	get autocompleteTrigger() {
+		return /^[ ]$/
+	}
+
+	autocomplete(match, builder, selection) {
+		const spaceLength = match[1] ? match[1].length : 0
+		const { tail } = builder.cutRange(
+			selection.anchorContainer,
+			selection.anchorOffset - match[0].length,
+			selection.anchorContainer,
+			selection.anchorOffset - spaceLength
+		)
+		const link = builder.create('link', { url: tail.attributes.content })
+
+		builder.wrap(tail, link, tail)
 	}
 
 	parseJson(element, builder) {
@@ -170,14 +187,6 @@ export default class LinkPlugin extends PluginPlugin {
 				builder.replace(node, node.first)
 			}
 		})
-	}
-
-	wrap(match, builder) {
-		const link = builder.create('link', { url: match.attributes.content })
-
-		builder.append(link, match)
-
-		return link
 	}
 
 	normalize(node, builder) {

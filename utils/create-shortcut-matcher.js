@@ -49,6 +49,8 @@ const codes = {
 	'ARROWDOWN': 40,
 	'INSERT': 45,
 	'DELETE': 46,
+	'TAB': 9,
+	'HOME': 36,
 	'.': 190,
 	'[': 219,
 	']': 221
