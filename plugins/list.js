@@ -308,24 +308,26 @@ export default class ListPlugin extends PluginPlugin {
 	}
 
 	autocomplete(match, builder, selection) {
-		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
-		const atFirstPosition = selection.anchorContainer.first === node
+		if (selection.anchorContainer.isContainer && selection.anchorContainer.parent.isSection) {
+			const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+			const atFirstPosition = selection.anchorContainer.first === node
 
-		if (atFirstPosition) {
-			const listItem = builder.create('list-item')
-			const listItemContent = builder.create('list-item-content')
-			let list
+			if (atFirstPosition) {
+				const listItem = builder.create('list-item')
+				const listItemContent = builder.create('list-item-content')
+				let list
 
-			if (match[0].match(/\*\s/)) {
-				list = builder.create('list', { style: 'marker' })
-			} else {
-				list = builder.create('list', { style: 'numerable', start: parseInt(match[2]) - 1 })
+				if (match[0].match(/\*\s/)) {
+					list = builder.create('list', { style: 'marker' })
+				} else {
+					list = builder.create('list', { style: 'numerable', start: parseInt(match[2]) - 1 })
+				}
+
+				builder.append(list, listItem)
+				builder.append(listItem, listItemContent)
+				builder.replace(selection.anchorContainer, list)
+				builder.moveTail(selection.anchorContainer, listItemContent, match[0].length)
 			}
-
-			builder.append(list, listItem)
-			builder.append(listItem, listItemContent)
-			builder.replace(selection.anchorContainer, list)
-			builder.moveTail(selection.anchorContainer, listItemContent, match[0].length)
 		}
 	}
 
@@ -472,7 +474,7 @@ export default class ListPlugin extends PluginPlugin {
 			if (element.attributes.style) {
 				let match
 
-				if (match = element.attributes.style.match(/reset-counter:\s*list\s*(\d+)/)) {
+				if (match = element.attributes.style.match(/counter-reset:\s*list\s*(\d+)/)) {
 					start = Number(match[1])
 				}
 			}

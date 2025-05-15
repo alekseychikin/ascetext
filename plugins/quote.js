@@ -41,14 +41,16 @@ export default class QuotePlugin extends PluginPlugin {
 	}
 
 	autocomplete(match, builder, selection) {
-		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
-		const atFirstPosition = selection.anchorContainer.first === node
+		if (selection.anchorContainer.isContainer && selection.anchorContainer.parent.isSection) {
+			const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+			const atFirstPosition = selection.anchorContainer.first === node
 
-		if (atFirstPosition) {
-			const quote = builder.create('quote')
+			if (atFirstPosition) {
+				const quote = builder.create('quote')
 
-			builder.replace(selection.anchorContainer, quote)
-			builder.moveTail(selection.anchorContainer, quote, match[0].length)
+				builder.replace(selection.anchorContainer, quote)
+				builder.moveTail(selection.anchorContainer, quote, match[0].length)
+			}
 		}
 	}
 

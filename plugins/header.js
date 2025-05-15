@@ -62,15 +62,17 @@ export default class HeaderPlugin extends PluginPlugin {
 	}
 
 	autocomplete(match, builder, selection) {
-		const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
-		const atFirstPosition = selection.anchorContainer.first === node
+		if (selection.anchorContainer.isContainer && selection.anchorContainer.parent.isSection) {
+			const node = builder.getNodeByOffset(selection.anchorContainer, selection.anchorOffset)
+			const atFirstPosition = selection.anchorContainer.first === node
 
-		if (atFirstPosition) {
-			const level = Math.min(match[1].length, this.params.allowLevels.length)
-			const header = builder.create('header', { level: this.params.allowLevels[level - 1] })
+			if (atFirstPosition) {
+				const level = Math.min(match[1].length, this.params.allowLevels.length)
+				const header = builder.create('header', { level: this.params.allowLevels[level - 1] })
 
-			builder.replace(selection.anchorContainer, header)
-			builder.moveTail(selection.anchorContainer, header, match[0].length)
+				builder.replace(selection.anchorContainer, header)
+				builder.moveTail(selection.anchorContainer, header, match[0].length)
+			}
 		}
 	}
 
