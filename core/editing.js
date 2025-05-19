@@ -380,6 +380,7 @@ export default class Editing {
 		}
 
 		this.core.builder.commit()
+		this.core.selection.selectionChange()
 		this.isUpdating = false
 	}
 
