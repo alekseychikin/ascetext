@@ -238,7 +238,7 @@ declare class Dragndrop {
 	cancel(): void;
 	dragStartHandler(event: DragEvent): void;
 	dragOverHandler(event: DragEvent): void;
-	dropHandler(DragEvent): Promise<void>;
+	dropHandler(event: DragEvent): Promise<void>;
 	getElementAndCaretPositionFromPoint(event: DragEvent): {
 		textNode: HTMLElement;
 		offset: number;
@@ -532,7 +532,7 @@ declare class SizeObserver implements SizeObserverConstructor {
 	handlers: Array<(entry: SizeObserverEntry) => void>;
 	timer: Timer;
 	middleware?: (entry: SizeObserverEntry) => SizeObserverEntry;
-	observe(node: Node, handler: (entry: SizeObserverEntry) => void): () => void;
+	observe(node: UsefullNode, handler: (entry: SizeObserverEntry, node: UsefullNode) => void): () => void;
 	update(): void;
 	updateHandler(): void;
 	handleNode(index: number): void;
